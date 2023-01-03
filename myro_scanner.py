@@ -313,8 +313,8 @@ class myro_scan(object):
 		except:
 			pass	
 		#Split for if dir in file names
-		if self.gk_template is not None:
-			os.system(f"cp \"{directory}/{self.gk_template}\" \"{run_path}/{self.gk_template}\"")
+		if self.template_name is not None:
+			os.system(f"cp \"{directory}/{self.template_name}\" \"{run_path}/{self.template_name}\"")
 		os.system(f"cp \"{self._kin_path}/{self.kin_name}\" \"{run_path}/{self.kin_name}\"")
 		os.system(f"cp \"{self._eq_path}/{self.eq_name}\" \"{run_path}/{self.eq_name}\"")
 		if self.input_name is not None:		
@@ -512,7 +512,7 @@ class myro_scan(object):
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
 			data = None
-		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eq_name, 'template_file_name': self.gk_template, 'kin_file_name': self.kin_name, 'kinetics_type': self.kinetics_type, 'run_data': date, '_eq_file_path': self._eq_path, '_kin_file_path': self._kin_path, '_template_file_path': self._template_path}
+		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.kin_name, 'kinetics_type': self.kinetics_type, 'run_data': date, '_eq_file_path': self._eq_path, '_kin_file_path': self._kin_path, '_template_file_path': self._template_path}
 
 	def check_complete(self, directory = None, doPrint = True):
 		if self.info is None:
@@ -575,7 +575,7 @@ class myro_scan(object):
 			job.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
 			pyth = open(f"save_out.py",'w')
-			pyth.write(f"from myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eq_name}\", kin_file = \"{self.kin_name}\", inputfile = \"{self.input_name}\", kinetics_type = \"{self.kinetics_type}\", gk_template = \"{self.gk_template}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,DetailedSave = {DetailedSave})")
+			pyth.write(f"from myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eq_name}\", kin_file = \"{self.kin_name}\", inputfile = \"{self.input_name}\", kinetics_type = \"{self.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,DetailedSave = {DetailedSave})")
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
