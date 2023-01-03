@@ -305,7 +305,7 @@ class myro(object):
 		Plotters['Eigen'](scan = self.run, var = 0, aky = aky, init = init)
 	
 	def plot_phi(self, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = 1 ,aky = aky, init = init)
+		Plotters['Eigen'](scan = self.run, var = 1, aky = aky, init = init)
 	
 	def plot_apar(self, aky = False, init = [0,0,0,0]):
 		Plotters['Eigen'](scan = self.run, var = 2, aky = aky, init = init)
