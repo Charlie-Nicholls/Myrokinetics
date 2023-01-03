@@ -14,7 +14,7 @@ class myro(object):
 		self.filename = filename
 		self.run = {}
 		self._open_file()
-		self._convert_gr(gr_type = "Normalised")
+		self._convert_gr(gr_type = "Normalised", doPrint = False)
 		self.verify = {}		
 		self._verify_run()
 	
@@ -51,7 +51,9 @@ class myro(object):
 			return self.verify['phi2']
 		elif key in ['bad_nstep', 'badnstep']:
 			return self.verify['nstep']
-	
+		elif key in ['bad_other', 'badother']:
+			return self.verify['other']
+			
 	def data(self):
         	for key, val in self.run['data'].items():
         		print(key)
@@ -302,19 +304,19 @@ class myro(object):
 		Plotters['Ideal'](scan = self.run)
 	
 	def plot_omega(self, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = 0, aky = aky, init = init)
+		Plotters['Eigen'](scan = self.run, var = 0, aky = aky, init = init, verify = self.verify)
 	
 	def plot_phi(self, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = 1, aky = aky, init = init)
+		Plotters['Eigen'](scan = self.run, var = 1, aky = aky, init = init, verify = self.verify)
 	
 	def plot_apar(self, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = 2, aky = aky, init = init)
+		Plotters['Eigen'](scan = self.run, var = 2, aky = aky, init = init, verify = self.verify)
 		
 	def plot_phi2(self, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = 3, aky = aky, init = init)
+		Plotters['Eigen'](scan = self.run, var = 3, aky = aky, init = init, verify = self.verify)
 	
 	def _plot_diag(self, var = 0, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = var, aky = aky, init = init)
+		Plotters['Eigen'](scan = self.run, var = var, aky = aky, init = init, verify = self.verify)
 	
 	def plot_epar(self):
 		Plotters['Epar'](scan = self.run)

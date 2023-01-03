@@ -2,7 +2,7 @@ from numpy import *
 from matplotlib.pyplot import *
 from matplotlib.widgets import Slider
 
-def plot_eigen(scan = None, var = 0, aky = False, init = [0,0,0,0]):
+def plot_eigen(scan = None, var = 0, aky = False, init = [0,0,0,0], verify = None):
 	if scan is None:
 		print("ERROR: no scan dictionary given")
 		return
@@ -60,9 +60,10 @@ def plot_eigen(scan = None, var = 0, aky = False, init = [0,0,0,0]):
 			ax.plot(t,real(omega),'r',label="mode frequency")
 			ax.plot(t,imag(omega),'b',label="growth rate")
 			
+			ax.text(0.01,0.99,f"GR: {imag(omega[-1]):+.2e}\nMF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
 			ax.set_ylabel("Omega")
 			ax.set_xlabel(f"Time ({len(t)} steps)")
-			ax.legend(loc=0)
+			ax.legend(loc=1)
 			
 		elif var == 1:
 			if data['phi'] is None:
@@ -101,6 +102,16 @@ def plot_eigen(scan = None, var = 0, aky = False, init = [0,0,0,0]):
 			ax.set_yscale('log')
 			ax.set_xlabel("Time")
 		
+		if verify is not None:
+			bad = []
+			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['phi2']:
+				bad.append('phi2')
+			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['nstep']:
+				bad.append('nstep')
+			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['other']:
+				bad.append('other')
+			if bad:
+				ax.text(0.01,0.01,f"BAD RUN: {str(bad)[1:-1]}",ha='left',va='bottom',transform=ax.transAxes,color='r')
 		fig.canvas.draw_idle()
 		return
 

@@ -18,14 +18,17 @@ class verify_scan(object):
 			return self.bad_runs['phi2']
 		elif key in ["bad_nstep", "badnstep", "nstep"]:
 			return self.bad_runs['nstep']
+		elif key in ["bad_other", "badother", "other"]:
+			return self.bad_runs['other']
 		elif key in ['old_gra', 'gra_old', 'old_growth_rates_all', 'growth_rates_all_old', 'old_gr_a', 'gr_a_old']:
 			return self.scan['growth_rates_all']
 		elif key in ['old_mfa', 'mfa_old', 'old_mode_frequencies_all', 'mode_frequencies_all_old', 'old_mf_a', 'mf_a_old']:
 			return self.scan['mode_frequencies_all']
 		
 	def check_all(self):
-		self.check_phi2()
 		self.check_nstep()
+		self.check_phi2()	
+		self.check_other()
 		
 	def check_phi2(self):
 		if self.scan['data']['phi2'] is None:
@@ -43,12 +46,17 @@ class verify_scan(object):
 		if bad_phi2:
 			print(f"Found {len(bad_phi2)} Bad phi2 Runs")
 			for p,i,j,k in bad_phi2:
+				if self.scan['data']['growth_rates_all'][p][i][j][k] >= 0:
+					self.new_data['mfa'][p][i][j][k] = nan
+					self.new_data['gra'][p][i][j][k] = nan
+				'''
 				self.new_data['mfa'][p][i][j][k] = nan
 				grnew = amin(array(self.scan['data']['growth_rates_all'])[p,:,:,k])
 				if grnew < 0:
 					self.new_data['gra'][p][i][j][k] = grnew
 				else:
 					self.new_data['gra'][p][i][j][k] = -amax(array(self.scan['data']['growth_rates_all'])[p,:,:,k])
+				'''
 				
 		self.bad_runs['phi2'] = bad_phi2
 			
@@ -84,5 +92,20 @@ class verify_scan(object):
 			for p,i,j,k in bad_nstep:
 				self.new_data['gra'][p][i][j][k] = nan
 				self.new_data['mfa'][p][i][j][k] = nan
-			self.bad_runs['nstep'] = bad_nstep
-		return
+		self.bad_runs['nstep'] = bad_nstep
+	
+	def check_other(self):
+		if self.scan['data']['omega'] is None:
+			print("No omega data: Use detailed_save for this functionality")
+			return
+		sha = shape(array(self.scan['data']['omega'],dtype=object))
+		bad_other = []
+		for i in range(sha[0]):
+			for j in range(sha[1]):
+				for k in range(sha[2]):
+					for l in range(sha[3]):
+						if str(self.scan['data']['omega'][i][j][k][l][-1]) == '(nan+nanj)':
+							bad_other.append([i,j,k,l])
+		if bad_other:
+			print(f"Found {len(bad_other)} other Bad Runs")
+		self.bad_runs['other'] = bad_other

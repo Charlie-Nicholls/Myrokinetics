@@ -6,7 +6,6 @@ from pyrokinetics import Pyro
 from pathlib import Path
 from ncdf2dict import ncdf2dict as readnc
 from geqdsk_reader import geqdsk
-
 from .peqdsk_reader import peqdsk
 from .ammend_peqdsk import AmmendPEQDSK
 
@@ -456,7 +455,7 @@ class myro_scan(object):
 									infile.write(f"    aky = {aky}\n")
 								
 								elif self.inputs['Fixed_delt'] is False and line.strip("\t\n ").split(" = ")[0] == "delt":
-									delt = 0.025/aky
+									delt = 0.25/aky
 									infile.write(f"    delt = {delt}\n")
 								else:
 									infile.write(line)
@@ -467,7 +466,7 @@ class myro_scan(object):
 								
 								jobfile = open(f"{sub_path}/{fol}_{k}.job",'w')
 								hours = len(self.inputs['aky_values'])
-								jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
+								jobfile.write(f"#!/bin/bash\n#SBATCH --time=02:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
 								
 								jobfile.close()
 								os.chdir(f"{sub_path}")
@@ -483,7 +482,7 @@ class myro_scan(object):
 				
 					if self.inputs['Viking'] and group_runs and group_kys:
 						jobfile = open(f"{sub_path}/{fol}.job",'w')
-						jobfile.write(f"#!/bin/bash\n#SBATCH --time=02:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\n")
+						jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\n")
 
 						for k in group_kys:
 							jobfile.write(f"gs2 \"{sub_path}/{fol}_{k}.in\"\n")
