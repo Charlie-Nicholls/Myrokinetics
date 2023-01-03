@@ -456,7 +456,7 @@ class myro_scan(object):
 									infile.write(f"    aky = {aky}\n")
 								
 								elif self.inputs['Fixed_delt'] is False and line.strip("\t\n ").split(" = ")[0] == "delt":
-									delt = 0.25/aky
+									delt = 0.025/aky
 									infile.write(f"    delt = {delt}\n")
 								else:
 									infile.write(line)
