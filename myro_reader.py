@@ -232,6 +232,7 @@ class myro(object):
 		GR = full((len(self.run['inputs']['psiNs']),self.run['inputs']['n_beta'],self.run['inputs']['n_shat']),None).tolist()
 		MF = full((len(self.run['inputs']['psiNs']),self.run['inputs']['n_beta'],self.run['inputs']['n_shat']),None).tolist()
 		KY = full((len(self.run['inputs']['psiNs']),self.run['inputs']['n_beta'],self.run['inputs']['n_shat']),None).tolist()
+		SYM = full((len(self.run['inputs']['psiNs']),self.run['inputs']['n_beta'],self.run['inputs']['n_shat']),None).tolist()
 		
 		if gr_type is None:
 			if self._gr_type == "Unnormalised":
@@ -249,9 +250,11 @@ class myro(object):
 						GR[psiN][i][j] = self.run['data']['growth_rates_all'][psiN][i][j][idx]
 						MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
 						KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
+						SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
 			self.run['data']['growth_rates'] = GR
 			self.run['data']['mode_frequencies'] = MF
 			self.run['data']['akys'] = KY
+			self.run['data']['parities'] = SYM
 			self._gr_type = "Absolute"
 			if doPrint:
 				print("Converted Growth Rates To Absolute")
@@ -265,9 +268,11 @@ class myro(object):
 						GR[psiN][i][j] = grns[idx]
 						MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
 						KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
+						SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
 			self.run['data']['growth_rates'] = GR
 			self.run['data']['mode_frequencies'] = MF
 			self.run['data']['akys'] = KY
+			self.run['data']['parities'] = SYM
 			self._gr_type = "Normalised"
 			if doPrint:
 				print("Converted Growth Rates To Normalised")
@@ -281,9 +286,11 @@ class myro(object):
 						GR[psiN][i][j] = self.run['data']['growth_rates_all'][psiN][i][j][idx]
 						MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
 						KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
+						SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
 			self.run['data']['growth_rates'] = GR
 			self.run['data']['mode_frequencies'] = MF
 			self.run['data']['akys'] = KY
+			self.run['data']['parities'] = SYM
 			self._gr_type = "Unnormalised"
 			if doPrint:
 				print("Converted Growth Rates To Unnormalised")
