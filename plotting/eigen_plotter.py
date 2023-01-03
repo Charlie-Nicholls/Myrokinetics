@@ -142,3 +142,68 @@ def plot_eigen(scan = None, var = 0, aky = False, init = [0,0,0,0]):
 	draw_fig()
 	
 	show()
+	
+def plot_single(data = None, var = 0):
+	if data is None:
+		print("ERROR: no data dictionary given")
+		return
+	if var == "omega":
+		var = 0
+	if var == "phi":
+		var = 1
+	if var == "apar":
+		var = 2
+	if var == "phi2":
+		var = 3
+	if var not in [0,1,2,3]:
+		print(f"ERROR: variable name/value {var} not supported. supported: omega/0, phi/1, apar/2, phi2/3")
+		return
+		
+	fig, ax = subplots()
+	
+	if var == 0:
+		omega = data['omega'][:,0,0]
+		t = data['t']
+		
+		ax.plot(t,real(omega),'r',label="mode frequency")
+		ax.plot(t,imag(omega),'b',label="growth rate")
+		
+		ax.set_ylabel("Omega")
+		ax.set_xlabel(f"Time ({len(t)} steps)")
+		ax.legend(loc=0)
+		
+	elif var == 1:
+		phi = run['phi'][0,0,:]
+		theta = data['theta']
+
+		ax.plot(theta,real(phi),'r--',label="real")
+		ax.plot(theta,imag(phi),'b--',label="imaginary")
+		ax.plot(theta,[abs(x) for x in phi],'k',label="absolute")
+		
+		ax.set_ylabel("Electric Potential")
+		ax.set_xlabel("Ballooning Angle")
+		ax.legend(loc=0)
+		
+	elif var == 2:
+		apar = run['apar'][0,0,:]
+		theta = data['theta']
+
+		ax.plot(theta,real(apar),'r--',label="real")
+		ax.plot(theta,imag(apar),'b--',label="imaginary")
+		ax.plot(theta,[abs(x) for x in apar],'k',label="absolute")
+		
+		ax.set_ylabel("Parallel Mangetic Potential")
+		ax.set_xlabel("Ballooning Angle")
+		ax.legend(loc=0)
+	elif var == 3:
+		phi2 = run['phi2']
+		t = data['t']
+
+		ax.plot(t,phi2,'k')
+		
+		ax.set_ylabel("Phi2")
+		ax.set_yscale('log')
+		ax.set_xlabel("Time")
+	
+	show()
+	return
