@@ -575,7 +575,7 @@ class myro_scan(object):
 			job.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
 			pyth = open(f"save_out.py",'w')
-			pyth.write(f"from myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eq_name}\", kin_file = \"{self.kin_name}\", inputfile = \"{self.input_name}\", kinetics_type = \"{self.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,DetailedSave = {DetailedSave})")
+			pyth.write(f"from myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eq_name}\", kin_file = \"{self.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,DetailedSave = {DetailedSave})")
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
