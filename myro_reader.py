@@ -14,10 +14,7 @@ class myro(object):
 		self.filename = filename
 		self.run = {}
 		self._open_file()
-		self.test = self.run['data']['growth_rates']
 		self._convert_gr(gr_type = "Normalised")
-		self.test2 = self.run['data']['growth_rates']
-		self._gr_type = "Normalised"
 		self.verify = {}		
 		self._verify_run()
 	
