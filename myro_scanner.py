@@ -32,7 +32,7 @@ class myro_scan(object):
 			self.load_geqdsk()
 		if kin_file is not None:
 			self.load_kinetics()
-		if inputfile is not None:
+		if input_file is not None:
 			self.load_inputs()
 	
 	def __getitem__(self, key):
