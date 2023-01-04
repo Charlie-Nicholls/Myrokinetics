@@ -147,9 +147,7 @@ class myro_scan(object):
 				try:
 					self.kdat['rhonorm']
 				except:
-					raise ValueError("ERROR: Could not load rho data from PEQDSK file")
-					
-			
+					raise ValueError("ERROR: Could not load rho data from PEQDSK file")				
 		else:
 			print(f"ERROR: Kinetics type {self.kinetics_type} not recognised. Currently supported: SCENE, PEQDSK")
 	
@@ -262,11 +260,6 @@ class myro_scan(object):
 					fprim = literal_eval(line.strip("\t\n").split(" = ")[1])
 				if line.strip("\t\n ").split(" = ")[0] == "beta":
 					beta = literal_eval(line.strip("\t\n").split(" = ")[1])
-					'''
-					pref = self.pyro.local_species.nref * self.pyro.local_species.tref * 1.602176634e-19
-					bref = self.pyro.local_geometry.B0
-					beta = pref / bref**2 * 8 * pi * 1e-7
-					'''
 					f_new.write(f"    beta = {beta}\n")
 				elif self.inputs['Miller'] is False and line.strip("\t\n ").split(" = ")[0] == "iflux":
 					f_new.write("    iflux = 1\n")
@@ -377,7 +370,6 @@ class myro_scan(object):
 					os.chdir(f"{self.path}")
 			else:	
 				pass
-				#print(f"Skipping Ideal {psiN}: Existing Run Detected")
 
 	def run_gyro(self, directory = None):
 		if self.info is None:
@@ -433,6 +425,8 @@ class myro_scan(object):
 						pass
 					bp = (beta_max - beta_min)*i/(self.inputs['n_beta']-1) + beta_min
 					sh = (self.inputs['shat_max'] - self.inputs['shat_min'])*j/(self.inputs['n_shat']-1) + self.inputs['shat_min']
+					if sh == 0:
+						sh = 1e-4
 					mul = bp/(-2*(tprim + fprim)*beta)
 
 					for k, aky in enumerate(self.inputs['aky_values']):
@@ -453,9 +447,8 @@ class myro_scan(object):
 									infile.write(f"    beta = {beta}\n")
 								elif line.strip("\t\n ").split(" = ")[0] == "aky":
 									infile.write(f"    aky = {aky}\n")
-								
 								elif self.inputs['Fixed_delt'] is False and line.strip("\t\n ").split(" = ")[0] == "delt":
-									delt = 0.25/aky
+									delt = 0.04/aky
 									infile.write(f"    delt = {delt}\n")
 								else:
 									infile.write(line)
@@ -466,7 +459,7 @@ class myro_scan(object):
 								
 								jobfile = open(f"{sub_path}/{fol}_{k}.job",'w')
 								hours = len(self.inputs['aky_values'])
-								jobfile.write(f"#!/bin/bash\n#SBATCH --time=02:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
+								jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
 								
 								jobfile.close()
 								os.chdir(f"{sub_path}")
@@ -478,7 +471,6 @@ class myro_scan(object):
 							
 						else:
 							pass
-							#print(f"Skipping Gyro {psiN}/{fol}/{fol}_{k}: Existing Run Detected")
 				
 					if self.inputs['Viking'] and group_runs and group_kys:
 						jobfile = open(f"{sub_path}/{fol}.job",'w')
@@ -738,7 +730,10 @@ class myro_scan(object):
 				for i in range(self.inputs['n_beta']):
 					beta_prime_axis[idx][i] = abs((beta_max - beta_min)*i/(self.inputs['n_beta']-1) + beta_min)
 				for i in range(self.inputs['n_shat']):
-					shear_axis[idx][i] = (self.inputs['shat_max'] - self.inputs['shat_min'])*i/(self.inputs['n_shat']-1) + self.inputs['shat_min']
+					sh = (self.inputs['shat_max'] - self.inputs['shat_min'])*i/(self.inputs['n_shat']-1) + self.inputs['shat_min']
+					if sh == 0:
+						sh = 1e-4
+					shear_axis[idx][i] = sh
 
 			if self.inputs['Ideal']:
 				shear = loadtxt(f"{run_path}/{psiN}.ballstab_shat")
