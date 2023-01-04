@@ -179,6 +179,7 @@ def plot_single(data = None, var = 0):
 		ax.plot(t,real(omega),'r',label="mode frequency")
 		ax.plot(t,imag(omega),'b',label="growth rate")
 		
+		ax.text(0.01,0.99,f"GR: {imag(omega[-1]):+.2e}\nMF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
 		ax.set_ylabel("Omega")
 		ax.set_xlabel(f"Time ({len(t)} steps)")
 		ax.legend(loc=0)
