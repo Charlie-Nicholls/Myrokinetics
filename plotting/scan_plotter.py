@@ -1,14 +1,8 @@
-import os
 from numpy import *
 from matplotlib.pyplot import *
-import matplotlib.patches as pt
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
 from matplotlib.colors import LinearSegmentedColormap
-
-'''
-GYROKINETIC SCAN ANALYSIS
-'''
 
 def plot_scan(scan = None, aky = False, init = [0,0]):
 	if scan is None:
@@ -92,7 +86,7 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 					if data['parities'][idx][bpid][shid] == -1:
 						ax[0].plot(bp, sh, '_', color = 'cyan')
 						ax[1].plot(bp, sh, '_', color = 'cyan')
-		
+
 		if options.get_status()[3]:
 			ax[0].plot(beta_prime,shear,'kx')
 			ax[0].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
@@ -101,10 +95,16 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 			ax[1].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
 			ax[1].annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
 		if options.get_status()[1]:
-			ax[0].set_ylim(inputs['shat_min'],inputs['shat_max'])
+			ax[0].set_ylim(shmin,shmax)
 			ax[0].set_xlim(bpmin,bpmax)
-			ax[1].set_ylim(inputs['shat_min'],inputs['shat_max'])
+			ax[1].set_ylim(shmin,shmax)
 			ax[1].set_xlim(bpmin,bpmax)
+				
+		else:
+			ax[0].set_ylim(min(y),max(y))
+			ax[0].set_xlim(min(x),max(x))
+			ax[1].set_ylim(min(y),max(y))
+			ax[1].set_xlim(min(x),max(x))
 		
 		if options.get_status()[4] and data['ideal_stabilities'] is not None and data['ideal_stabilities'][idx] is not None:
 			ax[0].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
@@ -115,6 +115,9 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 
 	bpmin = amin(data['beta_prime_axis'])
 	bpmax = amax(data['beta_prime_axis'])
+	shmin = amin(data['shear_axis'])
+	shmax = amax(data['shear_axis'])
+	
 	grlim = amax(abs(array(data['growth_rates'])))
 	mflim = amax(abs(array(data['mode_frequencies'])))
 	
@@ -125,10 +128,17 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 	blank_norm = Normalize(vmin=-1,vmax=1)
 	cbar_mf = colorbar(ScalarMappable(norm = blank_norm), ax = ax[1])
 	cbar_gr = colorbar(ScalarMappable(norm = blank_norm), ax = ax[0])
+	
 	cdict1 = {'red':  ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.8, 0.8)),
-	     'green':  ((0.0, 0.8, 0.8),(0.5, 1, 1),(1.0, 0.0, 0.0)),
-	     'blue': ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.0, 0.0))}
+		'green':  ((0.0, 0.8, 0.8),(0.5, 1, 1),(1.0, 0.0, 0.0)),
+		'blue': ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.0, 0.0))}
 	cmap = LinearSegmentedColormap('GnRd', cdict1)
+	
+	cdict2 = {'red':  ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.8, 0.8)),
+	'green':  ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.8, 0.8)),
+	'blue': ((0.0, 0.8, 0.8),(0.5, 1, 1),(1.0, 0.0, 0.0))}
+	cmap2 = LinearSegmentedColormap('RdBl', cdict2)
+	cbar_sym = colorbar(ScalarMappable(norm = blank_norm),cmap = cmap2, ax = ax[0])
 	
 	chaxes = axes([0.72, 0.01, 0.09, 0.1],frame_on = False)
 	options = CheckButtons(chaxes, ["Show Parities","Global Axis Limits","Global Colorbar","Show Equillibrium","Show Ideal"],[False,False,False,True,False])

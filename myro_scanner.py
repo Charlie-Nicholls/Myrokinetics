@@ -51,8 +51,12 @@ class myro_scan(object):
 		self.inputs = {
 		'shat_min': None,
 		'shat_max': None,
-		'beta_mul': None,
+		'beta_min': None,
+		'beta_max': None,
+		'shat_div': None,
+		'shat_mul': None,
 		'beta_div': None,
+		'beta_mul': None,
 		'n_shat': None,
 		'n_beta': None,
 		'n_shat_ideal': None,
@@ -84,9 +88,9 @@ class myro_scan(object):
 		for key in keys:
 			if key == 'psiNs' or key == 'aky_values':
 				if self.inputs[key] is None:
-					arr_in = input(f"Input values for {key}: ")
+					arr_in = input(f"Input values for {key} (Current value: None): ")
 				else:
-					arr_in = input(f"Input values for {key} (Current value {self.inputs[key]}): ")
+					arr_in = input(f"Input values for {key} (Current value: {self.inputs[key]}): ")
 				if arr_in != '':
 					if arr_in[0] != "[":
 						arr_in = "[" + arr_in
@@ -96,7 +100,7 @@ class myro_scan(object):
 					self.inputs[key].sort()
 			else:
 				if self.inputs[key] is None:
-					inp = input(f"Input value for {key}: ")
+					inp = input(f"Input value for {key} (Current value: None): ")
 					if inp != '':
 						self.inputs[key] = literal_eval(inp)
 				else:
@@ -273,12 +277,28 @@ class myro_scan(object):
 				else:
 					f_new.write(line)
 		if self.inputs['Ideal']:
-			ballstab_knobs = f"\n&ballstab_knobs\n    n_shat = {self.inputs['n_shat_ideal']}\n    n_beta = {self.inputs['n_beta_ideal']}\n    shat_min = {self.inputs['shat_min']}\n    shat_max = {self.inputs['shat_max']}\n    beta_mul = {self.inputs['beta_mul']}\n    beta_div = {self.inputs['beta_div']}\n/\n"
+			if self.inputs['beta_div'] is None:
+				beta_div = beta_prim/self.inputs['beta_min']
+			else:
+				beta_div = self.inputs['beta_div']
+			if self.inputs['beta_mul'] is None:
+				beta_mul = self.inputs['beta_max']/beta_prim
+			else:
+				beta_mul = self.inputs['beta_mul']
+			if self.inputs['shat_min'] is None:
+				shat_min = shear/self.inputs['shat_div']
+			else:
+				shat_min = self.inputs['shat_min']
+			if self.inputs['shat_max'] is None:
+				shat_max = self.inputs['shat_mul']*shear
+			else:
+				shat_max = self.inputs['shat_max']
+			ballstab_knobs = f"\n&ballstab_knobs\n    n_shat = {self.inputs['n_shat_ideal']}\n    n_beta = {self.inputs['n_beta_ideal']}\n    shat_min = {shat_min}\n    shat_max = {shat_max}\n    beta_mul = {beta_mul}\n    beta_div = {beta_div}\n/\n"
 			f_new.write(ballstab_knobs)
 		f_new.close()
-		return shear, beta_prim, tprim, fprim, beta
+		return shear, beta_prim, tprim, fprim, beta, shat_min, shat_max
 	
-	def run_scan(self, gyro = None, ideal = None, miller = None, directory = None):
+	def run_scan(self, gyro = None, ideal = None, directory = None):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
@@ -288,14 +308,16 @@ class myro_scan(object):
 			gyro = self.inputs['Gyro']
 		elif type(gyro) == bool:	
 			self.inputs['Gyro'] = gyro
+		else:
+			print("ERROR: gyro must be boolean")
+			return
 		if ideal is None:
 			ideal = self.inputs['Ideal']
 		elif type(ideal) == bool:
 			self.inputs['Ideal'] = ideal
-		if miller is None:
-			miller = self.inputs['Miller']
-		elif type(miller) == bool:
-			self.inputs['Miller'] = miller
+		else:
+			print("ERROR: ideal must be boolean")
+			return
 		
 		self._create_run_info()
 		run_path = self.info['data_path']
@@ -311,42 +333,108 @@ class myro_scan(object):
 		os.system(f"cp \"{self._eq_path}/{self.eq_name}\" \"{run_path}/{self.eq_name}\"")
 		if self.input_name is not None:		
 			os.system(f"cp \"{self.path}/{self.input_name}\" \"{run_path}/{self.input_name}\"")
-		
+		if not self._check_setup(ideal = ideal, gyro = gyro):
+			return
 		if self.inputs['Gyro']:
-			self.run_gyro(directory = run_path)
+			self._run_gyro(directory = run_path)
 		if self.inputs['Ideal']:
-			self.run_ideal(directory = run_path)
+			self._run_ideal(directory = run_path)
 		if not self.inputs['Viking']:
 			self.save_out(directory = run_path)
-					
-	def run_ideal(self, directory = None):
+	
+	def _check_setup(self, ideal = None, gyro = None):
+		if gyro is None:
+			gyro = self.inputs['Gyro']
+		elif type(gyro) == bool:	
+			self.inputs['Gyro'] = gyro
+		else:
+			print("ERROR: gyro must be boolean")
+			return False
+		if ideal is None:
+			ideal = self.inputs['Ideal']
+		elif type(ideal) == bool:
+			self.inputs['Ideal'] = ideal
+		else:
+			print("ERROR: ideal must be boolean")
+			return False
+			
 		if self.info is None:
 			self._create_run_info()
-		if self.inputs['n_shat_ideal'] is None:
-			self.inputs['n_shat_ideal'] = self.inputs['n_shat']
-			print("n_shat_ideal is empty, setting to n_shat")
-		if self.inputs['n_beta_ideal'] is None:
-			self.inputs['n_beta_ideal'] = self.inputs['n_beta']
-			print("n_beta_ideal is empty, setting to n_beta")
-		if directory is None:
-			directory = self.info['data_path']
-		empty_elements = []
-		for key in self.inputs.keys():
-			if self.inputs[key] is None and key not in ['akys','n_beta','n_beta_ideal'] :
-				empty_elements.append(key)
-		if empty_elements:
-			raise ValueError(f"ERROR: the following inputs are empty: {empty_elements}")
-			return
-		self.inputs['Ideal'] = True
+			
 		if not self.pyro:
 			self.load_pyro()
+			
+		empty_elements = []
 		if type(self.inputs['psiNs']) == int or type(self.inputs['psiNs']) == float:
 			self.inputs['psiNs'] = [self.inputs['psiNs']]
+		elif self.inputs['psiNs'] is None:
+			empty_elements.append('psiNs')
 
+		if self.inputs['beta_min'] is None and self.inputs['beta_div'] is None:
+			empty_elements.append('beta_min/beta_div')
+		elif self.inputs['beta_min'] is not None and self.inputs['beta_div'] is not None:
+			self.inputs['beta_min'] = None
+			print("ERROR: Only one of beta_min and beta_div can be used, setting beta_min to None")
+		if self.inputs['beta_max'] is None and self.inputs['beta_mul'] is None:
+			empty_elements.append('beta_max/beta_mul')
+		elif self.inputs['beta_max'] is not None and self.inputs['beta_mul'] is not None:
+			self.inputs['beta_max'] = None
+			print("ERROR: Only one of beta_max and beta_mul can be used, setting beta_max to None")
+		if self.inputs['shat_min'] is None and self.inputs['shat_div'] is None:
+			empty_elements.append('shat_min/shat_div')
+		elif self.inputs['shat_min'] is not None and self.inputs['shat_div'] is not None:
+			self.inputs['shat_min'] = None
+			print("ERROR: Only one of shat_min and shat_div can be used, setting shat_div to None")
+		if self.inputs['shat_max'] is None and self.inputs['shat_mul'] is None:
+			empty_elements.append('shat_max/shat_mul')
+		elif self.inputs['shat_max'] is not None and self.inputs['shat_mul'] is not None:
+			self.inputs['shat_max'] = None
+			print("ERROR: Only one of shat_max and shat_mul can be used, setting shat_mul to None")
+		
+		if self.inputs['n_shat_ideal'] is None and self.inputs['n_shat'] is None:
+			if ideal:
+				empty_elements.append('n_shat_ideal')
+			if gyro:
+				empty_elements.append('n_shat')
+		elif gyro and not self.inputs['n_shat']:
+			empty_elements.append('n_shat')
+		elif ideal and not self.inputs['n_shat_ideal']:
+			self.inputs['n_shat_ideal'] = self.inputs['n_shat']
+			print("n_shat_ideal is empty, setting equal to n_shat")
+		
+		if self.inputs['n_beta_ideal'] is None and self.inputs['n_beta'] is None:
+			if ideal:
+				empty_elements.append('n_beta_ideal')
+			if gyro:
+				empty_elements.append('n_beta')
+		elif gyro and not self.inputs['n_beta']:
+			empty_elements.append('n_beta')
+		elif ideal and not self.inputs['n_beta_ideal']:
+			self.inputs['n_beta_ideal'] = self.inputs['n_beta']
+			print("n_beta_ideal is empty, setting equal to n_beta")
+		
+		if gyro:
+			if type(self.inputs['aky_values']) in [int,float]:
+				self.inputs['aky_values'] = [self.inputs['aky_values']]
+			elif self.inputs['aky_values'] is None:
+				empty_elements.append('aky_values')
+		
+		if empty_elements:
+			print(f"ERROR: the following inputs are empty: {empty_elements}")
+			return False
+		
+		return True
+	
+	def _run_ideal(self, directory = None, checkSetup = True):
+		if directory is None:
+			directory = self.info['data_path']
+		self.inputs['Ideal'] = True
+		if checkSetup:
+			if not self._check_setup():
+				return
 		check = self.check_complete(directory = directory, doPrint = False)
 		if check['ideal_complete']:
 			print("Existing Ideal Runs Detected")
-
 		for psiN in self.inputs['psiNs']:
 			run_path = os.path.join(directory, str(psiN))
 			if psiN not in check['ideal_complete']:
@@ -371,26 +459,13 @@ class myro_scan(object):
 			else:	
 				pass
 
-	def run_gyro(self, directory = None):
-		if self.info is None:
-			self._create_run_info()
+	def _run_gyro(self, directory = None, checkSetup = True):
 		if directory is None:
 			directory = self.info['data_path']
-		empty_elements = []
-		for key in self.inputs.keys():
-			if self.inputs[key] is None and key not in ['n_beta_ideal','n_shat_ideal']:
-				empty_elements.append(key)
-		if empty_elements:
-			print(f"ERROR: the following inputs are empty: {empty_elements}")
-			return
 		self.inputs['Gyro'] = True
-		if not self.pyro:
-			self.load_pyro()
-		if type(self.inputs['psiNs']) == int or type(self.inputs['psiNs']) == float:
-			self.inputs['psiNs'] = [self.inputs['psiNs']]
-		if type(self.inputs['aky_values']) == int or type(self.inputs['aky_values']) == float:
-			self.inputs['aky_values'] = [self.inputs['aky_values']]
-		
+		if checkSetup:
+			if not self._check_setup():
+				return
 		check = self.check_complete(directory = directory, doPrint = False)
 		if check['gyro_complete']:
 			print(f"Existing Gyro Runs Detected")
@@ -407,12 +482,27 @@ class myro_scan(object):
 			except:
 				pass
 				
-			shear, beta_prim, tprim, fprim, beta = self._make_fs_in(run_path=run_path, psiN=psiN)
+			shear, beta_prim, tprim, fprim, beta, shat_min, shat_max = self._make_fs_in(run_path=run_path, psiN=psiN)
 			f = open(f"{run_path}/{psiN}.in")
 			lines = f.readlines()
 			f.close()
-			beta_min = beta_prim/self.inputs['beta_div']
-			beta_max = beta_prim*self.inputs['beta_mul']
+			if self.inputs['beta_min'] is None:
+				beta_min = beta_prim/self.inputs['beta_div']
+			else:
+				beta_min = self.inputs['beta_min']
+			if self.inputs['beta_max'] is None:
+				beta_max = beta_prim*self.inputs['beta_mul']
+			else:
+				beta_max = self.inputs['beta_max']
+			
+			if self.inputs['shat_min'] is None:
+				shat_min = shear/self.inputs['shat_div']
+			else:
+				shat_min = self.inputs['shat_min']
+			if self.inputs['shat_max'] is None:
+				shat_max = shear*self.inputs['shat_mul']
+			else:
+				shat_max = self.inputs['shat_max']
 			
 			for i in range(self.inputs['n_beta']):
 				for j in range(self.inputs['n_shat']):
@@ -424,7 +514,7 @@ class myro_scan(object):
 					except:
 						pass
 					bp = (beta_max - beta_min)*i/(self.inputs['n_beta']-1) + beta_min
-					sh = (self.inputs['shat_max'] - self.inputs['shat_min'])*j/(self.inputs['n_shat']-1) + self.inputs['shat_min']
+					sh = (shat_max - shat_min)*j/(self.inputs['n_shat']-1) + shat_min
 					if sh == 0:
 						sh = 1e-4
 					mul = bp/(-2*(tprim + fprim)*beta)
@@ -539,9 +629,9 @@ class myro_scan(object):
 		else:
 			return {'gyro_complete': finished_gyro, 'gyro_incomplete': unfinished_gyro, 'ideal_complete': finished_ideal, 'ideal_incomplete': unfinished_ideal}
 			
-	def detailed_save(self, filename = None, directory = None, VikingSave = False):
-		self.save_out(filename = filename, directory = directory, VikingSave = VikingSave, DetailedSave = True)
-	def save_out(self, filename = None, directory = None, VikingSave = False, DetailedSave = False):
+	def quick_save(self, filename = None, directory = None, VikingSave = False):
+		self.save_out(filename = filename, directory = directory, VikingSave = VikingSave, QuickSave = True)
+	def save_out(self, filename = None, directory = None, VikingSave = False, QuickSave = False):
 		if filename is None and self.run_name is None:
 			filename = input("Output File Name: ")
 			filename = filename.split(".")[0]
@@ -566,7 +656,7 @@ class myro_scan(object):
 			job.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
 			pyth = open(f"save_out.py",'w')
-			pyth.write(f"from myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eq_name}\", kin_file = \"{self.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,DetailedSave = {DetailedSave})")
+			pyth.write(f"from myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eq_name}\", kin_file = \"{self.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})")
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
@@ -594,7 +684,7 @@ class myro_scan(object):
 				eparN = None
 				eparNs = None
 			
-			if DetailedSave:
+			if not QuickSave:
 				omega = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
 				phi = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
 				apar = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
@@ -622,7 +712,8 @@ class myro_scan(object):
 			orig.close()
 			for line in lines:
 				if line.strip("\t\n ").split(" = ")[0] == "s_hat_input":
-					shear_values[idx] = literal_eval(line.strip("\t\n").split(" = ")[1])
+					shear = literal_eval(line.strip("\t\n").split(" = ")[1])
+					shear_values[idx] = shear
 				if line.strip("\t\n ").split(" = ")[0] == "beta_prime_input":
 					beta_prim = abs(literal_eval(line.strip("\t\n").split(" = ")[1]))
 					beta_prime_values[idx] = beta_prim
@@ -641,11 +732,11 @@ class myro_scan(object):
 						for k, ky in enumerate(self.inputs['aky_values']):
 							try:
 							
-								if self.inputs['Epar'] and DetailedSave:
+								if self.inputs['Epar'] and not QuickSave:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta'])
 								elif self.inputs['Epar']:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar'])
-								elif DetailedSave:
+								elif QuickSave:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','apar','phi2','t','theta'])
 								else:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi'])	
@@ -663,7 +754,7 @@ class myro_scan(object):
 								else:
 									sym_list.append(0)
 								
-								if DetailedSave:
+								if QuickSave:
 									try:
 										omega[idx][i][j][k] = data['omega'][:,0,0].tolist()
 									except: 
@@ -725,12 +816,27 @@ class myro_scan(object):
 							eparNs[idx][i][j] = epars
 							eparN[idx][i][j] = epars[aky_idx]
 							
-				beta_min = beta_prim/self.inputs['beta_div']
-				beta_max = beta_prim*self.inputs['beta_mul']
+				if self.inputs['beta_min'] is None:
+					beta_min = beta_prim/self.inputs['beta_div']
+				else:
+					beta_min = self.inputs['beta_min']
+				if self.inputs['beta_max'] is None:
+					beta_max = beta_prim*self.inputs['beta_mul']
+				else:
+					beta_max = self.inputs['beta_max']
 				for i in range(self.inputs['n_beta']):
 					beta_prime_axis[idx][i] = abs((beta_max - beta_min)*i/(self.inputs['n_beta']-1) + beta_min)
+					
+				if self.inputs['shat_min'] is None:
+					shat_min = shear/self.inputs['shat_div']
+				else:
+					shat_min = self.inputs['shat_min']
+				if self.inputs['shat_max'] is None:
+					shat_max = shear*self.inputs['shat_mul']
+				else:
+					shat_max = self.inputs['shat_max']
 				for i in range(self.inputs['n_shat']):
-					sh = (self.inputs['shat_max'] - self.inputs['shat_min'])*i/(self.inputs['n_shat']-1) + self.inputs['shat_min']
+					sh = (shat_max - shat_min)*i/(self.inputs['n_shat']-1) + shat_min
 					if sh == 0:
 						sh = 1e-4
 					shear_axis[idx][i] = sh

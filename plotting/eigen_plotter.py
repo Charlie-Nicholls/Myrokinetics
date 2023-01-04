@@ -104,11 +104,11 @@ def plot_eigen(scan = None, var = 0, aky = False, init = [0,0,0,0], verify = Non
 		
 		if verify is not None:
 			bad = []
-			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['phi2']:
+			if verify['phi2'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['phi2']:
 				bad.append('phi2')
-			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['nstep']:
+			if verify['nstep'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['nstep']:
 				bad.append('nstep')
-			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['other']:
+			if verify['other'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['other']:
 				bad.append('other')
 			if bad:
 				ax.text(0.01,0.01,f"BAD RUN: {str(bad)[1:-1]}",ha='left',va='bottom',transform=ax.transAxes,color='r')

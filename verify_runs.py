@@ -5,7 +5,7 @@ class verify_scan(object):
 	def __init__(self, scan = None):
 		self.scan = scan
 		self.new_data = {'gra': scan['data']['growth_rates_all'], 'mfa': scan['data']['mode_frequencies_all']}
-		self.bad_runs = {}
+		self.bad_runs = {'nstep': None, 'phi2': None, 'other': None}
 		self.check_all()
 	
 	def __getitem__(self, key):
@@ -26,13 +26,16 @@ class verify_scan(object):
 			return self.scan['mode_frequencies_all']
 		
 	def check_all(self):
+		if self.scan['data']['phi2'] is None and self.scan['data']['omega'] is None:
+			print("Cannot Verify Runs For Quick Save")
+			return
+		self.check_phi2()
 		self.check_nstep()
-		self.check_phi2()	
 		self.check_other()
 		
 	def check_phi2(self):
 		if self.scan['data']['phi2'] is None:
-			print("No phi2 data: Use detailed_save for this functionality")
+			print("ERROR: No phi2 data")
 			return
 		data = self.scan['data']
 		sha = shape(array(data['phi2'],dtype=object))
@@ -62,7 +65,7 @@ class verify_scan(object):
 			
 	def check_nstep(self):
 		if self.scan['data']['omega'] is None:
-			print("No omega data: Use detailed_save for this functionality")
+			print("ERROR: No omega data")
 			return
 		nstep = nwrite = None
 		lines = self.scan['files']['template_file']
@@ -96,7 +99,7 @@ class verify_scan(object):
 	
 	def check_other(self):
 		if self.scan['data']['omega'] is None:
-			print("No omega data: Use detailed_save for this functionality")
+			print("ERROR: No omega data")
 			return
 		sha = shape(array(self.scan['data']['omega'],dtype=object))
 		bad_other = []
