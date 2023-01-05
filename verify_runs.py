@@ -5,7 +5,8 @@ class verify_scan(object):
 	def __init__(self, scan = None):
 		self.scan = scan
 		self.new_data = {'gra': scan['data']['growth_rates_all'], 'mfa': scan['data']['mode_frequencies_all']}
-		self.bad_runs = {'nstep': None, 'phi2': None, 'other': None}
+		self.bad_runs = {'omega': None, 'phi2': None}
+		self.save_errors = {'nstep': None, 'phi2': None, 'other': None}
 		self.check_all()
 	
 	def __getitem__(self, key):
@@ -32,6 +33,8 @@ class verify_scan(object):
 		self.check_phi2()
 		self.check_nstep()
 		self.check_other()
+		runs_with_save_errors = set(map(tuple,self.save_errors['nstep'])) |  set(map(tuple,self.save_errors['omega']))
+		print(f"{len(runs_with_save_errors)} runs with save errors found")
 		
 	def check_phi2(self):
 		if self.scan['data']['phi2'] is None:
@@ -40,27 +43,27 @@ class verify_scan(object):
 		data = self.scan['data']
 		sha = shape(array(data['phi2'],dtype=object))
 		bad_phi2 = []
+		save_errors  = []
 		for i in range(sha[0]):
 			for j in range(sha[1]):
 				for k in range(sha[2]):
 					for l in range(sha[3]):
-						if data['phi2'][i][j][k][l][-1] == 0.0:
+						if data['phi2'][i][j][k][l] is None:
+							save_errors.append([i,j,k,l])
+						elif data['phi2'][i][j][k][l][-1] == 0.0:
 							bad_phi2.append([i,j,k,l])
 		if bad_phi2:
 			print(f"Found {len(bad_phi2)} Bad phi2 Runs")
 			for p,i,j,k in bad_phi2:
 				if self.scan['data']['growth_rates_all'][p][i][j][k] >= 0:
 					self.new_data['mfa'][p][i][j][k] = nan
-					self.new_data['gra'][p][i][j][k] = nan
-				'''
-				self.new_data['mfa'][p][i][j][k] = nan
-				grnew = amin(array(self.scan['data']['growth_rates_all'])[p,:,:,k])
-				if grnew < 0:
-					self.new_data['gra'][p][i][j][k] = grnew
-				else:
-					self.new_data['gra'][p][i][j][k] = -amax(array(self.scan['data']['growth_rates_all'])[p,:,:,k])
-				'''
-				
+					grnew = amin(array(self.scan['data']['growth_rates_all'])[p,:,:,:])
+					if grnew < 0:
+						self.new_data['gra'][p][i][j][k] = grnew
+					else:
+						self.new_data['gra'][p][i][j][k] = -amax(array(self.scan['data']['growth_rates_all'])[p,:,:,:])
+		
+		self.save_errors['phi2'] = save_errors
 		self.bad_runs['phi2'] = bad_phi2
 			
 	def check_nstep(self):
@@ -84,10 +87,13 @@ class verify_scan(object):
 		lim = int(nstep/nwrite)
 		sha = shape(array(self.scan['data']['omega'],dtype=object))
 		bad_nstep = []
+		save_errors  = []
 		for i in range(sha[0]):
 			for j in range(sha[1]):
 				for k in range(sha[2]):
 					for l in range(sha[3]):
+						if self.scan['data']['omega'] is None:
+							save_errors.append([i,j,k,l])
 						if len(self.scan['data']['omega'][i][j][k][l]) == lim:
 							bad_nstep.append([i,j,k,l])
 		if bad_nstep:
@@ -95,6 +101,8 @@ class verify_scan(object):
 			for p,i,j,k in bad_nstep:
 				self.new_data['gra'][p][i][j][k] = nan
 				self.new_data['mfa'][p][i][j][k] = nan
+				
+		self.save_errors['omega'] = save_errors
 		self.bad_runs['nstep'] = bad_nstep
 	
 	def check_other(self):

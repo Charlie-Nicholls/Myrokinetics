@@ -16,7 +16,7 @@ class myro(object):
 		self._open_file()
 		self._convert_gr(gr_type = "Normalised", doPrint = False)
 		self.verify = {}		
-		self._verify_run()
+		#self._verify_run()
 	
 	def __getitem__(self, key):
 		if key not in ["Miller", "Ideal", "Gyro", "Viking", "Fixed_delt", "Epar","psiNs","eparN","eparN_all"]:

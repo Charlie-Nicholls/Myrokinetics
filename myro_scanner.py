@@ -736,7 +736,7 @@ class myro_scan(object):
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta'])
 								elif self.inputs['Epar']:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar'])
-								elif QuickSave:
+								elif not QuickSave:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','apar','phi2','t','theta'])
 								else:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi'])	
@@ -754,7 +754,7 @@ class myro_scan(object):
 								else:
 									sym_list.append(0)
 								
-								if QuickSave:
+								if not QuickSave:
 									try:
 										omega[idx][i][j][k] = data['omega'][:,0,0].tolist()
 									except: 
