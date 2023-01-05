@@ -134,12 +134,6 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 		'blue': ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.0, 0.0))}
 	cmap = LinearSegmentedColormap('GnRd', cdict1)
 	
-	cdict2 = {'red':  ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.8, 0.8)),
-	'green':  ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.8, 0.8)),
-	'blue': ((0.0, 0.8, 0.8),(0.5, 1, 1),(1.0, 0.0, 0.0))}
-	cmap2 = LinearSegmentedColormap('RdBl', cdict2)
-	cbar_sym = colorbar(ScalarMappable(norm = blank_norm),cmap = cmap2, ax = ax[0])
-	
 	chaxes = axes([0.72, 0.01, 0.09, 0.1],frame_on = False)
 	options = CheckButtons(chaxes, ["Show Parities","Global Axis Limits","Global Colorbar","Show Equillibrium","Show Ideal"],[False,False,False,True,False])
 	options.on_clicked(draw_fig)
