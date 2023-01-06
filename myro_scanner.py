@@ -140,7 +140,7 @@ class myro_scan(object):
 			import xarray as xr
 			self.kdat = xr.open_dataset(os.path.join(self._kin_path,self.kin_name))
 		elif self.kinetics_type.upper() == "PEQDSK":
-			self.kdat = peqdsk(self.kin_name, directory)
+			self.kdat = peqdsk(filename = self.kin_name, directory = directory)
 			try:
 				self.kdat['rhonorm']
 			except:
@@ -293,7 +293,7 @@ class myro_scan(object):
 				
 			if self.inputs['shat_min'] is None:
 				shat_min = shear/self.inputs['shat_div']
-			elif self.inputs['shat_div'] is None::
+			elif self.inputs['shat_div'] is None:
 				shat_min = self.inputs['shat_min']
 			else:
 				shat_min = max(self.inputs['shat_min'],shear/self.inputs['shat_div'])
@@ -501,7 +501,7 @@ class myro_scan(object):
 			
 			if self.inputs['beta_min'] is None:
 				shat_min = beta_prim/self.inputs['beta_div']
-			elif self.inputs['beta_div'] is None::
+			elif self.inputs['beta_div'] is None:
 				shat_min = self.inputs['beta_min']
 			else:
 				shat_min = max(self.inputs['beta_min'],beta_prim/self.inputs['beta_div'])
@@ -514,7 +514,7 @@ class myro_scan(object):
 				beta_max = min(self.inputs['beta_max'],self.inputs['beta_mul']*beta_prim)
 			if self.inputs['shat_min'] is None:
 				shat_min = shear/self.inputs['shat_div']
-			elif self.inputs['shat_div'] is None::
+			elif self.inputs['shat_div'] is None:
 				shat_min = self.inputs['shat_min']
 			else:
 				shat_min = max(self.inputs['shat_min'],shear/self.inputs['shat_div'])
