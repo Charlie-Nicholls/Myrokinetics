@@ -14,9 +14,9 @@ class myro(object):
 		self.filename = filename
 		self.run = {}
 		self._open_file()
-		self._convert_gr(gr_type = "Normalised", doPrint = False)
+		self._gr_type = "Normalised"
 		self.verify = {}		
-		#self._verify_run()
+		self._verify_run()
 	
 	def __getitem__(self, key):
 		if key not in ["Miller", "Ideal", "Gyro", "Viking", "Fixed_delt", "Epar","psiNs","eparN","eparN_all"]:
@@ -303,20 +303,20 @@ class myro(object):
 	def plot_ideal(self):
 		Plotters['Ideal'](scan = self.run)
 	
-	def plot_omega(self, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = 0, aky = aky, init = init, verify = self.verify)
+	def plot_omega(self, aky = True, init = [0,0,0,0]):
+		Plotters['Diag'](scan = self.run, var = 0, aky = aky, init = init, verify = self.verify)
 	
-	def plot_phi(self, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = 1, aky = aky, init = init, verify = self.verify)
+	def plot_phi(self, aky = True, init = [0,0,0,0]):
+		Plotters['Diag'](scan = self.run, var = 1, aky = aky, init = init, verify = self.verify)
 	
-	def plot_apar(self, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = 2, aky = aky, init = init, verify = self.verify)
+	def plot_apar(self, aky = True, init = [0,0,0,0]):
+		Plotters['Diag'](scan = self.run, var = 2, aky = aky, init = init, verify = self.verify)
 		
-	def plot_phi2(self, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = 3, aky = aky, init = init, verify = self.verify)
+	def plot_phi2(self, aky = True, init = [0,0,0,0]):
+		Plotters['Diag'](scan = self.run, var = 3, aky = aky, init = init, verify = self.verify)
 	
-	def _plot_diag(self, var = 0, aky = False, init = [0,0,0,0]):
-		Plotters['Eigen'](scan = self.run, var = var, aky = aky, init = init, verify = self.verify)
+	def _plot_diag(self, var = 0, aky = True, init = [0,0,0,0]):
+		Plotters['Diag'](scan = self.run, var = var, aky = aky, init = init, verify = self.verify)
 	
 	def plot_epar(self):
 		Plotters['Epar'](scan = self.run)

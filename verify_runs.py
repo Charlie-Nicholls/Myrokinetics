@@ -6,7 +6,7 @@ class verify_scan(object):
 		self.scan = scan
 		self.new_data = {'gra': scan['data']['growth_rates_all'], 'mfa': scan['data']['mode_frequencies_all']}
 		self.bad_runs = {'omega': None, 'phi2': None}
-		self.save_errors = {'nstep': None, 'phi2': None, 'other': None}
+		self.save_errors = {'nstep': [], 'phi2': []}
 		self.check_all()
 	
 	def __getitem__(self, key):
@@ -92,9 +92,9 @@ class verify_scan(object):
 			for j in range(sha[1]):
 				for k in range(sha[2]):
 					for l in range(sha[3]):
-						if self.scan['data']['omega'] is None:
+						if self.scan['data']['omega'][i][j][k][l] is None:
 							save_errors.append([i,j,k,l])
-						if len(self.scan['data']['omega'][i][j][k][l]) == lim:
+						elif len(self.scan['data']['omega'][i][j][k][l]) == lim:
 							bad_nstep.append([i,j,k,l])
 		if bad_nstep:
 			print(f"Found {len(bad_nstep)} Bad nstep Runs")
@@ -115,7 +115,7 @@ class verify_scan(object):
 			for j in range(sha[1]):
 				for k in range(sha[2]):
 					for l in range(sha[3]):
-						if str(self.scan['data']['omega'][i][j][k][l][-1]) == '(nan+nanj)':
+						if self.scan['data']['omega'][i][j][k][l] is not None and str(self.scan['data']['omega'][i][j][k][l][-1]) == '(nan+nanj)':
 							bad_other.append([i,j,k,l])
 		if bad_other:
 			print(f"Found {len(bad_other)} other Bad Runs")

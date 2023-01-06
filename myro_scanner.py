@@ -279,24 +279,36 @@ class myro_scan(object):
 		if self.inputs['Ideal']:
 			if self.inputs['beta_div'] is None:
 				beta_div = beta_prim/self.inputs['beta_min']
-			else:
+			elif self.inputs['beta_min'] is None:
 				beta_div = self.inputs['beta_div']
+			else:
+				beta_div = min(self.inputs['beta_div'],beta_prim/self.inputs['beta_min'])
+				
 			if self.inputs['beta_mul'] is None:
 				beta_mul = self.inputs['beta_max']/beta_prim
-			else:
+			elif self.inputs['beta_max'] is None:
 				beta_mul = self.inputs['beta_mul']
+			else:
+				beta_mul = min(self.inputs['beta_mul'],self.inputs['beta_max']/beta_prim)
+				
 			if self.inputs['shat_min'] is None:
 				shat_min = shear/self.inputs['shat_div']
-			else:
+			elif self.inputs['shat_div'] is None::
 				shat_min = self.inputs['shat_min']
+			else:
+				shat_min = max(self.inputs['shat_min'],shear/self.inputs['shat_div'])
+				
 			if self.inputs['shat_max'] is None:
 				shat_max = self.inputs['shat_mul']*shear
-			else:
+			elif self.inputs['shat_mul'] is None:
 				shat_max = self.inputs['shat_max']
+			else:
+				shat_max = min(self.inputs['shat_max'],self.inputs['shat_mul']*shear)
+				
 			ballstab_knobs = f"\n&ballstab_knobs\n    n_shat = {self.inputs['n_shat_ideal']}\n    n_beta = {self.inputs['n_beta_ideal']}\n    shat_min = {shat_min}\n    shat_max = {shat_max}\n    beta_mul = {beta_mul}\n    beta_div = {beta_div}\n/\n"
 			f_new.write(ballstab_knobs)
 		f_new.close()
-		return shear, beta_prim, tprim, fprim, beta, shat_min, shat_max
+		return shear, beta_prim, tprim, fprim, beta
 	
 	def run_scan(self, gyro = None, ideal = None, directory = None):
 		if directory is None and self.path is None:
@@ -482,27 +494,38 @@ class myro_scan(object):
 			except:
 				pass
 				
-			shear, beta_prim, tprim, fprim, beta, shat_min, shat_max = self._make_fs_in(run_path=run_path, psiN=psiN)
+			shear, beta_prim, tprim, fprim, beta = self._make_fs_in(run_path=run_path, psiN=psiN)
 			f = open(f"{run_path}/{psiN}.in")
 			lines = f.readlines()
 			f.close()
-			if self.inputs['beta_min'] is None:
-				beta_min = beta_prim/self.inputs['beta_div']
-			else:
-				beta_min = self.inputs['beta_min']
-			if self.inputs['beta_max'] is None:
-				beta_max = beta_prim*self.inputs['beta_mul']
-			else:
-				beta_max = self.inputs['beta_max']
 			
+			if self.inputs['beta_min'] is None:
+				shat_min = beta_prim/self.inputs['beta_div']
+			elif self.inputs['beta_div'] is None::
+				shat_min = self.inputs['beta_min']
+			else:
+				shat_min = max(self.inputs['beta_min'],beta_prim/self.inputs['beta_div'])
+				
+			if self.inputs['beta_max'] is None:
+				beta_max = self.inputs['shat_mul']*beta_prim
+			elif self.inputs['beta_mul'] is None:
+				beta_max = self.inputs['beta_max']
+			else:
+				beta_max = min(self.inputs['beta_max'],self.inputs['beta_mul']*beta_prim)
 			if self.inputs['shat_min'] is None:
 				shat_min = shear/self.inputs['shat_div']
-			else:
+			elif self.inputs['shat_div'] is None::
 				shat_min = self.inputs['shat_min']
-			if self.inputs['shat_max'] is None:
-				shat_max = shear*self.inputs['shat_mul']
 			else:
+				shat_min = max(self.inputs['shat_min'],shear/self.inputs['shat_div'])
+				
+			if self.inputs['shat_max'] is None:
+				shat_max = self.inputs['shat_mul']*shear
+			elif self.inputs['shat_mul'] is None:
 				shat_max = self.inputs['shat_max']
+			else:
+				shat_max = min(self.inputs['shat_max'],self.inputs['shat_mul']*shear)
+			
 			
 			for i in range(self.inputs['n_beta']):
 				for j in range(self.inputs['n_shat']):
@@ -548,7 +571,7 @@ class myro_scan(object):
 							elif not group_runs:
 								
 								jobfile = open(f"{sub_path}/{fol}_{k}.job",'w')
-								jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
+								jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
 								
 								jobfile.close()
 								os.chdir(f"{sub_path}")
@@ -567,7 +590,7 @@ class myro_scan(object):
 						jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\n")
 
 						for k in group_kys:
-							jobfile.write(f"gs2 \"{sub_path}/{fol}_{k}.in\"\n")
+							jobfile.write(f"echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\ngs2 \"{sub_path}/{fol}_{k}.in\"\n")
 						jobfile.close()
 						os.chdir(f"{sub_path}")
 						os.system(f"sbatch \"{sub_path}/{fol}.job\"")
