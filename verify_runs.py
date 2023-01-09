@@ -6,7 +6,7 @@ class verify_scan(object):
 		self.scan = scan
 		self.new_data = {'gra': scan['data']['growth_rates_all'], 'mfa': scan['data']['mode_frequencies_all']}
 		self.bad_runs = {'omega': None, 'phi2': None}
-		self.save_errors = {'nstep': [], 'phi2': []}
+		self.save_errors = {'omega': set(), 'phi2': set()}
 		self.check_all()
 	
 	def __getitem__(self, key):
@@ -21,49 +21,100 @@ class verify_scan(object):
 			return self.bad_runs['nstep']
 		elif key in ["bad_other", "badother", "other"]:
 			return self.bad_runs['other']
+		elif key in ["unconv", "unconverged"]:
+			return self.bad_runs["unconv"]
 		elif key in ['old_gra', 'gra_old', 'old_growth_rates_all', 'growth_rates_all_old', 'old_gr_a', 'gr_a_old']:
 			return self.scan['growth_rates_all']
 		elif key in ['old_mfa', 'mfa_old', 'old_mode_frequencies_all', 'mode_frequencies_all_old', 'old_mf_a', 'mf_a_old']:
 			return self.scan['mode_frequencies_all']
+		elif key in ['saveerrors','save_errors']:
+			return self.save_errors
 		
 	def check_all(self):
-		if self.scan['data']['phi2'] is None and self.scan['data']['omega'] is None:
+		if self.scan['data']['phi2'] is None or self.scan['data']['omega'] is None:
 			print("Cannot Verify Runs For Quick Save")
 			return
+		#self.check_convergence()
 		self.check_phi2()
 		self.check_nstep()
 		self.check_other()
-		runs_with_save_errors = set(map(tuple,self.save_errors['nstep'])) |  set(map(tuple,self.save_errors['omega']))
-		print(f"{len(runs_with_save_errors)} runs with save errors found")
+		runs_with_save_errors = self.save_errors['omega'] | self.save_errors['phi2']
+		if len(runs_with_save_errors) > 0:
+			print(f"Found {len(runs_with_save_errors)} Runs With Save Errors")
+			
+	def check_convergence(self):
+		if self.scan['data']['omega'] is None:
+			print("ERROR: No omega data")
+			return
+		
+		sha = shape(array(self.scan['data']['omega'],dtype=object))
+		bad_other = []
+		save_errors  = set()
+		conv = []
+		unconv = []
+		for i in range(sha[0]):
+			for j in range(sha[1]):
+				for k in range(sha[2]):
+					for l in range(sha[3]):
+						if self.scan['data']['omega'][i][j][k][l] is None:
+							save_errors.add((i,j,k,l))
+						elif len(self.scan['data']['omega'][i][j][k][l]) > 100:
+							oms = array(self.scan['data']['omega'][i][j][k][l])[nonzero(self.scan['data']['omega'][i][j][k][l])]
+							om = oms[-1]
+							grs = imag(oms)
+							gr = imag(om)
+							#Allowing a <1% variation in the last 20 values
+							if gr < 0:	
+								llim = gr + gr/100
+								ulim = gr - gr/100
+							else:
+								llim = gr - gr/100
+								ulim = gr + gr/100
+							if all(llim < grs[-20:]) and all(grs[-20:] < ulim):
+								conv.append([i,j,k,l])
+								self.new_data['gra'][i][j][k][l] = gr
+								self.new_data['mfa'][i][j][k][l] = real(om)
+							else:
+								unconv.append([i,j,k,l])
+								self.new_data['gra'][i][j][k][l] = nan
+								self.new_data['mfa'][i][j][k][l] = nan
+						else:
+							conv.append([i,j,k,l])
+								
+		if unconv:
+			print(f"Found {len(unconv)} Unconverged Runs and {len(conv)} Converged Runs")
+		
+		self.save_errors['omega'] = self.save_errors['omega'] | save_errors
+		self.bad_runs['unconv'] = unconv
 		
 	def check_phi2(self):
-		if self.scan['data']['phi2'] is None:
-			print("ERROR: No phi2 data")
+		if self.scan['data']['phi2'] is None or self.scan['data']['omega'] is None:
+			print("ERROR: No phi2 and/or omega data")
 			return
 		data = self.scan['data']
 		sha = shape(array(data['phi2'],dtype=object))
 		bad_phi2 = []
-		save_errors  = []
+		save_errors  = set()
 		for i in range(sha[0]):
 			for j in range(sha[1]):
 				for k in range(sha[2]):
 					for l in range(sha[3]):
 						if data['phi2'][i][j][k][l] is None:
-							save_errors.append([i,j,k,l])
+							save_errors.add((i,j,k,l))
 						elif data['phi2'][i][j][k][l][-1] == 0.0:
 							bad_phi2.append([i,j,k,l])
+							om = array(data['omega'])[amax(nonzero(data['omega'][-1]))]
+							if imag(om) >= 0:
+								self.new_data['gra'][i][j][k][l] = nan
+								self.new_data['mfa'][i][j][k][l] = nan
+							else:
+								self.new_data['gra'][i][j][k][l] = imag(om)
+								self.new_data['mfa'][i][j][k][l] = real(om)
+								
 		if bad_phi2:
 			print(f"Found {len(bad_phi2)} Bad phi2 Runs")
-			for p,i,j,k in bad_phi2:
-				if self.scan['data']['growth_rates_all'][p][i][j][k] >= 0:
-					self.new_data['mfa'][p][i][j][k] = nan
-					grnew = amin(array(self.scan['data']['growth_rates_all'])[p,:,:,:])
-					if grnew < 0:
-						self.new_data['gra'][p][i][j][k] = grnew
-					else:
-						self.new_data['gra'][p][i][j][k] = -amax(array(self.scan['data']['growth_rates_all'])[p,:,:,:])
-		
-		self.save_errors['phi2'] = save_errors
+			
+		self.save_errors['phi2'] = self.save_errors['phi2'] | save_errors
 		self.bad_runs['phi2'] = bad_phi2
 			
 	def check_nstep(self):
@@ -87,22 +138,21 @@ class verify_scan(object):
 		lim = int(nstep/nwrite)
 		sha = shape(array(self.scan['data']['omega'],dtype=object))
 		bad_nstep = []
-		save_errors  = []
+		save_errors  = set()
 		for i in range(sha[0]):
 			for j in range(sha[1]):
 				for k in range(sha[2]):
 					for l in range(sha[3]):
 						if self.scan['data']['omega'][i][j][k][l] is None:
-							save_errors.append([i,j,k,l])
+							save_errors.add((i,j,k,l))
 						elif len(self.scan['data']['omega'][i][j][k][l]) == lim:
 							bad_nstep.append([i,j,k,l])
+							self.new_data['gra'][p][i][j][k] = nan
+							self.new_data['mfa'][p][i][j][k] = nan
 		if bad_nstep:
 			print(f"Found {len(bad_nstep)} Bad nstep Runs")
-			for p,i,j,k in bad_nstep:
-				self.new_data['gra'][p][i][j][k] = nan
-				self.new_data['mfa'][p][i][j][k] = nan
 				
-		self.save_errors['omega'] = save_errors
+		self.save_errors['omega'] = self.save_errors['omega'] | save_errors
 		self.bad_runs['nstep'] = bad_nstep
 	
 	def check_other(self):
@@ -111,12 +161,17 @@ class verify_scan(object):
 			return
 		sha = shape(array(self.scan['data']['omega'],dtype=object))
 		bad_other = []
+		save_errors  = set()
 		for i in range(sha[0]):
 			for j in range(sha[1]):
 				for k in range(sha[2]):
 					for l in range(sha[3]):
-						if self.scan['data']['omega'][i][j][k][l] is not None and str(self.scan['data']['omega'][i][j][k][l][-1]) == '(nan+nanj)':
+						if self.scan['data']['omega'][i][j][k][l] is None:
+							save_errors.add((i,j,k,l))
+						elif str(self.scan['data']['omega'][i][j][k][l][-1]) == '(nan+nanj)':
 							bad_other.append([i,j,k,l])
 		if bad_other:
 			print(f"Found {len(bad_other)} other Bad Runs")
+			
+		self.save_errors['omega'] = self.save_errors['omega'] | save_errors
 		self.bad_runs['other'] = bad_other

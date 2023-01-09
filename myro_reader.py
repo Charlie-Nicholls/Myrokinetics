@@ -53,6 +53,10 @@ class myro(object):
 			return self.verify['nstep']
 		elif key in ['bad_other', 'badother']:
 			return self.verify['other']
+		elif key in ['unconv', 'unconverged']:
+			return self.verify['unconv']
+		elif key in ['saveerrors','save_errors']:
+			return self.verify['save_errors']
 			
 	def data(self):
         	for key, val in self.run['data'].items():

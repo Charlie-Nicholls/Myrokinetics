@@ -110,6 +110,8 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 				bad.append('nstep')
 			if verify['other'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['other']:
 				bad.append('other')
+			if verify['unconv'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['unconv']:
+				bad.append('unconverged')
 			if bad:
 				ax.text(0.01,0.01,f"BAD RUN: {str(bad)[1:-1]}",ha='left',va='bottom',transform=ax.transAxes,color='r')
 		fig.canvas.draw_idle()
