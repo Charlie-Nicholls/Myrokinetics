@@ -488,11 +488,11 @@ class myro_scan(object):
 			f.close()
 			
 			if self.inputs['beta_min'] is None:
-				shat_min = beta_prim/self.inputs['beta_div']
+				beta_min = beta_prim/self.inputs['beta_div']
 			elif self.inputs['beta_div'] is None:
-				shat_min = self.inputs['beta_min']
+				beta_min = self.inputs['beta_min']
 			else:
-				shat_min = max(self.inputs['beta_min'],beta_prim/self.inputs['beta_div'])
+				beta_min = max(self.inputs['beta_min'],beta_prim/self.inputs['beta_div'])
 				
 			if self.inputs['beta_max'] is None:
 				beta_max = self.inputs['beta_mul']*beta_prim
