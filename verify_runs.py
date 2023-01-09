@@ -103,7 +103,7 @@ class verify_scan(object):
 							save_errors.add((i,j,k,l))
 						elif data['phi2'][i][j][k][l][-1] == 0.0:
 							bad_phi2.append([i,j,k,l])
-							om = array(data['omega'][i][j][k][l])[amax(nonzero(data['omega'][i][j][k][l][-1]))]
+							om = array(data['omega'][i][j][k][l])[amax(nonzero(data['omega'][i][j][k][l]))]
 							if imag(om) >= 0:
 								self.new_data['gra'][i][j][k][l] = nan
 								self.new_data['mfa'][i][j][k][l] = nan
