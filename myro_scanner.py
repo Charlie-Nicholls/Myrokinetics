@@ -384,24 +384,12 @@ class myro_scan(object):
 
 		if self.inputs['beta_min'] is None and self.inputs['beta_div'] is None:
 			empty_elements.append('beta_min/beta_div')
-		elif self.inputs['beta_min'] is not None and self.inputs['beta_div'] is not None:
-			self.inputs['beta_min'] = None
-			print("ERROR: Only one of beta_min and beta_div can be used, setting beta_min to None")
 		if self.inputs['beta_max'] is None and self.inputs['beta_mul'] is None:
 			empty_elements.append('beta_max/beta_mul')
-		elif self.inputs['beta_max'] is not None and self.inputs['beta_mul'] is not None:
-			self.inputs['beta_max'] = None
-			print("ERROR: Only one of beta_max and beta_mul can be used, setting beta_max to None")
 		if self.inputs['shat_min'] is None and self.inputs['shat_div'] is None:
 			empty_elements.append('shat_min/shat_div')
-		elif self.inputs['shat_min'] is not None and self.inputs['shat_div'] is not None:
-			self.inputs['shat_min'] = None
-			print("ERROR: Only one of shat_min and shat_div can be used, setting shat_div to None")
 		if self.inputs['shat_max'] is None and self.inputs['shat_mul'] is None:
 			empty_elements.append('shat_max/shat_mul')
-		elif self.inputs['shat_max'] is not None and self.inputs['shat_mul'] is not None:
-			self.inputs['shat_max'] = None
-			print("ERROR: Only one of shat_max and shat_mul can be used, setting shat_mul to None")
 		
 		if self.inputs['n_shat_ideal'] is None and self.inputs['n_shat'] is None:
 			if ideal:
@@ -507,7 +495,7 @@ class myro_scan(object):
 				shat_min = max(self.inputs['beta_min'],beta_prim/self.inputs['beta_div'])
 				
 			if self.inputs['beta_max'] is None:
-				beta_max = self.inputs['shat_mul']*beta_prim
+				beta_max = self.inputs['beta_mul']*beta_prim
 			elif self.inputs['beta_mul'] is None:
 				beta_max = self.inputs['beta_max']
 			else:
