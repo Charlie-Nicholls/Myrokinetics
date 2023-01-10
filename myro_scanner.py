@@ -240,9 +240,7 @@ class myro_scan(object):
 		if psiN == None:
 			print("ERROR: please speicify psiN")
 			return
-		if self.inputs['Miller'] is False:
-			eq_dir = os.path.join(self.path,self.eq_name)
-			self.pyro.add_flags({"theta_grid_eik_knobs":{"eqfile": eq_dir, "efit_eq": True}})
+			
 		self.pyro.load_local_geometry(psi_n=psiN)
 		self.pyro.load_local_species(psi_n=psiN)
 		file_name=f"{run_path}/{psiN}.in"
@@ -259,6 +257,8 @@ class myro_scan(object):
 			nml['theta_grid_eik_knobs']['iflux'] = 0
 			nml['theta_grid_eik_knobs']['local_eq'] = True
 		else:
+			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.path,self.eq_name)
+			nml['theta_grid_eik_knobs']['efit_eq'] =  True
 			nml['theta_grid_eik_knobs']['iflux'] = 1
 			nml['theta_grid_eik_knobs']['local_eq'] = False
 			
@@ -371,10 +371,16 @@ class myro_scan(object):
 			self.load_pyro()
 			
 		empty_elements = []
-		if type(self.inputs['psiNs']) == int or type(self.inputs['psiNs']) == float:
+		if type(self.inputs['psiNs']) in [int,float]:
 			self.inputs['psiNs'] = [self.inputs['psiNs']]
 		elif self.inputs['psiNs'] is None:
 			empty_elements.append('psiNs')
+		
+		if gyro:
+			if type(self.inputs['aky_values']) in [int,float]:
+				self.inputs['aky_values'] = [self.inputs['aky_values']]
+			elif self.inputs['aky_values'] is None:
+				empty_elements.append('aky_values')
 
 		if self.inputs['beta_min'] is None and self.inputs['beta_div'] is None:
 			empty_elements.append('beta_min/beta_div')
@@ -406,12 +412,6 @@ class myro_scan(object):
 		elif ideal and not self.inputs['n_beta_ideal']:
 			self.inputs['n_beta_ideal'] = self.inputs['n_beta']
 			print("n_beta_ideal is empty, setting equal to n_beta")
-		
-		if gyro:
-			if type(self.inputs['aky_values']) in [int,float]:
-				self.inputs['aky_values'] = [self.inputs['aky_values']]
-			elif self.inputs['aky_values'] is None:
-				empty_elements.append('aky_values')
 		
 		if empty_elements:
 			print(f"ERROR: the following inputs are empty: {empty_elements}")
