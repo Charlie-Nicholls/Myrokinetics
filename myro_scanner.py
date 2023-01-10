@@ -253,7 +253,7 @@ class myro_scan(object):
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
 		tprim =  nml['species_parameters_1']['tprim']
 		fprim =  nml['species_parameters_1']['fprim']
-		beta =  nml['parameters']['tprim']
+		beta =  nml['parameters']['beta']
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
