@@ -5,7 +5,7 @@ class verify_scan(object):
 	def __init__(self, scan = None):
 		self.scan = scan
 		self.new_data = {'gra': scan['data']['growth_rates_all'], 'mfa': scan['data']['mode_frequencies_all']}
-		self.bad_runs = {'omega': None, 'phi2': None}
+		self.bad_runs = {'omega': None, 'phi2': None, 'unconv': None}
 		self.save_errors = {'omega': set(), 'phi2': set()}
 		self.check_all()
 	

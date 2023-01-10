@@ -8,6 +8,7 @@ from ncdf2dict import ncdf2dict as readnc
 from geqdsk_reader import geqdsk
 from .peqdsk_reader import peqdsk
 from .ammend_peqdsk import AmmendPEQDSK
+import f90nml
 
 '''
 GYROKINETIC SCAN PERFORMER
@@ -108,7 +109,7 @@ class myro_scan(object):
 					if inp != '':
 						self.inputs[key] = literal_eval(inp)
 	
-	def load_geqdsk(self, eq_file = None, directory = "./"):
+	def load_geqdsk(self, eq_file = None, directory = None):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
@@ -158,14 +159,11 @@ class myro_scan(object):
 	def load_pyro(self, template_file = None, directory = None):
 		if self.eq_name is None or self.kin_name is None:
 			if self.eq_name is None:
-				print("ERROR: No equillibrium file given")
+				print("ERROR: No equillibrium loaded")
 			if self.kin_name is None:
-				print("ERROR: No kinetics file given")
+				print("ERROR: No kinetics file loaded")
 			return
-		if self.kdat is None:
-			self.load_kinetics()
-		if self.gdat is None:
-			self.load_geqdsk()
+
 		eq_file = Path(self._eq_path) / self.eq_name
 		kin_file = Path(self._kin_path) / self.kin_name
 		
@@ -180,7 +178,7 @@ class myro_scan(object):
 				self.template_name = template_file
 			if directory is None and self.path is None:
 				directory = "./"
-			if directory is None:
+			elif directory is None:
 				directory = self.path
 			self._template_path = directory
 			with open(os.path.join(directory,self.template_name)) as tfile:
@@ -190,9 +188,8 @@ class myro_scan(object):
 			 	eq_type="GEQDSK",
 			 	kinetics_file=kin_file,
 			 	kinetics_type=self.kinetics_type,
-			 	gk_file = Path(self.template_name))
+			 	gk_file=Path(self.template_name))
 	
-		self.local_geometry = "Miller"
 		self.pyro.gk_code = "GS2"	
 	
 	def load_inputs(self, filename = None, directory = "./"):
@@ -223,7 +220,7 @@ class myro_scan(object):
 							val = val + "]"
 					self.inputs[key] = literal_eval(val)
 			
-	def write_input_file(self, filename = None, directory = "./"):
+	def write_scan_input(self, filename = None, directory = "./"):
 		if self.input_name is None and filename is None:
 			filename = input("Input File Name: ")
 			if "." not in filename:
@@ -234,7 +231,7 @@ class myro_scan(object):
 		with open(self.input_name,'w') as in_file:
 			for key in self.inputs.keys():
 				in_file.write(f"{key} = {self.inputs[key]}\n")
-
+	
 	def _make_fs_in(self, run_path = None, psiN = None):
 		if self.pyro == None:
 			self.load_pyro()
@@ -245,37 +242,31 @@ class myro_scan(object):
 			return
 		if self.inputs['Miller'] is False:
 			eq_dir = os.path.join(self.path,self.eq_name)
-			self.pyro.add_flags({"theta_grid_eik_knobs":{"eqfile": f"{eq_dir}", "efit_eq": True}})
+			self.pyro.add_flags({"theta_grid_eik_knobs":{"eqfile": eq_dir, "efit_eq": True}})
 		self.pyro.load_local_geometry(psi_n=psiN)
 		self.pyro.load_local_species(psi_n=psiN)
 		file_name=f"{run_path}/{psiN}.in"
 		self.pyro.write_gk_file(file_name)
-		with open(file_name) as f:
-			lines = f.readlines()
-			f_new = open(file_name,'w')
-			for line in lines:
-				if line.strip("\t\n ").split(" = ")[0] == "s_hat_input":
-					shear = literal_eval(line.strip("\t\n").split(" = ")[1])
-				if line.strip("\t\n ").split(" = ")[0] == "beta_prime_input":
-					beta_prim = literal_eval(line.strip("\t\n").split(" = ")[1])
-				if line.strip("\t\n ").split(" = ")[0] == "tprim":
-					tprim = literal_eval(line.strip("\t\n").split(" = ")[1])
-				if line.strip("\t\n ").split(" = ")[0] == "fprim":
-					fprim = literal_eval(line.strip("\t\n").split(" = ")[1])
-				if line.strip("\t\n ").split(" = ")[0] == "beta":
-					beta = literal_eval(line.strip("\t\n").split(" = ")[1])
-					f_new.write(f"    beta = {beta}\n")
-				elif self.inputs['Miller'] is False and line.strip("\t\n ").split(" = ")[0] == "iflux":
-					f_new.write("    iflux = 1\n")
-				elif self.inputs['Miller'] is False and line.strip("\t\n ").split(" = ")[0] == "local_eq":
-					f_new.write("    local_eq = .false.\n")
-				elif line.strip("\t\n ").split(" = ")[0] == "write_final_epar":
-					if self.inputs['Epar']:
-						f_new.write("    write_final_epar = .true.\n")
-					else:
-						f_new.write("    write_final_epar = .false.\n")
-				else:
-					f_new.write(line)
+		nml = self.pyro._gk_input_record["GS2"].data
+		
+		shear = nml['theta_grid_eik_knobs']['s_hat_input']
+		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
+		tprim =  nml['species_parameters_1']['tprim']
+		fprim =  nml['species_parameters_1']['fprim']
+		beta =  nml['parameters']['tprim']
+		
+		if self.inputs['Miller']:
+			nml['theta_grid_eik_knobs']['iflux'] = 0
+			nml['theta_grid_eik_knobs']['local_eq'] = True
+		else:
+			nml['theta_grid_eik_knobs']['iflux'] = 1
+			nml['theta_grid_eik_knobs']['local_eq'] = False
+			
+		if self.inputs['Epar']:
+			nml['gs2_diagnostics_knobs']['write_final_epar'] = True
+		else:
+			nml['gs2_diagnostics_knobs']['write_final_epar'] = False
+
 		if self.inputs['Ideal']:
 			if self.inputs['beta_div'] is None:
 				beta_div = beta_prim/self.inputs['beta_min']
@@ -305,10 +296,9 @@ class myro_scan(object):
 			else:
 				shat_max = min(self.inputs['shat_max'],self.inputs['shat_mul']*shear)
 				
-			ballstab_knobs = f"\n&ballstab_knobs\n    n_shat = {self.inputs['n_shat_ideal']}\n    n_beta = {self.inputs['n_beta_ideal']}\n    shat_min = {shat_min}\n    shat_max = {shat_max}\n    beta_mul = {beta_mul}\n    beta_div = {beta_div}\n/\n"
-			f_new.write(ballstab_knobs)
-		f_new.close()
-		return shear, beta_prim, tprim, fprim, beta
+			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': shat_min, 'shat_max': shat_max, 'beta_mul': beta_mul, 'beta_div': beta_div}
+		nml.write(file_name, force=True)
+		return shear, beta_prim, tprim, fprim, beta, nml
 	
 	def run_scan(self, gyro = None, ideal = None, directory = None):
 		if directory is None and self.path is None:
@@ -373,6 +363,10 @@ class myro_scan(object):
 		if self.info is None:
 			self._create_run_info()
 			
+		if not self.gdat:
+			self.load_geqdsk()
+		if not self.kdat:
+			self.load_kinetics()
 		if not self.pyro:
 			self.load_pyro()
 			
@@ -432,32 +426,29 @@ class myro_scan(object):
 		if checkSetup:
 			if not self._check_setup():
 				return
-		check = self.check_complete(directory = directory, doPrint = False)
+		check = self.check_complete(directory = directory, doPrint = False, gyro = False, ideal = True)
 		if check['ideal_complete']:
-			print("Existing Ideal Runs Detected")
-		for psiN in self.inputs['psiNs']:
+			print(f"{len(check['ideal_complete'])} Existing Ideal Runs Detected")
+		for psiN in [x for x in self.inputs['psiNs'] if x not in check['ideal_complete']]:
 			run_path = os.path.join(directory, str(psiN))
-			if psiN not in check['ideal_complete']:
-				try:
-					os.mkdir(run_path)
-				except:
-					pass
-				file_name = os.path.join(run_path, f"{psiN}.in")
-				if not os.path.isfile(file_name):
-					self._make_fs_in(run_path=run_path,psiN=psiN)
-				
-				if not self.inputs['Viking']:
-					os.system(f"ideal_ball \"{run_path}/{psiN}.in\"")
-				else:
-					
-					jobfile = open(f"{run_path}/{psiN}.job",'w')
-					jobfile.write(f"#!/bin/bash\n#SBATCH --time=01:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\nideal_ball \"{run_path}/{psiN}.in\"")
-					jobfile.close()
-					os.chdir(f"{run_path}")
-					os.system(f"sbatch \"{run_path}/{psiN}.job\"")
-					os.chdir(f"{self.path}")
-			else:	
+			try:
+				os.mkdir(run_path)
+			except:
 				pass
+			file_name = os.path.join(run_path, f"{psiN}.in")
+			if not os.path.isfile(file_name):
+				self._make_fs_in(run_path=run_path,psiN=psiN)
+			
+			if not self.inputs['Viking']:
+				os.system(f"ideal_ball \"{run_path}/{psiN}.in\"")
+			else:
+				
+				jobfile = open(f"{run_path}/{psiN}.job",'w')
+				jobfile.write(f"#!/bin/bash\n#SBATCH --time=01:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\nideal_ball \"{run_path}/{psiN}.in\"")
+				jobfile.close()
+				os.chdir(f"{run_path}")
+				os.system(f"sbatch \"{run_path}/{psiN}.job\"")
+				os.chdir(f"{self.path}")
 
 	def _run_gyro(self, directory = None, checkSetup = True):
 		if directory is None:
@@ -466,9 +457,9 @@ class myro_scan(object):
 		if checkSetup:
 			if not self._check_setup():
 				return
-		check = self.check_complete(directory = directory, doPrint = False)
+		check = self.check_complete(directory = directory, doPrint = False, gyro = True, ideal = False)
 		if check['gyro_complete']:
-			print(f"Existing Gyro Runs Detected")
+			print(f"{len(check['gyro_complete'])} Existing Gyro Runs Detected")
 
 		if len(check['gyro_incomplete']) > 10000:
 			group_runs = True
@@ -482,10 +473,7 @@ class myro_scan(object):
 			except:
 				pass
 				
-			shear, beta_prim, tprim, fprim, beta = self._make_fs_in(run_path=run_path, psiN=psiN)
-			f = open(f"{run_path}/{psiN}.in")
-			lines = f.readlines()
-			f.close()
+			shear, beta_prim, tprim, fprim, beta, nml = self._make_fs_in(run_path=run_path, psiN=psiN)
 			
 			if self.inputs['beta_min'] is None:
 				beta_min = beta_prim/self.inputs['beta_div']
@@ -518,7 +506,7 @@ class myro_scan(object):
 			for i in range(self.inputs['n_beta']):
 				for j in range(self.inputs['n_shat']):
 					group_kys = []
-					fol = str(i) + "_" + str(j)
+					fol = f"{i}_{j}"
 					sub_path = os.path.join(run_path,fol)
 					try:
 						os.mkdir(sub_path)
@@ -526,34 +514,23 @@ class myro_scan(object):
 						pass
 					bp = (beta_max - beta_min)*i/(self.inputs['n_beta']-1) + beta_min
 					sh = (shat_max - shat_min)*j/(self.inputs['n_shat']-1) + shat_min
-					if sh == 0:
+					if sh < 1e-4:
 						sh = 1e-4
-					mul = bp/(-2*(tprim + fprim)*beta)
 
 					for k, aky in enumerate(self.inputs['aky_values']):
 						if [psiN,i,j,k] not in check['gyro_complete']:
-							infile = open(f"{sub_path}/{fol}_{k}.in",'w')
-							for line in lines:
-								if line.strip("\t\n ").split(" = ")[0] == "s_hat_input":
-									infile.write(f"    s_hat_input = {sh}\n")
-								elif line.strip("\t\n ").split(" = ")[0] == "beta_prime_input":
-									infile.write(f"    beta_prime_input = {bp}\n")
-								elif line.strip("\t\n ").split(" = ")[0] == "tprim":
-									tprim_new = mul*tprim
-									infile.write(f"    tprim = {tprim_new}\n")
-								elif line.strip("\t\n ").split(" = ")[0] == "fprim":
-									fprim_new = mul*fprim
-									infile.write(f"    fprim = {fprim_new}\n")
-								elif line.strip("\t\n ").split(" = ")[0] == "beta":
-									infile.write(f"    beta = {beta}\n")
-								elif line.strip("\t\n ").split(" = ")[0] == "aky":
-									infile.write(f"    aky = {aky}\n")
-								elif self.inputs['Fixed_delt'] is False and line.strip("\t\n ").split(" = ")[0] == "delt":
-									delt = 0.04/aky
-									infile.write(f"    delt = {delt}\n")
-								else:
-									infile.write(line)
-							infile.close()
+							subnml = nml
+							subnml['theta_grid_eik_knobs']['s_hat_inputs'] = sh
+							subnml['theta_grid_eik_knobs']['beta_prime_inputs'] = bp
+							subnml['kt_grids_single_parameters']['aky'] = aky
+							for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+								mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
+								subnml[spec]['tprim'] = nml[spec]['tprim']*mul
+								subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+							if self.inputs['Fixed_delt'] is False:
+								subnml['knobs']['delt'] = 0.04/aky
+							subnml.write(f"{sub_path}/{fol}_{k}.in")
+							
 							if not self.inputs['Viking']:
 								os.system(f"mpirun -np 8 gs2 \"{sub_path}/{fol}_{k}.in\"")
 							elif not group_runs:
@@ -606,15 +583,26 @@ class myro_scan(object):
 			data = None
 		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.kin_name, 'kinetics_type': self.kinetics_type, 'run_data': date, '_eq_file_path': self._eq_path, '_kin_file_path': self._kin_path, '_template_file_path': self._template_path}
 
-	def check_complete(self, directory = None, doPrint = True):
+	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
 		if self.info is None:
 			self._create_run_info()		
 		if directory is None:
 			directory = self.info['data_path']
+			
+		if gyro is None:
+			gyro = self.inputs['Gyro']
+		elif type(gyro) != bool:	
+			print("ERROR: gyro must be boolean")
+			return
+		if ideal is None:
+			ideal = self.inputs['Ideal']
+		elif type(ideal) != bool:
+			print("ERROR: ideal must be boolean")
+			return
 
 		unfinished_gyro = []
 		finished_gyro = []
-		if self.inputs['Gyro']:
+		if gyro:
 			for psiN in self.inputs['psiNs']:
 				for i in range(self.inputs['n_beta']):
 					for j in range(self.inputs['n_shat']):
@@ -626,7 +614,7 @@ class myro_scan(object):
 
 		unfinished_ideal = []
 		finished_ideal = []
-		if self.inputs['Ideal']:
+		if ideal:
 			for psiN in self.inputs['psiNs']:
 				if os.path.exists(f"{directory}/{psiN}/{psiN}.ballstab_2d"):
 					finished_ideal.append(psiN)
@@ -653,9 +641,6 @@ class myro_scan(object):
 			self._create_run_info()
 		if directory is None:
 			directory = self.info['data_path']
-
-		if self.info is None:
-			self._create_run_info()
 		
 		if not self.inputs['Gyro'] and not self.inputs['Ideal']:
 			print("Error: Both Gyro and Ideal are False")
@@ -671,6 +656,9 @@ class myro_scan(object):
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
+			return
+			
+		if not self._check_setup():
 			return
 			
 		psiNs = self.inputs['psiNs']
@@ -813,19 +801,30 @@ class myro_scan(object):
 								mf_list.append(nan)
 								sym_list.append(nan)
 								epars.append(nan)
-					
-						aky_idx = gr_aky.index(amax(array(gr_aky)[isfinite(gr_aky)]))
+						try:
+							aky_idx = gr_aky.index(amax(array(gr_aky)[isfinite(gr_aky)]))
 
-						grs[idx][i][j] = gr_list
-						mfs[idx][i][j] = mf_list
-						syms[idx][i][j] = sym_list
-						akys[idx][i][j] = self.inputs['aky_values'][aky_idx]
-						gr[idx][i][j] = gr_list[aky_idx]
-						mf[idx][i][j] = mf_list[aky_idx]
-						sym[idx][i][j] = sym_list[aky_idx]
-						if self.inputs['Epar']:
-							eparNs[idx][i][j] = epars
-							eparN[idx][i][j] = epars[aky_idx]
+							grs[idx][i][j] = gr_list
+							mfs[idx][i][j] = mf_list
+							syms[idx][i][j] = sym_list
+							akys[idx][i][j] = self.inputs['aky_values'][aky_idx]
+							gr[idx][i][j] = gr_list[aky_idx]
+							mf[idx][i][j] = mf_list[aky_idx]
+							sym[idx][i][j] = sym_list[aky_idx]
+							if self.inputs['Epar']:
+								eparNs[idx][i][j] = epars
+								eparN[idx][i][j] = epars[aky_idx]
+						except:
+							grs[idx][i][j] = gr_list
+							mfs[idx][i][j] = gr_list
+							syms[idx][i][j] = None
+							akys[idx][i][j] = None
+							gr[idx][i][j] = nan
+							mf[idx][i][j] = nan
+							sym[idx][i][j] = None
+							if self.inputs['Epar']:
+								eparNs[idx][i][j] = None
+								eparN[idx][i][j] = None
 							
 				if self.inputs['beta_min'] is None:
 					beta_min = beta_prim/self.inputs['beta_div']
@@ -886,6 +885,4 @@ class myro_scan(object):
 		'theta': theta
 		}
 		file_lines = {'eq_file': self._eq_lines, 'kin_file': self._kin_lines, 'template_file': self._template_lines}
-		
-		
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = dat, run_info = self.info, files = file_lines)

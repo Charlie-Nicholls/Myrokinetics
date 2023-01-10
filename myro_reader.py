@@ -10,6 +10,8 @@ GYROKINETIC SCAN ANALYSIS
 class myro(object):
 
 	def __init__(self, filename = None, directory = "./"):
+		if directory == "./":
+			directory = os.getcwd() 
 		self.directory = directory
 		self.filename = filename
 		self.run = {}
@@ -57,19 +59,19 @@ class myro(object):
 			return self.verify['unconv']
 		elif key in ['saveerrors','save_errors']:
 			return self.verify['save_errors']
-			
+	@property	
 	def data(self):
         	for key, val in self.run['data'].items():
         		print(key)
-
+	@property
 	def inputs(self):
         	for key, val in self.run['inputs'].items():
         		print(f"{key} = {val}")
-	
+	@property
 	def info(self):
 		for key, val in self.run['info'].items():
         		print(f"{key} = {val}")
-
+	@property
 	def keys(self):
 		print("Data Keys:")
 		for key in self.run['data'].keys():
@@ -80,7 +82,7 @@ class myro(object):
 		print("\nRun Info Keys:")
 		for key in self.run['info'].keys():
 			print(key)
-		
+	@property
 	def help(self):
 		#Needs Updating, split into help and _help
 		print("Available Commands:\n\nkeys(): List available dictionary keys.\n\ninputs(): List inputs used for run.\n\ninfo(): List run information\n\data(): List available data keys.\n\ntemplate_file(): Print gyrokinetics template file.\n\nplot_scan(): Display S-Alpha plot for growth rate and mode frequency for each flux surface. Uses gyrokinetic data with options to overlay ideal_ball data and parities.\n\nplot_ideal():Display S-Alpha plot for ideal_ball stability only.\n\nplot_omega(): Display the complext frequency as a function of time for specific runs\n\nplot_phi(): Display the electric potential as a function of ballooning angle for specific runs\n\nplot_apar(): Display the parallel magnetic potential as a function of ballooning angle for specific runs.\n\nplot_phi2(): Display the electrostatic potential squared and averaged over theta, kx and ky, as a function of time for specific runs.\n\n_open_file(): Opens and reads data files. Arguments: filename - Name of data file, defaults to stored self.filename; directory - Location of data file, defaults to stored self.directory.")
@@ -104,14 +106,14 @@ class myro(object):
 			return
 		for line in lines:
 			print(line,end='')
-			
-	def print_template_file(self):
+	@property	
+	def template_file(self):
 		self._print_file(filetype = 'template')
-	
-	def print_eq_file(self):
+	@property
+	def eq_file(self):
 		self._print_file(filetype = 'eq')
-	
-	def print_kin_file(self):
+	@property
+	def kin_file(self):
 		self._print_file(filetype = 'kin')
 		
 	def _write_file(self, filetype = '', filename = None, directory = None):
@@ -124,13 +126,13 @@ class myro(object):
 			return
 		if filetype in ['template_file', 'template', 'gk_template']:
 			lines = self.run['files']['template_file']
-			name = self.run['info']['gk_template_file']
+			name = self.run['info']['template_file_name']
 		elif filetype in ['eq','eq_file','geqdsk','geqdsk_file']:
 			lines = self.run['files']['eq_file']
-			name = self.run['info']['eq_file']
+			name = self.run['info']['eq_file_name']
 		elif filetype in ['kin','kin_file','kinetics','kinetics_file','peqdsk','peqdsk_file']:
 			lines = self.run['files']['kin_file']
-			name = self.run['info']['kin_file']
+			name = self.run['info']['kin_file_name']
 		else:
 			print(f"ERROR: File Type {filetype} Not Found")
 			return
@@ -138,20 +140,23 @@ class myro(object):
 			name = filename
 		if not directory:
 			directory = self.directory
+		if os.path.exists(f"{directory}/{name}"):
+			print(f"{os.path.join(directory,name)} Already Exists")
+			return
 		f = open(os.path.join(directory,name),'w')
 		for line in lines:
 			f.write(line)
 		f.close()
 		print(f"Created {name} at {directory}")
 		
-	def write_template_file(self):
-		self._write_file(filetype = 'template')
+	def write_template_file(self, filename = None, directory = None):
+		self._write_file(filetype = 'template', filename = filename, directory = directory)
 	
-	def write_eq_file(self):
-		self._write_file(filetype = 'eq')
+	def write_eq_file(self, filename = None, directory = None):
+		self._write_file(filetype = 'eq', filename = filename, directory = directory)
 	
-	def write_kin_file(self):
-		self._write_file(filetype = 'kin')
+	def write_kin_file(self, filename = None, directory = None):
+		self._write_file(filetype = 'kin', filename = filename, directory = directory)
 		
 	def _open_file(self, filename = None, directory = None):
 		if directory:
@@ -324,3 +329,84 @@ class myro(object):
 	
 	def plot_epar(self):
 		Plotters['Epar'](scan = self.run)
+	
+	def write_gs2_input(self, indexes = None, eq_file = None, kin_file = None, template_file = None, filename = None, directory = None):
+		from pathlib import Path
+		from pyrokinetics import Pyro
+		import f90nml
+		try:
+			if len(indexes) != 4:
+				print("ERROR: indexes must be of length 4, [psiN,beta_prime,shear,ky]")
+				return
+		except:
+			print("ERROR: must pass list of indexes, [psiN,beta_prime,shear,ky]")
+		if directory is None and self.directory is None:
+			directory = "./"
+		elif directory is None:
+			directory = self.directory
+		if directory == "./":
+			directory = os.getcwd() 
+		p,i,j,k = indexes
+		if filename is None:
+			filename = f"{indexes[0]}_{indexes[1]}_{indexes[2]}_{indexes[3]}.in"
+		
+		if eq_file is None:
+			eq_file = f"{self.run['info']['run_name']}_eq"
+			self.write_eq_file(filename = eq_file, directory = directory)
+		if kin_file is None:
+			kin_file = f"{self.run['info']['run_name']}_kin"
+			self.write_kin_file(filename = kin_file, directory = directory)
+		if template_file is None and self.run['files']['template_file'] is not None:	
+			template_file = f"{self.run['info']['run_name']}_template"
+			self.write_template_file(filename = template_file, directory = directory)
+
+		if template_file is None:
+			pyro = Pyro(
+				eq_file=Path(directory) / eq_file,
+			 	eq_type="GEQDSK",
+			 	kinetics_file=Path(directory) / kin_file,
+			 	kinetics_type=self.run['info']['kinetics_type'])
+		else:
+			pyro = Pyro(
+				eq_file=Path(directory) / eq_file,
+			 	eq_type="GEQDSK",
+			 	kinetics_file=Path(directory) / kin_file,
+			 	kinetics_type=self.run['info']['kinetics_type'],
+			 	gk_file=Path(directory) / template_file)
+	
+		pyro.gk_code = "GS2"
+		pyro.load_local_geometry(self.run['inputs']['psiNs'][p])
+		pyro.load_local_species(self.run['inputs']['psiNs'][p])
+		pyro.write_gk_file(os.path.join(directory,filename))
+		nml = pyro._gk_input_record["GS2"].data
+			
+		if self.run['inputs']['Miller']:
+			nml['theta_grid_eik_knobs']['iflux'] = 0
+			nml['theta_grid_eik_knobs']['local_eq'] = True
+		else:
+			eq_dir = os.path.join(directory,eq_file)
+			nml['theta_grid_eik_knobs']['eqfile'] = eq_dir
+			nml['theta_grid_eik_knobs']['efit_eq'] =  True
+			nml['theta_grid_eik_knobs']['iflux'] = 1
+			nml['theta_grid_eik_knobs']['local_eq'] = False
+		
+		if self.run['inputs']['Epar']:
+			nml['gs2_diagnostics_knobs']['write_final_epar'] = True
+		else:
+			nml['gs2_diagnostics_knobs']['write_final_epar'] = False
+		
+		bp = -self.run['data']['beta_prime_axis'][p][i]
+		sh = self.run['data']['shear_axis'][p][j]
+		
+		nml['theta_grid_eik_knobs']['s_hat_input'] = sh
+		nml['theta_grid_eik_knobs']['beta_prime_input'] = bp
+		nml['kt_grids_single_parameters']['aky'] = self.run['inputs']['aky_values'][k]
+		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+			mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*nml['parameters']['beta'])
+			nml[spec]['tprim'] = nml[spec]['tprim']*mul
+			nml[spec]['fprim'] = nml[spec]['fprim']*mul
+		if self.run['inputs']['Fixed_delt'] is False:
+			nml['knobs']['delt'] = 0.04/self.run['inputs']['aky_values'][k]
+		
+		nml.write(os.path.join(directory,filename), force=True)
+		print(f"Created {filename} at {directory}")
