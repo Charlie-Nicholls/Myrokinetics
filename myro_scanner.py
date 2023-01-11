@@ -520,8 +520,8 @@ class myro_scan(object):
 					for k, aky in enumerate(self.inputs['aky_values']):
 						if [psiN,i,j,k] not in check['gyro_complete']:
 							subnml = nml
-							subnml['theta_grid_eik_knobs']['s_hat_inputs'] = sh
-							subnml['theta_grid_eik_knobs']['beta_prime_inputs'] = bp
+							subnml['theta_grid_eik_knobs']['s_hat_input'] = sh
+							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
 							subnml['kt_grids_single_parameters']['aky'] = aky
 							for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 								mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
@@ -529,7 +529,7 @@ class myro_scan(object):
 								subnml[spec]['fprim'] = nml[spec]['fprim']*mul
 							if self.inputs['Fixed_delt'] is False:
 								subnml['knobs']['delt'] = 0.04/aky
-							subnml.write(f"{sub_path}/{fol}_{k}.in")
+							subnml.write(f"{sub_path}/{fol}_{k}.in", force=True)
 							
 							if not self.inputs['Viking']:
 								os.system(f"mpirun -np 8 gs2 \"{sub_path}/{fol}_{k}.in\"")
