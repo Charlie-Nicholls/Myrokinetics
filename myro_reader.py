@@ -7,7 +7,7 @@ from .verify_runs import verify_scan
 GYROKINETIC SCAN ANALYSIS
 '''
 
-class myro(object):
+class myro_read(object):
 
 	def __init__(self, filename = None, directory = "./"):
 		if directory == "./":
@@ -19,6 +19,7 @@ class myro(object):
 		self._gr_type = "Normalised"
 		self.verify = {}		
 		self._verify_run()
+		self.eqbm = self.pyro = None
 	
 	def __getitem__(self, key):
 		if key not in ["Miller", "Ideal", "Gyro", "Viking", "Fixed_delt", "Epar","psiNs","eparN","eparN_all"]:
@@ -104,6 +105,8 @@ class myro(object):
 		else:
 			print(f"ERROR: File Type {filetype} Not Found")
 			return
+		if lines is None:
+			print("ERROR: File Not Found")
 		for line in lines:
 			print(line,end='')
 	@property	
@@ -330,9 +333,23 @@ class myro(object):
 	def plot_epar(self):
 		Plotters['Epar'](scan = self.run)
 	
-	def write_gs2_input(self, indexes = None, eq_file = None, kin_file = None, template_file = None, filename = None, directory = None):
-		from pathlib import Path
-		from pyrokinetics import Pyro
+	def load_equillibrium(self, eq_file = None, kin_file = None, kinetics_type = None, directory = None):
+		from .equillibrium import equillibrium
+		if directory is None:
+			directory = self.directory
+		if eq_file is None:
+			eq_file = self.run['info']['eq_file_name']
+			if not os.path.exists(f"{os.path.join(directory,eq_file)}"):
+				self.write_eq_file(filename = eq_file, directory = directory)
+		if kin_file is None:
+			kin_file = self.run['info']['kin_file_name']
+			if not os.path.exists(f"{os.path.join(directory,kin_file)}"):
+				self.write_kin_file(filename = kin_file, directory = directory)
+		if kinetics_type is None:
+			kinetics_type = self.run['info']['kinetics_type']
+		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
+	
+	def write_gs2_input(self, indexes = None, filename = None, eq_file = None, kin_file = None, template_file = None, directory = None):
 		import f90nml
 		try:
 			if len(indexes) != 4:
@@ -344,48 +361,33 @@ class myro(object):
 			directory = "./"
 		elif directory is None:
 			directory = self.directory
-		if directory == "./":
-			directory = os.getcwd() 
+
 		p,i,j,k = indexes
 		if filename is None:
-			filename = f"{indexes[0]}_{indexes[1]}_{indexes[2]}_{indexes[3]}.in"
+			filename = f"{p}_{i}_{j}_{j}.in"
 		
-		if eq_file is None:
-			eq_file = f"{self.run['info']['run_name']}_eq"
-			self.write_eq_file(filename = eq_file, directory = directory)
-		if kin_file is None:
-			kin_file = f"{self.run['info']['run_name']}_kin"
-			self.write_kin_file(filename = kin_file, directory = directory)
+		if self.eqbm is None:
+			self.load_equillibrium(eq_file = eq_file, kin_file = kin_file, directory = directory)
+		
 		if template_file is None and self.run['files']['template_file'] is not None:	
-			template_file = f"{self.run['info']['run_name']}_template"
-			self.write_template_file(filename = template_file, directory = directory)
+			template_file = self.run['info']['template_file_name']
+			if not os.path.exists(f"{os.path.join(directory,template_file)}"):
+				self.write_template_file(filename = template_file, directory = directory)
 
-		if template_file is None:
-			pyro = Pyro(
-				eq_file=Path(directory) / eq_file,
-			 	eq_type="GEQDSK",
-			 	kinetics_file=Path(directory) / kin_file,
-			 	kinetics_type=self.run['info']['kinetics_type'])
-		else:
-			pyro = Pyro(
-				eq_file=Path(directory) / eq_file,
-			 	eq_type="GEQDSK",
-			 	kinetics_file=Path(directory) / kin_file,
-			 	kinetics_type=self.run['info']['kinetics_type'],
-			 	gk_file=Path(directory) / template_file)
+		if self.pyro is None:
+			self.pyro = self.eqbm.load_pyro(template_file = template_file, directory = directory)
 	
-		pyro.gk_code = "GS2"
-		pyro.load_local_geometry(self.run['inputs']['psiNs'][p])
-		pyro.load_local_species(self.run['inputs']['psiNs'][p])
-		pyro.write_gk_file(os.path.join(directory,filename))
-		nml = pyro._gk_input_record["GS2"].data
+		self.pyro.gk_code = "GS2"
+		self.pyro.load_local_geometry(self.run['inputs']['psiNs'][p])
+		self.pyro.load_local_species(self.run['inputs']['psiNs'][p])
+		self.pyro.write_gk_file(os.path.join(directory,filename))
+		nml = self.pyro._gk_input_record["GS2"].data
 			
 		if self.run['inputs']['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
 			nml['theta_grid_eik_knobs']['local_eq'] = True
 		else:
-			eq_dir = os.path.join(directory,eq_file)
-			nml['theta_grid_eik_knobs']['eqfile'] = eq_dir
+			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.eqbm._eq_path,self.eqbm.eq_name)
 			nml['theta_grid_eik_knobs']['efit_eq'] =  True
 			nml['theta_grid_eik_knobs']['iflux'] = 1
 			nml['theta_grid_eik_knobs']['local_eq'] = False

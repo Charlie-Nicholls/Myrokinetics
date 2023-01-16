@@ -4,60 +4,91 @@ from ncdf2dict import ncdf2dict as readnc
 from .plotting import Plotters
 
 '''
-GYROKINETIC SCAN ANALYSIS
+SINGLE RUN ANALYSIS
 '''
 
 class myro_single(object):
 
-	def __init__(self, filename = None, directory = "./"):
+	def __init__(self, out_file = None, in_file = None, directory = "./"):
 		self.directory = directory
-		self.filename = filename
+		self.output_file = out_file
+		self.input_file = in_file
 		self.run = {}
-		self._open_file()
+		self.namelist = {}
+		if out_file:
+			self.open_out()
+		if in_file:
+			self.open_in()
 		self.run['gr'] = imag(self.run['omega'][-1,0,0])
 		self.run['mf'] = real(self.run['omega'][-1,0,0])
-	
+		
 	def __getitem__(self, key):
-		return self.run[key]
+		if key in self.run.keys():
+			return self.run[key]
+		elif key in self.namelist.keys():
+			return self.namelist[key]
+		else:
+			for supkey in self.namelist.keys():
+				if key in self.namelist[supkey].keys():
+					return self.namelist[supkey][key]
 
 	def keys(self):
 		return self.run.keys()
 				
-	def _open_file(self, filename = None, directory = None):
+	def open_out(self, filename = None, directory = None):
 		if directory:
 			self.directory = directory
 		if filename:
-			self.filename = filename
-		if self.filename is None:
+			self.output_file = filename
+		if self.output_file is None:
 			print("ERROR: filename not given")
 			return
 		data_in = {}
-		if self.filename[-7:] == ".out.nc":
+		if self.output_file[-7:] == ".out.nc":
 			try:
-				data_in = readnc(os.path.join(self.directory,self.filename))
+				data_in = readnc(os.path.join(self.directory,self.output_file))
 			except:
-				print(f"Could not load file {os.path.join(self.directory,self.filename)}")
+				print(f"Could not load file {os.path.join(self.directory,self.output_file)}")
 				return
 		else:
 			try:
-				data_in = readnc(os.path.join(self.directory,self.filename) + ".out.nc")
+				data_in = readnc(os.path.join(self.directory,self.output_file) + ".out.nc")
 			except:
-				print(f"Could not load file {os.path.join(self.directory,self.filename)}.npz")
+				print(f"Could not load file {os.path.join(self.directory,self.output_file)}.out.nc")
 				return
 		
 		self.run = data_in
 		
+	def open_in(self, filename = None, directory = None):
+		import f90nml
+		if directory:
+			self.directory = directory
+		if filename:
+			self.input_name = filename
+		if self.input_file is None:
+			print("ERROR: filename not given")
+			return
+		nml = f90nml.read(os.path.join(self.directory,self.input_file))
+		self.namelist = nml
+	
+	@property
+	def input(self):
+		for key in self.namelist.keys():
+			print(f"\n{key}:")
+			for subkey in self.namelist[key].keys():
+				print(f"\t{subkey} = {self.namelist[key][subkey]}")
+	
 	def plot_omega(self):
-		Plotters['Eigen_Single'](data = self.run, var = 0)
+		Plotters['Diag_Single'](data = self.run, var = 0)
 	
 	def plot_phi(self):
-		Plotters['Eigen_Single'](data = self.run, var = 1)
+		Plotters['Diag_Single'](data = self.run, var = 1)
 	
 	def plot_apar(self):
-		Plotters['Eigen_Single'](data = self.run, var = 2)
+		Plotters['Diag_Single'](data = self.run, var = 2)
 		
 	def plot_phi2(self):
-		Plotters['Eigen_Single'](data = self.run, var = 3)
+		Plotters['Diag_Single'](data = self.run, var = 3)
 	
 	def _plot_diag(self, var = 0):
-		Plotters['Eigen_Single'](data = self.run, var = var)
+		Plotters['Diag_Single'](data = self.run, var = var)

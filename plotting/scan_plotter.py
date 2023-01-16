@@ -106,9 +106,12 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 			ax[1].set_ylim(min(y),max(y))
 			ax[1].set_xlim(min(x),max(x))
 		
-		if options.get_status()[4] and data['ideal_stabilities'] is not None and data['ideal_stabilities'][idx] is not None:
-			ax[0].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
-			ax[1].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
+		if options.get_status()[4]:
+			if data['ideal_stabilities'] is not None and data['ideal_stabilities'][idx] is not None:
+				ax[0].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
+				ax[1].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
+			else:
+				ax[0].text(0.5,0.5,f"No Ideal Data",ha='center',va='center',transform=ax[0].transAxes,color='k')
 			
 		fig.canvas.draw_idle()
 		return

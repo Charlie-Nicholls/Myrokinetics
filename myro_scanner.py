@@ -2,12 +2,8 @@ import os
 import sys
 from numpy import *
 from ast import literal_eval
-from pyrokinetics import Pyro
-from pathlib import Path
 from ncdf2dict import ncdf2dict as readnc
-from geqdsk_reader import geqdsk
-from .peqdsk_reader import peqdsk
-from .ammend_peqdsk import AmmendPEQDSK
+from .equillibrium import equillibrium
 import f90nml
 
 '''
@@ -17,21 +13,17 @@ GYROKINETIC SCAN PERFORMER
 class myro_scan(object):
 	def __init__(self, eq_file = None, kin_file = None, input_file = None, template_file = None, kinetics_type = "PEQDSK", directory = "./", run_name = None):
 		self._create_empty_inputs()
-		self.kinetics_type = kinetics_type
-		self.eq_name = eq_file
-		self.kin_name = kin_file
 		self.template_name = template_file
 		self.input_name = input_file
 		self.run_name = run_name
-		self._eq_path = self._kin_path = self._template_path = self.gdat = self.kdat = self.info = self.pyro = self._eq_lines = self._kin_lines = self._template_lines = None
+		self._template_path = self.info = self.pyro = self._template_lines = None
 
 		if directory == "./":
 			directory = os.getcwd() 
 		self.path = directory
-		if eq_file is not None:
-			self.load_geqdsk()
-		if kin_file is not None:
-			self.load_kinetics()
+		
+		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
+		
 		if input_file is not None:
 			self.load_inputs()
 	
@@ -114,84 +106,46 @@ class myro_scan(object):
 			directory = "./"
 		elif directory is None:
 			directory = self.path
-		self._eq_path = directory
-		if self.eq_name is None and eq_file is None:
-			raise ValueError("ERROR: No GEQDSK file given")
-		elif self.eq_name is None:
-			self.eq_name = eq_file
-		with open(os.path.join(directory,self.eq_name)) as gfile:
-			self._eq_lines = gfile.readlines()
-		self.gdat = geqdsk(filename = self.eq_name, directory = directory)
+			
+		if eq_file is None:
+			print("ERROR: eq_file Not Given")
+			return
+		
+		self.eqbm.load_geqdsk(eq_file = eq_file, directory = directory)
 	
 	def load_kinetics(self, kin_file = None, kinetics_type = None, directory = None):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
 			directory = self.path
-		self._kin_path = directory
-		if self.kin_name is None and kin_file is None:
-			raise ValueError("ERROR: No Kinetics file given")
-		elif self.kin_name is None:
-			self.kin_name = kin_file
-		with open(os.path.join(directory,self.kin_name)) as kfile:
-			self._kin_lines = kfile.readlines()
-		if kinetics_type is not None:
-			self.kinetics_type = kinetics_type
-		if self.kinetics_type.upper() == "SCENE":
-			import xarray as xr
-			self.kdat = xr.open_dataset(os.path.join(self._kin_path,self.kin_name))
-		elif self.kinetics_type.upper() == "PEQDSK":
-			self.kdat = peqdsk(filename = self.kin_name, directory = directory)
-			try:
-				self.kdat['rhonorm']
-			except:
-				if self.gdat is None:
-					self.load_geqdsk()
-				AmmendPEQDSK(peq_file = os.path.join(directory,self.kin_name), geq = self.gdat)
-				self.kdat = peqdsk(self.kin_name, directory)
-				try:
-					self.kdat['rhonorm']
-				except:
-					raise ValueError("ERROR: Could not load rho data from PEQDSK file")				
-		else:
-			print(f"ERROR: Kinetics type {self.kinetics_type} not recognised. Currently supported: SCENE, PEQDSK")
+
+		if kin_file is None:
+			print("ERROR: kin_file Not Given")
+			return
+		
+		if kinetics_type is None:
+			print("ERROR: kinetics_type Not Given, trying PEQDSK")
+			kinetics_type = "PEQDSK"
+			
+		self.eqbm.load_kinetics(self, kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
 	
 	def load_pyro(self, template_file = None, directory = None):
-		if self.eq_name is None or self.kin_name is None:
-			if self.eq_name is None:
-				print("ERROR: No equillibrium loaded")
-			if self.kin_name is None:
-				print("ERROR: No kinetics file loaded")
-			return
-
-		eq_file = Path(self._eq_path) / self.eq_name
-		kin_file = Path(self._kin_path) / self.kin_name
-		
-		if self.template_name is None and template_file is None:
-			self.pyro = Pyro(
-				eq_file=eq_file,
-			 	eq_type="GEQDSK",
-			 	kinetics_file=kin_file,
-			 	kinetics_type=self.kinetics_type)
-		else:
-			if self.template_name is None:
+		if template_file is not None:
 				self.template_name = template_file
-			if directory is None and self.path is None:
-				directory = "./"
-			elif directory is None:
-				directory = self.path
-			self._template_path = directory
+		if self.template_name:
 			with open(os.path.join(directory,self.template_name)) as tfile:
 				self._template_lines = tfile.readlines()
-			self.pyro = Pyro(
-				eq_file=eq_file,
-			 	eq_type="GEQDSK",
-			 	kinetics_file=kin_file,
-			 	kinetics_type=self.kinetics_type,
-			 	gk_file=Path(self.template_name))
-	
-		self.pyro.gk_code = "GS2"	
-	
+		if directory is None and self.path is None:
+			directory = "./"
+		elif directory is None:
+			directory = self.path
+		if directory == "./":
+			directory = os.getcwd()
+		self._template_path = directory
+		
+		self.pyro = self.eqbm.load_pyro(template_file = self.template_name, directory = directory)
+		
+		
 	def load_inputs(self, filename = None, directory = "./"):
 		if self.input_name is None and filename is None:
 			filename = input("Input File Name: ")
@@ -257,7 +211,7 @@ class myro_scan(object):
 			nml['theta_grid_eik_knobs']['iflux'] = 0
 			nml['theta_grid_eik_knobs']['local_eq'] = True
 		else:
-			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.path,self.eq_name)
+			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.path,self.eqbm.eq_name)
 			nml['theta_grid_eik_knobs']['efit_eq'] =  True
 			nml['theta_grid_eik_knobs']['iflux'] = 1
 			nml['theta_grid_eik_knobs']['local_eq'] = False
@@ -331,8 +285,8 @@ class myro_scan(object):
 		#Split for if dir in file names
 		if self.template_name is not None:
 			os.system(f"cp \"{directory}/{self.template_name}\" \"{run_path}/{self.template_name}\"")
-		os.system(f"cp \"{self._kin_path}/{self.kin_name}\" \"{run_path}/{self.kin_name}\"")
-		os.system(f"cp \"{self._eq_path}/{self.eq_name}\" \"{run_path}/{self.eq_name}\"")
+		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{run_path}/{self.eqbm.kin_name}\"")
+		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{run_path}/{self.eqbm.eq_name}\"")
 		if self.input_name is not None:		
 			os.system(f"cp \"{self.path}/{self.input_name}\" \"{run_path}/{self.input_name}\"")
 		if not self._check_setup(ideal = ideal, gyro = gyro):
@@ -363,10 +317,13 @@ class myro_scan(object):
 		if self.info is None:
 			self._create_run_info()
 			
-		if not self.gdat:
-			self.load_geqdsk()
-		if not self.kdat:
-			self.load_kinetics()
+		if not self.eqbm.eq_name or not self.eqbm.kin_name:
+			if not self.eqbm.eq_name:
+				print("ERROR: No eq_file loaded")
+			if not self.eqbm.eq_name:
+				print("ERROR: No kin_file loaded")
+			return False
+			
 		if not self.pyro:
 			self.load_pyro()
 			
@@ -581,7 +538,7 @@ class myro_scan(object):
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
 			data = None
-		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.kin_name, 'kinetics_type': self.kinetics_type, 'run_data': date, '_eq_file_path': self._eq_path, '_kin_file_path': self._kin_path, '_template_file_path': self._template_path}
+		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path}
 
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
 		if self.info is None:
@@ -652,7 +609,7 @@ class myro_scan(object):
 			job.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
 			pyth = open(f"save_out.py",'w')
-			pyth.write(f"from myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eq_name}\", kin_file = \"{self.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})")
+			pyth.write(f"from myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})")
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
@@ -884,5 +841,5 @@ class myro_scan(object):
 		'time': time,
 		'theta': theta
 		}
-		file_lines = {'eq_file': self._eq_lines, 'kin_file': self._kin_lines, 'template_file': self._template_lines}
+		file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = dat, run_info = self.info, files = file_lines)

@@ -153,10 +153,9 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		ky_slider.on_changed(draw_fig)
 		
 	draw_fig()
-	
 	show()
 	
-def plot_single(data = None, var = 0):
+def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 	if data is None:
 		print("ERROR: no data dictionary given")
 		return
@@ -171,8 +170,11 @@ def plot_single(data = None, var = 0):
 	if var not in [0,1,2,3]:
 		print(f"ERROR: variable name/value {var} not supported. supported: omega/0, phi/1, apar/2, phi2/3")
 		return
-		
-	fig, ax = subplots()
+	
+	doShow = False
+	if fig is None or ax is None:
+		fig, ax = subplots()
+		doShow = True
 	
 	if var == 0:
 		omega = data['omega'][:,0,0]
@@ -187,7 +189,7 @@ def plot_single(data = None, var = 0):
 		ax.legend(loc=0)
 		
 	elif var == 1:
-		phi = run['phi'][0,0,:]
+		phi = data['phi'][0,0,:]
 		theta = data['theta']
 
 		ax.plot(theta,real(phi),'r--',label="real")
@@ -199,7 +201,7 @@ def plot_single(data = None, var = 0):
 		ax.legend(loc=0)
 		
 	elif var == 2:
-		apar = run['apar'][0,0,:]
+		apar = data['apar'][0,0,:]
 		theta = data['theta']
 
 		ax.plot(theta,real(apar),'r--',label="real")
@@ -210,7 +212,7 @@ def plot_single(data = None, var = 0):
 		ax.set_xlabel("Ballooning Angle")
 		ax.legend(loc=0)
 	elif var == 3:
-		phi2 = run['phi2']
+		phi2 = data['phi2']
 		t = data['t']
 
 		ax.plot(t,phi2,'k')
@@ -219,5 +221,22 @@ def plot_single(data = None, var = 0):
 		ax.set_yscale('log')
 		ax.set_xlabel("Time")
 	
-	show()
+	if doShow:
+		show()
 	return
+
+def plot_diag_set(runs = None, var = 0, init = 0):
+	def draw_fig(val):
+		ax.cla()
+		data = runs[val]['data']
+		plot_diag_single(data = data, var = var, fig = fig, ax = ax)
+		ax.set_title(f"{[x for x in runs[val].keys() if x != 'data']} = {[runs[val][x] for x in runs[val].keys() if x != 'data']}")
+		fig.canvas.draw_idle()
+		
+	fig, ax = subplots()
+	subplots_adjust(bottom=0.15)
+	slaxes = axes([0.25, 0.01, 0.5, 0.03])
+	slider = Slider(slaxes, 'Run:', 0, len(runs)-1, valinit = init, valstep = 1)
+	slider.on_changed(draw_fig)
+	draw_fig(0)
+	show()
