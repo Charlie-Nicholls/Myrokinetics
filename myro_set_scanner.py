@@ -105,8 +105,11 @@ class myro_set_scan(object):
 							val = "[" + val
 						if val[-1] != "]":
 							val = val + "]"
-					if key == 'variable':
-						val = '\'' + val + '\''
+					if key == 'variable' or 'key':
+						if val[0] != "\'":
+							val = "\'" + val
+						if val[-1] != "\'":
+							val = val + "\'"
 					self.inputs[key] = eval(val)
 	
 	def write_scan_input(self, filename = None, directory = "./"):
@@ -119,8 +122,8 @@ class myro_set_scan(object):
 			filename = input("Input File Name: ")
 		elif self.input_name is None:
 			self.input_name = filename
-		if "." not in self.filename:
-			self.filename = self.filename + ".in"
+		if "." not in self.input_name:
+			self.input_name = self.input_name + ".in"
 		
 		with open(os.path.join(directory,self.input_name),'w') as in_file:
 			for key in self.inputs.keys():
@@ -300,11 +303,6 @@ class myro_set_scan(object):
 			nml['theta_grid_eik_knobs']['local_eq'] = False
 
 		nml.write(file_name, force=True)
-		if self.inputs['key'] is None:
-			for key1 in nml.keys():
-				for key2 in nml[key1].keys():
-					if key2 == self.inputs['variable']:
-						self.inputs['key'] = key1
 		return shear, beta_prim, tprim, fprim, beta, nml
 	
 	def run_scan(self, directory = None):
@@ -330,6 +328,14 @@ class myro_set_scan(object):
 				os.mkdir(run_path)
 		
 			shear, beta_prim, tprim, fprim, beta, nml = self._make_fs_in(run_path=run_path, psiN=psiN)
+			if self.inputs['key'] is None:
+				for key1 in nml.keys():
+					for key2 in nml[key1].keys():
+						if key2 == self.inputs['variable']:
+							self.inputs['key'] = key1
+				if self.inputs['key'] is None:
+					print("ERROR: Could not find namelist key")
+				return
 			for k, aky in enumerate(self.inputs['aky_values']):
 				for v, val in enumerate(self.inputs['values']):
 						if [psiN,v,k] in check['incomplete']:
