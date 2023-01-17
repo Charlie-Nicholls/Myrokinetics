@@ -65,17 +65,17 @@ class myro_set_scan(object):
 						arr_in = "[" + arr_in
 					if arr_in[-1] != "]":
 						arr_in = arr_in + "]"
-					self.inputs[key] = list(literal_eval(arr_in))
+					self.inputs[key] = list(eval(arr_in))
 					self.inputs[key].sort()
 			else:
 				if self.inputs[key] is None:
 					inp = input(f"Input value for {key} (Current value: None): ")
 					if inp != '':
-						self.inputs[key] = literal_eval(inp)
+						self.inputs[key] = eval(inp)
 				else:
 					inp = input(f"Input value for {key} (Current value: {self.inputs[key]}): ")
 					if inp != '':
-						self.inputs[key] = literal_eval(inp)
+						self.inputs[key] = eval(inp)
 	
 	def load_inputs(self, filename = None, directory = "./"):
 		if self.input_name is None and filename is None:
@@ -107,7 +107,7 @@ class myro_set_scan(object):
 							val = val + "]"
 					if key == 'variable':
 						val = '\'' + val + '\''
-					self.inputs[key] = literal_eval(val)
+					self.inputs[key] = eval(val)
 	
 	def write_scan_input(self, filename = None, directory = "./"):
 		if directory is None and self.directory is None:
@@ -402,19 +402,3 @@ class myro_set_scan(object):
 						out_dict[p][k][v] = None
 		file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, run_info = self.info, input_namelists = in_nmls, output_dicts = out_dict, files = file_lines)
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-	
