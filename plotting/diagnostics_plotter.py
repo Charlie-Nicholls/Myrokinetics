@@ -1,4 +1,4 @@
-from numpy import real, imag, 
+from numpy import real, imag
 from matplotlib.pyplot import *
 from matplotlib.widgets import Slider
 
