@@ -31,18 +31,18 @@ class peqdsk(object):
 				if 'nan' not in line[0]:
 					list1.append(eval(line[0].strip(" \n")))
 				else:
-					list1.append(np.nan)
+					list1.append(nan)
 				if 'nan' not in line[1]:
 					list2.append(eval(line[1].strip(" \n")))
 				else:
-					list2.append(np.nan)
+					list2.append(nan)
 				if 'nan' not in line[2]:
 					list3.append(eval(line[2].strip(" \n")))
 				else:
-					list3.append(np.nan)
-			list1 = np.array(list1)
-			list2 = np.array(list2)
-			list3 = np.array(list3)
+					list3.append(nan)
+			list1 = array(list1)
+			list2 = array(list2)
+			list3 = array(list3)
 			if name1 in kinetics_data.keys():
 				f1 = InterpolatedUnivariateSpline(list1, list2)
 				f2 = InterpolatedUnivariateSpline(list1, list3)
@@ -60,4 +60,3 @@ class peqdsk(object):
 	
 	def keys(self):
 		return self.data.keys()
-
