@@ -3,12 +3,12 @@ from matplotlib.pyplot import *
 from matplotlib.widgets import Slider
 
 def plot_set(self, runs = None, var = None, init = 0):
-	if runs = None:
+	if runs is None:
 		print("ERROR: No runs given")
 		return
 	if var is None:
-		var = [x for x in self.runs[0].keys() if x not in ['data','aky','psiN'][0]
-	if var not in [x for x in self.runs[0].keys() if x not in ['data','aky','psiN']:
+		var = [x for x in self.runs[0].keys() if x not in ['data','aky','psiN']][0]
+	if var not in [x for x in self.runs[0].keys() if x not in ['data','aky','psiN']]:
 		print("ERROR: Invalid Key")
 		return
 
