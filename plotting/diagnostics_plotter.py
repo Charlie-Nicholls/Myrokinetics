@@ -1,4 +1,4 @@
-from numpy import *
+from numpy import real, imag, 
 from matplotlib.pyplot import *
 from matplotlib.widgets import Slider
 
@@ -147,7 +147,6 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 	sh_slider.on_changed(draw_fig)
 	
 	if aky:
-		kys = len(inputs['aky_values'])
 		kyaxes = axes([0.93, 0.25, 0.021, 0.5])
 		ky_slider = Slider(kyaxes, 'ky index:', 0, len(inputs['aky_values'])-1, valinit = init[3], valstep = 1,orientation = 'vertical')
 		ky_slider.on_changed(draw_fig)
@@ -232,7 +231,8 @@ def plot_diag_set(runs = None, var = 0, init = 0):
 		plot_diag_single(data = data, var = var, fig = fig, ax = ax)
 		ax.set_title(f"{[x for x in runs[val].keys() if x != 'data']} = {[runs[val][x] for x in runs[val].keys() if x != 'data']}")
 		fig.canvas.draw_idle()
-		
+	
+	init = int(init)
 	fig, ax = subplots()
 	subplots_adjust(bottom=0.15)
 	slaxes = axes([0.25, 0.01, 0.5, 0.03])

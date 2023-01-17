@@ -1,7 +1,5 @@
-import numpy as np
-import xarray as xr
+from numpy import nan, array, 
 from scipy.interpolate import InterpolatedUnivariateSpline
-from ast import literal_eval
 
 class peqdsk(object):
 	def __init__(self, filename = None, directory = "./"):
@@ -20,7 +18,7 @@ class peqdsk(object):
 		ni = 0
 		while True:
 			info = lines[ni].split(" ")
-			n = literal_eval(info[0])
+			n = eval(info[0])
 			name1 = info[1]
 			name2 = info[2].split("(")[0]
 			name3 = info[3].strip("\n")
@@ -31,15 +29,15 @@ class peqdsk(object):
 			for i in range(ni,n+ni):
 				line = list(filter(None, lines[i].split(" ")))
 				if 'nan' not in line[0]:
-					list1.append(literal_eval(line[0].strip(" \n")))
+					list1.append(eval(line[0].strip(" \n")))
 				else:
 					list1.append(np.nan)
 				if 'nan' not in line[1]:
-					list2.append(literal_eval(line[1].strip(" \n")))
+					list2.append(eval(line[1].strip(" \n")))
 				else:
 					list2.append(np.nan)
 				if 'nan' not in line[2]:
-					list3.append(literal_eval(line[2].strip(" \n")))
+					list3.append(eval(line[2].strip(" \n")))
 				else:
 					list3.append(np.nan)
 			list1 = np.array(list1)

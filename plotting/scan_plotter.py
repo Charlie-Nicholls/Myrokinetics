@@ -1,4 +1,4 @@
-from numpy import *
+from numpy import transpose, array, amax, amin, isfinite, 
 from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
@@ -111,7 +111,7 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 				ax[0].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
 				ax[1].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
 			else:
-				ax[0].text(0.5,0.5,f"No Ideal Data",ha='center',va='center',transform=ax[0].transAxes,color='k')
+				ax[0].text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=ax[0].transAxes,color='k')
 			
 		fig.canvas.draw_idle()
 		return
@@ -120,9 +120,6 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 	bpmax = amax(data['beta_prime_axis'])
 	shmin = amin(data['shear_axis'])
 	shmax = amax(data['shear_axis'])
-	
-	grlim = amax(abs(array(data['growth_rates'])))
-	mflim = amax(abs(array(data['mode_frequencies'])))
 	
 	fig, ax = subplots(1,2,figsize=(14.6,7))
 	subplots_adjust(bottom=0.15)   
@@ -146,7 +143,6 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 	slider.on_changed(draw_fig)
 	
 	if aky:
-		kys = len(inputs['aky_values'])
 		kyaxes = axes([0.15, 0.05, 0.5, 0.03])
 		ky_slider = Slider(kyaxes, 'ky index:', 0, len(inputs['aky_values'])-1, valinit = init[1], valstep = 1)
 		ky_slider.on_changed(draw_fig)

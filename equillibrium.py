@@ -133,11 +133,11 @@ class equillibrium(object):
 			if psiN < 1.0e-3:
 				psi_n = psi_n[psi_n != psiN]	
 			else:
-				fs = geq.flux_surface(psiN = psiN)
+				fs = self.eq_data.flux_surface(psiN = psiN)
 				rho.append((max(fs['R']) - min(fs['R']))/2)
 		rhonorm = rho/max(rho)
 		
-		f = open(peq_file,'a')
+		f = open(self.kin_file,'a')
 		f.write(f"{len(rho)+1} psinorm rho rhonorm")
 		f.write("\n 0.0000000   0.0000000   0.0000000")
 		for i in range(len(rho)):

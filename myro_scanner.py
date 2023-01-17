@@ -1,7 +1,7 @@
 import os
+from numpy import full, real, imag, nan, amax, array, isfinite, loadtxt, transpose, savez
 from ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
-from numpy import full, real, imag, nan, amax, array, isfinite, loadtxt, transpose, savez
 import f90nml
 
 '''
@@ -617,10 +617,10 @@ class myro_scan(object):
 			job = open(f"save_out.job",'w')
 			job.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
-			pyth = open("save_out.py",'w')
+			pyth = open(f"save_out.py",'w')
 			pyth.write(f"from myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})")
 			pyth.close()
-			os.system("sbatch \"save_out.job\"")
+			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
 			return
 			

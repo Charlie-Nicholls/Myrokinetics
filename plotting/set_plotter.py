@@ -1,4 +1,3 @@
-from numpy import *
 from matplotlib.pyplot import *
 from matplotlib.widgets import Slider
 
@@ -11,7 +10,8 @@ def plot_set(self, runs = None, var = None, init = 0):
 	if var not in [x for x in self.runs[0].keys() if x not in ['data','aky','psiN']]:
 		print("ERROR: Invalid Key")
 		return
-
+	init = int(init)
+	
 	def draw_fig(val):
 		ax[1].cla()
 		ax[0].cla()

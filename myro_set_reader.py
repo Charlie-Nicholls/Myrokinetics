@@ -1,9 +1,7 @@
 import os
-from numpy import *
+from numpy import load
 from .plotting import Plotters
 from .myro_single import myro_single
-from .equillibrium import equillibrium
-from matplotlib.pyplot import * #TEMPORARY
 
 '''
 DIAGNOSTIC SET ANALYSIS
@@ -63,12 +61,12 @@ class myro_set_read(object):
 			info = data_in['run_info'].item()
 		except:
 			print("ERROR: could not load Run Info")
-			run_info = None
+			info = None
 		try:
-			input_files = data_in['input_files'].item()
+			input_namelists = data_in['input_namelists'].item()
 		except:
 			print("ERROR: could not load Input Files")
-			input_files = None
+			input_namelists = None
 		try:
 			outputs = data_in['output_dicts'].item()
 		except:

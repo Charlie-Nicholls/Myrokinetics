@@ -1,5 +1,5 @@
 import os
-from numpy import *
+from numpy import imag, real
 from ncdf2dict import ncdf2dict as readnc
 from .plotting import Plotters
 
@@ -9,14 +9,14 @@ SINGLE RUN ANALYSIS
 
 class myro_single(object):
 
-	def __init__(self, out_file = None, in_file = None, out_dict = None, input_lines = None, directory = "./"):
+	def __init__(self, out_file = None, in_file = None, out_dict = None, in_nml = None, directory = "./"):
 		self.directory = directory
 		self.output_file = out_file
 		self.input_file = in_file
 		self.run = {}
 		self.namelist = {}
-		if outdict:
-			self.run = outdict
+		if out_dict:
+			self.run = out_dict
 		elif out_file:
 			self.open_out()
 		if in_nml:

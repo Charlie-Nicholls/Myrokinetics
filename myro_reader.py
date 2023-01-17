@@ -350,6 +350,7 @@ class myro_read(object):
 		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
 	
 	def write_gs2_input(self, indexes = None, filename = None, eq_file = None, kin_file = None, template_file = None, directory = None):
+		import f90nml
 		try:
 			if len(indexes) != 4:
 				print("ERROR: indexes must be of length 4, [psiN,beta_prime,shear,ky]")

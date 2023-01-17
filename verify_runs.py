@@ -1,4 +1,4 @@
-from numpy import *
+from numpy import shape, array, nonzero, imag, real, nan, amax
 
 class verify_scan(object):
 	
@@ -48,7 +48,6 @@ class verify_scan(object):
 			return
 		
 		sha = shape(array(self.scan['data']['omega'],dtype=object))
-		bad_other = []
 		save_errors  = set()
 		conv = []
 		unconv = []
@@ -147,8 +146,8 @@ class verify_scan(object):
 							save_errors.add((i,j,k,l))
 						elif len(self.scan['data']['omega'][i][j][k][l]) == lim:
 							bad_nstep.append([i,j,k,l])
-							self.new_data['gra'][p][i][j][k] = nan
-							self.new_data['mfa'][p][i][j][k] = nan
+							self.new_data['gra'][i][j][k][l] = nan
+							self.new_data['mfa'][i][j][k][l] = nan
 		if bad_nstep:
 			print(f"Found {len(bad_nstep)} Bad nstep Runs")
 				

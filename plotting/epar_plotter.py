@@ -1,4 +1,4 @@
-from numpy import *
+from numpy import amin, amax
 from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons

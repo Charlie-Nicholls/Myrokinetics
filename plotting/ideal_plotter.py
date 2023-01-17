@@ -21,11 +21,11 @@ def plot_ideal(scan = None, init = 0):
 		else:
 			idx = 0
 			psiN = psiNs[0]
-		bp = data['beta_prime_axis_ideal'][index]
-		shear = data['shear_axis_ideal'][index]
-		stab = data['ideal_stabilities'][index]
-		bp_or = data['beta_prime_values'][index]
-		sh_or = data['shear_values'][index]
+		bp = data['beta_prime_axis_ideal'][idx]
+		shear = data['shear_axis_ideal'][idx]
+		stab = data['ideal_stabilities'][idx]
+		bp_or = data['beta_prime_values'][idx]
+		sh_or = data['shear_values'][idx]
 		
 		ax.cla()
 		ax.set_facecolor('lightgrey')
