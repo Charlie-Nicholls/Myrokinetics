@@ -1,4 +1,4 @@
-from numpy import nan, array, 
+from numpy import nan, array
 from scipy.interpolate import InterpolatedUnivariateSpline
 
 class peqdsk(object):
