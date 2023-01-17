@@ -1,4 +1,4 @@
-from numpy import transpose, array, amax, amin, isfinite, 
+from numpy import transpose, array, amax, amin, isfinite
 from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
