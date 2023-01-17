@@ -238,5 +238,5 @@ def plot_diag_set(runs = None, var = 0, init = 0):
 	slaxes = axes([0.25, 0.01, 0.5, 0.03])
 	slider = Slider(slaxes, 'Run:', 0, len(runs)-1, valinit = init, valstep = 1)
 	slider.on_changed(draw_fig)
-	draw_fig(0)
+	draw_fig(init)
 	show()

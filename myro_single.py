@@ -9,15 +9,19 @@ SINGLE RUN ANALYSIS
 
 class myro_single(object):
 
-	def __init__(self, out_file = None, in_file = None, directory = "./"):
+	def __init__(self, out_file = None, in_file = None, out_dict = None, input_lines = None, directory = "./"):
 		self.directory = directory
 		self.output_file = out_file
 		self.input_file = in_file
 		self.run = {}
 		self.namelist = {}
-		if out_file:
+		if outdict:
+			self.run = outdict
+		elif out_file:
 			self.open_out()
-		if in_file:
+		if in_nml:
+			self.namelist = in_nml
+		elif in_file:
 			self.open_in()
 		self.run['gr'] = imag(self.run['omega'][-1,0,0])
 		self.run['mf'] = real(self.run['omega'][-1,0,0])

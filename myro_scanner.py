@@ -1,7 +1,5 @@
 import os
 import sys
-from numpy import *
-from ast import literal_eval
 from ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
 import f90nml
@@ -33,12 +31,13 @@ class myro_scan(object):
 		else:
         		return self.inputs[key]
 
+	@property
 	def inputs(self):
         	for key, val in self.inputs.items():
         		print(f"{key} = {val}")
         	
 	def keys(self):
-		print(self.inputs.keys())
+		return self.inputs.keys()
 		
 	def _create_empty_inputs(self):
 		self.inputs = {
@@ -89,17 +88,17 @@ class myro_scan(object):
 						arr_in = "[" + arr_in
 					if arr_in[-1] != "]":
 						arr_in = arr_in + "]"
-					self.inputs[key] = list(literal_eval(arr_in))
+					self.inputs[key] = list(eval(arr_in))
 					self.inputs[key].sort()
 			else:
 				if self.inputs[key] is None:
 					inp = input(f"Input value for {key} (Current value: None): ")
 					if inp != '':
-						self.inputs[key] = literal_eval(inp)
+						self.inputs[key] = eval(inp)
 				else:
 					inp = input(f"Input value for {key} (Current value: {self.inputs[key]}): ")
 					if inp != '':
-						self.inputs[key] = literal_eval(inp)
+						self.inputs[key] = eval(inp)
 	
 	def load_geqdsk(self, eq_file = None, directory = None):
 		if directory is None and self.path is None:
@@ -164,34 +163,39 @@ class myro_scan(object):
 			for line in lines:
 				key = line.split(" = ")[0].strip("\t\n ")
 				val = line.split(" = ")[1].strip("\t\n ")
-				if key in self.inputs.keys() or key == 'akys':
-					if key == 'akys':
-						key = 'aky_values'
+				if key == 'akys':
+					key = 'aky_values'
+				if key in self.inputs.keys():
 					if key == 'psiNs' or key == 'aky_values':
 						if val[0] != "[":
 							val = "[" + val
 						if val[-1] != "]":
 							val = val + "]"
-					self.inputs[key] = literal_eval(val)
+					self.inputs[key] = eval(val)
 			
 	def write_scan_input(self, filename = None, directory = "./"):
+		if directory is None and self.directory is None:
+			directory = "./"
+		elif directory is None:
+			directory = self.directory
+			
 		if self.input_name is None and filename is None:
 			filename = input("Input File Name: ")
-			if "." not in filename:
-				filename = filename + ".in"
 		elif self.input_name is None:
 			self.input_name = filename
+		if "." not in self.input_name:
+			self.input_name = self.input_name + ".in"
 		
-		with open(self.input_name,'w') as in_file:
+		with open(os.path.join(directory,self.input_name),'w') as in_file:
 			for key in self.inputs.keys():
 				in_file.write(f"{key} = {self.inputs[key]}\n")
 	
 	def _make_fs_in(self, run_path = None, psiN = None):
-		if self.pyro == None:
+		if self.pyro is None:
 			self.load_pyro()
-		if run_path == None:
+		if run_path is None:
 			run_path = self.path
-		if psiN == None:
+		if psiN is None:
 			print("ERROR: please speicify psiN")
 			return
 			
@@ -332,12 +336,16 @@ class myro_scan(object):
 			self.inputs['psiNs'] = [self.inputs['psiNs']]
 		elif self.inputs['psiNs'] is None:
 			empty_elements.append('psiNs')
+		else:
+			self.inputs['psiNs'].sort()
 		
 		if gyro:
 			if type(self.inputs['aky_values']) in [int,float]:
 				self.inputs['aky_values'] = [self.inputs['aky_values']]
 			elif self.inputs['aky_values'] is None:
 				empty_elements.append('aky_values')
+			else:
+				self.inputs['aky_values'].sort()
 
 		if self.inputs['beta_min'] is None and self.inputs['beta_div'] is None:
 			empty_elements.append('beta_min/beta_div')
@@ -386,7 +394,7 @@ class myro_scan(object):
 		check = self.check_complete(directory = directory, doPrint = False, gyro = False, ideal = True)
 		if check['ideal_complete']:
 			print(f"{len(check['ideal_complete'])} Existing Ideal Runs Detected")
-		for psiN in [x for x in self.inputs['psiNs'] if x not in check['ideal_complete']]:
+		for psiN in check['ideal_incomplete']:
 			run_path = os.path.join(directory, str(psiN))
 			try:
 				os.mkdir(run_path)
@@ -475,7 +483,7 @@ class myro_scan(object):
 						sh = 1e-4
 
 					for k, aky in enumerate(self.inputs['aky_values']):
-						if [psiN,i,j,k] not in check['gyro_complete']:
+						if [psiN,i,j,k] in check['gyro_incomplete']:
 							subnml = nml
 							subnml['theta_grid_eik_knobs']['s_hat_input'] = sh
 							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
@@ -493,7 +501,7 @@ class myro_scan(object):
 							elif not group_runs:
 								
 								jobfile = open(f"{sub_path}/{fol}_{k}.job",'w')
-								jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"echo Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
+								jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
 								
 								jobfile.close()
 								os.chdir(f"{sub_path}")
@@ -512,7 +520,7 @@ class myro_scan(object):
 						jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\n")
 
 						for k in group_kys:
-							jobfile.write(f"echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\ngs2 \"{sub_path}/{fol}_{k}.in\"\n")
+							jobfile.write(f"echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"echo Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\ngs2 \"{sub_path}/{fol}_{k}.in\"\n")
 						jobfile.close()
 						os.chdir(f"{sub_path}")
 						os.system(f"sbatch \"{sub_path}/{fol}.job\"")
@@ -524,10 +532,11 @@ class myro_scan(object):
 		except:
 			print("ERROR: unable to import uuid module, setting ID to None")
 			ID = None
-		if self.path == "./":
-			path = os.getcwd()
-		else:
-			path = self.path
+			
+		path = self.path
+		if path[:2] == "./":
+			path = os.getcwd() + path[1:]
+			
 		if self.run_name is None:
 			run_path = os.path.join(path, str(ID))
 		else:	
@@ -537,7 +546,7 @@ class myro_scan(object):
 			date = dt.now().strftime("%d/%m/%Y, %H:%M:%S")
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
-			data = None
+			date = None
 		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path}
 
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
@@ -660,19 +669,13 @@ class myro_scan(object):
 		else:
 			beta_prime_axis_ideal = shear_axis_ideal = self.inputs['n_shat_ideal'] = self.inputs['n_beta_ideal'] = stabilities = None
 		
-		for psiN in psiNs:
-			idx = psiNs.index(psiN)
+		for idx, psiN in enumerate(psiNs):
 			run_path = os.path.join(directory,str(psiN))
-			orig = open(f"{run_path}/{psiN}.in")
-			lines = orig.readlines()
-			orig.close()
-			for line in lines:
-				if line.strip("\t\n ").split(" = ")[0] == "s_hat_input":
-					shear = literal_eval(line.strip("\t\n").split(" = ")[1])
-					shear_values[idx] = shear
-				if line.strip("\t\n ").split(" = ")[0] == "beta_prime_input":
-					beta_prim = abs(literal_eval(line.strip("\t\n").split(" = ")[1]))
-					beta_prime_values[idx] = beta_prim
+			nml = f90nml.read(f"{run_path}/{psiN}.in")
+			shear = nml['theta_grid_eik_knobs']['s_hat_input']
+			beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
+			shear_values[idx] = shear
+			beta_prime_values[idx] = beta_prim
 			
 			if self.inputs['Gyro']:
 				for i in range(self.inputs['n_beta']):
