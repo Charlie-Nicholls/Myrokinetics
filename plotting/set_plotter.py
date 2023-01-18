@@ -54,6 +54,7 @@ def plot_set(runs = None, var = None, init = 0):
 		psiNs.sort()
 
 	if psiNs:
+		subplots_adjust(bottom=0.15)
 		slaxes = axes([0.25, 0.01, 0.5, 0.03])
 		slider = Slider(slaxes, 'psiN index:', 0, len(psiNs)-1, valinit = init, valstep = 1)
 		slider.on_changed(draw_fig)

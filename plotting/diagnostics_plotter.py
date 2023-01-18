@@ -224,19 +224,40 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 		show()
 	return
 
-def plot_diag_set(runs = None, var = 0, init = 0):
+def plot_diag_set(runs = None, var = 0, init = None):
 	def draw_fig(val):
 		ax.cla()
-		data = runs[val]['data']
+		for run in runs.values():
+			correct_run = True
+			for key in sliders.keys():
+				if run[key] != sliders[key]['vals'][sliders[key]['slider'].val]:
+					correct_run = False
+			if correct_run:
+				data = run['data']
+				break
 		plot_diag_single(data = data, var = var, fig = fig, ax = ax)
-		ax.set_title(f"{[x for x in runs[val].keys() if x != 'data']} = {[runs[val][x] for x in runs[val].keys() if x != 'data']}")
+		ax.set_title(f"{[x for x in sliders.keys()]} = {[run[x] for x in sliders.keys()]}")
 		fig.canvas.draw_idle()
 	
-	init = int(init)
-	fig, ax = subplots()
+	fig, ax = subplots(figsize=(8.8,6.8))
 	subplots_adjust(bottom=0.15)
-	slaxes = axes([0.25, 0.01, 0.5, 0.03])
-	slider = Slider(slaxes, 'Run:', 0, len(runs)-1, valinit = init, valstep = 1)
-	slider.on_changed(draw_fig)
+	
+	sliders = {}
+	for i, key in enumerate([x for x in runs[0].keys() if x != 'data']):
+		sliders[key] = {}
+		vals = set()
+		for run in runs.values():
+			vals.add(run[key])
+		sliders[key]['vals'] = list(vals)
+		sliders[key]['vals'].sort()
+		ypos = 0.01 + 0.02*i
+		slaxes = axes([0.25, ypos, 0.5, 0.03])
+		try:
+			ini = init[i]
+		except:
+			ini = 0
+		sliders[key]['slider'] = Slider(slaxes, f'{key} index:', 0, len(sliders[key]['vals'])-1, valinit = ini, valstep = 1)
+		sliders[key]['slider'].on_changed(draw_fig)
+
 	draw_fig(init)
 	show()

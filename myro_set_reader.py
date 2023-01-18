@@ -152,5 +152,5 @@ class myro_set_read(object):
 	def _plot_diag(self, var = 0):
 		Plotters['Diag_Set'](runs = self.runs, var = var)
 	
-	def plot_set(self, var = None, init = 0):
+	def plot_set(self, var = None, init = None):
 		Plotters['Set'](runs = self.runs, var = var, init = init)
