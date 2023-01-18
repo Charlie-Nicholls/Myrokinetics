@@ -392,8 +392,8 @@ class myro_set_scan(object):
 		psiNs = self.inputs['psiNs']
 		values = self.inputs['values']
 		akys = self.inputs['aky_values']
-		in_nmls = full((len(psiNs),len(akys),len(values)),None).tolist()
-		out_dict = full((len(psiNs),len(akys),len(values)),None).tolist()
+		in_nmls = full((len(psiNs),len(values),len(akys)),None).tolist()
+		out_dict = full((len(psiNs),len(values),len(akys)),None).tolist()
 		
 		for p, psiN in enumerate(psiNs):
 			for k, aky in enumerate(values):
