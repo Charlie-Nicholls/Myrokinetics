@@ -260,6 +260,8 @@ class myro_set_scan(object):
 			empty_elements.append('shat')
 		if self.inputs['beta_prime'] is None:
 			empty_elements.append('beta_prime')
+		if self.inputs['beta_prime'] > 0:
+			self.inputs['beta_prime'] = -1*self.inputs['beta_prime']
 
 		if empty_elements:
 			print(f"ERROR: the following inputs are empty: {empty_elements}")
@@ -313,8 +315,6 @@ class myro_set_scan(object):
 		check = self.check_complete(directory = directory, doPrint = False)
 		if check['complete']:
 			print(f"{len(check['complete'])} Existing Runs Detected")
-		
-		self._create_run_info()
 		
 		if directory is not None:
 			self.info['data_path'] = directory

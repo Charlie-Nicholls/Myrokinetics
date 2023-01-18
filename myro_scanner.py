@@ -269,7 +269,6 @@ class myro_scan(object):
 			print("ERROR: ideal must be boolean")
 			return
 		
-		self._create_run_info()
 		run_path = self.info['data_path']
 		
 		try:

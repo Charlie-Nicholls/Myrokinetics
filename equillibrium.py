@@ -2,12 +2,13 @@ import os
 
 class equillibrium(object):
 	
-	def __init__(self, eq_file = None, kin_file = None, kinetics_type = None, directory = None):
+	def __init__(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None):
 		self.eq_name = eq_file
 		self.kin_name = kin_file
+		self.template_file = template_file
 		self.kinetics_type = kinetics_type
 		self.path = directory
-		self.eq_data = self.kin_data = self._eq_path = self._kin_path = self._eq_lines = self._kin_lines = None
+		self.eq_data = self.kin_data = self.pyro = self._eq_path = self._kin_path = self._eq_lines = self._kin_lines = self.beta_prime_profile = self.shear_profile = None
 		if eq_file:
 			self.load_geqdsk()
 		if kin_file:
@@ -61,7 +62,7 @@ class equillibrium(object):
 		if kinetics_type is not None:
 			self.kinetics_type = kinetics_type
 		if self.kinetics_type is None:
-			print("ERROR: kinetics_type not specified")
+			self.kinetics_type = "PEQDSK"
 		
 		if self.kinetics_type.upper() == "SCENE":
 			import xarray as xr
@@ -91,8 +92,10 @@ class equillibrium(object):
 		eq_file = Path(self._eq_path) / self.eq_name
 		kin_file = Path(self._kin_path) / self.kin_name
 		
-		if template_file is None:
-			pyro = Pyro(
+		if template_file:
+			self.template_file = template_file
+		if self.template_file is None:
+			self.pyro = Pyro(
 				eq_file=eq_file,
 			 	eq_type="GEQDSK",
 			 	kinetics_file=kin_file,
@@ -102,16 +105,16 @@ class equillibrium(object):
 				directory = "./"
 			elif directory is None:
 				directory = self.path
-			pyro = Pyro(
+			self.pyro = Pyro(
 				eq_file=eq_file,
 			 	eq_type="GEQDSK",
 			 	kinetics_file=kin_file,
 			 	kinetics_type=self.kinetics_type,
-			 	gk_file=Path(directory) / template_file)
+			 	gk_file=Path(directory) / self.template_file)
 
-		pyro.gk_code = "GS2"
-		return pyro
-	
+		self.pyro.gk_code = "GS2"
+		return self.pyro
+
 	def AmmendPEQDSK(self):
 		if self.eq_data is None and self.eq_name is None:
 			print("ERROR: No GEQDSK file provided")
@@ -144,3 +147,41 @@ class equillibrium(object):
 			f.write(f"\n {psi_n[i]:.7f}   {rho[i]:.7f}   {rhonorm[i]:.7f}")  
 		f.close()
 		return
+	
+	def make_profiles(self):
+		from scipy.interpolate import InterpolatedUnivariateSpline
+		from numpy import linspace
+		if not self.pyro:
+			self.load_pyro()
+		pyro = self.pyro
+		psiNs = linspace(0.01,1,100)
+		bp = []
+		sh = []
+		for psiN in psiNs:
+			pyro.load_local_geometry(psi_n=psiN)
+			bp.append(pyro.local_geometry['beta_prime'])
+			sh.append(pyro.local_geometry['shat'])
+		self.beta_prime_profile = InterpolatedUnivariateSpline(psiNs,bp)
+		self.shear_profile = InterpolatedUnivariateSpline(psiNs,sh)
+	
+	def plot_eq(self):
+		from matplotlib.pyplot import subplots, show
+		from numpy import linspace
+		if not self.beta_prime_profile or not self.shear_profile:
+			self.make_profiles()
+
+		fig, ax = subplots(2,1)
+		psiNs = linspace(0.01,1,100)
+		bp = self.beta_prime_profile(psiNs)
+		sh = self.shear_profile(psiNs)
+		
+		ax[0].plot(psiNs, bp, 'b')
+		ax[0].plot(0.01, bp[0], 'b.')
+		ax[0].invert_yaxis()
+		ax[1].plot(psiNs, sh, 'b')
+		ax[1].plot(0.01, sh[0], 'b.')
+		ax[0].set_xlabel("psiN")
+		ax[1].set_xlabel("psiN")
+		ax[0].set_ylabel("beta_prime")
+		ax[1].set_ylabel("shear")
+		show()
