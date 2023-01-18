@@ -55,27 +55,22 @@ class myro_set_scan(object):
 		else:
 			keys = self.inputs.keys()
 		for key in keys:
-			if key == 'psiNs' or key == 'aky_values':
-				if self.inputs[key] is None:
-					arr_in = input(f"Input values for {key} (Current value: None): ")
-				else:
-					arr_in = input(f"Input values for {key} (Current value: {self.inputs[key]}): ")
-				if arr_in != '':
-					if arr_in[0] != "[":
-						arr_in = "[" + arr_in
-					if arr_in[-1] != "]":
-						arr_in = arr_in + "]"
-					self.inputs[key] = list(eval(arr_in))
-					self.inputs[key].sort()
+			if self.inputs[key] is None:
+				val = input(f"Input value for {key} (Current value: None): ")
 			else:
-				if self.inputs[key] is None:
-					inp = input(f"Input value for {key} (Current value: None): ")
-					if inp != '':
-						self.inputs[key] = eval(inp)
-				else:
-					inp = input(f"Input value for {key} (Current value: {self.inputs[key]}): ")
-					if inp != '':
-						self.inputs[key] = eval(inp)
+				val = input(f"Input value for {key} (Current value: {self.inputs[key]}): ")
+			if key == 'psiNs' or key == 'aky_values' or key == 'values':
+				if val[0] != "[":
+					val = "[" + val
+				if val[-1] != "]":
+					val = val+ "]"
+			if key == 'variable' or key == 'key':
+				if val[0] != "\'":
+					val = "\'" + val
+				if val[-1] != "\'":
+					val = val + "\'"
+			if val not in ["","[]","\'\'"]:
+				self.inputs[key] = eval(val)
 	
 	def load_inputs(self, filename = None, directory = "./"):
 		if self.input_name is None and filename is None:
@@ -100,12 +95,12 @@ class myro_set_scan(object):
 				if key == 'shear':
 					key = 'shat'
 				if key in self.inputs.keys():
-					if key == 'psiNs' or key == 'aky_values':
+					if key == 'psiNs' or key == 'aky_values' or key == 'values':
 						if val[0] != "[":
 							val = "[" + val
 						if val[-1] != "]":
 							val = val + "]"
-					if key == 'variable' or 'key':
+					if key == 'variable' or key == 'key':
 						if val[0] != "\'":
 							val = "\'" + val
 						if val[-1] != "\'":
@@ -381,7 +376,7 @@ class myro_set_scan(object):
 			job.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
 			pyth = open("save_out.py",'w')
-			pyth.write(f"from myrokinetics import myro_set_scan\n\nrun = myro_set_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True)")
+			pyth.write(f"from Myrokinetics import myro_set_scan\n\nrun = myro_set_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True)")
 			pyth.close()
 			os.system("sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
