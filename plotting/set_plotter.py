@@ -1,13 +1,13 @@
 from matplotlib.pyplot import *
 from matplotlib.widgets import Slider
 
-def plot_set(self, runs = None, var = None, init = 0):
+def plot_set(runs = None, var = None, init = 0):
 	if runs is None:
 		print("ERROR: No runs given")
 		return
 	if var is None:
-		var = [x for x in self.runs[0].keys() if x not in ['data','aky','psiN']][0]
-	if var not in [x for x in self.runs[0].keys() if x not in ['data','aky','psiN']]:
+		var = [x for x in runs[0].keys() if x not in ['data','aky','psiN']][0]
+	if var not in [x for x in runs[0].keys() if x not in ['data','aky','psiN']]:
 		print("ERROR: Invalid Key")
 		return
 	init = int(init)
@@ -15,23 +15,27 @@ def plot_set(self, runs = None, var = None, init = 0):
 	def draw_fig(val):
 		ax[1].cla()
 		ax[0].cla()
-		psiN = val
-		for run in runs:
-			if psiNs and run['psiN'] != psiN:
-				break
-			aky = None
-			if akys:
-				aky = str(run['aky'])
-			
-		col = colours[akys.index(aky)%len(colours)]
-		ax[1].plot(run[var],run['data'].run['gr'],'.',c=col,label=aky)
-		ax[0].plot(run[var],run['data'].run['mf'],'.',c=col,label=aky)
+		psiN = psiNs[val]
+		for run_id in runs:
+			run = runs[run_id]
+			if not psiNs or run['psiN'] == psiN:
+				aky = None
+				col = colours[0]
+				if akys:
+					aky = run['aky']	
+					col = colours[akys.index(aky)%len(colours)]
+				if run['data']:
+					ax[1].plot(run[var],run['data'].run['gr'],'.',c=col,label=str(aky))
+					ax[0].plot(run[var],run['data'].run['mf'],'.',c=col,label=str(aky))
 		ax[1].set_xlabel(var)
 		ax[1].set_ylabel("Growth Rate")
 		ax[0].set_ylabel("Mode Frequency")
+		fig.suptitle(f"{var} | psiN = {psiN}")
 		if akys:
-			ax[0].legend(loc=0)
-			ax[1].legend(loc=1)
+			lin, han = ax[0].get_legend_handles_labels()
+			leg = dict(zip(han, lin))
+			ax[0].legend(leg.values(),leg.keys(), title = "aky", loc=0)
+			ax[1].legend(leg.values(),leg.keys(), title = "aky", loc=0)
 		fig.canvas.draw_idle()
 	
 	fig, ax = subplots(2,1)
@@ -39,16 +43,18 @@ def plot_set(self, runs = None, var = None, init = 0):
 	akys = None
 	if 'aky' in runs[0].keys():
 		akys = set()
-		for run in runs:
-			akys.add(run['aky'])
-	akys = list(akys).sort()
+		for run_id in runs:
+			akys.add(runs[run_id]['aky'])
+		akys = list(akys)
+		akys.sort()
 	psiNs = None
 	if 'psiN' in runs[0].keys():
 		psiNs = set()
-		for run in runs:
-			psiNs.add(run['psiN'])
-	psiNs = list(psiNs).sort()
-	
+		for run_id in runs:
+			psiNs.add(runs[run_id]['psiN'])
+		psiNs = list(psiNs)
+		psiNs.sort()
+
 	if psiNs:
 		slaxes = axes([0.25, 0.01, 0.5, 0.03])
 		slider = Slider(slaxes, 'psiN index:', 0, len(psiNs)-1, valinit = init, valstep = 1)

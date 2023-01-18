@@ -27,8 +27,11 @@ class myro_set_read(object):
 		
 	def _get_new_id(self):
 		if self.runs == {}:
-			return 0
-		return list(self.runs.keys())[-1] + 1
+			key = 0
+		else:
+			key = list(self.runs.keys())[-1] + 1
+		self.runs[key] = {}
+		return key
 			
 	def open_file(self, filename = None, directory = None):
 		if directory:
@@ -63,12 +66,12 @@ class myro_set_read(object):
 			print("ERROR: could not load Run Info")
 			info = None
 		try:
-			input_namelists = data_in['input_namelists'].item()
+			input_namelists = data_in['input_namelists']
 		except:
 			print("ERROR: could not load Input Files")
 			input_namelists = None
 		try:
-			outputs = data_in['output_dicts'].item()
+			outputs = data_in['output_dicts']
 		except:
 			print("ERROR: could not load Outputs")
 			outputs = None
@@ -80,14 +83,17 @@ class myro_set_read(object):
 			
 		self.data = {'inputs': inputs, 'info': info, 'input_namelists': input_namelists, 'outputs': outputs, 'files': files}
 		
-		for p, psiN in enumerate(self.data['psiNs']):
-			for k, aky in enumerate(self.data['aky_values']):
-				for v, value in enumerate(self.data['values']):
+		for p, psiN in enumerate(self.data['inputs']['psiNs']):
+			for v, value in enumerate(self.data['inputs']['values']):
+				for k, aky in enumerate(self.data['inputs']['aky_values']):
 					run_id = self._get_new_id()
-					self.runs[run_id]['data'] = myro_single(out_dict = outputs[p][k][v], in_nml = input_namelists[p][k][v], directory = directory)
+					if outputs[p][v][k] is not None and outputs[p][v][k] != {}:
+						self.runs[run_id]['data'] = myro_single(out_dict = outputs[p][v][k], in_nml = input_namelists[p][v][k], directory = directory)
+					else:
+						self.runs[run_id]['data'] = None
 					self.runs[run_id]['psiN'] = psiN
 					self.runs[run_id]['aky'] = aky
-					self.runs[run_id][self.inputs['variable']] = value
+					self.runs[run_id][self.data['inputs']['variable']] = value
 			
 	def load_runs(self, out_files = None, in_files = None, directory = None):
 		if type(out_files) == str:
