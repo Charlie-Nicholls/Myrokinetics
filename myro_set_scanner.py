@@ -265,6 +265,13 @@ class myro_set_scan(object):
 			print(f"ERROR: the following inputs are empty: {empty_elements}")
 			return False
 		
+		if self.template_name is not None:
+			os.system(f"cp \"{directory}/{self.template_name}\" \"{run_path}/{self.template_name}\"")
+		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{run_path}/{self.eqbm.kin_name}\"")
+		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{run_path}/{self.eqbm.eq_name}\"")
+		if self.input_name is not None:		
+			os.system(f"cp \"{self.path}/{self.input_name}\" \"{run_path}/{self.input_name}\"")
+		
 		return True
 	
 	def _make_fs_in(self, run_path = None, psiN = None):
@@ -385,8 +392,8 @@ class myro_set_scan(object):
 		psiNs = self.inputs['psiNs']
 		values = self.inputs['values']
 		akys = self.inputs['aky_values']
-		in_lines = full((len(psiNs),len(akys),len(values),None)).tolist()
-		out_dict = full((len(psiNs),len(akys),len(values),None)).tolist()
+		in_lines = full((len(psiNs),len(akys),len(values)),None).tolist()
+		out_dict = full((len(psiNs),len(akys),len(values)),None).tolist()
 		
 		for p, psiN in enumerate(psiNs):
 			for k, aky in enumerate(values):

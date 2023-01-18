@@ -276,13 +276,7 @@ class myro_scan(object):
 			os.mkdir(run_path)
 		except:
 			pass	
-		#Split for if dir in file names
-		if self.template_name is not None:
-			os.system(f"cp \"{directory}/{self.template_name}\" \"{run_path}/{self.template_name}\"")
-		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{run_path}/{self.eqbm.kin_name}\"")
-		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{run_path}/{self.eqbm.eq_name}\"")
-		if self.input_name is not None:		
-			os.system(f"cp \"{self.path}/{self.input_name}\" \"{run_path}/{self.input_name}\"")
+		
 		if not self._check_setup(ideal = ideal, gyro = gyro):
 			return
 		if self.inputs['Gyro']:
@@ -371,6 +365,14 @@ class myro_scan(object):
 		if empty_elements:
 			print(f"ERROR: the following inputs are empty: {empty_elements}")
 			return False
+		
+		#Split for if dir in file names
+		if self.template_name is not None:
+			os.system(f"cp \"{directory}/{self.template_name}\" \"{run_path}/{self.template_name}\"")
+		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{run_path}/{self.eqbm.kin_name}\"")
+		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{run_path}/{self.eqbm.eq_name}\"")
+		if self.input_name is not None:		
+			os.system(f"cp \"{self.path}/{self.input_name}\" \"{run_path}/{self.input_name}\"")
 		
 		return True
 	
