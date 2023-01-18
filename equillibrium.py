@@ -14,7 +14,7 @@ class equillibrium(object):
 			self.load_kinetics()
 
 	def load_geqdsk(self, eq_file = None, directory = None):
-		from geqdsk_reader import geqdsk
+		from .geqdsk_reader import geqdsk
 		if directory is None and self._eq_path is None and self.path is None:
 			directory = "./"
 		elif directory is None and self._eq_path is None:
@@ -144,47 +144,3 @@ class equillibrium(object):
 			f.write(f"\n {psi_n[i]:.7f}   {rho[i]:.7f}   {rhonorm[i]:.7f}")  
 		f.close()
 		return
-	
-	'''
-	def getsb(eq, kin):
-		pyro = Pyro(eq_file=eq,eq_type="GEQDSK",kinetics_file=kin,kinetics_type="PEQDSK",gk_file="../templates/template.gs2")
-		pyro.local_geometry = "Miller"
-		pyro.gk_code = "GS2"
-		
-		bp = []
-		sh = []
-		for psiN in psiNs:
-			pyro.load_local_geometry(psi_n=psiN)
-			bp.append(pyro.local_geometry['beta_prime'])
-			sh.append(pyro.local_geometry['shat'])
-			
-		return bp, sh
-		
-	psiNs = linspace(0.01,1,100)
-
-	b190, s190 = getsb("g045272.190","p045272.190")
-	b210, s210 = getsb("g045272.210","p045272.210")
-	b475, s475 = getsb("g045272.475","p045272.475")
-
-	fig, ax = subplots(2,1)
-
-	ax[0].plot(psiNs, [-x for x in b190], 'b', label="190ms")
-	ax[0].plot(psiNs, [-x for x in b210], 'r', label="210ms")
-	ax[0].plot(psiNs, [-x for x in b475], 'k', label="475ms")
-	ax[0].plot(0.01, -b190[0], 'b.')
-	ax[0].plot(0.01, -b210[0], 'r.')
-	ax[0].plot(0.01, -b475[0], 'k.')
-	ax[1].plot(psiNs, s190, 'b', label="190ms")
-	ax[1].plot(psiNs, s210, 'r', label="210ms")
-	ax[1].plot(psiNs, s475, 'k', label="475ms")
-	ax[1].plot(0.01, s190[0], 'b.')
-	ax[1].plot(0.01, s210[0], 'r.')
-	ax[1].plot(0.01, s475[0], 'k.')
-	ax[0].legend(loc=0)
-	ax[1].legend(loc=0)
-	ax[0].set_xlabel("psiN")
-	ax[1].set_xlabel("psiN")
-	ax[0].set_ylabel("beta_prime")
-	ax[1].set_ylabel("shear")
-	show()
-	'''

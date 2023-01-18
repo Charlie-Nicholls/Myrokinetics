@@ -137,20 +137,20 @@ class myro_set_read(object):
 			for skey, key in vs:
 				self.runs[i][key] = self.runs[i]['data'].namelist[skey][key]
 		
-	def plot_omega(self):
-		self._plot_diag(var = 0)
+	def plot_omega(self, init = None):
+		self._plot_diag(var = 0, init = init)
 	
-	def plot_phi(self):
-		self._plot_diag(var = 1)
+	def plot_phi(self, init = None):
+		self._plot_diag(var = 1, init = init)
 	
-	def plot_apar(self):
-		self._plot_diag(var = 2)
+	def plot_apar(self, init = None):
+		self._plot_diag(var = 2, init = init)
 		
-	def plot_phi2(self):
-		self._plot_diag(var = 3)
+	def plot_phi2(self, init = None):
+		self._plot_diag(var = 3, init = init)
 	
-	def _plot_diag(self, var = 0):
-		Plotters['Diag_Set'](runs = self.runs, var = var)
+	def _plot_diag(self, var = 0, init = None):
+		Plotters['Diag_Set'](runs = self.runs, var = var, init = init)
 	
-	def plot_set(self, var = None, init = None):
+	def plot_set(self, var = None, init = 0):
 		Plotters['Set'](runs = self.runs, var = var, init = init)

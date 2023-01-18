@@ -1,4 +1,4 @@
-from geqdsk_reader import geqdsk as readg
+from .geqdsk_reader import geqdsk as readg
 from matplotlib.pyplot import *
 from scipy.interpolate import RectBivariateSpline
 from matplotlib.widgets import TextBox
