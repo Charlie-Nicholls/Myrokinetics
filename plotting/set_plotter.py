@@ -16,8 +16,7 @@ def plot_set(runs = None, var = None, init = 0):
 		ax[1].cla()
 		ax[0].cla()
 		psiN = psiNs[val]
-		for run_id in runs:
-			run = runs[run_id]
+		for run in runs.values():
 			if not psiNs or run['psiN'] == psiN:
 				aky = None
 				col = colours[0]
@@ -34,24 +33,23 @@ def plot_set(runs = None, var = None, init = 0):
 		if akys:
 			lin, han = ax[0].get_legend_handles_labels()
 			leg = dict(zip(han, lin))
-			ax[0].legend(leg.values(),leg.keys(), title = "aky", loc=0)
-			ax[1].legend(leg.values(),leg.keys(), title = "aky", loc=0)
+			ax[0].legend(leg.values(),leg.keys(), title = "aky", loc='upper left', bbox_to_anchor=(1, 1))
 		fig.canvas.draw_idle()
 	
-	fig, ax = subplots(2,1)
+	fig, ax = subplots(2,1,figsize=(10,7))
 	colours = ['r','b','g','k','y','m','c']
 	akys = None
 	if 'aky' in runs[0].keys():
 		akys = set()
-		for run_id in runs:
-			akys.add(runs[run_id]['aky'])
+		for run in runs.values():
+			akys.add(run['aky'])
 		akys = list(akys)
 		akys.sort()
 	psiNs = None
 	if 'psiN' in runs[0].keys():
 		psiNs = set()
-		for run_id in runs:
-			psiNs.add(runs[run_id]['psiN'])
+		for run in runs.values():
+			psiNs.add(run['psiN'])
 		psiNs = list(psiNs)
 		psiNs.sort()
 
