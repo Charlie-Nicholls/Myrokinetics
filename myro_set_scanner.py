@@ -1,6 +1,6 @@
 import os
 from numpy import full, savez
-from .ncdf2dict import ncdf2dict as readnc
+from ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
 import f90nml
 
@@ -64,7 +64,7 @@ class myro_set_scan(object):
 					val = "[" + val
 				if val[-1] != "]":
 					val = val+ "]"
-			if key == 'variable' or key == 'key':
+			if (key == 'variable' or key == 'key') and val != 'None':
 				if val[0] != "\'":
 					val = "\'" + val
 				if val[-1] != "\'":
@@ -100,7 +100,7 @@ class myro_set_scan(object):
 							val = "[" + val
 						if val[-1] != "]":
 							val = val + "]"
-					if key == 'variable' or key == 'key':
+					if (key == 'variable' or key == 'key') and val != 'None':
 						if val[0] != "\'":
 							val = "\'" + val
 						if val[-1] != "\'":
@@ -260,19 +260,20 @@ class myro_set_scan(object):
 			empty_elements.append('shat')
 		if self.inputs['beta_prime'] is None:
 			empty_elements.append('beta_prime')
-		if self.inputs['beta_prime'] > 0:
-			self.inputs['beta_prime'] = -1*self.inputs['beta_prime']
 
 		if empty_elements:
 			print(f"ERROR: the following inputs are empty: {empty_elements}")
 			return False
 		
+		if not os.path.exists(self.info['data_path']):
+				os.mkdir(self.info['data_path'])
+
 		if self.template_name is not None:
-			os.system(f"cp \"{directory}/{self.template_name}\" \"{run_path}/{self.template_name}\"")
-		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{run_path}/{self.eqbm.kin_name}\"")
-		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{run_path}/{self.eqbm.eq_name}\"")
+			os.system(f"cp \"{self._template_path}/{self.template_name}\" \"{self.info['data_path']}/{self.template_name}\"")
+		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{self.info['data_path']}/{self.eqbm.kin_name}\"")
+		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{self.info['data_path']}/{self.eqbm.eq_name}\"")
 		if self.input_name is not None:		
-			os.system(f"cp \"{self.path}/{self.input_name}\" \"{run_path}/{self.input_name}\"")
+			os.system(f"cp \"{self.path}/{self.input_name}\" \"{self.info['data_path']}/{self.input_name}\"")
 		
 		return True
 	
@@ -316,6 +317,8 @@ class myro_set_scan(object):
 		if check['complete']:
 			print(f"{len(check['complete'])} Existing Runs Detected")
 		
+		self._create_run_info()
+		
 		if directory is not None:
 			self.info['data_path'] = directory
 		else:
@@ -337,7 +340,8 @@ class myro_set_scan(object):
 							self.inputs['key'] = key1
 				if self.inputs['key'] is None:
 					print("ERROR: Could not find namelist key")
-				return
+					return
+
 			for v, val in enumerate(self.inputs['values']):
 				for k, aky in enumerate(self.inputs['aky_values']):
 					if [psiN,v,k] in check['incomplete']:
