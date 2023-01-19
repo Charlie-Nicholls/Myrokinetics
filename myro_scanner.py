@@ -1,6 +1,6 @@
 import os
 from numpy import full, real, imag, nan, amax, array, isfinite, loadtxt, transpose, savez
-from .ncdf2dict import ncdf2dict as readnc
+from ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
 import f90nml
 
@@ -269,6 +269,7 @@ class myro_scan(object):
 			print("ERROR: ideal must be boolean")
 			return
 		
+		self._create_run_info()
 		run_path = self.info['data_path']
 		
 		try:
@@ -365,13 +366,15 @@ class myro_scan(object):
 			print(f"ERROR: the following inputs are empty: {empty_elements}")
 			return False
 		
-		#Split for if dir in file names
+		if not os.path.exists(self.info['data_path']):
+				os.mkdir(self.info['data_path'])
+
 		if self.template_name is not None:
-			os.system(f"cp \"{directory}/{self.template_name}\" \"{run_path}/{self.template_name}\"")
-		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{run_path}/{self.eqbm.kin_name}\"")
-		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{run_path}/{self.eqbm.eq_name}\"")
+			os.system(f"cp \"{self._template_path}/{self.template_name}\" \"{self.info['data_path']}/{self.template_name}\"")
+		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{self.info['data_path']}/{self.eqbm.kin_name}\"")
+		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{self.info['data_path']}/{self.eqbm.eq_name}\"")
 		if self.input_name is not None:		
-			os.system(f"cp \"{self.path}/{self.input_name}\" \"{run_path}/{self.input_name}\"")
+			os.system(f"cp \"{self.path}/{self.input_name}\" \"{self.info['data_path']}/{self.input_name}\"")
 		
 		return True
 	
