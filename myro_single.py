@@ -81,6 +81,15 @@ class myro_single(object):
 			print(f"\n{key}:")
 			for subkey in self.namelist[key].keys():
 				print(f"\t{subkey} = {self.namelist[key][subkey]}")
+				
+	def write_input_file(self, filename = None):
+		if self.namelist is None:
+			print("ERROR: No Input Namelist Loaded")
+		if filename is None and self.input_file is None:
+			filename = input("Input File Name: ")
+		elif filename is None:
+			filename = self.input_file
+		self.namelist.write(filename)
 	
 	def plot_omega(self):
 		Plotters['Diag_Single'](data = self.run, var = 0)

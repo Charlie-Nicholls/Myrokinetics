@@ -13,6 +13,7 @@ class myro_set_read(object):
 		self.directory = directory
 		self.runs = {}
 		self.data = {}
+		self.variables = {}
 		if filename:
 			self.open_file(filename = filename, directory = directory)
 		if out_files or in_files:
@@ -94,6 +95,7 @@ class myro_set_read(object):
 					self.runs[run_id]['psiN'] = psiN
 					self.runs[run_id]['aky'] = aky
 					self.runs[run_id][self.data['inputs']['variable']] = value
+		self._get_variables()
 			
 	def load_runs(self, out_files = None, in_files = None, directory = None):
 		if type(out_files) == str:
@@ -116,6 +118,7 @@ class myro_set_read(object):
 			self.load_run(out_file = out_file, in_file = in_file, directory = directory)
 		
 		self._find_diff()
+		self._get_variables()
 		
 	def load_run(self, out_file = None, in_file = None, directory = None):
 		if directory is None and self.directory is None:
@@ -136,6 +139,35 @@ class myro_set_read(object):
 		for i in self.runs.keys():
 			for skey, key in vs:
 				self.runs[i][key] = self.runs[i]['data'].namelist[skey][key]
+	
+	def _get_variables(self):
+		for key in [x for x in self.runs[0].keys() if x != 'data']:
+			var = set()
+			for run in self.runs.values():
+				var.add(run[key])
+			var = list(var)
+			var.sort()
+			self.variables[key] = var
+				
+	def get_run(self, indexes = None, variables = None, values = None):
+		if not self.variables:
+			self._get_variables()
+		if self.runs == {}:
+			print("ERROR: No runs loaded")
+			return
+		if variables is None:
+			variables = self.variables.keys()
+		if values is None and indexes is None:
+			print(f"ERROR: Variables values/indexes not provided for {self.self.variables.keys()}")
+			return
+		elif values is None:
+			values = [self.variables[key][i] for key, i in zip(variables,indexes)]
+		for run in self.runs.values():
+			for var, val in zip(variables,values):
+				if run[var] != val:
+					break
+				return run['data']
+		print(f"Could Not Find Run With {variables} = {values}")
 		
 	def plot_omega(self, init = None):
 		self._plot_diag(var = 0, init = init)
@@ -152,5 +184,10 @@ class myro_set_read(object):
 	def _plot_diag(self, var = 0, init = None):
 		Plotters['Diag_Set'](runs = self.runs, var = var, init = init)
 	
-	def plot_set(self, var = None, init = 0):
-		Plotters['Set'](runs = self.runs, var = var, init = init)
+	def plot_aky(self, var = None, init = 0):
+		self.plot_set(var = var, init = init, aky_axis = True)
+	
+	def plot_set(self, var = None, init = 0, aky_axis = False):
+		if not self.variables:
+			self._get_variables
+		Plotters['Set'](runs = self.runs, var = var, variables = self.variables, init = init, aky_axis = aky_axis)
