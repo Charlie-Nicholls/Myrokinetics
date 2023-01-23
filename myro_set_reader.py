@@ -22,10 +22,19 @@ class myro_set_read(object):
 	def __getitem__(self, key):
 		if key in self.runs.keys():
 			return self.runs[key]
+		elif key in self.variables.keys():
+			return self.variables[key]
+		elif key in self.data['inputs'].keys():
+			return self.data['inputs'][key]
 
 	def keys(self):
 		return self.runs.keys()
 		
+	@property
+	def inputs(self):
+        	for key, val in self.data['inputs'].items():
+        		print(f"{key} = {val}")	
+	
 	def _get_new_id(self):
 		if self.runs == {}:
 			key = 0
@@ -163,9 +172,11 @@ class myro_set_read(object):
 		elif values is None:
 			values = [self.variables[key][i] for key, i in zip(variables,indexes)]
 		for run in self.runs.values():
+			isRun = True
 			for var, val in zip(variables,values):
 				if run[var] != val:
-					break
+					isRun = False
+			if isRun:
 				return run['data']
 		print(f"Could Not Find Run With {variables} = {values}")
 		

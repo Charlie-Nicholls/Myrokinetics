@@ -20,22 +20,28 @@ def plot_set(runs = None, var = None, variables = None, init = 0, aky_axis = Fal
 			if (not psiNs or run['psiN'] == psiN) and run['data'] is not None:
 				if options.get_status()[0] and akys:
 					col = colours[variables[var].index(run[var])%len(colours)]
-					ax[1].plot(run['aky'],run['data'].run['gr'],'o',c=col,label=str(run[var]))
-					ax[0].plot(run['aky'],run['data'].run['mf'],'o',c=col,label=str(run[var]))
+					mar = markers[variables[var].index(run[var])//len(markers)]
+					ax[1].plot(run['aky'],run['data'].run['gr'],marker=mar,c=col,label=str(run[var]))
+					ax[0].plot(run['aky'],run['data'].run['mf'],marker=mar,c=col,label=str(run[var]))
 				else:
 					aky = None
 					col = colours[0]
+					mar = markers[0]
 					if akys:
 						aky = run['aky']
 						col = colours[akys.index(aky)%len(colours)]
-					ax[1].plot(run[var],run['data'].run['gr'],'o',c=col,label=str(aky))
-					ax[0].plot(run[var],run['data'].run['mf'],'o',c=col,label=str(aky))
+						mar = markers[akys.index(aky)//len(markers)]
+					ax[1].plot(run[var],run['data'].run['gr'],marker=mar,c=col,label=str(aky))
+					ax[0].plot(run[var],run['data'].run['mf'],marker=mar,c=col,label=str(aky))
 		if options.get_status()[0]:
 			ax[1].set_xlabel("aky")
 			if not akys:
 				ax[1].text(0,0,"NO AKY DATA")
 		else:
 			ax[1].set_xlabel(var)
+		if options.get_status()[1]:
+			ax[0].set_xscale("log")
+			ax[1].set_xscale("log")
 		ax[1].set_ylabel("Growth Rate")
 		ax[0].set_ylabel("Mode Frequency")
 		fig.suptitle(f"{var} | psiN = {psiN}")
@@ -49,6 +55,7 @@ def plot_set(runs = None, var = None, variables = None, init = 0, aky_axis = Fal
 	
 	fig, ax = subplots(2,1,figsize=(10,7))
 	colours = ['r','b','g','k','y','m','c']
+	markers = ['o','v','s','D','^','<','>']
 	akys = None
 	if 'aky' in variables.keys():
 		akys = variables['aky']
@@ -61,8 +68,8 @@ def plot_set(runs = None, var = None, variables = None, init = 0, aky_axis = Fal
 		slider = Slider(slaxes, 'psiN index:', 0, len(psiNs)-1, valinit = init, valstep = 1)
 		slider.on_changed(draw_fig)
 
-	chaxes = axes([0.72, 0.01, 0.09, 0.1],frame_on = False)
-	options = CheckButtons(chaxes, ["Plot vs aky"],[aky_axis])
+	chaxes = axes([0.8, 0.01, 0.1, 0.1],frame_on = False)
+	options = CheckButtons(chaxes, ["Plot vs aky","Log x axis"],[aky_axis,False])
 	options.on_clicked(draw_fig)
 
 	draw_fig(init)
