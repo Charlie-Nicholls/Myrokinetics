@@ -204,7 +204,7 @@ class myro_set_scan(object):
 			
 		unfinished = []
 		finished = []
-		for psiN in self.inputs['psiNs']:
+		for p, psiN in enumerate(self.inputs['psiNs']):
 			for k, aky in enumerate(self.inputs['aky_values']):
 				for v, val in enumerate(self.inputs['values']):
 					if os.path.exists(f"{directory}/{psiN}/{v}/{p}_{v}_{k}.out.nc"):
@@ -343,7 +343,7 @@ class myro_set_scan(object):
 					return
 
 			for v, val in enumerate(self.inputs['values']):
-				if not os.path.exists(directory):
+				if not os.path.exists(f"{run_path}/{v}"):
 					os.mkdir(f"{run_path}/{v}")
 				for k, aky in enumerate(self.inputs['aky_values']):
 					if [psiN,v,k] in check['incomplete']:
