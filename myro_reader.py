@@ -309,29 +309,32 @@ class myro_read(object):
 	def plot_aky(self, init = [0,0]):
 		Plotters['Scan'](scan = self.run, aky=True, init = init)
 	
-	def plot_scan(self, aky = False, init = [0,0,0,0]):
+	def plot_scan(self, init = [0,0], aky = False):
 		Plotters['Scan'](scan = self.run, aky = aky, init = init)
 	
 	def plot_ideal(self):
 		Plotters['Ideal'](scan = self.run)
 	
-	def plot_omega(self, aky = True, init = [0,0,0,0]):
+	def plot_omega(self,init = [0,0,0,0], aky = True):
 		Plotters['Diag'](scan = self.run, var = 0, aky = aky, init = init, verify = self.verify)
 	
-	def plot_phi(self, aky = True, init = [0,0,0,0]):
+	def plot_phi(self,init = [0,0,0,0], aky = True):
 		Plotters['Diag'](scan = self.run, var = 1, aky = aky, init = init, verify = self.verify)
 	
-	def plot_apar(self, aky = True, init = [0,0,0,0]):
+	def plot_apar(self,init = [0,0,0,0], aky = True):
 		Plotters['Diag'](scan = self.run, var = 2, aky = aky, init = init, verify = self.verify)
 		
-	def plot_phi2(self, aky = True, init = [0,0,0,0]):
+	def plot_phi2(self,init = [0,0,0,0], aky = True):
 		Plotters['Diag'](scan = self.run, var = 3, aky = aky, init = init, verify = self.verify)
 	
-	def _plot_diag(self, var = 0, aky = True, init = [0,0,0,0]):
+	def _plot_diag(self,init = [0,0,0,0], aky = True, var = 0):
 		Plotters['Diag'](scan = self.run, var = var, aky = aky, init = init, verify = self.verify)
 	
 	def plot_epar(self):
 		Plotters['Epar'](scan = self.run)
+	
+	def plot_theta(self,init = [0,0,0,0], aky = True, var = 0):
+		Plotters['Theta'](scan = self.run, var = var, init = init, aky = aky)
 	
 	def load_equillibrium(self, eq_file = None, kin_file = None, kinetics_type = None, directory = None):
 		from .equillibrium import equillibrium

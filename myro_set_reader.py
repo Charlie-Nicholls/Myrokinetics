@@ -195,10 +195,13 @@ class myro_set_read(object):
 	def _plot_diag(self, var = 0, init = None):
 		Plotters['Diag_Set'](runs = self.runs, var = var, init = init)
 	
-	def plot_aky(self, var = None, init = 0):
+	def plot_aky(self, init = 0, var = None):
 		self.plot_set(var = var, init = init, aky_axis = True)
 	
-	def plot_set(self, var = None, init = 0, aky_axis = False):
+	def plot_set(self, init = 0, var = None, aky_axis = False):
 		if not self.variables:
 			self._get_variables
 		Plotters['Set'](runs = self.runs, var = var, variables = self.variables, init = init, aky_axis = aky_axis)
+	
+	def plot_theta(self, init = None, var = 0):
+		Plotters['Theta_Set'](runs = self.runs, var = var, init = init)

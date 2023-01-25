@@ -29,7 +29,7 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			path = scan['info']['data_path']
 			try:
 				from ncdf2dict import ncdf2dict as readnc
-				run = readnc(f"{path}/{psiN}/{bp_idx}_{sh_idx}/{bp_idx}_{sh_idx}_{aky_idx}.out.nc")
+				run = readnc(f"{path}/{psiN}/{bp_idx}_{sh_idx}/{psi_idx}_{bp_idx}_{sh_idx}_{aky_idx}.out.nc")
 				t = run['t']
 			except:
 				print(f"ERROR: Unable to read data, either use Detailed Save or ensure data is at specified folder {path}")
@@ -41,7 +41,7 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			path = scan['info']['data_path']
 			try:
 				from ncdf2dict import ncdf2dict as readnc
-				run = readnc(f"{path}/{psiN}/{bp_idx}_{sh_idx}/{bp_idx}_{sh_idx}_{aky_idx}.out.nc")
+				run = readnc(f"{path}/{psiN}/{bp_idx}_{sh_idx}/{psi_idx}_{bp_idx}_{sh_idx}_{aky_idx}.out.nc")
 				t = run['theta']
 			except:
 				print(f"ERROR: Unable to read data, either use Detailed Save or ensure data is at specified folder {path}")
@@ -49,7 +49,7 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		else:
 			theta = data['theta'][psi_idx][bp_idx][sh_idx][aky_idx]
 		
-		ax.set_title(f"psiN: {psiN} | -\u03B2': {round(bp,3)} | shear: {round(sh,3)} | aky: {ky} | file: {psiN}/{bp_idx}_{sh_idx}/{bp_idx}_{sh_idx}_{aky_idx}")
+		ax.set_title(f"psiN: {psiN} | -\u03B2': {round(bp,3)} | shear: {round(sh,3)} | aky: {ky} | file: {psiN}/{psi_idx}_{bp_idx}_{sh_idx}/{bp_idx}_{sh_idx}_{aky_idx}")
 		
 		if var == 0:
 			if data['omega'] is None:

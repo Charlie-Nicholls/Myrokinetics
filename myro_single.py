@@ -105,3 +105,6 @@ class myro_single(object):
 	
 	def _plot_diag(self, var = 0):
 		Plotters['Diag_Single'](data = self.run, var = var)
+		
+	def plot_theta(self, var = 0):
+		Plotters['Theta_Single'](run = self.run, var = var)

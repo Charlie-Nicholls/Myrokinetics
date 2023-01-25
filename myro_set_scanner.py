@@ -207,7 +207,7 @@ class myro_set_scan(object):
 		for psiN in self.inputs['psiNs']:
 			for k, aky in enumerate(self.inputs['aky_values']):
 				for v, val in enumerate(self.inputs['values']):
-					if os.path.exists(f"{directory}/{psiN}/{v}_{k}.out.nc"):
+					if os.path.exists(f"{directory}/{psiN}/{v}/{p}_{v}_{k}.out.nc"):
 						finished.append([psiN,v,k])
 					else:
 						unfinished.append([psiN,v,k])
@@ -327,7 +327,7 @@ class myro_set_scan(object):
 		if not os.path.exists(directory):
 			os.mkdir(directory)
 	
-		for psiN in self.inputs['psiNs']:
+		for p, psiN in enumerate(self.inputs['psiNs']):
 			run_path = os.path.join(directory, str(psiN))
 			if not os.path.exists(run_path):
 				os.mkdir(run_path)
@@ -343,6 +343,8 @@ class myro_set_scan(object):
 					return
 
 			for v, val in enumerate(self.inputs['values']):
+				if not os.path.exists(directory):
+					os.mkdir(f"{run_path}/{v}")
 				for k, aky in enumerate(self.inputs['aky_values']):
 					if [psiN,v,k] in check['incomplete']:
 						subnml = nml
@@ -356,17 +358,16 @@ class myro_set_scan(object):
 						if self.inputs['Fixed_delt'] is False:
 							subnml['knobs']['delt'] = 0.04/aky
 						subnml[self.inputs['key']][self.inputs['variable']] = val
-						subnml.write(f"{run_path}/{v}_{k}.in", force=True)
+						subnml.write(f"{run_path}/{v}/{p}_{v}_{k}.in", force=True)
 						
 						if not self.inputs['Viking']:
-							os.system(f"mpirun -np 8 gs2 \"{run_path}/{v}_{k}.in\"")
+							os.system(f"mpirun -np 8 gs2 \"{run_path}/{v}/{p}_{v}_{k}.in\"")
 						else:
-							jobfile = open(f"{run_path}/{v}_{k}.job",'w')
-							jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"Input: {run_path}/{v}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{run_path}/{v}_{k}.in\"")
-							
+							jobfile = open(f"{run_path}/{v}/{p}_{v}_{k}.job",'w')
+							jobfile.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={p}_{v}_{k}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"echo Input: {run_path}/{v}/{p}_{v}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{run_path}/{v}/{p}_{v}_{k}.in\"")
 							jobfile.close()
-							os.chdir(f"{run_path}")
-							os.system(f"sbatch \"{run_path}/{v}_{k}.job\"")
+							os.chdir(f"{run_path}/{v}")
+							os.system(f"sbatch \"{run_path}/{v}/{p}_{v}_{k}.job\"")
 							os.chdir(f"{self.path}")
 								
 	def save_out(self, filename = None, directory = None, VikingSave = False):
@@ -387,7 +388,7 @@ class myro_set_scan(object):
 			time = 3*len(self.inputs['psiNs'])*len(self.inputs['aky_values'])*len(self.inputs['values'])
 			hr = int(time/3600)
 			mi = int(time/60 - hr)
-			job.write(f"#!/bin/bash\n#SBATCH --time={hr:02d}:{mi:02d}:59\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
+			job.write(f"#!/bin/bash\n#SBATCH --time={hr:02d}:{mi:02d}:59\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n#SBATCH --output=save_out.slurm\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
 			pyth = open("save_out.py",'w')
 			pyth.write(f"from Myrokinetics import myro_set_scan\n\nrun = myro_set_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True)")
@@ -406,14 +407,14 @@ class myro_set_scan(object):
 			for v, val in enumerate(values):
 				for k, aky in enumerate(akys):
 					try:
-						in_nmls[p][v][k] = f90nml.read(f"{self.info['data_path']}/{psiN}/{v}_{k}.in")
+						in_nmls[p][v][k] = f90nml.read(f"{self.info['data_path']}/{psiN}/{v}/{p}_{v}_{k}.in")
 					except Exception as e:
-						print(f"Input Save Error {psiN}/{v}_{k}: {e}")
+						print(f"Input Save Error {psiN}/{v}/{p}_{v}_{k}: {e}")
 						in_nmls[p][v][k] = None
 					try:
-						out_dict[p][v][k] = readnc(f"{self.info['data_path']}/{psiN}/{v}_{k}.out.nc")
+						out_dict[p][v][k] = readnc(f"{self.info['data_path']}/{psiN}/{v}/{p}_{v}_{k}.out.nc")
 					except Exception as e:
-						print(f"Output Save Error {psiN}/{v}_{k}: {e}")
+						print(f"Output Save Error {psiN}/{v}/{p}_{v}_{k}: {e}")
 						out_dict[p][v][k] = None
 		file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, run_info = self.info, input_namelists = in_nmls, output_dicts = out_dict, files = file_lines)
