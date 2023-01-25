@@ -57,13 +57,17 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			else:
 				omega = data['omega'][psi_idx][bp_idx][sh_idx][aky_idx]
 			
-			ax.plot(t,real(omega),'r',label="mode frequency")
+			ax2.cla()
+			
+			ax2.plot(t,real(omega),'r',label="mode frequency")
 			ax.plot(t,imag(omega),'b',label="growth rate")
 			
-			ax.text(0.01,0.99,f"GR: {imag(omega[-1]):+.2e}\nMF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
-			ax.set_ylabel("Omega")
+			ax.text(0.01,0.99,f"GR: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
+			ax2.text(0.01,0.99,f"MF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=ax2.transAxes)
+			ax.set_ylabel("Growth Rate")
 			ax.set_xlabel(f"Time ({len(t)} steps)")
-			ax.legend(loc=1)
+			ax2.set_ylabel("Mode_Frequency")
+			ax2.set_xlabel(f"Time ({len(t)} steps)")
 			
 		elif var == 1:
 			if data['phi'] is None:
@@ -100,12 +104,10 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			
 			ax.set_ylabel("Phi2")
 			ax.set_yscale('log')
-			ax.set_xlabel("Time")
+			ax.set_xlabel(f"Time ({len(t)} steps)")
 		
 		if verify is not None:
 			bad = []
-			if verify['phi2'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['phi2']:
-				bad.append('phi2')
 			if verify['nstep'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['nstep']:
 				bad.append('nstep')
 			if verify['other'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['other']:
@@ -129,7 +131,10 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		print(f"ERROR: variable name/value {var} not supported. supported: omega/0, phi/1, apar/2, phi2/3")
 		return
 	
-	fig, ax = subplots(figsize=(8.8,5.8))
+	if var == 0:
+		fig, [ax, ax2] = subplots(2,1,figsize=(10,10))
+	else:
+		fig, ax = subplots(figsize=(8.8,5.8))
 	subplots_adjust(bottom=0.15)
 	fig.suptitle(scan['info']['run_name'])
 

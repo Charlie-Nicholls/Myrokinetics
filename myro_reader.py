@@ -50,16 +50,21 @@ class myro_read(object):
 			return self.run['data']['mode_frequencies_all']
 		elif key in ["akyv","aky_v",]:
 			return self.run['inputs']['aky_values']
-		elif key in ['bad_phi2', 'badphi2']:
-			return self.verify['phi2']
+			
+		elif key in ['bad_runs', 'badruns']:
+			return self.verify.bad_runs
 		elif key in ['bad_nstep', 'badnstep']:
 			return self.verify['nstep']
-		elif key in ['bad_other', 'badother']:
+		elif key in ['bad_other', 'badother','other']:
 			return self.verify['other']
-		elif key in ['unconv', 'unconverged']:
+		elif key in ['unconv', 'unconverged','bad_conv']:
 			return self.verify['unconv']
+		elif key in ['unconv_low', 'unconverged_low','unconv_stable','unconverged_stable','low_unconv','low_unconverged','bad_conv_low']:
+			return self.verify['unconv_low']
 		elif key in ['saveerrors','save_errors']:
 			return self.verify['save_errors']
+		elif key in ['saveerrors_all','save_errors_all']:
+			return self.verify['save_errors_all']
 	@property	
 	def data(self):
         	for key, val in self.run['data'].items():
