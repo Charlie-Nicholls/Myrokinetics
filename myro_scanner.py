@@ -121,9 +121,6 @@ class myro_scan(object):
 	def load_pyro(self, template_file = None, directory = None):
 		if template_file is not None:
 				self.template_name = template_file
-		if self.template_name:
-			with open(os.path.join(directory,self.template_name)) as tfile:
-				self._template_lines = tfile.readlines()
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
@@ -131,6 +128,10 @@ class myro_scan(object):
 		if directory == "./":
 			directory = os.getcwd()
 		self._template_path = directory
+		
+		if self.template_name:
+			with open(os.path.join(directory,self.template_name)) as tfile:
+				self._template_lines = tfile.readlines()
 		
 		self.pyro = self.eqbm.load_pyro(template_file = self.template_name, directory = directory)
 		
