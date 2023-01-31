@@ -5,8 +5,8 @@ class verify_scan(object):
 	def __init__(self, scan = None):
 		self.scan = scan
 		self.new_data = {'gra': scan['data']['growth_rates_all'], 'mfa': scan['data']['mode_frequencies_all']}
-		self.bad_runs = {'omega': None, 'other': None, 'unconv': None, 'unconv_low': None}
-		self.save_errors = {'omega': set(), 'phi2': set(), 'time': set()}
+		self.bad_runs = {'omega': None, 'other': None, 'unconv': None, 'unconv_low': None, 'phi': None, 'apar': None}
+		self.save_errors = {'omega': set(), 'phi2': set(), 'time': set(), 'phi': set(), 'apar': set()}
 		self.check_all()
 	
 	def __getitem__(self, key):
@@ -19,6 +19,10 @@ class verify_scan(object):
 			return self.bad_runs['nstep']
 		elif key in ["bad_other", "badother", "other"]:
 			return self.bad_runs['other']
+		elif key in ["bad_phi", "badphi", "phi"]:
+			return self.bad_runs['phi']
+		elif key in ["bad_apar", "badapar", "apar"]:
+			return self.bad_runs['apar']
 		elif key in ["unconv", "unconverged"]:
 			return self.bad_runs["unconv"]
 		elif key in ['unconv_low', 'unconverged_low','unconv_stable','unconverged_stable','low_unconv','low_unconverged']:
@@ -38,6 +42,8 @@ class verify_scan(object):
 			return
 		self.check_convergence()
 		self.check_nstep()
+		self.check_phi()
+		self.check_apar()
 		self.check_other()
 		self.print_verify()
 		
@@ -46,6 +52,8 @@ class verify_scan(object):
 		print(f"Found {len(self.bad_runs['unconv'])} Unconverged Possibly Unstable Runs and {len(self.bad_runs['unconv_low'])} Unconverged Stable Runs")
 		print(f"Found {len(self.bad_runs['nstep'])} Runs Hitting The nstep Limit")
 		print(f"Found {len(self.bad_runs['other'])} Runs With omega -> nan")
+		print(f"Found {len(self.bad_runs['phi'])} Runs Where phi does not -> 0 as n -> +/-inf")
+		print(f"Found {len(self.bad_runs['apar'])} Runs Where apar does not -> 0 as n -> +/-inf")
 		runs_with_save_errors = self.save_errors['omega'] | self.save_errors['phi2'] | self.save_errors['time']
 		print(f"Found {len(runs_with_save_errors)} Runs With Save Errors")
 	
@@ -142,6 +150,46 @@ class verify_scan(object):
 		
 		self.save_errors['omega'] = self.save_errors['omega'] | save_errors
 		self.bad_runs['nstep'] = bad_nstep
+		
+	def check_phi(self):
+		if self.scan['data']['phi'] is None:
+			print("ERROR: No phi data")
+			return
+		sha = shape(array(self.scan['data']['phi'],dtype=object))
+		bad_phi = []
+		save_errors  = set()
+		for i in range(sha[0]):
+			for j in range(sha[1]):
+				for k in range(sha[2]):
+					for l in range(sha[3]):
+						if self.scan['data']['phi'][i][j][k][l] is None:
+							save_errors.add((i,j,k,l))
+						phi_max = max([abs(x) for x in self.scan['data']['phi'][i][j][k][l]])
+						if abs(self.scan['data']['phi'][i][j][k][l][0])/phi_max > 0.05 or abs(self.scan['data']['phi'][i][j][k][l][-1])/phi_max > 0.05:
+							bad_phi.append([i,j,k,l])
+							
+		self.save_errors['phi'] = self.save_errors['phi'] | save_errors
+		self.bad_runs['phi'] = bad_phi
+	
+	def check_apar(self):
+		if self.scan['data']['apar'] is None:
+			print("ERROR: No apar data")
+			return
+		sha = shape(array(self.scan['data']['apar'],dtype=object))
+		bad_apar = []
+		save_errors  = set()
+		for i in range(sha[0]):
+			for j in range(sha[1]):
+				for k in range(sha[2]):
+					for l in range(sha[3]):
+						if self.scan['data']['apar'][i][j][k][l] is None:
+							save_errors.add((i,j,k,l))
+						apar_max = max([abs(x) for x in self.scan['data']['apar'][i][j][k][l]])
+						if abs(self.scan['data']['apar'][i][j][k][l][0])/apar_max > 0.05 or abs(self.scan['data']['apar'][i][j][k][l][-1])/apar_max > 0.05:
+							bad_apar.append([i,j,k,l])
+							
+		self.save_errors['apar'] = self.save_errors['apar'] | save_errors
+		self.bad_runs['apar'] = bad_apar
 	
 	def check_other(self):
 		if self.scan['data']['omega'] is None:

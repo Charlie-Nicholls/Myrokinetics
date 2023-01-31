@@ -57,6 +57,10 @@ class myro_read(object):
 			return self.verify['nstep']
 		elif key in ['bad_other', 'badother','other']:
 			return self.verify['other']
+		elif key in ["bad_phi", "badphi"]:
+			return self.verify['phi']
+		elif key in ["bad_apar", "badapar"]:
+			return self.verify['apar']
 		elif key in ['unconv', 'unconverged','bad_conv']:
 			return self.verify['unconv']
 		elif key in ['unconv_low', 'unconverged_low','unconv_stable','unconverged_stable','low_unconv','low_unconverged','bad_conv_low']:
