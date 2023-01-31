@@ -114,6 +114,10 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 				bad.append('other')
 			if verify['unconv'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['unconv']:
 				bad.append('unconverged')
+			if var == 1 and verify['phi'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['phi']:
+				bad.append('phi')
+			if var == 2 and verify['apar'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['apar']:
+				bad.append('apar')
 			if bad:
 				ax.text(0.01,0.01,f"BAD RUN: {str(bad)[1:-1]}",ha='left',va='bottom',transform=ax.transAxes,color='r')
 		fig.canvas.draw_idle()
