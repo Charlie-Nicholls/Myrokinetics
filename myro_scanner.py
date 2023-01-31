@@ -32,7 +32,7 @@ class myro_scan(object):
         		return self.inputs[key]
 
 	@property
-	def inputs(self):
+	def print_inputs(self):
         	for key, val in self.inputs.items():
         		print(f"{key} = {val}")
         	
