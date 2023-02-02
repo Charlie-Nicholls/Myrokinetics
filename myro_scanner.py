@@ -714,31 +714,31 @@ class myro_scan(object):
 								
 								if not QuickSave:
 									try:
-										omega[idx][i][j][k] = data['omega'][:,0,0].tolist()
+										omega[p][i][j][k] = data['omega'][:,0,0].tolist()
 									except: 
 										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: omega")
 									try:
-										phi[idx][i][j][k] = data['phi'][0,0,:].tolist()
+										phi[p][i][j][k] = data['phi'][0,0,:].tolist()
 									except: 
 										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: phi")
 									try:
-										apar[idx][i][j][k] = data['apar'][0,0,:].tolist()
+										apar[p][i][j][k] = data['apar'][0,0,:].tolist()
 									except: 
 										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: apar")
 									try:
-										bpar[idx][i][j][k] = data['bpar'][0,0,:].tolist()
+										bpar[p][i][j][k] = data['bpar'][0,0,:].tolist()
 									except: 
 										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: bpar")
 									try:
-										phi2[idx][i][j][k] = data['phi2'].tolist()
+										phi2[p][i][j][k] = data['phi2'].tolist()
 									except: 
 										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: phi2")
 									try:
-										time[idx][i][j][k] = data['t'].tolist()
+										time[p][i][j][k] = data['t'].tolist()
 									except: 
 										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: time")
 									try:
-										theta[idx][i][j][k] = data['theta'].tolist()
+										theta[p][i][j][k] = data['theta'].tolist()
 									except: 
 										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: theta")
 								
@@ -767,27 +767,27 @@ class myro_scan(object):
 						try:
 							aky_idx = gr_aky.index(amax(array(gr_aky)[isfinite(gr_aky)]))
 
-							grs[idx][i][j] = gr_list
-							mfs[idx][i][j] = mf_list
-							syms[idx][i][j] = sym_list
-							akys[idx][i][j] = self.inputs['aky_values'][aky_idx]
-							gr[idx][i][j] = gr_list[aky_idx]
-							mf[idx][i][j] = mf_list[aky_idx]
-							sym[idx][i][j] = sym_list[aky_idx]
+							grs[p][i][j] = gr_list
+							mfs[p][i][j] = mf_list
+							syms[p][i][j] = sym_list
+							akys[p][i][j] = self.inputs['aky_values'][aky_idx]
+							gr[p][i][j] = gr_list[aky_idx]
+							mf[p][i][j] = mf_list[aky_idx]
+							sym[p][i][j] = sym_list[aky_idx]
 							if self.inputs['Epar']:
-								eparNs[idx][i][j] = epars
-								eparN[idx][i][j] = epars[aky_idx]
+								eparNs[p][i][j] = epars
+								eparN[p][i][j] = epars[aky_idx]
 						except:
-							grs[idx][i][j] = gr_list
-							mfs[idx][i][j] = gr_list
-							syms[idx][i][j] = None
-							akys[idx][i][j] = None
-							gr[idx][i][j] = nan
-							mf[idx][i][j] = nan
-							sym[idx][i][j] = None
+							grs[p][i][j] = gr_list
+							mfs[p][i][j] = gr_list
+							syms[p][i][j] = None
+							akys[p][i][j] = None
+							gr[p][i][j] = nan
+							mf[p][i][j] = nan
+							sym[p][i][j] = None
 							if self.inputs['Epar']:
-								eparNs[idx][i][j] = None
-								eparN[idx][i][j] = None
+								eparNs[p][i][j] = None
+								eparN[p][i][j] = None
 							
 				if self.inputs['beta_min'] is None:
 					beta_min = beta_prim/self.inputs['beta_div']
@@ -798,7 +798,7 @@ class myro_scan(object):
 				else:
 					beta_max = self.inputs['beta_max']
 				for i in range(self.inputs['n_beta']):
-					beta_prime_axis[idx][i] = abs((beta_max - beta_min)*i/(self.inputs['n_beta']-1) + beta_min)
+					beta_prime_axis[p][i] = abs((beta_max - beta_min)*i/(self.inputs['n_beta']-1) + beta_min)
 					
 				if self.inputs['shat_min'] is None:
 					shat_min = shear/self.inputs['shat_div']
@@ -812,7 +812,7 @@ class myro_scan(object):
 					sh = (shat_max - shat_min)*i/(self.inputs['n_shat']-1) + shat_min
 					if sh == 0:
 						sh = 1e-4
-					shear_axis[idx][i] = sh
+					shear_axis[p][i] = sh
 
 			if self.inputs['Ideal']:
 				shear = loadtxt(f"{run_path}/{psiN}.ballstab_shat")
@@ -820,9 +820,9 @@ class myro_scan(object):
 				stab = loadtxt(f"{run_path}/{psiN}.ballstab_2d")
 				
 				bp = [abs(x) for x in bp]
-				beta_prime_axis_ideal[idx] = bp
-				shear_axis_ideal[idx] = shear
-				stabilities[idx] = transpose(stab)
+				beta_prime_axis_ideal[p] = bp
+				shear_axis_ideal[p] = shear
+				stabilities[p] = transpose(stab)
 			
 		dat = {'beta_prime_values':beta_prime_values,
 		'shear_values': shear_values,
