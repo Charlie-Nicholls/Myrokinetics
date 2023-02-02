@@ -255,6 +255,11 @@ class myro_set_scan(object):
 			empty_elements.append('values')
 		else:
 			self.inputs['values']
+		
+		if type(self.inputs['key']) in [int,float]:
+			self.inputs['key'] = [self.inputs['psiNs']]
+		else:
+			self.inputs['key'].sort()
 			
 		if self.inputs['variable'] is None:
 			empty_elements.append('variable')
@@ -336,10 +341,13 @@ class myro_set_scan(object):
 		
 			shear, beta_prim, tprim, fprim, beta, nml = self._make_fs_in(run_path=run_path, psiN=psiN)
 			if self.inputs['key'] is None:
+				keylist = []
 				for key1 in nml.keys():
 					for key2 in nml[key1].keys():
 						if key2 == self.inputs['variable']:
-							self.inputs['key'] = key1
+							keylist.append(key1)
+				if keylist:
+					self.inputs['key'] = keylist
 				if self.inputs['key'] is None:
 					print("ERROR: Could not find namelist key")
 					return
@@ -359,7 +367,8 @@ class myro_set_scan(object):
 							subnml[spec]['fprim'] = nml[spec]['fprim']*mul
 						if self.inputs['Fixed_delt'] is False:
 							subnml['knobs']['delt'] = 0.04/aky
-						subnml[self.inputs['key']][self.inputs['variable']] = val
+						for key in self.inputs['key']:
+							subnml[key][self.inputs['variable']] = val
 						subnml.write(f"{run_path}/{v}/{p}_{v}_{k}.in", force=True)
 						
 						if not self.inputs['Viking']:
