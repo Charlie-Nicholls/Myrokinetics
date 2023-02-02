@@ -668,17 +668,17 @@ class myro_scan(object):
 		else:
 			beta_prime_axis_ideal = shear_axis_ideal = self.inputs['n_shat_ideal'] = self.inputs['n_beta_ideal'] = stabilities = None
 		
-		for idx, psiN in enumerate(psiNs):
+		for p, psiN in enumerate(psiNs):
 			run_path = os.path.join(directory,str(psiN))
 			nml = f90nml.read(f"{run_path}/{psiN}.in")
 			shear = nml['theta_grid_eik_knobs']['s_hat_input']
 			beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
-			shear_values[idx] = shear
-			beta_prime_values[idx] = beta_prim
+			shear_values[p] = shear
+			beta_prime_values[p] = beta_prim
 			
 			if self.inputs['Gyro']:
 				for i in range(self.inputs['n_beta']):
-					per = 100*(idx*self.inputs['n_beta']+i)/(self.inputs['n_beta']*len(psiNs))
+					per = 100*(p*self.inputs['n_beta']+i)/(self.inputs['n_beta']*len(psiNs))
 					print(f"Saving {per:.2f}%", end='\r')
 					for j in range(self.inputs['n_shat']):
 						fol = str(i) + "_" + str(j)
