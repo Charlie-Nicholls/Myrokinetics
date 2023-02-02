@@ -94,17 +94,19 @@ class myro_set_scan(object):
 					key = 'aky_values'
 				if key == 'shear':
 					key = 'shat'
-				if key in self.inputs.keys():
-					if key == 'psiNs' or key == 'aky_values' or key == 'values':
-						if val[0] != "[":
-							val = "[" + val
-						if val[-1] != "]":
-							val = val + "]"
-					if (key == 'variable' or key == 'key') and val != 'None':
-						if val[0] != "\'":
-							val = "\'" + val
-						if val[-1] != "\'":
-							val = val + "\'"
+				if key == 'psiNs' or key == 'aky_values' or key == 'values':
+					if val[0] != "[":
+						val = "[" + val
+					if val[-1] != "]":
+						val = val + "]"
+				if (key == 'variable' or key == 'key') and val != 'None':
+					if val[0] != "\'":
+						val = "\'" + val
+					if val[-1] != "\'":
+						val = val + "\'"
+				if key not in self.inputs.keys():
+					print(f"ERROR: key '{key}' not found")
+				else:
 					self.inputs[key] = eval(val)
 	
 	def write_scan_input(self, filename = None, directory = "./"):

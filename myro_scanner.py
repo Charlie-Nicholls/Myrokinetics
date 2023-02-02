@@ -156,12 +156,15 @@ class myro_scan(object):
 				val = line.split(" = ")[1].strip("\t\n ")
 				if key == 'akys':
 					key = 'aky_values'
-				if key in self.inputs.keys():
-					if key == 'psiNs' or key == 'aky_values':
-						if val[0] != "[":
-							val = "[" + val
-						if val[-1] != "]":
-							val = val + "]"
+				if key == 'psiNs' or key == 'aky_values':
+					if val[0] != "[":
+						val = "[" + val
+					if val[-1] != "]":
+						val = val + "]"
+				if key not in self.inputs.keys():
+					print(f"ERROR: key '{key}' not found")
+				
+				else:
 					self.inputs[key] = eval(val)
 			
 	def write_scan_input(self, filename = None, directory = "./"):
@@ -648,6 +651,7 @@ class myro_scan(object):
 				omega = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
 				phi = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
 				apar = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
+				bpar = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
 				phi2 = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
 				time = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
 				theta = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
@@ -721,6 +725,10 @@ class myro_scan(object):
 										apar[idx][i][j][k] = data['apar'][0,0,:].tolist()
 									except: 
 										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: apar")
+									try:
+										bpar[idx][i][j][k] = data['bpar'][0,0,:].tolist()
+									except: 
+										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: bpar")
 									try:
 										phi2[idx][i][j][k] = data['phi2'].tolist()
 									except: 

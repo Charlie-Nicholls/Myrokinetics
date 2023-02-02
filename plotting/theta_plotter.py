@@ -22,7 +22,7 @@ def plot_theta(run = None, var = 0, fig = None, ax = None):
 	
 	doShow = False
 	if fig is None or ax is None:
-		fig, ax = subplots((1,2))
+		fig, ax = subplots(1,2,figsize=(14.6,7))
 		doShow = True
 
 	theta = linspace(0, 2*pi, 100)

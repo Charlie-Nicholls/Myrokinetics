@@ -316,10 +316,10 @@ class myro_read(object):
 				print("Converted Growth Rates To Unnormalised")
 	
 	def plot_aky(self, init = [0,0]):
-		Plotters['Scan'](scan = self.run, aky=True, init = init)
+		Plotters['Scan'](scan = self.run, verify = self.verify, aky = True, init = init)
 	
 	def plot_scan(self, init = [0,0], aky = False):
-		Plotters['Scan'](scan = self.run, aky = aky, init = init)
+		Plotters['Scan'](scan = self.run, verify = self.verify, aky = aky, init = init)
 	
 	def plot_ideal(self):
 		Plotters['Ideal'](scan = self.run)

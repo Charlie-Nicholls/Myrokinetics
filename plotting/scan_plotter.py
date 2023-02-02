@@ -1,10 +1,10 @@
-from numpy import transpose, array, amax, amin, isfinite
+from numpy import transpose, array, amax, amin, isfinite, linspace
 from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
 from matplotlib.colors import LinearSegmentedColormap
 
-def plot_scan(scan = None, aky = False, init = [0,0]):
+def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 	if scan is None:
 		print("ERROR: no scan dictionary given")
 		return
@@ -47,8 +47,8 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 			z_mf = transpose(array(data['mode_frequencies_all'])[idx,:,:,ky_idx]).tolist()
 			ax[0].set_title(f"Growth Rate | PsiN: {psiN} | ky: {ky}")
 		else:
-			z_gr = transpose(data['growth_rates'][idx])
-			z_mf = transpose(data['mode_frequencies'][idx])
+			z_gr = transpose(data['growth_rates'][idx]).tolist()
+			z_mf = transpose(data['mode_frequencies'][idx]).tolist()
 			ax[0].set_title(f"Growth Rate | PsiN: {psiN}")
 		
 		if options.get_status()[2]:
@@ -99,20 +99,72 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 			ax[0].set_xlim(bpmin,bpmax)
 			ax[1].set_ylim(shmin,shmax)
 			ax[1].set_xlim(bpmin,bpmax)
-				
+		'''		
 		else:
 			ax[0].set_ylim(min(y),max(y))
 			ax[0].set_xlim(min(x),max(x))
 			ax[1].set_ylim(min(y),max(y))
 			ax[1].set_xlim(min(x),max(x))
-		
+		'''
 		if options.get_status()[4]:
 			if data['ideal_stabilities'] is not None and data['ideal_stabilities'][idx] is not None:
 				ax[0].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
 				ax[1].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
 			else:
 				ax[0].text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=ax[0].transAxes,color='k')
+		
+		if vroptions.get_status()[0]:
+			for i, bp in enumerate(data['beta_prime_axis'][idx]):
+				ax[0].text(bp, data['shear_axis'][idx][0], f"{i}", color = 'purple',ha='center',va='center')
+				ax[1].text(bp, data['shear_axis'][idx][0], f"{i}", color = 'purple',ha='center',va='center')
+			for j, sh in enumerate(data['shear_axis'][idx][1:]):
+				ax[0].text(data['beta_prime_axis'][idx][0],sh, f"{j+1}", color = 'purple',ha='center',va='center')
+				ax[1].text(data['beta_prime_axis'][idx][0],sh, f"{j+1}", color = 'purple',ha='center',va='center')
 			
+		if vroptions.get_status()[1]:
+			for bpid, bp in enumerate(x):
+				for shid, sh in enumerate(y):
+					if not aky:
+						ky_idx = data['akys'][idx][bpid][shid]
+					if [idx, bpid, shid, ky_idx] in verify.bad_runs['unconv']:
+						ax[0].text(bp, sh, 'U', color = 'purple',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'U', color = 'purple',ha='center',va='center',size=7)
+					elif [idx, bpid, shid, ky_idx] in verify.bad_runs['unconv_low']:
+						ax[0].text(bp, sh, 'Us', color = 'purple',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'Us', color = 'purple',ha='center',va='center',size=7)
+		
+		if vroptions.get_status()[2]:
+			for bpid, bp in enumerate(x):
+				for shid, sh in enumerate(y):
+					if not aky:
+						ky_idx = data['akys'][idx][bpid][shid]
+					if [idx, bpid, shid, ky_idx] in verify.bad_runs['nstep']:
+						ax[0].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
+		
+		if vroptions.get_status()[3]:
+			for bpid, bp in enumerate(x):
+				for shid, sh in enumerate(y):
+					if not aky:
+						ky_idx = data['akys'][idx][bpid][shid]
+					s = ''
+					if [idx, bpid, shid, ky_idx] in verify.bad_runs['phi']:
+						s += 'p,'
+					if [idx, bpid, shid, ky_idx] in verify.bad_runs['phi']:
+						s += 'a,'
+					if s != '':
+						ax[0].text(bp, sh, s[:-1], color = 'purple',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, s[:-1], color = 'purple',ha='center',va='center',size=7)
+		
+		if vroptions.get_status()[4]:
+			for bpid, bp in enumerate(x):
+				for shid, sh in enumerate(y):
+					if not aky:
+						ky_idx = data['akys'][idx][bpid][shid]
+					if [idx, bpid, shid, ky_idx] in verify.bad_runs['other']:
+						ax[0].text(bp, sh, 'o', color = 'purple',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'o', color = 'purple',ha='center',va='center',size=7)
+		
 		fig.canvas.draw_idle()
 		return
 
@@ -137,6 +189,10 @@ def plot_scan(scan = None, aky = False, init = [0,0]):
 	chaxes = axes([0.72, 0.01, 0.09, 0.1],frame_on = False)
 	options = CheckButtons(chaxes, ["Show Parities","Global Axis Limits","Global Colorbar","Show Equillibrium","Show Ideal"],[False,False,False,True,False])
 	options.on_clicked(draw_fig)
+	
+	vraxes = axes([0.85, 0.01, 0.09, 0.1],frame_on = False)
+	vroptions = CheckButtons(vraxes, ["Show ID","Show Unconverged","Show Bad nstep","Show bad fields","Show bad other"],[False,False,False,False,False])
+	vroptions.on_clicked(draw_fig)
 		
 	slaxes = axes([0.15, 0.01, 0.5, 0.03])
 	slider = Slider(slaxes, 'psiN index:', 0, len(psiNs)-1, valinit = init[0], valstep = 1)

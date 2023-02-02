@@ -49,7 +49,7 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		else:
 			theta = data['theta'][psi_idx][bp_idx][sh_idx][aky_idx]
 		
-		ax.set_title(f"psiN: {psiN} | -\u03B2': {round(bp,3)} | shear: {round(sh,3)} | aky: {ky} | file: {psiN}/{psi_idx}_{bp_idx}_{sh_idx}/{bp_idx}_{sh_idx}_{aky_idx}")
+		ax.set_title(f"psiN: {psiN} | -\u03B2': {round(bp,3)} | shear: {round(sh,3)} | aky: {ky} | file: {psiN}/{bp_idx}_{sh_idx}/{psi_idx}_{bp_idx}_{sh_idx}_{aky_idx}")
 		
 		if var == 0:
 			if data['omega'] is None:
@@ -95,7 +95,21 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			ax.set_ylabel("Parallel Mangetic Potential")
 			ax.set_xlabel("Ballooning Angle")
 			ax.legend(loc=0)
+		
 		elif var == 3:
+			if data['bpar'] is None:
+				bpar = run['bpar'][0,0,:]
+			else:
+				bpar = data['bpar'][psi_idx][bp_idx][sh_idx][aky_idx]
+			ax.plot(theta,real(bpar),'r--',label="real")
+			ax.plot(theta,imag(bpar),'b--',label="imaginary")
+			ax.plot(theta,[abs(x) for x in apar],'k',label="absolute")
+			
+			ax.set_ylabel("Parallel Mangetic Field")
+			ax.set_xlabel("Ballooning Angle")
+			ax.legend(loc=0)
+			
+		elif var == 4:
 			if data['phi2'] is None:
 				phi2 = run['phi2']
 			else:
@@ -108,16 +122,18 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		
 		if verify is not None:
 			bad = []
-			if verify['nstep'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['nstep']:
+			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['nstep']:
 				bad.append('nstep')
-			if verify['other'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['other']:
+			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['other']:
 				bad.append('other')
-			if verify['unconv'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['unconv']:
+			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['unconv']:
 				bad.append('unconverged')
-			if var == 1 and verify['phi'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['phi']:
+			if var == 1 and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['phi']:
 				bad.append('phi')
-			if var == 2 and verify['apar'] is not None and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['apar']:
+			if var == 2 and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['apar']:
 				bad.append('apar')
+			if var == 3 and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['apar']:
+				bad.append('bpar')
 			if bad:
 				ax.text(0.01,0.01,f"BAD RUN: {str(bad)[1:-1]}",ha='left',va='bottom',transform=ax.transAxes,color='r')
 		fig.canvas.draw_idle()
@@ -129,10 +145,12 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		var = 1
 	if var == "apar":
 		var = 2
-	if var == "phi2":
+	if var == "bpar":
 		var = 3
-	if var not in [0,1,2,3]:
-		print(f"ERROR: variable name/value {var} not supported. supported: omega/0, phi/1, apar/2, phi2/3")
+	if var == "phi2":
+		var = 4
+	if var not in [0,1,2,3,4]:
+		print(f"ERROR: variable name/value {var} not supported. supported: omega/0, phi/1, apar/2, bpar/3, phi2/4")
 		return
 	
 	if var == 0:
