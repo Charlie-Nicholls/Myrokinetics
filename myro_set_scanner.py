@@ -258,8 +258,6 @@ class myro_set_scan(object):
 		
 		if type(self.inputs['key']) in [int,float]:
 			self.inputs['key'] = [self.inputs['psiNs']]
-		else:
-			self.inputs['key'].sort()
 			
 		if self.inputs['variable'] is None:
 			empty_elements.append('variable')
