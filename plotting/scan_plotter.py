@@ -27,7 +27,7 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 		x = list(data['beta_prime_axis'][idx])
 		y = list(data['shear_axis'][idx])
 		
-		beta_prime = data['beta_prime_values'][idx]
+		beta_prime = abs(data['beta_prime_values'][idx])
 		shear = data['shear_values'][idx]
 		
 		ax[0].cla()
@@ -55,25 +55,27 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 			mfmax = mf_slider.val * abs(amax(array(data['mode_frequencies'])[isfinite(data['mode_frequencies'])]))/100
 			grmax = gr_slider.val * abs(amax(array(data['growth_rates'])[isfinite(data['growth_rates'])]))/100
 
-		else:
-			if aky:
-				mfmax = mf_slider.val * abs(amax(array(data['mode_frequencies_all'])[idx,:,:,ky_idx][isfinite(array(data['mode_frequencies_all'])[idx,:,:,ky_idx].tolist())]))/100
-				grmax = gr_slider.val * abs(amax(array(data['growth_rates_all'])[idx,:,:,ky_idx][isfinite(array(data['growth_rates_all'])[idx,:,:,ky_idx].tolist())]))/100
-
+		else:	
+			if [i for x in z_gr for i in x if str(i) != 'nan']:
+				grmax = gr_slider.val * abs(amax(array(z_gr)[isfinite(z_gr)]))/100
+				if grmax == 0:
+					grmax = 10e-10
 			else:
-				mfmax = mf_slider.val * abs(amax(array(data['mode_frequencies'][idx])[isfinite(data['mode_frequencies'][idx])]))/100	
-				grmax = gr_slider.val * abs(amax(array(data['growth_rates'][idx])[isfinite(data['growth_rates'][idx])]))/100
-			if mfmax == 0:
-				mfmax = 10e-10
-			if grmax == 0:
-				grmax = 10e-10
+				grmax = 1
+			if [i for x in z_mf for i in x if str(i) != 'nan']:
+				mfmax = mf_slider.val * abs(amax(array(z_mf)[isfinite(z_mf)]))/100
+				if mfmax == 0:
+					mfmax = 10e-10
+			else:
+				mfmax = 1
+				
 		
 		norm_mf = Normalize(vmin=-mfmax,vmax=mfmax)
 		cbar_mf.update_normal(ScalarMappable(norm = norm_mf))
 		
 		norm_gr = Normalize(vmin=-grmax,vmax=grmax)
 		cbar_gr.update_normal(ScalarMappable(norm = norm_gr, cmap = cmap))
-		
+
 		ax[0].pcolormesh(x, y, z_gr, cmap = cmap, norm=norm_gr)
 		ax[1].pcolormesh(x, y, z_mf, norm = norm_mf)
 		
@@ -126,10 +128,10 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 				for shid, sh in enumerate(y):
 					if not aky:
 						ky_idx = data['akys'][idx][bpid][shid]
-					if [idx, bpid, shid, ky_idx] in verify.bad_runs['unconv']:
+					if (idx, bpid, shid, ky_idx) in verify.bad_runs['unconv']:
 						ax[0].text(bp, sh, 'U', color = 'purple',ha='center',va='center',size=7)
 						ax[1].text(bp, sh, 'U', color = 'purple',ha='center',va='center',size=7)
-					elif [idx, bpid, shid, ky_idx] in verify.bad_runs['unconv_low']:
+					elif (idx, bpid, shid, ky_idx) in verify.bad_runs['unconv_low']:
 						ax[0].text(bp, sh, 'Us', color = 'purple',ha='center',va='center',size=7)
 						ax[1].text(bp, sh, 'Us', color = 'purple',ha='center',va='center',size=7)
 		
@@ -138,7 +140,7 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 				for shid, sh in enumerate(y):
 					if not aky:
 						ky_idx = data['akys'][idx][bpid][shid]
-					if [idx, bpid, shid, ky_idx] in verify.bad_runs['nstep']:
+					if (idx, bpid, shid, ky_idx) in verify.bad_runs['nstep']:
 						ax[0].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
 						ax[1].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
 		
@@ -148,9 +150,9 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 					if not aky:
 						ky_idx = data['akys'][idx][bpid][shid]
 					s = ''
-					if [idx, bpid, shid, ky_idx] in verify.bad_runs['phi']:
+					if (idx, bpid, shid, ky_idx) in verify.bad_runs['phi']:
 						s += 'p,'
-					if [idx, bpid, shid, ky_idx] in verify.bad_runs['phi']:
+					if (idx, bpid, shid, ky_idx) in verify.bad_runs['phi']:
 						s += 'a,'
 					if s != '':
 						ax[0].text(bp, sh, s[:-1], color = 'purple',ha='center',va='center',size=7)
@@ -161,7 +163,7 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 				for shid, sh in enumerate(y):
 					if not aky:
 						ky_idx = data['akys'][idx][bpid][shid]
-					if [idx, bpid, shid, ky_idx] in verify.bad_runs['other']:
+					if (idx, bpid, shid, ky_idx) in verify.bad_runs['other']:
 						ax[0].text(bp, sh, 'o', color = 'purple',ha='center',va='center',size=7)
 						ax[1].text(bp, sh, 'o', color = 'purple',ha='center',va='center',size=7)
 		

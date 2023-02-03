@@ -69,6 +69,10 @@ class myro_read(object):
 			return self.verify['save_errors']
 		elif key in ['saveerrors_all','save_errors_all']:
 			return self.verify['save_errors_all']
+			
+	def __len__(self):
+		return len(self.run['inputs']['psiNs'])*self.run['inputs']['n_beta']*self.run['inputs']['n_shat']*len(self.run['inputs']['aky_values'])
+	
 	@property	
 	def data(self):
         	for key, val in self.run['data'].items():
@@ -333,8 +337,11 @@ class myro_read(object):
 	def plot_apar(self,init = [0,0,0,0], aky = True):
 		Plotters['Diag'](scan = self.run, var = 2, aky = aky, init = init, verify = self.verify)
 		
-	def plot_phi2(self,init = [0,0,0,0], aky = True):
+	def plot_bpar(self,init = [0,0,0,0], aky = True):
 		Plotters['Diag'](scan = self.run, var = 3, aky = aky, init = init, verify = self.verify)
+		
+	def plot_phi2(self,init = [0,0,0,0], aky = True):
+		Plotters['Diag'](scan = self.run, var = 4, aky = aky, init = init, verify = self.verify)
 	
 	def _plot_diag(self,init = [0,0,0,0], aky = True, var = 0):
 		Plotters['Diag'](scan = self.run, var = var, aky = aky, init = init, verify = self.verify)

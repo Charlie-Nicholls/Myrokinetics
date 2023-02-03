@@ -100,8 +100,11 @@ class myro_single(object):
 	def plot_apar(self):
 		Plotters['Diag_Single'](data = self.run, var = 2)
 		
-	def plot_phi2(self):
+	def plot_bpar(self):
 		Plotters['Diag_Single'](data = self.run, var = 3)
+		
+	def plot_phi2(self):
+		Plotters['Diag_Single'](data = self.run, var = 4)
 	
 	def _plot_diag(self, var = 0):
 		Plotters['Diag_Single'](data = self.run, var = var)

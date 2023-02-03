@@ -1,6 +1,6 @@
 from numpy import real, imag
 from matplotlib.pyplot import *
-from matplotlib.widgets import Slider
+from matplotlib.widgets import Slider, CheckButtons
 
 def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None):
 	if scan is None:
@@ -119,20 +119,28 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			ax.set_ylabel("Phi2")
 			ax.set_yscale('log')
 			ax.set_xlabel(f"Time ({len(t)} steps)")
+			
+			if options.get_status()[0] and len(t) > 19:
+				from numpy import log, polyfit, array, exp
+				fit = polyfit(t[-10:],log(phi2[-10:]),1)
+				from scipy.stats import pearsonr
+				pr = pearsonr(t[-10:],log(phi2[-10:]))
+				ax.plot(t[-10:],exp(array(t[-10:])*fit[0] + fit[1]),'r',label=f"GR = {fit[0]:.4f}\nR = {pr[0]:.4f}")
+				ax.legend(loc=0)
 		
 		if verify is not None:
 			bad = []
-			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['nstep']:
+			if (psi_idx,bp_idx,sh_idx,aky_idx) in verify['nstep']:
 				bad.append('nstep')
-			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['other']:
+			if (psi_idx,bp_idx,sh_idx,aky_idx) in verify['other']:
 				bad.append('other')
-			if [psi_idx,bp_idx,sh_idx,aky_idx] in verify['unconv']:
+			if (psi_idx,bp_idx,sh_idx,aky_idx) in verify['unconv']:
 				bad.append('unconverged')
-			if var == 1 and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['phi']:
+			if var == 1 and (psi_idx,bp_idx,sh_idx,aky_idx) in verify['phi']:
 				bad.append('phi')
-			if var == 2 and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['apar']:
+			if var == 2 and (psi_idx,bp_idx,sh_idx,aky_idx) in verify['apar']:
 				bad.append('apar')
-			if var == 3 and [psi_idx,bp_idx,sh_idx,aky_idx] in verify['apar']:
+			if var == 3 and (psi_idx,bp_idx,sh_idx,aky_idx) in verify['apar']:
 				bad.append('bpar')
 			if bad:
 				ax.text(0.01,0.01,f"BAD RUN: {str(bad)[1:-1]}",ha='left',va='bottom',transform=ax.transAxes,color='r')
@@ -157,6 +165,12 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		fig, [ax, ax2] = subplots(2,1,figsize=(10,10))
 	else:
 		fig, ax = subplots(figsize=(8.8,5.8))
+		
+	if var == 4:
+		chaxes = axes([0.8, 0.01, 0.09, 0.1],frame_on = False)
+		options = CheckButtons(chaxes, ["Show Fit"],[False])
+		options.on_clicked(draw_fig)
+	
 	subplots_adjust(bottom=0.15)
 	fig.suptitle(scan['info']['run_name'])
 

@@ -204,6 +204,10 @@ class myro_scan(object):
 		tprim =  nml['species_parameters_1']['tprim']
 		fprim =  nml['species_parameters_1']['fprim']
 		beta =  nml['parameters']['beta']
+		#Set bakdif to 0 for Electormagnetic Runs as a default
+		nml['dist_fn_species_knobs_1']['bakdif'] = 0
+		nml['dist_fn_species_knobs_2']['bakdif'] = 0
+		nml['dist_fn_species_knobs_3']['bakdif'] = 0
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
@@ -491,7 +495,10 @@ class myro_scan(object):
 								subnml[spec]['tprim'] = nml[spec]['tprim']*mul
 								subnml[spec]['fprim'] = nml[spec]['fprim']*mul
 							if self.inputs['Fixed_delt'] is False:
-								subnml['knobs']['delt'] = 0.04/aky
+								delt = 0.04/aky
+								if delt > 0.1:
+									delt = 0.1
+								subnml['knobs']['delt'] = delt
 							subnml.write(f"{sub_path}/{p}_{fol}_{k}.in", force=True)
 							
 							if not self.inputs['Viking']:
@@ -695,7 +702,7 @@ class myro_scan(object):
 								elif self.inputs['Epar']:
 									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi','bpar'])
 								elif not QuickSave:
-									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi','apar','phi2','t','theta'])
+									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi','apar','bpar','phi2','t','theta'])
 								else:
 									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi'])	
 								
@@ -849,3 +856,4 @@ class myro_scan(object):
 		}
 		file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = dat, run_info = self.info, files = file_lines)
+
