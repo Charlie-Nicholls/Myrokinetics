@@ -485,7 +485,7 @@ class myro_scan(object):
 						sh = 1e-4
 
 					for k, aky in enumerate(self.inputs['aky_values']):
-						if [psiN,i,j,k] in check['gyro_incomplete']:
+						if [p,i,j,k] in check['gyro_incomplete']:
 							subnml = nml
 							subnml['theta_grid_eik_knobs']['s_hat_input'] = sh
 							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
@@ -506,7 +506,7 @@ class myro_scan(object):
 							elif not group_runs:
 								
 								jobfile = open(f"{sub_path}/{p}_{fol}_{k}.job",'w')
-								jobfile.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={p}_{fol}_{k}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"echo Input: {sub_path}/{p}_{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{p}_{fol}_{k}.in\"")
+								jobfile.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={p}_{fol}_{k}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{p}_{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{p}_{fol}_{k}.in\"")
 								
 								jobfile.close()
 								os.chdir(f"{sub_path}")
@@ -525,7 +525,7 @@ class myro_scan(object):
 						jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={p}_{fol}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\n")
 
 						for k in group_kys:
-							jobfile.write(f"echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\"echo Input: {sub_path}/{p}_{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\ngs2 \"{sub_path}/{p}_{fol}_{k}.in\"\n")
+							jobfile.write(f"echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{p}_{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\ngs2 \"{sub_path}/{p}_{fol}_{k}.in\"\n")
 						jobfile.close()
 						os.chdir(f"{sub_path}")
 						os.system(f"sbatch \"{sub_path}/{fol}.job\"")
@@ -553,7 +553,49 @@ class myro_scan(object):
 			print("ERROR: unable to import datetime module, setting run date to None")
 			date = None
 		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path}
-
+	
+	def rerun_cancelled(self, directory = None, checkSetup = True)
+		if directory is None:
+			directory = self.info['data_path']
+		cancelled = self.check_cancelled(directory = directory, doPrint = False)
+		if len(cancelled) == 0:
+			print("No Cancelled Runs")
+			return
+		for p, i, j, k in cancelled:
+			if os.path.exists(f"{directory}/{self.inputs['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
+				os.remove(f"{directory}/{self.inputs['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc")
+		self._run_gyro(directory = directory)
+		
+	def check_cancelled(self, directory = None, doPrint = True):
+		if self.info is None:
+			self._create_run_info()		
+		if directory is None:
+			directory = self.info['data_path']
+		if not self.inputs['Gyro']:
+			print("Only Used For Gyro Runs")
+			return
+		
+		cancelled_gyro = []
+		os.system(f"grep --include=\*slurm rnwl {directory} -e \"CANCELLED\" > {directory}/grep.out")
+		grep = open(f"{directory}/grep.out")
+		lines = grep.readlines()
+		grep.close()
+		for line in lines:
+			with f as open(lines):
+				lins = f.readlines()
+				for l in lins:
+					if ".in" in l:
+						inp = l.split("/")[-1].strip(".in\n")
+				p, i, j, k = inp.split("_")
+				for ki in range(k, len(self.inputs['aky_values'])):
+					cancelled_gyro.append([p,i,j,ki])
+		
+		if doPrint:		
+			print(f"{len(cancelled_gyro)} Cancelled Runs")
+			return
+		else:
+			return cancelled_gyro
+	
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
 		if self.info is None:
 			self._create_run_info()		
@@ -570,7 +612,7 @@ class myro_scan(object):
 		elif type(ideal) != bool:
 			print("ERROR: ideal must be boolean")
 			return
-
+		
 		unfinished_gyro = []
 		finished_gyro = []
 		if gyro:
@@ -579,9 +621,9 @@ class myro_scan(object):
 					for j in range(self.inputs['n_shat']):
 						for k, aky in enumerate(self.inputs['aky_values']):
 							if os.path.exists(f"{directory}/{psiN}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
-								finished_gyro.append([psiN,i,j,k])
+								finished_gyro.append([p,i,j,k])
 							else:
-								unfinished_gyro.append([psiN,i,j,k])
+								unfinished_gyro.append([p,i,j,k])
 
 		unfinished_ideal = []
 		finished_ideal = []
