@@ -554,7 +554,9 @@ class myro_scan(object):
 			date = None
 		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path}
 	
-	def rerun_cancelled(self, directory = None, checkSetup = True)
+	def rerun_cancelled(self, directory = None, checkSetup = True):
+		if self.info is None:
+			self._create_run_info()
 		if directory is None:
 			directory = self.info['data_path']
 		cancelled = self.check_cancelled(directory = directory, doPrint = False)
@@ -575,26 +577,28 @@ class myro_scan(object):
 			print("Only Used For Gyro Runs")
 			return
 		
-		cancelled_gyro = []
-		os.system(f"grep --include=\*slurm rnwl {directory} -e \"CANCELLED\" > {directory}/grep.out")
+		cancelled = []
+		os.system(f"grep --include=\*slurm -rnwl {directory} -e \"CANCELLED\" > {directory}/grep.out")
 		grep = open(f"{directory}/grep.out")
 		lines = grep.readlines()
 		grep.close()
-		for line in lines:
-			with f as open(lines):
+		if len(lines) > 0:
+			for line in lines:
+				f = open(line.strip("\n"))
 				lins = f.readlines()
+				f.close()
 				for l in lins:
 					if ".in" in l:
-						inp = l.split("/")[-1].strip(".in\n")
-				p, i, j, k = inp.split("_")
+						inp = l.split("/")[-1].split(".")[0]
+				p, i, j, k = [eval(x) for x in inp.split("_")]
+				cancelled.append([p,i,j,k])
 				for ki in range(k, len(self.inputs['aky_values'])):
-					cancelled_gyro.append([p,i,j,ki])
-		
+					cancelled.append([p,i,j,ki])
 		if doPrint:		
-			print(f"{len(cancelled_gyro)} Cancelled Runs")
+			print(f"{len(cancelled)} Cancelled Runs")
 			return
 		else:
-			return cancelled_gyro
+			return cancelled
 	
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
 		if self.info is None:
