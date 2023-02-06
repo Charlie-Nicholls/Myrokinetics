@@ -14,7 +14,7 @@ class myro_scan(object):
 		self.template_name = template_file
 		self.input_name = input_file
 		self.run_name = run_name
-		self._template_path = self.info = self.pyro = self._template_lines = None
+		self._template_path = self.info = self.pyro = self._template_lines = self.namelist_diffs = self.dat = self.file_lines = self.verify = None
 
 		if directory == "./":
 			directory = os.getcwd() 
@@ -130,8 +130,7 @@ class myro_scan(object):
 		self._template_path = directory
 		
 		if self.template_name:
-			with open(os.path.join(directory,self.template_name)) as tfile:
-				self._template_lines = tfile.readlines()
+			self._template_lines = f90nml.read(os.path.join(directory,self.template_name))
 		
 		self.pyro = self.eqbm.load_pyro(template_file = self.template_name, directory = directory)
 		
@@ -374,6 +373,9 @@ class myro_scan(object):
 			print(f"ERROR: the following inputs are empty: {empty_elements}")
 			return False
 		
+		if not self.namelist_diffs:
+			self.namelist_diffs = full((len(self.inputs['psiNs']),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),{}).tolist()
+		
 		if not os.path.exists(self.info['data_path']):
 				os.mkdir(self.info['data_path'])
 
@@ -417,16 +419,20 @@ class myro_scan(object):
 				os.system(f"sbatch \"{run_path}/{psiN}.job\"")
 				os.chdir(f"{self.path}")
 
-	def _run_gyro(self, directory = None, checkSetup = True):
+	def _run_gyro(self, directory = None, checkSetup = True, specificRuns = None):
 		if directory is None:
 			directory = self.info['data_path']
 		self.inputs['Gyro'] = True
 		if checkSetup:
 			if not self._check_setup():
 				return
-		check = self.check_complete(directory = directory, doPrint = False, gyro = True, ideal = False)
-		if check['gyro_complete']:
-			print(f"{len(check['gyro_complete'])} Existing Gyro Runs Detected")
+		if not specificRuns:
+			check = self.check_complete(directory = directory, doPrint = False, gyro = True, ideal = False)
+			if check['gyro_complete']:
+				print(f"{len(check['gyro_complete'])} Existing Gyro Runs Detected")
+			runs = check['gyro_incomplete']
+		else:
+			runs = specificRuns
 
 		if len(check['gyro_incomplete']) > 10000:
 			group_runs = True
@@ -485,7 +491,9 @@ class myro_scan(object):
 						sh = 1e-4
 
 					for k, aky in enumerate(self.inputs['aky_values']):
-						if [p,i,j,k] in check['gyro_incomplete']:
+						if [p,i,j,k] in runs:
+							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.out.nc"):
+								os.remove(f"{sub_path}/{p}_{fol}_{k}.out.nc")
 							subnml = nml
 							subnml['theta_grid_eik_knobs']['s_hat_input'] = sh
 							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
@@ -499,6 +507,12 @@ class myro_scan(object):
 								if delt > 0.1:
 									delt = 0.1
 								subnml['knobs']['delt'] = delt
+							
+							if self.namelist_diffs[p][i][j][k]:
+								for key in self.namelist_diffs[p][i][j][k].keys():
+									for skey in self.namelist_diffs[p][i][j][k][key].keys():
+										subnml[key][skey] = self.namelist_diffs[p][i][j][k][key][skey]
+							
 							subnml.write(f"{sub_path}/{p}_{fol}_{k}.in", force=True)
 							
 							if not self.inputs['Viking']:
@@ -566,7 +580,7 @@ class myro_scan(object):
 		for p, i, j, k in cancelled:
 			if os.path.exists(f"{directory}/{self.inputs['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
 				os.remove(f"{directory}/{self.inputs['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc")
-		self._run_gyro(directory = directory)
+		self._run_gyro(directory = directory, specificRuns = cancelled)
 		
 	def check_cancelled(self, directory = None, doPrint = True):
 		if self.info is None:
@@ -577,7 +591,7 @@ class myro_scan(object):
 			print("Only Used For Gyro Runs")
 			return
 		
-		cancelled = []
+		cancelled = set()
 		os.system(f"grep --include=\*slurm -rnwl {directory} -e \"CANCELLED\" > {directory}/grep.out")
 		grep = open(f"{directory}/grep.out")
 		lines = grep.readlines()
@@ -591,9 +605,9 @@ class myro_scan(object):
 					if ".in" in l:
 						inp = l.split("/")[-1].split(".")[0]
 				p, i, j, k = [eval(x) for x in inp.split("_")]
-				cancelled.append([p,i,j,k])
+				cancelled.add((p,i,j,k))
 				for ki in range(k, len(self.inputs['aky_values'])):
-					cancelled.append([p,i,j,ki])
+					cancelled.add((p,i,j,ki))
 		if doPrint:		
 			print(f"{len(cancelled)} Cancelled Runs")
 			return
@@ -617,26 +631,26 @@ class myro_scan(object):
 			print("ERROR: ideal must be boolean")
 			return
 		
-		unfinished_gyro = []
-		finished_gyro = []
+		unfinished_gyro = set()
+		finished_gyro = set()
 		if gyro:
 			for p, psiN in enumerate(self.inputs['psiNs']):
 				for i in range(self.inputs['n_beta']):
 					for j in range(self.inputs['n_shat']):
 						for k, aky in enumerate(self.inputs['aky_values']):
 							if os.path.exists(f"{directory}/{psiN}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
-								finished_gyro.append([p,i,j,k])
+								finished_gyro.add((p,i,j,k))
 							else:
-								unfinished_gyro.append([p,i,j,k])
+								unfinished_gyro.add((p,i,j,k))
 
-		unfinished_ideal = []
-		finished_ideal = []
+		unfinished_ideal = set()
+		finished_ideal = set()
 		if ideal:
 			for p, psiN in enumerate(self.inputs['psiNs']):
 				if os.path.exists(f"{directory}/{psiN}/{psiN}.ballstab_2d"):
-					finished_ideal.append(psiN)
+					finished_ideal.add(psiN)
 				else:
-					unfinished_ideal.append(psiN)
+					unfinished_ideal.add(psiN)
 		
 		if doPrint:
 			print(f"Gyro Runs Complete: {len(finished_gyro)} | Incomplete : {len(unfinished_gyro)}")
@@ -877,7 +891,7 @@ class myro_scan(object):
 				shear_axis_ideal[p] = shear
 				stabilities[p] = transpose(stab)
 			
-		dat = {'beta_prime_values':beta_prime_values,
+		self.dat = {'beta_prime_values':beta_prime_values,
 		'shear_values': shear_values,
 		'beta_prime_axis': beta_prime_axis,
 		'shear_axis': shear_axis,
@@ -901,7 +915,20 @@ class myro_scan(object):
 		'time': time,
 		'theta': theta
 		}
-		file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines}
-		savez(f"{self.path}/{filename}", inputs = self.inputs, data = dat, run_info = self.info, files = file_lines)
-
+		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines, 'namelist_differences': self.namelist_diffs}
+		savez(f"{self.path}/{filename}", inputs = self.inputs, data = self.dat, run_info = self.info, files = self.file_lines)
+		
+	def verify_run(self, directory = None):
+		if not self.pyro:
+			self.load_pyro()
+		if not self.dat:
+			print("ERROR: No Run Data")
+			return
+		scan = {'inputs': self.inputs, 'data': self.dat, 'info': self.info, 'files': self.file_lines}
+		self.verify = verify_scan(scan = scan)
+		for [p,i,j,k] in self.verify['bad_nstep']:
+			self.namelist_diff[p][i][j][k]['knobs']['nstep'] = 10*self._template_lines['knobs']['nstep']
+		
+		self._run_gyro(directory = directory, specificRuns = self.verify['bad_nstep'])
+		
 

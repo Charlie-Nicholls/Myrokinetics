@@ -50,6 +50,8 @@ class myro_read(object):
 			return self.run['data']['mode_frequencies_all']
 		elif key in ["akyv","aky_v",]:
 			return self.run['inputs']['aky_values']
+		elif key in ["namelist_diffs", "nml_diffs", "namelist_diff", "nml_diff", "namelists", "nmls"]:
+			return self.run['files']['namelist_differences']
 			
 		elif key in ['bad_runs', 'badruns']:
 			return self.verify.bad_runs
@@ -143,6 +145,10 @@ class myro_read(object):
 		if filetype in ['template_file', 'template', 'gk_template']:
 			lines = self.run['files']['template_file']
 			name = self.run['info']['template_file_name']
+			if type(lines) != list:
+				lines.write(os.path.join(directory,name))
+				print(f"Created {name} at {directory}")
+				return
 		elif filetype in ['eq','eq_file','geqdsk','geqdsk_file']:
 			lines = self.run['files']['eq_file']
 			name = self.run['info']['eq_file_name']
@@ -428,6 +434,12 @@ class myro_read(object):
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		if self.run['inputs']['Fixed_delt'] is False:
 			nml['knobs']['delt'] = 0.04/self.run['inputs']['aky_values'][k]
+		
+		if 'namelist_differences' in self.run['files'].keys():
+			if self.run['files']['namelist_differences'][p][i][j][k]:
+				for key in self.run['files']['namelist_differences'][p][i][j][k].keys():
+					for skey in self.run['files']['namelist_differences'][p][i][j][k][key].keys():
+						subnml[key][skey] = self.run['files']['namelist_differences'][p][i][j][k][key][skey]
 		
 		nml.write(os.path.join(directory,filename), force=True)
 		print(f"Created {filename} at {directory}")
