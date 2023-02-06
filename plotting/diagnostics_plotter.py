@@ -68,6 +68,8 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			ax.set_xlabel(f"Time ({len(t)} steps)")
 			ax2.set_ylabel("Mode_Frequency")
 			ax2.set_xlabel(f"Time ({len(t)} steps)")
+			ax.legend(loc=1)
+			ax2.legend(loc=1)
 			
 		elif var == 1:
 			if data['phi'] is None:
@@ -123,10 +125,15 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			if options.get_status()[0] and len(t) > 19:
 				from numpy import log, polyfit, array, exp
 				fit = polyfit(t[-10:],log(phi2[-10:]),1)
+				fit2 = polyfit(t,log(phi2),1)
 				from scipy.stats import pearsonr
 				pr = pearsonr(t[-10:],log(phi2[-10:]))
-				ax.plot(t[-10:],exp(array(t[-10:])*fit[0] + fit[1]),'r',label=f"GR = {fit[0]:.4f}\nR = {pr[0]:.4f}")
-				ax.legend(loc=0)
+				ax.plot(t[-10:],exp(array(t[-10:])*fit[0] + fit[1]),'r',label=f"GR = {fit[0]:+.2e}\nR = {pr[0]:.4f}")
+				grad = log(phi2[-1]/phi2[0])/(t[-1]-t[0])
+				ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {grad:+.2e}")
+				omega = data['omega'][psi_idx][bp_idx][sh_idx][aky_idx]
+				ax.text(0.01,0.99,f"GR: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
+				ax.legend(loc=1)
 		
 		if verify is not None:
 			bad = []

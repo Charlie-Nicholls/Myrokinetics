@@ -47,7 +47,7 @@ class verify_scan(object):
 		self.check_nstep()
 		self.check_phi()
 		self.check_apar()
-		self.check_bpar()
+		#self.check_bpar()
 		self.check_other()
 		self.print_verify()
 		
@@ -99,7 +99,7 @@ class verify_scan(object):
 								self.save_errors['phi2'].add((i,j,k,l))
 							if time is None:
 								self.save_errors['time'].add((i,j,k,l))
-						else:
+						elif 'nan' not in [str(x) for x in phi2[-10:]]:
 							if phi2[-1] == 0:
 								phi2 = array(phi2)[nonzero(phi2)].tolist()
 								omega = omega[:len(phi2)]
@@ -114,12 +114,15 @@ class verify_scan(object):
 								elif abs(pearsonr(time[-10:],log(phi2[-10:]))[0]) > 0.99:
 									self.new_data['gra'][i][j][k][l] = fit[0]
 									self.converged['conv_grad'].add((i,j,k,l))
-									print((i,j,k,l),gr,fit[0],abs((fit[0]-gr)/gr))
 								else:
 									self.new_data['mfa'][i][j][k][l] = nan
-									fit2 = polyfit(time,log(phi2),1)
-									if fit2[0] < -0.1:
-										self.new_data['gra'][i][j][k][l] = fit2[0]
+									#fit2 = polyfit(time,log(phi2),1)
+									grad = log(phi2[-1]/phi2[0])/(time[-1]-time[0])
+									if grad < -0.1:#fit2[0] < -0.1:
+										if fit[0] < 0:
+											self.new_data['gra'][i][j][k][l] = fit[0]
+										else:
+											self.new_data['gra'][i][j][k][l] = grad#fit2[0]
 										self.bad_runs['unconv_low'].add((i,j,k,l))
 									else:
 										self.new_data['gra'][i][j][k][l] = nan

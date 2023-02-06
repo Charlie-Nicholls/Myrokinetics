@@ -896,10 +896,12 @@ class myro_scan(object):
 		'omega': omega,
 		'phi': phi,
 		'apar': apar,
+		'bpar': bpar,
 		'phi2': phi2,
 		'time': time,
 		'theta': theta
 		}
 		file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = dat, run_info = self.info, files = file_lines)
+
 
