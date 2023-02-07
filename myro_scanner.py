@@ -9,7 +9,7 @@ GYROKINETIC SCAN PERFORMER
 '''
 
 class myro_scan(object):
-	def __init__(self, eq_file = None, kin_file = None, input_file = None, template_file = None, kinetics_type = "PEQDSK", directory = "./", run_name = None):
+	def __init__(self, input_file = None, eq_file = None, kin_file = None, template_file = None, kinetics_type = "PEQDSK", directory = "./", run_name = None):
 		self._create_empty_inputs()
 		self.template_name = template_file
 		self.input_name = input_file
@@ -952,3 +952,4 @@ class myro_scan(object):
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
 			
 		self._run_gyro(specificRuns = self.verify.runs_with_errors)
+

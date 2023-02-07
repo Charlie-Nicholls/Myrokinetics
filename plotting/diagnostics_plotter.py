@@ -62,7 +62,7 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			ax2.plot(t,real(omega),'r',label="mode frequency")
 			ax.plot(t,imag(omega),'b',label="growth rate")
 			
-			ax.text(0.01,0.99,f"GR: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
+			ax.text(0.01,0.99,f"GR: {data['growth_rates_all'][psi_idx][bp_idx][sh_idx][aky_idx]:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
 			ax2.text(0.01,0.99,f"MF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=ax2.transAxes)
 			ax.set_ylabel("Growth Rate")
 			ax.set_xlabel(f"Time ({len(t)} steps)")
@@ -124,15 +124,17 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			
 			if options.get_status()[0] and len(t) > 19:
 				from numpy import log, polyfit, array, exp
-				fit = polyfit(t[-10:],log(phi2[-10:]),1)
-				fit2 = polyfit(t,log(phi2),1)
+				nt = 10
+				if len(phi2) > 100:
+					nt = len(phi2)//10
+				fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
 				from scipy.stats import pearsonr
-				pr = pearsonr(t[-10:],log(phi2[-10:]))
-				ax.plot(t[-10:],exp(array(t[-10:])*fit[0] + fit[1]),'r',label=f"GR = {fit[0]:+.2e}\nR = {pr[0]:.4f}")
+				pr = pearsonr(t[-nt:],log(phi2[-nt:]))
+				ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fit[0]:+.2e}\nR = {pr[0]:.4f}")
 				grad = log(phi2[-1]/phi2[0])/(t[-1]-t[0])
 				ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {grad:+.2e}")
 				omega = data['omega'][psi_idx][bp_idx][sh_idx][aky_idx]
-				ax.text(0.01,0.99,f"GR: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
+				ax.text(0.01,0.99,f"GR: {data['growth_rates_all'][psi_idx][bp_idx][sh_idx][aky_idx]:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
 				ax.legend(loc=1)
 		
 		if verify is not None:
@@ -175,7 +177,7 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		
 	if var == 4:
 		chaxes = axes([0.8, 0.01, 0.09, 0.1],frame_on = False)
-		options = CheckButtons(chaxes, ["Show Fit"],[False])
+		options = CheckButtons(chaxes, ["Show Fit"],[True])
 		options.on_clicked(draw_fig)
 	
 	subplots_adjust(bottom=0.15)
@@ -212,9 +214,11 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 		var = 1
 	if var == "apar":
 		var = 2
-	if var == "phi2":
+	if var == "bpar":
 		var = 3
-	if var not in [0,1,2,3]:
+	if var == "phi2":
+		var = 4
+	if var not in [0,1,2,3,4]:
 		print(f"ERROR: variable name/value {var} not supported. supported: omega/0, phi/1, apar/2, phi2/3")
 		return
 	
@@ -224,7 +228,7 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 		doShow = True
 	
 	if var == 0:
-		omega = data['omega'][:,0,0]
+		omega = data['omega']
 		t = data['t']
 		
 		ax.plot(t,real(omega),'r',label="mode frequency")
@@ -236,7 +240,7 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 		ax.legend(loc=0)
 		
 	elif var == 1:
-		phi = data['phi'][0,0,:]
+		phi = data['phi']
 		theta = data['theta']
 
 		ax.plot(theta,real(phi),'r--',label="real")
@@ -248,7 +252,7 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 		ax.legend(loc=0)
 		
 	elif var == 2:
-		apar = data['apar'][0,0,:]
+		apar = data['apar']
 		theta = data['theta']
 
 		ax.plot(theta,real(apar),'r--',label="real")
@@ -258,7 +262,20 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 		ax.set_ylabel("Parallel Mangetic Potential")
 		ax.set_xlabel("Ballooning Angle")
 		ax.legend(loc=0)
+		
 	elif var == 3:
+		bpar = data['bpar']
+		theta = data['theta']
+
+		ax.plot(theta,real(bpar),'r--',label="real")
+		ax.plot(theta,imag(bpar),'b--',label="imaginary")
+		ax.plot(theta,[abs(x) for x in bpar],'k',label="absolute")
+		
+		ax.set_ylabel("Parallel Mangetic Field")
+		ax.set_xlabel("Ballooning Angle")
+		ax.legend(loc=0)
+	
+	elif var == 4:
 		phi2 = data['phi2']
 		t = data['t']
 
@@ -266,8 +283,21 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 		
 		ax.set_ylabel("Phi2")
 		ax.set_yscale('log')
-		ax.set_xlabel("Time")
-	
+		ax.set_xlabel(f"Time ({len(t)} steps)")
+		
+		if len(t) > 19:
+			from numpy import log, polyfit, array, exp
+			nt = 10
+			if len(phi2) > 100:
+				nt = len(phi2)//10
+			fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
+			from scipy.stats import pearsonr
+			pr = pearsonr(t[-nt:],log(phi2[-nt:]))
+			ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fit[0]:+.2e}\nR = {pr[0]:.4f}")
+			grad = log(phi2[-1]/phi2[0])/(t[-1]-t[0])
+			ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {grad:+.2e}")
+			ax.text(0.01,0.99,f"Omega[-1]: {imag(data['omega'][-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
+			ax.legend(loc=1)
 	if doShow:
 		show()
 	return

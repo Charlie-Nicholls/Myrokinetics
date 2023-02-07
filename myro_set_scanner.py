@@ -10,7 +10,7 @@ DIAGNOSTIC SET SCAN PERFORMER
 
 class myro_set_scan(object):
 
-	def __init__(self, eq_file = None, kin_file = None, input_file = None, template_file = None, kinetics_type = "PEQDSK", directory = "./", run_name = None):
+	def __init__(self, input_file = None, eq_file = None, kin_file = None, template_file = None, kinetics_type = "PEQDSK", directory = "./", run_name = None):
 		self._create_empty_inputs()
 		self.template_name = template_file
 		self.input_name = input_file
@@ -159,17 +159,12 @@ class myro_set_scan(object):
 			directory = "./"
 		elif directory is None:
 			directory = self.path
+		if directory == "./":
+			directory = os.getcwd()
 		if template_file is not None:
 				self.template_name = template_file
 		if self.template_name:
-			with open(os.path.join(directory,self.template_name)) as tfile:
-				self._template_lines = tfile.readlines()
-		if directory is None and self.path is None:
-			directory = "./"
-		elif directory is None:
-			directory = self.path
-		if directory == "./":
-			directory = os.getcwd()
+			self._template_lines = f90nml.read(os.path.join(directory,self.template_name))
 		self._template_path = directory
 		
 		self.pyro = self.eqbm.load_pyro(template_file = self.template_name, directory = directory)
@@ -262,9 +257,15 @@ class myro_set_scan(object):
 		if self.inputs['variable'] is None:
 			empty_elements.append('variable')
 		if self.inputs['shat'] is None:
-			empty_elements.append('shat')
+			try:
+				self.inputs['shat'] = self._template_lines['theta_grid_eik_knobs']['s_hat_input']
+			except:
+				empty_elements.append('shat')
 		if self.inputs['beta_prime'] is None:
-			empty_elements.append('beta_prime')
+			try:
+				self.inputs['beta_prime'] = self._template_lines['theta_grid_eik_knobs']['beta_prime_input']
+			except:
+				empty_elements.append('beta_prime')
 
 		if empty_elements:
 			print(f"ERROR: the following inputs are empty: {empty_elements}")

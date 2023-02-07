@@ -50,18 +50,25 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 			z_gr = transpose(data['growth_rates'][idx]).tolist()
 			z_mf = transpose(data['mode_frequencies'][idx]).tolist()
 			ax[0].set_title(f"Growth Rate | PsiN: {psiN}")
+			ky_idx = inputs['aky_values'].index(data['akys'][psi_idx][bp_idx][sh_idx])
 		
 		if options.get_status()[2]:
 			mfmax = mf_slider.val * abs(amax(array(data['mode_frequencies'])[isfinite(data['mode_frequencies'])]))/100
 			grmax = gr_slider.val * abs(amax(array(data['growth_rates'])[isfinite(data['growth_rates'])]))/100
 
-		else:	
-			if [i for x in z_gr for i in x if str(i) != 'nan']:
-				grmax = gr_slider.val * abs(amax(array(z_gr)[isfinite(z_gr)]))/100
-				if grmax == 0:
-					grmax = 10e-10
-			else:
+		else:
+			z_c = []
+			for i, l1 in enumerate(z_gr):
+				for j, l2 in enumerate(l1):
+					if (idx,i,j,ky_idx) not in verify['unconv_low'] and str(l2) != 'nan':
+						z_c.append(l2)
+			if len(z_c) == 0:
 				grmax = 1
+			else:
+				grmax = gr_slider.val * abs(max(z_c))/100
+				if grmax < 10e-10:
+					grmax = 10e-10
+
 			if [i for x in z_mf for i in x if str(i) != 'nan']:
 				mfmax = mf_slider.val * abs(amax(array(z_mf)[isfinite(z_mf)]))/100
 				if mfmax == 0:
@@ -88,14 +95,7 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 					if data['parities'][idx][bpid][shid] == -1:
 						ax[0].plot(bp, sh, '_', color = 'cyan')
 						ax[1].plot(bp, sh, '_', color = 'cyan')
-
-		if options.get_status()[3]:
-			ax[0].plot(beta_prime,shear,'kx')
-			ax[0].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
-			ax[0].annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
-			ax[1].plot(beta_prime,shear,'kx')
-			ax[1].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
-			ax[1].annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
+		
 		if options.get_status()[1]:
 			ax[0].set_ylim(shmin,shmax)
 			ax[0].set_xlim(bpmin,bpmax)
@@ -108,6 +108,15 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 			ax[1].set_ylim(min(y),max(y))
 			ax[1].set_xlim(min(x),max(x))
 		'''
+
+		if options.get_status()[3]:
+			ax[0].plot(beta_prime,shear,'kx')
+			ax[0].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
+			ax[0].annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
+			ax[1].plot(beta_prime,shear,'kx')
+			ax[1].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
+			ax[1].annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
+		
 		if options.get_status()[4]:
 			if data['ideal_stabilities'] is not None and data['ideal_stabilities'][idx] is not None:
 				ax[0].contourf(data['beta_prime_axis_ideal'][idx], data['shear_axis_ideal'][idx], data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))

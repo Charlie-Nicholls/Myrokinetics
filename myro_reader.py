@@ -17,8 +17,8 @@ class myro_read(object):
 		self.run = {}
 		self._open_file()
 		self._gr_type = "Normalised"
-		self.verify = {}		
-		self._verify_run()
+		if not self.verify:		
+			self._verify_run()
 		self.eqbm = self.pyro = None
 	
 	def __getitem__(self, key):
@@ -67,6 +67,10 @@ class myro_read(object):
 			return self.verify['unconv']
 		elif key in ['unconv_low', 'unconverged_low','unconv_stable','unconverged_stable','low_unconv','low_unconverged','bad_conv_low']:
 			return self.verify['unconv_low']
+		elif key in ['conv', 'converged']:
+			return self.verify.converged['conv']
+		elif key in ['conv_grad', 'converged_grad']:
+			return self.verify.converged['conv_grad']
 		elif key in ['saveerrors','save_errors']:
 			return self.verify['save_errors']
 		elif key in ['saveerrors_all','save_errors_all']:
@@ -204,6 +208,10 @@ class myro_read(object):
 		
 		try:
 			inputs = data_in['inputs'].item()
+			possible_inputs = ['shat_min','shat_max','beta_min','beta_max','shat_div','shat_mul','beta_div','beta_mul','n_shat','n_beta',
+			'n_shat_ideal','n_beta_ideal','psiNs','aky_values','Miller','Ideal','Gyro','Viking','Fixed_delt','Epar']
+			for key in [x for x in possible_inputs if x not in inputs.keys()]:
+				inputs[key] = None
 		except:
 			print("ERROR: could not load Inputs")
 			inputs = None
@@ -212,22 +220,43 @@ class myro_read(object):
 		except:
 			print("ERROR: could not load Run Info")
 			info = None
+			possible_info = ['run_name','run_uuid','data_path','input_file','eq_file_name','template_file_name','kin_file_name',
+			'kinetics_type','run_data','_eq_file_path','_kin_file_path','_template_file_path']
+			for key in [x for x in possible_info if x not in info.keys()]:
+				info[key] = None
 		try:
 			data = data_in['data'].item()
+			possible_data = ['beta_prime_values','shear_values','beta_prime_axis','shear_axis','beta_prime_axis_ideal','shear_axis_ideal','growth_rates','mode_frequencies','growth_rates_all',
+			'mode_frequencies_all','parities','parities_all','ideal_stabilities','eparN','eparN_all','akys','omega','phi','apar','bpar','phi2','time','theta']
+			for key in [x for x in possible_data if x not in data.keys()]:
+				data[key] = None
 		except:
 			print("ERROR: could not load Data")
 			data = None
 		try:
 			files = data_in['files'].item()
+			possible_files = ['eq_file','kin_file','template_file','namelist_differences']
+			for key in [x for x in possible_files if x not in files.keys()]:
+				files[key] = None
 		except:
 			print("ERROR: could not load Input Files")
 			files = None
+		try:
+			verify = data_in['verify'].item()
+		except:
+			verify = {}
+		
+		
+		
+		
+		
 		self.run = {'inputs': inputs, 'info': info, 'data': data, 'files': files}
+		self.verify = verify
 	
-	def _save_file(self, directory = "./", filename = None):
+	def _save_file(self, filename = None, directory = "./"):
 		if filename == None:
 			filename = self.run['info']['run_name']
-		savez(f"{directory}/{filename}", inputs = self.run['inputs'], data = self.run['data'], run_info = self.run['info'], files = self.run['files'])
+		savez(f"{directory}/{filename}", inputs = self.run['inputs'], data = self.run['data'], run_info = self.run['info'], files = self.run['files'], verify = self.verify)
 		
 	def _remove_akys(self, akys = None, ids = None):
 		if akys is None and ids is None:

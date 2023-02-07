@@ -1,4 +1,4 @@
-from numpy import shape, array, nonzero, imag, real, nan, amax, polyfit, log
+from numpy import shape, array, nonzero, imag, real, nan, amax, polyfit, log, sign
 
 class verify_scan(object):
 	
@@ -132,16 +132,19 @@ class verify_scan(object):
 								self.new_data['mfa'][i][j][k][l] = real(omega[-1])
 							if len(phi2) > 19:
 								gr = imag(omega[-1])
-								fit = polyfit(time[-10:],log(phi2[-10:]),1)
+								grad = log(phi2[-1]/phi2[0])/(time[-1]-time[0])
+								nt = 10
+								if len(phi2) > 100:
+									nt = len(phi2)//10
+								fit = polyfit(time[-nt:],log(phi2[-nt:]),1)
 								if abs((fit[0]-gr)/gr) < 0.05:
 									self.converged['conv'].add((i,j,k,l))
-								elif abs(pearsonr(time[-10:],log(phi2[-10:]))[0]) > 0.99:
+								elif abs(pearsonr(time[-nt:],log(phi2[-nt:]))[0]) > 0.99:
 									self.new_data['gra'][i][j][k][l] = fit[0]
 									self.converged['conv_grad'].add((i,j,k,l))
 								else:
 									self.new_data['mfa'][i][j][k][l] = nan
 									#fit2 = polyfit(time,log(phi2),1)
-									grad = log(phi2[-1]/phi2[0])/(time[-1]-time[0])
 									if grad < -0.1:#fit2[0] < -0.1:
 										if fit[0] < 0:
 											self.new_data['gra'][i][j][k][l] = fit[0]

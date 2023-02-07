@@ -61,6 +61,11 @@ class myro_single(object):
 				print(f"Could not load file {os.path.join(self.directory,self.output_file)}.out.nc")
 				return
 		
+		data_in['omega'] = data_in['omega'][:,0,0]
+		data_in['phi'] = data_in['phi'][0,0,:]
+		data_in['apar'] = data_in['apar'][0,0,:]
+		data_in['bpar'] = data_in['bpar'][0,0,:]
+		
 		self.run = data_in
 		
 	def open_in(self, filename = None, directory = None):
