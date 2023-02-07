@@ -929,6 +929,9 @@ class myro_scan(object):
 			myro = myro_read(filename = save, directory = directory)
 			self.verify = myro.verify
 		
+		if not self.pyro:
+			self.load_pyro()
+		
 		for [p,i,j,k] in self.verify.runs_with_errors:
 			self.namelist_diff[p][i][j][k]['knobs']['nstep'] = 2*self._template_lines['knobs']['nstep']
 			self.namelist_diff[p][i][j][k]['theta_grid_parameters']['ntheta'] = 2*self._template_lines['theta_grid_parameters']['ntheta']
