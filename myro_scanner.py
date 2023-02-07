@@ -389,12 +389,12 @@ class myro_scan(object):
 		return True
 	
 	def _run_ideal(self, directory = None, checkSetup = True):
-		if directory is None:
-			directory = self.info['data_path']
 		self.inputs['Ideal'] = True
 		if checkSetup:
 			if not self._check_setup():
 				return
+		if directory is None:
+			directory = self.info['data_path']
 		check = self.check_complete(directory = directory, doPrint = False, gyro = False, ideal = True)
 		if check['ideal_complete']:
 			print(f"{len(check['ideal_complete'])} Existing Ideal Runs Detected")
@@ -420,12 +420,12 @@ class myro_scan(object):
 				os.chdir(f"{self.path}")
 
 	def _run_gyro(self, directory = None, checkSetup = True, specificRuns = None):
-		if directory is None:
-			directory = self.info['data_path']
 		self.inputs['Gyro'] = True
 		if checkSetup:
 			if not self._check_setup():
 				return
+		if directory is None:
+			directory = self.info['data_path']
 		if not specificRuns:
 			check = self.check_complete(directory = directory, doPrint = False, gyro = True, ideal = False)
 			if check['gyro_complete']:
@@ -945,4 +945,3 @@ class myro_scan(object):
 			
 		self._run_gyro(directory = self.info['data_path'], specificRuns = self.verify.runs_with_errors)
 		
-
