@@ -918,8 +918,6 @@ class myro_scan(object):
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = self.dat, run_info = self.info, files = self.file_lines)
 		
 	def rerun_errors(self, save = None, directory = None):
-		if not self.pyro:
-			self.load_pyro()
 		if self.dat:
 			scan = {'inputs': self.inputs, 'data': self.dat, 'info': self.info, 'files': self.file_lines}
 			self.verify = verify_scan(scan = scan)
@@ -943,5 +941,4 @@ class myro_scan(object):
 			else:
 				self.namelist_diff[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
 			
-		self._run_gyro(directory = self.info['data_path'], specificRuns = self.verify.runs_with_errors)
-		
+		self._run_gyro(specificRuns = self.verify.runs_with_errors)
