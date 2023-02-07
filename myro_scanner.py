@@ -14,7 +14,7 @@ class myro_scan(object):
 		self.template_name = template_file
 		self.input_name = input_file
 		self.run_name = run_name
-		self._template_path = self.info = self.pyro = self._template_lines = self.namelist_diffs = self.dat = self.file_lines = self.verify = None
+		self._template_path = self.info = self.pyro = self._template_lines = self.dat = self.file_lines = self.verify = self.namelist_diffs = None
 
 		if directory == "./":
 			directory = os.getcwd() 
@@ -434,7 +434,7 @@ class myro_scan(object):
 		else:
 			runs = specificRuns
 
-		if len(check['gyro_incomplete']) > 10000:
+		if len(runs) > 10000:
 			group_runs = True
 		else:
 			group_runs = False
@@ -491,7 +491,7 @@ class myro_scan(object):
 						sh = 1e-4
 
 					for k, aky in enumerate(self.inputs['aky_values']):
-						if [p,i,j,k] in runs:
+						if (p,i,j,k) in runs:
 							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.out.nc"):
 								os.rename(f"{sub_path}/{p}_{fol}_{k}.out.nc",f"{sub_path}/{p}_{fol}_{k}_old.out.nc")
 							subnml = nml
@@ -932,16 +932,23 @@ class myro_scan(object):
 		if not self.pyro:
 			self.load_pyro()
 		
+		if not self.namelist_diffs:
+			self.namelist_diffs = full((len(self.inputs['psiNs']),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),{}).tolist()
+
 		for [p,i,j,k] in self.verify.runs_with_errors:
-			self.namelist_diff[p][i][j][k]['knobs']['nstep'] = 2*self._template_lines['knobs']['nstep']
-			self.namelist_diff[p][i][j][k]['theta_grid_parameters']['ntheta'] = 2*self._template_lines['theta_grid_parameters']['ntheta']
-			self.namelist_diff[p][i][j][k]['theta_grid_parameters']['nperiod'] = 2*self._template_lines['theta_grid_parameters']['nperiod']
+			if 'knobs' not in self.namelist_diffs[p][i][j][k].keys():
+				self.namelist_diffs[p][i][j][k]['knobs'] = {}
+			if 'theta_grid_parameters' not in self.namelist_diffs[p][i][j][k].keys():
+				self.namelist_diffs[p][i][j][k]['theta_grid_parameters'] = {}
+			self.namelist_diffs[p][i][j][k]['knobs']['nstep'] = 2*self._template_lines['knobs']['nstep']
+			self.namelist_diffs[p][i][j][k]['theta_grid_parameters']['ntheta'] = 2*self._template_lines['theta_grid_parameters']['ntheta']
+			self.namelist_diffs[p][i][j][k]['theta_grid_parameters']['nperiod'] = 2*self._template_lines['theta_grid_parameters']['nperiod']
 			if self.inputs['Fixed_delt'] is False:
-				delt = 0.004/aky
+				delt = 0.004/self.inputs['aky_values'][k]
 				if delt > 0.01:
 					delt = 0.01
-				self.namelist_diff[p][i][j][k]['knobs']['delt'] = delt
+				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = delt
 			else:
-				self.namelist_diff[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
+				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
 			
 		self._run_gyro(specificRuns = self.verify.runs_with_errors)
