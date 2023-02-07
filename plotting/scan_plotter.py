@@ -163,9 +163,9 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 				for shid, sh in enumerate(y):
 					if not aky:
 						ky_idx = data['akys'][idx][bpid][shid]
-					if (idx, bpid, shid, ky_idx) in verify.bad_runs['other']:
-						ax[0].text(bp, sh, 'o', color = 'purple',ha='center',va='center',size=7)
-						ax[1].text(bp, sh, 'o', color = 'purple',ha='center',va='center',size=7)
+					if (idx, bpid, shid, ky_idx) in verify.bad_runs['nan']:
+						ax[0].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
 		
 		fig.canvas.draw_idle()
 		return
@@ -193,7 +193,7 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 	options.on_clicked(draw_fig)
 	
 	vraxes = axes([0.85, 0.01, 0.09, 0.1],frame_on = False)
-	vroptions = CheckButtons(vraxes, ["Show ID","Show Unconverged","Show Bad nstep","Show bad fields","Show bad other"],[False,False,False,False,False])
+	vroptions = CheckButtons(vraxes, ["Show ID","Show Unconverged","Show Bad nstep","Show bad fields","Show Omega -> nan"],[False,False,False,False,False])
 	vroptions.on_clicked(draw_fig)
 		
 	slaxes = axes([0.15, 0.01, 0.5, 0.03])

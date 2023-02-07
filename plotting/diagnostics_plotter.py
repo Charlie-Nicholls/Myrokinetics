@@ -139,8 +139,8 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			bad = []
 			if (psi_idx,bp_idx,sh_idx,aky_idx) in verify['nstep']:
 				bad.append('nstep')
-			if (psi_idx,bp_idx,sh_idx,aky_idx) in verify['other']:
-				bad.append('other')
+			if (psi_idx,bp_idx,sh_idx,aky_idx) in verify['nan']:
+				bad.append('nan')
 			if (psi_idx,bp_idx,sh_idx,aky_idx) in verify['unconv']:
 				bad.append('unconverged')
 			if var == 1 and (psi_idx,bp_idx,sh_idx,aky_idx) in verify['phi']:

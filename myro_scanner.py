@@ -493,7 +493,7 @@ class myro_scan(object):
 					for k, aky in enumerate(self.inputs['aky_values']):
 						if [p,i,j,k] in runs:
 							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.out.nc"):
-								os.remove(f"{sub_path}/{p}_{fol}_{k}.out.nc")
+								os.rename(f"{sub_path}/{p}_{fol}_{k}.out.nc",f"{sub_path}/{p}_{fol}_{k}_old.out.nc")
 							subnml = nml
 							subnml['theta_grid_eik_knobs']['s_hat_input'] = sh
 							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
@@ -917,17 +917,32 @@ class myro_scan(object):
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines, 'namelist_differences': self.namelist_diffs}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = self.dat, run_info = self.info, files = self.file_lines)
 		
-	def verify_run(self, directory = None):
+	def rerun_errors(self, save = None, directory = None):
 		if not self.pyro:
 			self.load_pyro()
+		if self.dat:
+			scan = {'inputs': self.inputs, 'data': self.dat, 'info': self.info, 'files': self.file_lines}
+			self.verify = verify_scan(scan = scan)
 		if not self.dat:
-			print("ERROR: No Run Data")
-			return
-		scan = {'inputs': self.inputs, 'data': self.dat, 'info': self.info, 'files': self.file_lines}
-		self.verify = verify_scan(scan = scan)
-		for [p,i,j,k] in self.verify['bad_nstep']:
-			self.namelist_diff[p][i][j][k]['knobs']['nstep'] = 10*self._template_lines['knobs']['nstep']
+			if not save:
+				print("ERROR: No Run Data or Save File")
+				return
+			from .myro_reader import myro_read
+			myro = myro_read(filename = save, directory = directory)
+			self.verify = myro.verify
 		
-		self._run_gyro(directory = directory, specificRuns = self.verify['bad_nstep'])
+		for [p,i,j,k] in self.verify.runs_with_errors:
+			self.namelist_diff[p][i][j][k]['knobs']['nstep'] = 2*self._template_lines['knobs']['nstep']
+			self.namelist_diff[p][i][j][k]['theta_grid_parameters']['ntheta'] = 2*self._template_lines['theta_grid_parameters']['ntheta']
+			self.namelist_diff[p][i][j][k]['theta_grid_parameters']['nperiod'] = 2*self._template_lines['theta_grid_parameters']['nperiod']
+			if self.inputs['Fixed_delt'] is False:
+				delt = 0.004/aky
+				if delt > 0.01:
+					delt = 0.01
+				self.namelist_diff[p][i][j][k]['knobs']['delt'] = delt
+			else:
+				self.namelist_diff[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
+			
+		self._run_gyro(directory = self.info['data_path'], specificRuns = self.verify.runs_with_errors)
 		
 

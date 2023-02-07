@@ -10,7 +10,7 @@ GYROKINETIC SCAN ANALYSIS
 class myro_read(object):
 
 	def __init__(self, filename = None, directory = "./"):
-		if directory == "./":
+		if directory == "./" or directory is None:
 			directory = os.getcwd() 
 		self.directory = directory
 		self.filename = filename
@@ -57,8 +57,8 @@ class myro_read(object):
 			return self.verify.bad_runs
 		elif key in ['bad_nstep', 'badnstep']:
 			return self.verify['nstep']
-		elif key in ['bad_other', 'badother','other']:
-			return self.verify['other']
+		elif key in ['bad_nan', 'badnan','nan']:
+			return self.verify['nan']
 		elif key in ["bad_phi", "badphi"]:
 			return self.verify['phi']
 		elif key in ["bad_apar", "badapar"]:
