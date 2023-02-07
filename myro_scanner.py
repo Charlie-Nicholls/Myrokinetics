@@ -605,7 +605,6 @@ class myro_scan(object):
 					if ".in" in l:
 						inp = l.split("/")[-1].split(".")[0]
 				p, i, j, k = [eval(x) for x in inp.split("_")]
-				cancelled.add((p,i,j,k))
 				for ki in range(k, len(self.inputs['aky_values'])):
 					cancelled.add((p,i,j,ki))
 		if doPrint:		
