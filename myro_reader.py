@@ -418,7 +418,7 @@ class myro_read(object):
 
 		p,i,j,k = indexes
 		if filename is None:
-			filename = f"{p}_{i}_{j}_{j}.in"
+			filename = f"{p}_{i}_{j}_{k}.in"
 		
 		if self.eqbm is None:
 			self.load_equillibrium(eq_file = eq_file, kin_file = kin_file, directory = directory)
