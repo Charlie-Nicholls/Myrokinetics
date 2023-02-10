@@ -1,6 +1,7 @@
-from numpy import real, imag
+from numpy import real, imag, log, polyfit, array, exp
 from matplotlib.pyplot import *
-from matplotlib.widgets import Slider, CheckButtons
+from matplotlib.widgets import Slider, CheckButtons, TextBox
+from scipy.stats import pearsonr
 
 def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None):
 	if scan is None:
@@ -28,7 +29,7 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		if data['time'] is None and var in [0,3]:
 			path = scan['info']['data_path']
 			try:
-				from ncdf2dict import ncdf2dict as readnc
+				from ..ncdf2dict import ncdf2dict as readnc
 				run = readnc(f"{path}/{psiN}/{bp_idx}_{sh_idx}/{psi_idx}_{bp_idx}_{sh_idx}_{aky_idx}.out.nc")
 				t = run['t']
 			except:
@@ -40,7 +41,7 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 		if data['theta'] is None and var in [1,2]:
 			path = scan['info']['data_path']
 			try:
-				from ncdf2dict import ncdf2dict as readnc
+				from ..ncdf2dict import ncdf2dict as readnc
 				run = readnc(f"{path}/{psiN}/{bp_idx}_{sh_idx}/{psi_idx}_{bp_idx}_{sh_idx}_{aky_idx}.out.nc")
 				t = run['theta']
 			except:
@@ -117,24 +118,22 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 			else:
 				phi2 = data['phi2'][psi_idx][bp_idx][sh_idx][aky_idx]
 			ax.plot(t,phi2,'k')
-			
 			ax.set_ylabel("Phi2")
 			ax.set_yscale('log')
 			ax.set_xlabel(f"Time ({len(t)} steps)")
 			
-			if options.get_status()[0] and len(t) > 19:
-				from numpy import log, polyfit, array, exp
-				nt = 10
-				if len(phi2) > 100:
-					nt = len(phi2)//10
+			if options.get_status()[0]:
+				nt = verify.nts[psi_idx][bp_idx][sh_idx][aky_idx]
 				fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
-				from scipy.stats import pearsonr
+				fitgr = fit[0]/2
 				pr = pearsonr(t[-nt:],log(phi2[-nt:]))
-				ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fit[0]:+.2e}\nR = {pr[0]:.4f}")
-				grad = log(phi2[-1]/phi2[0])/(t[-1]-t[0])
-				ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {grad:+.2e}")
+				gradgr = log(phi2[-1]/phi2[0])/(t[-1]-t[0])/2
 				omega = data['omega'][psi_idx][bp_idx][sh_idx][aky_idx]
+				
+				ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fitgr:+.2e}\nR = {pr[0]:.4f}")
+				ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {gradgr:+.2e}")
 				ax.text(0.01,0.99,f"GR: {data['growth_rates_all'][psi_idx][bp_idx][sh_idx][aky_idx]:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
+				ax.set_xlabel(f"Time ({len(t)} steps) | nt = {nt}")
 				ax.legend(loc=1)
 		
 		if verify is not None:
@@ -204,7 +203,7 @@ def plot_diag(scan = None, var = 0, aky = True, init = [0,0,0,0], verify = None)
 	draw_fig()
 	show()
 	
-def plot_diag_single(data = None, var = 0, fig = None, ax = None):
+def plot_diag_single(data = None, var = 0, fig = None, ax = None, ax2 = None):
 	if data is None:
 		print("ERROR: no data dictionary given")
 		return
@@ -224,21 +223,29 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 	
 	doShow = False
 	if fig is None or ax is None:
-		fig, ax = subplots()
+		if var == 0:
+			fig, [ax, ax2] = subplots(2,1,figsize=(10,10))
+		else:
+			fig, ax = subplots(figsize=(8.8,5.8))
 		doShow = True
 	
 	if var == 0:
 		omega = data['omega']
 		t = data['t']
 		
-		ax.plot(t,real(omega),'r',label="mode frequency")
 		ax.plot(t,imag(omega),'b',label="growth rate")
-		
-		ax.text(0.01,0.99,f"GR: {imag(omega[-1]):+.2e}\nMF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
-		ax.set_ylabel("Omega")
+		ax.text(0.01,0.99,f"GR: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
+		ax.set_ylabel("Growth Rate")
 		ax.set_xlabel(f"Time ({len(t)} steps)")
 		ax.legend(loc=0)
 		
+		ax2.cla()	
+		ax2.plot(t,real(omega),'r',label="mode frequency")
+		ax2.text(0.01,0.99,f"MF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=ax2.transAxes)
+		ax2.set_ylabel("Mode_Frequency")
+		ax2.set_xlabel(f"Time ({len(t)} steps)")
+		ax2.legend(loc=1)
+
 	elif var == 1:
 		phi = data['phi']
 		theta = data['theta']
@@ -276,28 +283,35 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None):
 		ax.legend(loc=0)
 	
 	elif var == 4:
-		phi2 = data['phi2']
-		t = data['t']
-
-		ax.plot(t,phi2,'k')
-		
-		ax.set_ylabel("Phi2")
-		ax.set_yscale('log')
-		ax.set_xlabel(f"Time ({len(t)} steps)")
-		
-		if len(t) > 19:
-			from numpy import log, polyfit, array, exp
-			nt = 10
-			if len(phi2) > 100:
-				nt = len(phi2)//10
+		def draw_fig(val):
+			ax.cla()
+			ax.plot(t,phi2,'k')	
+			ax.set_ylabel("Phi2")
+			ax.set_yscale('log')
+			ax.set_xlabel(f"Time ({len(t)} steps)")
+			
+			nt = int(eval(val))
 			fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
-			from scipy.stats import pearsonr
 			pr = pearsonr(t[-nt:],log(phi2[-nt:]))
-			ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fit[0]:+.2e}\nR = {pr[0]:.4f}")
 			grad = log(phi2[-1]/phi2[0])/(t[-1]-t[0])
-			ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {grad:+.2e}")
+			gr = fit[0]/2
+			ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {gr:+.2e}\nR = {pr[0]:.4f}")
+			ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {grad/2:+.2e}")
 			ax.text(0.01,0.99,f"Omega[-1]: {imag(data['omega'][-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
 			ax.legend(loc=1)
+			
+		phi2 = data['phi2']
+		t = data['t'] 
+		
+		taxes = fig.add_axes([0.8, 0.03, 0.05, 0.04])
+		tbox = TextBox(taxes, 'nt:', initial = '10')
+		tbox.on_submit(draw_fig)
+		
+		if len(phi2) > 100:
+			draw_fig(f"{len(phi2)//10}")
+		else:
+			draw_fig("10")
+			
 	if doShow:
 		show()
 	return
@@ -313,11 +327,15 @@ def plot_diag_set(runs = None, var = 0, init = None):
 			if correct_run:
 				data = run['data']
 				break
-		plot_diag_single(data = data, var = var, fig = fig, ax = ax)
+		plot_diag_single(data = data, var = var, fig = fig, ax = ax, ax2 = ax2)
 		ax.set_title(f"{[x for x in sliders.keys()]} = {[run[x] for x in sliders.keys()]}")
 		fig.canvas.draw_idle()
 	
-	fig, ax = subplots(figsize=(8.8,6.8))
+	if var == 0:
+		fig, [ax, ax2] = subplots(2,1,figsize=(10,10))
+	else:
+		fig, ax = subplots(figsize=(8.8,5.8))
+		ax2 = None
 	subplots_adjust(bottom=0.15)
 	
 	sliders = {}

@@ -50,24 +50,18 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 			z_gr = transpose(data['growth_rates'][idx]).tolist()
 			z_mf = transpose(data['mode_frequencies'][idx]).tolist()
 			ax[0].set_title(f"Growth Rate | PsiN: {psiN}")
-			ky_idx = inputs['aky_values'].index(data['akys'][psi_idx][bp_idx][sh_idx])
 		
 		if options.get_status()[2]:
 			mfmax = mf_slider.val * abs(amax(array(data['mode_frequencies'])[isfinite(data['mode_frequencies'])]))/100
 			grmax = gr_slider.val * abs(amax(array(data['growth_rates'])[isfinite(data['growth_rates'])]))/100
 
 		else:
-			z_c = []
-			for i, l1 in enumerate(z_gr):
-				for j, l2 in enumerate(l1):
-					if (idx,i,j,ky_idx) not in verify['unconv_low'] and str(l2) != 'nan':
-						z_c.append(l2)
-			if len(z_c) == 0:
-				grmax = 1
-			else:
-				grmax = gr_slider.val * abs(max(z_c))/100
+			if [i for x in z_gr for i in x if str(i) != 'nan']:
+				grmax = gr_slider.val * abs(amax(array(z_gr)[isfinite(z_gr)]))/100
 				if grmax < 10e-10:
 					grmax = 10e-10
+			else:
+				grmax = 1
 
 			if [i for x in z_mf for i in x if str(i) != 'nan']:
 				mfmax = mf_slider.val * abs(amax(array(z_mf)[isfinite(z_mf)]))/100
@@ -125,33 +119,51 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 				ax[0].text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=ax[0].transAxes,color='k')
 		
 		if vroptions.get_status()[0]:
-			for i, bp in enumerate(data['beta_prime_axis'][idx]):
-				ax[0].text(bp, data['shear_axis'][idx][0], f"{i}", color = 'purple',ha='center',va='center')
-				ax[1].text(bp, data['shear_axis'][idx][0], f"{i}", color = 'purple',ha='center',va='center')
-			for j, sh in enumerate(data['shear_axis'][idx][1:]):
-				ax[0].text(data['beta_prime_axis'][idx][0],sh, f"{j+1}", color = 'purple',ha='center',va='center')
-				ax[1].text(data['beta_prime_axis'][idx][0],sh, f"{j+1}", color = 'purple',ha='center',va='center')
+			ax[0].xaxis.set_ticklabels([])
+			ax[1].xaxis.set_ticklabels([])
+			ax[0].yaxis.set_ticklabels([])
+			ax[1].yaxis.set_ticklabels([])
+			dx = x[1] - x[0]
+			dy = y[1] - y[0]
+			for i, bp in enumerate(x):
+				ax[0].text(bp, y[0]-dy, f"{i}", color = 'k',ha='center',va='center')
+				ax[1].text(bp, y[0]-dy, f"{i}", color = 'k',ha='center',va='center')
+			for j, sh in enumerate(y):
+				ax[0].text(x[0]-dx,sh, f"{j}", color = 'k',ha='center',va='center')
+				ax[1].text(x[0]-dx,sh, f"{j}", color = 'k',ha='center',va='center')
+			ax[0].set_xticks(array(x)-dx/2, minor=True)
+			ax[1].set_xticks(array(x)-dx/2, minor=True)
+			ax[0].set_yticks(array(y)-dy/2, minor=True)
+			ax[1].set_yticks(array(y)-dy/2, minor=True)
+			ax[0].grid(which="minor",color='k')
+			ax[1].grid(which="minor",color='k')
 			
 		if vroptions.get_status()[1]:
 			for bpid, bp in enumerate(x):
 				for shid, sh in enumerate(y):
 					if not aky:
-						ky_idx = data['akys'][idx][bpid][shid]
-					if (idx, bpid, shid, ky_idx) in verify.bad_runs['unconv']:
-						ax[0].text(bp, sh, 'U', color = 'purple',ha='center',va='center',size=7)
-						ax[1].text(bp, sh, 'U', color = 'purple',ha='center',va='center',size=7)
-					elif (idx, bpid, shid, ky_idx) in verify.bad_runs['unconv_low']:
-						ax[0].text(bp, sh, 'Us', color = 'purple',ha='center',va='center',size=7)
-						ax[1].text(bp, sh, 'Us', color = 'purple',ha='center',va='center',size=7)
+						ky_idx = data['aky_values'].index(data['akys'][idx][bpid][shid])
+					if (idx, bpid, shid, ky_idx) in verify['unconverged']:
+						ax[0].text(bp, sh, 'U', color = 'k',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'U', color = 'k',ha='center',va='center',size=7)
+					elif (idx, bpid, shid, ky_idx) in verify['unconverged_stable']:
+						ax[0].text(bp, sh, 'Us', color = 'k',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'Us', color = 'k',ha='center',va='center',size=7)
+					elif (idx, bpid, shid, ky_idx) in verify['converged']:
+						ax[0].text(bp, sh, 'C', color = 'k',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'C', color = 'k',ha='center',va='center',size=7)
+					elif (idx, bpid, shid, ky_idx) in verify['converged_fit']:
+						ax[0].text(bp, sh, 'Cf', color = 'k',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'Cf', color = 'k',ha='center',va='center',size=7)
 		
 		if vroptions.get_status()[2]:
 			for bpid, bp in enumerate(x):
 				for shid, sh in enumerate(y):
 					if not aky:
 						ky_idx = data['akys'][idx][bpid][shid]
-					if (idx, bpid, shid, ky_idx) in verify.bad_runs['nstep']:
-						ax[0].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
-						ax[1].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
+					if (idx, bpid, shid, ky_idx) in verify['nstep']:
+						ax[0].text(bp, sh, 'n', color = 'k',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'n', color = 'k',ha='center',va='center',size=7)
 		
 		if vroptions.get_status()[3]:
 			for bpid, bp in enumerate(x):
@@ -159,22 +171,22 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 					if not aky:
 						ky_idx = data['akys'][idx][bpid][shid]
 					s = ''
-					if (idx, bpid, shid, ky_idx) in verify.bad_runs['phi']:
+					if (idx, bpid, shid, ky_idx) in verify['phi']:
 						s += 'p,'
-					if (idx, bpid, shid, ky_idx) in verify.bad_runs['phi']:
+					if (idx, bpid, shid, ky_idx) in verify['phi']:
 						s += 'a,'
 					if s != '':
-						ax[0].text(bp, sh, s[:-1], color = 'purple',ha='center',va='center',size=7)
-						ax[1].text(bp, sh, s[:-1], color = 'purple',ha='center',va='center',size=7)
+						ax[0].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7)
 		
 		if vroptions.get_status()[4]:
 			for bpid, bp in enumerate(x):
 				for shid, sh in enumerate(y):
 					if not aky:
 						ky_idx = data['akys'][idx][bpid][shid]
-					if (idx, bpid, shid, ky_idx) in verify.bad_runs['nan']:
-						ax[0].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
-						ax[1].text(bp, sh, 'n', color = 'purple',ha='center',va='center',size=7)
+					if (idx, bpid, shid, ky_idx) in verify['nan']:
+						ax[0].text(bp, sh, 'n', color = 'k',ha='center',va='center',size=7)
+						ax[1].text(bp, sh, 'n', color = 'k',ha='center',va='center',size=7)
 		
 		fig.canvas.draw_idle()
 		return
@@ -202,7 +214,7 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 	options.on_clicked(draw_fig)
 	
 	vraxes = axes([0.85, 0.01, 0.09, 0.1],frame_on = False)
-	vroptions = CheckButtons(vraxes, ["Show ID","Show Unconverged","Show Bad nstep","Show bad fields","Show Omega -> nan"],[False,False,False,False,False])
+	vroptions = CheckButtons(vraxes, ["Show ID","Show Convergence","Show Bad nstep","Show bad fields","Show Omega -> nan"],[False,False,False,False,False])
 	vroptions.on_clicked(draw_fig)
 		
 	slaxes = axes([0.15, 0.01, 0.5, 0.03])

@@ -23,8 +23,8 @@ class myro_single(object):
 			self.namelist = in_nml
 		elif in_file:
 			self.open_in()
-		self.run['gr'] = imag(self.run['omega'][-1,0,0])
-		self.run['mf'] = real(self.run['omega'][-1,0,0])
+		self.run['gr'] = imag(self.run['omega'])
+		self.run['mf'] = real(self.run['omega'])
 		
 	def __getitem__(self, key):
 		if key in self.run.keys():

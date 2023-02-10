@@ -423,6 +423,10 @@ class myro_set_scan(object):
 						in_nmls[p][v][k] = None
 					try:
 						out_dict[p][v][k] = readnc(f"{self.info['data_path']}/{psiN}/{v}/{p}_{v}_{k}.out.nc")
+						out_dict[p][v][k]['omega'] = out_dict[p][v][k]['omega'][:,0,0]
+						out_dict[p][v][k]['phi'] = out_dict[p][v][k]['phi'][0,0,:]
+						out_dict[p][v][k]['apar'] = out_dict[p][v][k]['apar'][0,0,:]
+						out_dict[p][v][k]['bpar'] = out_dict[p][v][k]['bpar'][0,0,:]
 					except Exception as e:
 						print(f"Output Save Error {psiN}/{v}/{p}_{v}_{k}: {e}")
 						out_dict[p][v][k] = None

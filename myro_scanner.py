@@ -252,6 +252,11 @@ class myro_scan(object):
 				shat_max = min(self.inputs['shat_max'],self.inputs['shat_mul']*shear)
 				
 			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': shat_min, 'shat_max': shat_max, 'beta_mul': beta_mul, 'beta_div': beta_div}
+		try:
+			if nml['kt_grids_knobs']['grid_option'] in ['single','default']:
+				nml['knobs']['wstar_units'] = False
+		except:
+			nml['knobs']['wstar_units'] = False
 		nml.write(file_name, force=True)
 		return shear, beta_prim, tprim, fprim, beta, nml
 	
@@ -494,6 +499,8 @@ class myro_scan(object):
 						if (p,i,j,k) in runs:
 							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.out.nc"):
 								os.rename(f"{sub_path}/{p}_{fol}_{k}.out.nc",f"{sub_path}/{p}_{fol}_{k}_old.out.nc")
+							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.slurm"):
+								os.rename(f"{sub_path}/{p}_{fol}_{k}.slurm",f"{sub_path}/{p}_{fol}_{k}_old.slurm")
 							subnml = nml
 							subnml['theta_grid_eik_knobs']['s_hat_input'] = sh
 							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
@@ -952,4 +959,15 @@ class myro_scan(object):
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
 			
 		self._run_gyro(specificRuns = self.verify.runs_with_errors)
-
+	
+	def rerun(self, specificRuns = None, nml = None, directory = None):
+		if specificRuns is None:
+			print("ERROR: specificRuns not given")
+			return
+		if nml is None:
+			print("ERROR: nml not given")
+			return
+			
+		for [p,i,j,k] in specificRuns:
+			self.namelist_diffs[p][i][j][k] = nml
+		self._run_gyro(specificRuns = specificRuns, directory = directory)

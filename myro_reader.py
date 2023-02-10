@@ -53,28 +53,11 @@ class myro_read(object):
 		elif key in ["namelist_diffs", "nml_diffs", "namelist_diff", "nml_diff", "namelists", "nmls"]:
 			return self.run['files']['namelist_differences']
 			
-		elif key in ['bad_runs', 'badruns']:
-			return self.verify.bad_runs
-		elif key in ['bad_nstep', 'badnstep']:
-			return self.verify['nstep']
-		elif key in ['bad_nan', 'badnan','nan']:
-			return self.verify['nan']
-		elif key in ["bad_phi", "badphi"]:
-			return self.verify['phi']
-		elif key in ["bad_apar", "badapar"]:
-			return self.verify['apar']
-		elif key in ['unconv', 'unconverged','bad_conv']:
-			return self.verify['unconv']
-		elif key in ['unconv_low', 'unconverged_low','unconv_stable','unconverged_stable','low_unconv','low_unconverged','bad_conv_low']:
-			return self.verify['unconv_low']
-		elif key in ['conv', 'converged']:
-			return self.verify.converged['conv']
-		elif key in ['conv_grad', 'converged_grad']:
-			return self.verify.converged['conv_grad']
-		elif key in ['saveerrors','save_errors']:
-			return self.verify['save_errors']
-		elif key in ['saveerrors_all','save_errors_all']:
-			return self.verify['save_errors_all']
+		elif key in self.verify._all_keys():
+			return self.verify[key]
+			
+		else:
+			print(f"{key} Not Found")
 			
 	def __len__(self):
 		return len(self.run['inputs']['psiNs'])*self.run['inputs']['n_beta']*self.run['inputs']['n_shat']*len(self.run['inputs']['aky_values'])
@@ -266,11 +249,10 @@ class myro_read(object):
 			ids = []
 			for aky in akys:
 				ids.append(self.run['inputs']['aky_values'].index(aky))
-		else:
-			grs = array(self.run['data']['growth_rates_all'])
-			for idx in ids:
-				grs[:,:,:,idx] = nan
-			self.run['data']['growth_rates_all'] = grs.tolist()
+		grs = array(self.run['data']['growth_rates_all'])
+		for idx in ids:
+			grs[:,:,:,idx] = nan
+		self.run['data']['growth_rates_all'] = grs.tolist()
 		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 		
 	def _verify_run(self):
@@ -462,9 +444,12 @@ class myro_read(object):
 			nml[spec]['tprim'] = nml[spec]['tprim']*mul
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		if self.run['inputs']['Fixed_delt'] is False:
-			nml['knobs']['delt'] = 0.04/self.run['inputs']['aky_values'][k]
-		
-		if 'namelist_differences' in self.run['files'].keys():
+			delt = 0.04/self.run['inputs']['aky_values'][k]
+			if delt > 0.1:
+				delt = 0.1
+			nml['knobs']['delt'] = delt
+								
+		if 'namelist_differences' in self.run['files'].keys() and self.run['files']['namelist_differences'] is not None:
 			if self.run['files']['namelist_differences'][p][i][j][k]:
 				for key in self.run['files']['namelist_differences'][p][i][j][k].keys():
 					for skey in self.run['files']['namelist_differences'][p][i][j][k][key].keys():

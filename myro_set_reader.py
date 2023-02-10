@@ -189,8 +189,11 @@ class myro_set_read(object):
 	def plot_apar(self, init = None):
 		self._plot_diag(var = 2, init = init)
 		
-	def plot_phi2(self, init = None):
+	def plot_bpar(self, init = None):
 		self._plot_diag(var = 3, init = init)
+		
+	def plot_phi2(self, init = None):
+		self._plot_diag(var = 4, init = init)
 	
 	def _plot_diag(self, var = 0, init = None):
 		Plotters['Diag_Set'](runs = self.runs, var = var, init = init)
