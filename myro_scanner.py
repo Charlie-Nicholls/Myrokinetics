@@ -60,7 +60,9 @@ class myro_scan(object):
 		'Gyro': True,
 		'Viking': False,
 		'Fixed_delt': False,
-		'Epar': False}
+		'Epar': False
+		'grad_type': 0
+		}
 
 	def create_inputs(self, key = None, val = None):
 		self.edit_inputs(key = key, val = val)
@@ -506,9 +508,16 @@ class myro_scan(object):
 							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
 							subnml['kt_grids_single_parameters']['aky'] = aky
 							for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-								mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
-								subnml[spec]['tprim'] = nml[spec]['tprim']*mul
-								subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+								if self.inputs['grad_type'] == 2:
+									mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
+									subnml[spec]['fprim'] = mul*nml[spec]['fprim']*mul
+								elif self.inputs['grad_type'] == 1:
+									mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
+									subnml[spec]['tprim'] = mul*nml[spec]['fprim']*mul
+								else:
+									mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
+									subnml[spec]['tprim'] = nml[spec]['tprim']*mul
+									subnml[spec]['fprim'] = nml[spec]['fprim']*mul
 							if self.inputs['Fixed_delt'] is False:
 								delt = 0.04/aky
 								if delt > 0.1:
@@ -664,7 +673,17 @@ class myro_scan(object):
 			return
 		else:
 			return {'gyro_complete': finished_gyro, 'gyro_incomplete': unfinished_gyro, 'ideal_complete': finished_ideal, 'ideal_incomplete': unfinished_ideal}
-			
+	
+	def _save_obj(self, filename = None, directory = None):
+		if filename is None:
+			filename = "scan.obj"
+		if directory is None:
+			directory = self.path
+		import pickle
+		obj = open("scan.obj",'wb')
+		pickle.dump(self,obj)
+		obj.close()
+	
 	def quick_save(self, filename = None, directory = None, VikingSave = False):
 		self.save_out(filename = filename, directory = directory, VikingSave = VikingSave, QuickSave = True)
 	def save_out(self, filename = None, directory = None, VikingSave = False, QuickSave = False):
@@ -685,11 +704,12 @@ class myro_scan(object):
 		
 		if self.inputs['Viking'] and not VikingSave:
 			os.chdir(f"{directory}")
+			self._save_obj(filename = "scan.obj", directory = directory)
 			job = open(f"save_out.job",'w')
 			job.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n#SBATCH --output=save_out.slurm\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
 			pyth = open(f"save_out.py",'w')
-			pyth.write(f"from Myrokinetics import myro_scan\n\nrun = myro_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})")
+			pyth.write(f"from Myrokinetics import myro_scan\nimport pickle\nscan = open(\"{directory}/scan.obj\",\'rb\')\nrun = pickle.load(scan)\nscan.close()\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\", VikingSave = True, QuickSave = {QuickSave})")
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
@@ -924,25 +944,29 @@ class myro_scan(object):
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines, 'namelist_differences': self.namelist_diffs}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = self.dat, run_info = self.info, files = self.file_lines)
 		
-	def rerun_errors(self, save = None, directory = None):
-		if self.dat:
-			scan = {'inputs': self.inputs, 'data': self.dat, 'info': self.info, 'files': self.file_lines}
-			self.verify = verify_scan(scan = scan)
-		if not self.dat:
-			if not save:
-				print("ERROR: No Run Data or Save File")
-				return
-			from .myro_reader import myro_read
-			myro = myro_read(filename = save, directory = directory)
-			self.verify = myro.verify
-		
+	def rerun_errors(self, save = None, specificRuns = None, directory = None):
+		if specificRuns is None:
+			if self.dat:
+				scan = {'inputs': self.inputs, 'data': self.dat, 'info': self.info, 'files': self.file_lines}
+				self.verify = verify_scan(scan = scan)
+			if not self.dat:
+				if not save:
+					print("ERROR: No Run Data or Save File")
+					return
+				from .myro_reader import myro_read
+				myro = myro_read(filename = save, directory = directory)
+				self.verify = myro.verify
+			
+			specificRuns = self.verify.runs_with_errors
+			
 		if not self.pyro:
 			self.load_pyro()
+			
 		
 		if not self.namelist_diffs:
 			self.namelist_diffs = full((len(self.inputs['psiNs']),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),{}).tolist()
 
-		for [p,i,j,k] in self.verify.runs_with_errors:
+		for [p,i,j,k] in specificRuns:
 			if 'knobs' not in self.namelist_diffs[p][i][j][k].keys():
 				self.namelist_diffs[p][i][j][k]['knobs'] = {}
 			if 'theta_grid_parameters' not in self.namelist_diffs[p][i][j][k].keys():
@@ -958,7 +982,7 @@ class myro_scan(object):
 			else:
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
 			
-		self._run_gyro(specificRuns = self.verify.runs_with_errors)
+		self._run_gyro(specificRuns = specificRuns)
 	
 	def rerun(self, specificRuns = None, nml = None, directory = None):
 		if specificRuns is None:
@@ -968,6 +992,6 @@ class myro_scan(object):
 			print("ERROR: nml not given")
 			return
 			
-		for [p,i,j,k] in specificRuns:
+		for p,i,j,k in specificRuns:
 			self.namelist_diffs[p][i][j][k] = nml
 		self._run_gyro(specificRuns = specificRuns, directory = directory)
