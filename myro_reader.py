@@ -259,6 +259,9 @@ class myro_read(object):
 		self.verify = verify_scan(scan = self.run)
 		self.run['data']['growth_rates_all'] = self.verify.new_data['gra']
 		self.run['data']['mode_frequncies_all'] = self.verify.new_data['mfa']
+		self.run['data']['phi2'] = self.verify.scan['data']['phi2']
+		self.run['data']['omega'] = self.verify.scan['data']['omega']
+		self.run['data']['time'] = self.verify.scan['data']['time']
 		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 	
 	def _reset_data(self):
@@ -440,9 +443,20 @@ class myro_read(object):
 		nml['theta_grid_eik_knobs']['beta_prime_input'] = bp
 		nml['kt_grids_single_parameters']['aky'] = self.run['inputs']['aky_values'][k]
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*nml['parameters']['beta'])
-			nml[spec]['tprim'] = nml[spec]['tprim']*mul
-			nml[spec]['fprim'] = nml[spec]['fprim']*mul
+			try:
+				grad_type = self.run['inputs']['grad_type']
+			except:
+				grad_type = 0
+			if grad_type == 2:
+				mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
+				subnml[spec]['fprim'] = mul*nml[spec]['fprim']*mul
+			elif grad_type == 1:
+				mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
+				subnml[spec]['tprim'] = mul*nml[spec]['fprim']*mul
+			else:
+				mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
+				subnml[spec]['tprim'] = nml[spec]['tprim']*mul
+				subnml[spec]['fprim'] = nml[spec]['fprim']*mul
 		if self.run['inputs']['Fixed_delt'] is False:
 			delt = 0.04/self.run['inputs']['aky_values'][k]
 			if delt > 0.1:
@@ -453,7 +467,7 @@ class myro_read(object):
 			if self.run['files']['namelist_differences'][p][i][j][k]:
 				for key in self.run['files']['namelist_differences'][p][i][j][k].keys():
 					for skey in self.run['files']['namelist_differences'][p][i][j][k][key].keys():
-						subnml[key][skey] = self.run['files']['namelist_differences'][p][i][j][k][key][skey]
+						nml[key][skey] = self.run['files']['namelist_differences'][p][i][j][k][key][skey]
 		
 		nml.write(os.path.join(directory,filename), force=True)
 		print(f"Created {filename} at {directory}")

@@ -1,4 +1,4 @@
-from numpy import shape, array, nonzero, imag, real, nan, amax, polyfit, log, inf, full
+from numpy import shape, array, nonzero, imag, real, nan, amax, polyfit, log, inf, full, sign
 
 class verify_scan(object):
 	
@@ -78,7 +78,7 @@ class verify_scan(object):
 		self.check_phi()
 		self.check_apar()
 		self.check_bpar()
-		self.print_verify()
+		self.print_verify
 	
 	@property
 	def print_convergence(self):
@@ -91,7 +91,8 @@ class verify_scan(object):
 	@property
 	def runs_with_save_errors(self):
 		return self.save_errors['omega'] | self.save_errors['phi2'] | self.save_errors['time'] | self.save_errors['phi'] | self.save_errors['apar'] | self.save_errors['bpar']
-		
+	
+	@property
 	def print_verify(self):
 		if len(self.convergence['unconverged']) > 0 or len(self.convergence['unconverged_stable']) > 0:
 			print(f"Found {len(self.convergence['unconverged'])} Unconverged Possibly Unstable Runs and {len(self.convergence['unconverged_stable'])} Unconverged Stable Runs")
@@ -126,10 +127,10 @@ class verify_scan(object):
 								self.save_errors['phi2'].add((i,j,k,l))
 							if self.scan['data']['time'][i][j][k][l] is None:
 								self.save_errors['time'].add((i,j,k,l))
-						elif str(self.scan['data']['phi2'][i][j][k][l][-1]) in ['nan','inf']:
+						elif str(self.scan['data']['phi2'][i][j][k][l][-1]) in ['nan','inf','0.0','0']:
 							if str(self.scan['data']['phi2'][i][j][k][l][-1]) == 'nan':
 								self.bad_runs['nan'].add((i,j,k,l))
-							self.scan['data']['phi2'][i][j][k][l] = [x for x in self.scan['data']['phi2'][i][j][k][l] if str(x) not in ['nan','inf']]
+							self.scan['data']['phi2'][i][j][k][l] = [x for x in self.scan['data']['phi2'][i][j][k][l] if str(x) not in ['nan','inf','0.0','0']]
 							self.scan['data']['omega'][i][j][k][l] = self.scan['data']['omega'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
 							self.scan['data']['time'][i][j][k][l] = self.scan['data']['time'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
 							self.new_data['gra'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
@@ -157,12 +158,13 @@ class verify_scan(object):
 			elif pr > 0.99:
 				#MARKER FOR MF SAYING POTENTIALLY WRONG
 				return fgr, mf, 'converged_fit'
-				
-			elif gradgr < -0.05 and (nt == 2 or nt > 10):
+			elif gradgr < -0.05 and nt > 10:
 				if fgr < 0:
 					return fgr, nan, 'unconverged_stable'
 				else:
 					return gradgr, nan, 'unconverged_stable'
+			elif phi2[-1]/phi2[0] < 0.001 and nt > 10:
+				return gradgr, nan, 'unconverged_stable'
 			else:
 				return nan, nan, 'unconverged'
 		
@@ -197,12 +199,17 @@ class verify_scan(object):
 							gr = imag(omega[-1])
 							mf = real(omega[-1])
 							gradgr = log(phi2[-1]/phi2[0])/(time[-1]-time[0])/2
-							
+							findingGR = True
 							if len(phi2) > 100:
-								nt = len(phi2)//10
-								new_gr, new_mf, cat = find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr)
+								nt = len(phi2)//10 + 10
+								while findingGR:
+									nt = nt - 10
+									new_gr, new_mf, cat = find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr)
+									
+									if cat not in ['unconverged','unconverged_stable'] or nt < 110:
+										findingGR = False
 							else:
-								findingGR = True
+								
 								nt = 11
 								while findingGR:
 									nt = nt - 1
@@ -222,8 +229,9 @@ class verify_scan(object):
 			print("ERROR: No omega data")
 			return
 		nstep = nwrite = None
-		lines = self.scan['files']['template_file']
-		if lines:
+		if type(self.scan['files']['template_file']) == list:
+			lines = self.scan['files']['template_file']
+			title = ''
 			for line in lines:
 				if line[0] == '&':
 					title = line[1:].strip(" \t\n")
@@ -231,6 +239,10 @@ class verify_scan(object):
 					nstep = eval(line.split("=")[1])
 				if title == 'gs2_diagnostic_knobs' and 'nwrite' in line:
 					nwrite = eval(line.split("=")[1])
+		else:
+			nstep = self.scan['files']['template_file']['knobs']['nstep']
+			nwrite = self.scan['files']['template_file']['gs2_diagnostics_knobs']['nwrite']
+		
 		if not nstep:
 			nstep = 100000 #Pyro default
 		if not nwrite:

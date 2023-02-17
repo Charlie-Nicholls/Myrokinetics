@@ -60,7 +60,7 @@ class myro_scan(object):
 		'Gyro': True,
 		'Viking': False,
 		'Fixed_delt': False,
-		'Epar': False
+		'Epar': False,
 		'grad_type': 0
 		}
 
@@ -510,10 +510,10 @@ class myro_scan(object):
 							for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 								if self.inputs['grad_type'] == 2:
 									mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-									subnml[spec]['fprim'] = mul*nml[spec]['fprim']*mul
+									subnml[spec]['fprim'] = nml[spec]['fprim']*mul
 								elif self.inputs['grad_type'] == 1:
 									mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-									subnml[spec]['tprim'] = mul*nml[spec]['fprim']*mul
+									subnml[spec]['tprim'] = nml[spec]['fprim']*mul
 								else:
 									mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
 									subnml[spec]['tprim'] = nml[spec]['tprim']*mul

@@ -1,6 +1,6 @@
 import os
 from numpy import full, savez
-from ncdf2dict import ncdf2dict as readnc
+from .ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
 import f90nml
 
