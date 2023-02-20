@@ -381,7 +381,7 @@ class myro_scan(object):
 			return False
 		
 		if not self.namelist_diffs:
-			self.namelist_diffs = full((len(self.inputs['psiNs']),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),{}).tolist()
+			self.namelist_diffs = self.namelist_diffs = [[[[{} for _ in range(len(self.inputs['aky_values']))] for _ in range(self.inputs['n_shat'])] for _ in range(self.inputs['n_beta'])] for _ in range(len(self.inputs['psiNs']))]
 		
 		if not os.path.exists(self.info['data_path']):
 				os.mkdir(self.info['data_path'])
@@ -680,9 +680,12 @@ class myro_scan(object):
 		if directory is None:
 			directory = self.path
 		import pickle
-		obj = open("scan.obj",'wb')
+		temp = self.pyro
+		self.pyro = None
+		obj = open(filename,'wb')
 		pickle.dump(self,obj)
 		obj.close()
+		self.pyro = temp
 	
 	def quick_save(self, filename = None, directory = None, VikingSave = False):
 		self.save_out(filename = filename, directory = directory, VikingSave = VikingSave, QuickSave = True)
@@ -964,8 +967,7 @@ class myro_scan(object):
 			
 		
 		if not self.namelist_diffs:
-			self.namelist_diffs = full((len(self.inputs['psiNs']),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),{}).tolist()
-
+			self.namelist_diffs = [[[[{} for _ in range(len(self.inputs['aky_values']))] for _ in range(self.inputs['n_shat'])] for _ in range(self.inputs['n_beta'])] for _ in range(len(self.inputs['psiNs']))]
 		for [p,i,j,k] in specificRuns:
 			if 'knobs' not in self.namelist_diffs[p][i][j][k].keys():
 				self.namelist_diffs[p][i][j][k]['knobs'] = {}
@@ -981,7 +983,6 @@ class myro_scan(object):
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = delt
 			else:
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
-			
 		self._run_gyro(specificRuns = specificRuns)
 	
 	def rerun(self, specificRuns = None, nml = None, directory = None):
@@ -991,7 +992,36 @@ class myro_scan(object):
 		if nml is None:
 			print("ERROR: nml not given")
 			return
+		if not self.namelist_diffs:
+			self.namelist_diffs = [[[[{} for _ in range(len(self.inputs['aky_values']))] for _ in range(self.inputs['n_shat'])] for _ in range(self.inputs['n_beta'])] for _ in range(len(self.inputs['psiNs']))]
 			
 		for p,i,j,k in specificRuns:
 			self.namelist_diffs[p][i][j][k] = nml
-		self._run_gyro(specificRuns = specificRuns, directory = directory)
+		#self._run_gyro(specificRuns = specificRuns, directory = directory)
+	
+	def _load_run_set(self, filename = None):
+		if filename is None:
+			print("ERROR: filename not given")
+			return
+		
+		runs = set()		
+		with open(filename) as f:
+			lines = f.readlines()
+			for line in lines:
+				p,i,j,k = [eval(x) for x in line.strip("\n").split("_")]
+				runs.add((p,i,j,k))
+		return runs
+
+	def _save_run_set(self, runs = None, filename = None):
+		if runs is None:
+			print("ERROR: runs not given")
+			return
+		if filename is None:
+			print("ERROR: filename not given")
+			return
+
+		f = open(filename, 'w')
+		for p,i,j,k in runs:
+			f.write(f"{p}_{i}_{j}_{k}\n")
+		f.close()
+		
