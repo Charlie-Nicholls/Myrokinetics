@@ -503,6 +503,8 @@ class myro_scan(object):
 								os.rename(f"{sub_path}/{p}_{fol}_{k}.out.nc",f"{sub_path}/{p}_{fol}_{k}_old.out.nc")
 							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.slurm"):
 								os.rename(f"{sub_path}/{p}_{fol}_{k}.slurm",f"{sub_path}/{p}_{fol}_{k}_old.slurm")
+							if os.path.exists(f"{sub_path}/{p}_{fol}.slurm"):
+								os.rename(f"{sub_path}/{p}_{fol}.slurm",f"{sub_path}/{p}_{fol}_old.slurm")
 							subnml = nml
 							subnml['theta_grid_eik_knobs']['s_hat_input'] = sh
 							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
@@ -551,7 +553,7 @@ class myro_scan(object):
 				
 					if self.inputs['Viking'] and group_runs and group_kys:
 						hours = 4*len(self.inputs['aky_values'])
-						jobfile = open(f"{sub_path}/{fol}.job",'w')
+						jobfile = open(f"{sub_path}/{p}_{fol}.job",'w')
 						jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={p}_{fol}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\n")
 
 						for k in group_kys:
@@ -614,15 +616,21 @@ class myro_scan(object):
 		grep.close()
 		if len(lines) > 0:
 			for line in lines:
-				f = open(line.strip("\n"))
-				lins = f.readlines()
-				f.close()
-				for l in lins:
-					if ".in" in l:
-						inp = l.split("/")[-1].split(".")[0]
-				p, i, j, k = [eval(x) for x in inp.split("_")]
-				for ki in range(k, len(self.inputs['aky_values'])):
-					cancelled.add((p,i,j,ki))
+				if "_old.slurm" not in line:
+					ids = line.split("/")[-1].strip("\n").strip(".slurm").split("_")
+					if len(ids) == 4:
+						p, i, j, k = [eval(x) for x in ids]
+						cancelled.add((p,i,j,k))
+					else:
+						f = open(line.strip("\n"))
+						lins = f.readlines()
+						f.close()
+						for l in lins:
+							if ".in" in l:
+								inp = l.split("/")[-1].split(".")[0]
+						p, i, j, k = [eval(x) for x in inp.split("_")]
+						for ki in range(k, len(self.inputs['aky_values'])):
+							cancelled.add((p,i,j,ki))
 		if doPrint:		
 			print(f"{len(cancelled)} Cancelled Runs")
 			return
@@ -997,7 +1005,7 @@ class myro_scan(object):
 			
 		for p,i,j,k in specificRuns:
 			self.namelist_diffs[p][i][j][k] = nml
-		#self._run_gyro(specificRuns = specificRuns, directory = directory)
+		self._run_gyro(specificRuns = specificRuns, directory = directory)
 	
 	def _load_run_set(self, filename = None):
 		if filename is None:
