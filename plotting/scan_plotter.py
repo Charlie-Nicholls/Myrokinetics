@@ -47,6 +47,8 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 			z_mf = transpose(array(data['mode_frequencies_all'])[idx,:,:,ky_idx]).tolist()
 			ax[0].set_title(f"Growth Rate | PsiN: {psiN} | ky: {ky}")
 		else:
+			ky = data['akys'][idx][bpid][shid]
+			ky_idx = inputs['aky_values'].index(ky_idx)
 			z_gr = transpose(data['growth_rates'][idx]).tolist()
 			z_mf = transpose(data['mode_frequencies'][idx]).tolist()
 			ax[0].set_title(f"Growth Rate | PsiN: {psiN}")
@@ -54,22 +56,20 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 		if options.get_status()[2]:
 			mfmax = mf_slider.val * abs(amax(array(data['mode_frequencies'])[isfinite(data['mode_frequencies'])]))/100
 			grmax = gr_slider.val * abs(amax(array(data['growth_rates'])[isfinite(data['growth_rates'])]))/100
-
 		else:
 			if [i for x in z_gr for i in x if str(i) != 'nan']:
-				grmax = gr_slider.val * abs(amax(array(z_gr)[isfinite(z_gr)]))/100
+				grmax = gr_slider.val * amax(abs(array(z_gr)[isfinite(z_gr)]))/100
 				if grmax < 10e-10:
 					grmax = 10e-10
 			else:
 				grmax = 1
 
 			if [i for x in z_mf for i in x if str(i) != 'nan']:
-				mfmax = mf_slider.val * abs(amax(array(z_mf)[isfinite(z_mf)]))/100
+				mfmax = mf_slider.val * amax(abs(array(z_mf)[isfinite(z_mf)]))/100
 				if mfmax == 0:
 					mfmax = 10e-10
 			else:
 				mfmax = 1
-				
 		
 		norm_mf = Normalize(vmin=-mfmax,vmax=mfmax)
 		cbar_mf.update_normal(ScalarMappable(norm = norm_mf))
@@ -81,27 +81,22 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 		ax[1].pcolormesh(x, y, z_mf, norm = norm_mf)
 		
 		if options.get_status()[0]:
-			for bpid, bp in enumerate(x):
-				for shid, sh in enumerate(y):
-					if data['parities'][idx][bpid][shid] == 1:
-						ax[0].plot(bp, sh, '+', color = 'purple')
-						ax[1].plot(bp, sh, '+', color = 'purple')
-					if data['parities'][idx][bpid][shid] == -1:
-						ax[0].plot(bp, sh, '_', color = 'cyan')
-						ax[1].plot(bp, sh, '_', color = 'cyan')
+			if aky:
+				parities = array(data['parities_all'])[idx,:,:,ky_idx].tolist()
+			else:
+				parities = data['parities'][idx]
+			sym_ids = where(parities == 1)
+			anti_ids = where(parities == -1)
+			ax[0].plot(sym_ids[0], sym_ids[1], '+', color = 'purple', label = 'par')
+			ax[1].plot(sym_ids[0], sym_ids[1], '+', color = 'purple', label = 'par')
+			ax[0].plot(anti_ids[0], anti_ids[1], '_', color = 'cyan', label = 'par')
+			ax[1].plot(anti_ids[0], anti_ids[1], '_', color = 'cyan', label = 'par')
 		
 		if options.get_status()[1]:
 			ax[0].set_ylim(shmin,shmax)
 			ax[0].set_xlim(bpmin,bpmax)
 			ax[1].set_ylim(shmin,shmax)
 			ax[1].set_xlim(bpmin,bpmax)
-		'''		
-		else:
-			ax[0].set_ylim(min(y),max(y))
-			ax[0].set_xlim(min(x),max(x))
-			ax[1].set_ylim(min(y),max(y))
-			ax[1].set_xlim(min(x),max(x))
-		'''
 
 		if options.get_status()[3]:
 			ax[0].plot(beta_prime,shear,'kx')
@@ -119,30 +114,35 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 				ax[0].text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=ax[0].transAxes,color='k')
 		
 		if vroptions.get_status()[0]:
-			ax[0].xaxis.set_ticklabels([])
-			ax[1].xaxis.set_ticklabels([])
-			ax[0].yaxis.set_ticklabels([])
-			ax[1].yaxis.set_ticklabels([])
 			dx = x[1] - x[0]
 			dy = y[1] - y[0]
-			for i, bp in enumerate(x):
-				ax[0].text(bp, y[0]-dy, f"{i}", color = 'k',ha='center',va='center')
-				ax[1].text(bp, y[0]-dy, f"{i}", color = 'k',ha='center',va='center')
-			for j, sh in enumerate(y):
-				ax[0].text(x[0]-dx,sh, f"{j}", color = 'k',ha='center',va='center')
-				ax[1].text(x[0]-dx,sh, f"{j}", color = 'k',ha='center',va='center')
 			ax[0].set_xticks(array(x)-dx/2, minor=True)
 			ax[1].set_xticks(array(x)-dx/2, minor=True)
 			ax[0].set_yticks(array(y)-dy/2, minor=True)
 			ax[1].set_yticks(array(y)-dy/2, minor=True)
+			
+			ax[0].set_xticks(array(x), minor=False)
+			ax[1].set_xticks(array(x), minor=False)
+			ax[0].set_yticks(array(y), minor=False)
+			ax[1].set_yticks(array(y), minor=False)
+			
+			ax[0].set_xticklabels([])
+			ax[1].set_xticklabels([])
+			ax[0].set_yticklabels([])
+			ax[1].set_yticklabels([])
+			xlabels = [str(i) for i in range(len(x))]
+			ylabels = [str(i) for i in range(len(y))]
+			ax[0].set_xticklabels(xlabels,minor=False)
+			ax[1].set_xticklabels(xlabels,minor=False)
+			ax[0].set_yticklabels(ylabels,minor=False)
+			ax[1].set_yticklabels(ylabels,minor=False)
+			
 			ax[0].grid(which="minor",color='k')
 			ax[1].grid(which="minor",color='k')
 			
 		if vroptions.get_status()[1]:
 			for bpid, bp in enumerate(x):
 				for shid, sh in enumerate(y):
-					if not aky:
-						ky_idx = data['aky_values'].index(data['akys'][idx][bpid][shid])
 					if (idx, bpid, shid, ky_idx) in verify['unconverged']:
 						ax[0].text(bp, sh, 'U', color = 'k',ha='center',va='center',size=7)
 						ax[1].text(bp, sh, 'U', color = 'k',ha='center',va='center',size=7)
@@ -159,8 +159,6 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 		if vroptions.get_status()[2]:
 			for bpid, bp in enumerate(x):
 				for shid, sh in enumerate(y):
-					if not aky:
-						ky_idx = data['akys'][idx][bpid][shid]
 					if (idx, bpid, shid, ky_idx) in verify['nstep']:
 						ax[0].text(bp, sh, 'n', color = 'k',ha='center',va='center',size=7)
 						ax[1].text(bp, sh, 'n', color = 'k',ha='center',va='center',size=7)
@@ -168,22 +166,20 @@ def plot_scan(scan = None, verify = None, aky = False, init = [0,0]):
 		if vroptions.get_status()[3]:
 			for bpid, bp in enumerate(x):
 				for shid, sh in enumerate(y):
-					if not aky:
-						ky_idx = data['akys'][idx][bpid][shid]
 					s = ''
 					if (idx, bpid, shid, ky_idx) in verify['phi']:
 						s += 'p,'
-					if (idx, bpid, shid, ky_idx) in verify['phi']:
+					if (idx, bpid, shid, ky_idx) in verify['apar']:
 						s += 'a,'
+					if (idx, bpid, shid, ky_idx) in verify['bpar']:
+						s += 'b,'
 					if s != '':
-						ax[0].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7)
-						ax[1].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7)
+						ax[0].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
+						ax[1].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
 		
 		if vroptions.get_status()[4]:
 			for bpid, bp in enumerate(x):
 				for shid, sh in enumerate(y):
-					if not aky:
-						ky_idx = data['akys'][idx][bpid][shid]
 					if (idx, bpid, shid, ky_idx) in verify['nan']:
 						ax[0].text(bp, sh, 'n', color = 'k',ha='center',va='center',size=7)
 						ax[1].text(bp, sh, 'n', color = 'k',ha='center',va='center',size=7)

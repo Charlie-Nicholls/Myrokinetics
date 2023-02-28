@@ -256,6 +256,8 @@ class myro_read(object):
 		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 		
 	def _verify_run(self):
+		if not self.run['inputs']['Gyro']:
+			return
 		self.verify = verify_scan(scan = self.run)
 		self.run['data']['growth_rates_all'] = self.verify.new_data['gra']
 		self.run['data']['mode_frequncies_all'] = self.verify.new_data['mfa']
@@ -442,6 +444,7 @@ class myro_read(object):
 		nml['theta_grid_eik_knobs']['s_hat_input'] = sh
 		nml['theta_grid_eik_knobs']['beta_prime_input'] = bp
 		nml['kt_grids_single_parameters']['aky'] = self.run['inputs']['aky_values'][k]
+		beta = nml['parameters']['beta']
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 			try:
 				grad_type = self.run['inputs']['grad_type']
@@ -449,14 +452,14 @@ class myro_read(object):
 				grad_type = 0
 			if grad_type == 2:
 				mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-				subnml[spec]['fprim'] = mul*nml[spec]['fprim']*mul
+				nml[spec]['fprim'] = mul*nml[spec]['fprim']*mul
 			elif grad_type == 1:
 				mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-				subnml[spec]['tprim'] = mul*nml[spec]['fprim']*mul
+				nml[spec]['tprim'] = mul*nml[spec]['fprim']*mul
 			else:
 				mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
-				subnml[spec]['tprim'] = nml[spec]['tprim']*mul
-				subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+				nml[spec]['tprim'] = nml[spec]['tprim']*mul
+				nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		if self.run['inputs']['Fixed_delt'] is False:
 			delt = 0.04/self.run['inputs']['aky_values'][k]
 			if delt > 0.1:
@@ -471,3 +474,56 @@ class myro_read(object):
 		
 		nml.write(os.path.join(directory,filename), force=True)
 		print(f"Created {filename} at {directory}")
+		
+	def _return_mf_set(self, psi_id, ky_id, mf = None, mferr = None, mfmax = None, mfmin = None, smin_id = None, smax_id = None, bmin_id = None, bmax_id = None):
+		if (mf is None or mferr is None) and (mfmax is None or mfmin is None):
+			print("ERROR: insufficient mf specifications")
+			return
+		mfs = array(self.run['data']['mode_frequencies_all'])[psi_id,:,:,ky_id].tolist()
+		if type(mf) == list:
+			mf = mfs[mf[0]][mf[1]]
+		if mfmax is None:
+			mfmax = mf + mferr
+		if mfmin is None:
+			mfmin = mf - mferr
+		runs = set()
+		for i in range(self.run['inputs']['n_beta']):
+			for j in range(self.run['inputs']['n_shat']):
+				if mfmin < mfs[i][j] and mfmax > mfs[i][j]:
+					runs.add((psi_id,i,j,ky_id))
+		return runs
+			
+	def _save_run_set(self, runs = None, filename = None):
+		if runs is None:
+			print("ERROR: runs not given")
+			return
+		if filename is None:
+			print("ERROR: filename not given")
+			return
+
+		f = open(filename, 'w')
+		for p,i,j,k in runs:
+			f.write(f"{p}_{i}_{j}_{k}\n")
+		f.close()
+		
+	def _load_run_set(self, filename = None):
+		if filename is None:
+			print("ERROR: filename not given")
+			return
+		
+		runs = set()		
+		with open(filename) as f:
+			lines = f.readlines()
+			for line in lines:
+				p,i,j,k = [eval(x) for x in line.strip("\n").split("_")]
+				runs.add((p,i,j,k))
+		return runs
+			
+			
+		
+		
+		
+		
+		
+		
+		

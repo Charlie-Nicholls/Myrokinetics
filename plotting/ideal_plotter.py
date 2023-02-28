@@ -24,7 +24,7 @@ def plot_ideal(scan = None, init = 0):
 		bp = data['beta_prime_axis_ideal'][idx]
 		shear = data['shear_axis_ideal'][idx]
 		stab = data['ideal_stabilities'][idx]
-		bp_or = data['beta_prime_values'][idx]
+		bp_or = abs(data['beta_prime_values'][idx])
 		sh_or = data['shear_values'][idx]
 		
 		ax.cla()

@@ -183,46 +183,46 @@ class verify_scan(object):
 								self.save_errors['phi2'].add((i,j,k,l))
 							if time is None:
 								self.save_errors['time'].add((i,j,k,l))
-								
-						if phi2[-1] == 0:
-							phi2 = array(phi2)[nonzero(phi2)].tolist()
-							omega = omega[:len(phi2)]
-							time = time[:len(phi2)]
-							self.new_data['gra'][i][j][k][l] = imag(omega[-1])
-							self.new_data['mfa'][i][j][k][l] = real(omega[-1])
-						
-						if 'nan' in [str(x) for x in phi2] or inf in phi2:
-							self.convergence['uncalculated'].add((i,j,k,l))
-
-						else:
-								
-							gr = imag(omega[-1])
-							mf = real(omega[-1])
-							gradgr = log(phi2[-1]/phi2[0])/(time[-1]-time[0])/2
-							findingGR = True
-							if len(phi2) > 100:
-								nt = len(phi2)//10 + 10
-								while findingGR:
-									nt = nt - 10
-									new_gr, new_mf, cat = find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr)
-									
-									if cat not in ['unconverged','unconverged_stable'] or nt < 110:
-										findingGR = False
-							else:
-								
-								nt = 11
-								while findingGR:
-									nt = nt - 1
-									if nt > len(phi2):
-										nt = len(phi2)
-									new_gr, new_mf, cat =  find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr)
-									if cat != 'unconverged' or nt == 2:
-										findingGR = False
+						else:		
+							if phi2[-1] == 0:
+								phi2 = array(phi2)[nonzero(phi2)].tolist()
+								omega = omega[:len(phi2)]
+								time = time[:len(phi2)]
+								self.new_data['gra'][i][j][k][l] = imag(omega[-1])
+								self.new_data['mfa'][i][j][k][l] = real(omega[-1])
 							
-							self.new_data['gra'][i][j][k][l] = new_gr
-							self.new_data['mfa'][i][j][k][l] = new_mf
-							self.convergence[cat].add((i,j,k,l))
-							self.nts[i][j][k][l] = nt
+							if 'nan' in [str(x) for x in phi2] or inf in phi2:
+								self.convergence['uncalculated'].add((i,j,k,l))
+
+							else:
+									
+								gr = imag(omega[-1])
+								mf = real(omega[-1])
+								gradgr = log(phi2[-1]/phi2[0])/(time[-1]-time[0])/2
+								findingGR = True
+								if len(phi2) > 100:
+									nt = len(phi2)//10 + 10
+									while findingGR:
+										nt = nt - 10
+										new_gr, new_mf, cat = find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr)
+										
+										if cat not in ['unconverged','unconverged_stable'] or nt < 110:
+											findingGR = False
+								else:
+									
+									nt = 11
+									while findingGR:
+										nt = nt - 1
+										if nt > len(phi2):
+											nt = len(phi2)
+										new_gr, new_mf, cat =  find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr)
+										if cat != 'unconverged' or nt == 2:
+											findingGR = False
+								
+								self.new_data['gra'][i][j][k][l] = new_gr
+								self.new_data['mfa'][i][j][k][l] = new_mf
+								self.convergence[cat].add((i,j,k,l))
+								self.nts[i][j][k][l] = nt
 
 	def check_nstep(self):
 		if self.scan['data']['omega'] is None:

@@ -589,7 +589,6 @@ class myro_scan(object):
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
 			date = None
-		itt = 0
 		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path, 'itteration': 0}
 	
 	def rerun_cancelled(self, directory = None, checkSetup = True):
