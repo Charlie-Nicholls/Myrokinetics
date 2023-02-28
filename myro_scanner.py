@@ -283,7 +283,10 @@ class myro_scan(object):
 			print("ERROR: ideal must be boolean")
 			return
 		
-		self._create_run_info()
+		if not self.info:
+			self._create_run_info()
+		else:
+			self.info['itteration'] += 1
 		run_path = self.info['data_path']
 		
 		try:
@@ -380,7 +383,7 @@ class myro_scan(object):
 			print(f"ERROR: the following inputs are empty: {empty_elements}")
 			return False
 		
-		if not self.namelist_diffs:
+		if gyro and not self.namelist_diffs:
 			self.namelist_diffs = self.namelist_diffs = [[[[{} for _ in range(len(self.inputs['aky_values']))] for _ in range(self.inputs['n_shat'])] for _ in range(self.inputs['n_beta'])] for _ in range(len(self.inputs['psiNs']))]
 		
 		if not os.path.exists(self.info['data_path']):
@@ -499,6 +502,8 @@ class myro_scan(object):
 
 					for k, aky in enumerate(self.inputs['aky_values']):
 						if (p,i,j,k) in runs:
+							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}_old.out.nc"):
+								os.remove(f"{sub_path}/{p}_{fol}_{k}_old.out.nc")
 							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.out.nc"):
 								os.rename(f"{sub_path}/{p}_{fol}_{k}.out.nc",f"{sub_path}/{p}_{fol}_{k}_old.out.nc")
 							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.slurm"):
@@ -584,7 +589,8 @@ class myro_scan(object):
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
 			date = None
-		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path}
+		itt = 0
+		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path, 'itteration': 0}
 	
 	def rerun_cancelled(self, directory = None, checkSetup = True):
 		if self.info is None:
@@ -621,7 +627,7 @@ class myro_scan(object):
 					if len(ids) == 4:
 						p, i, j, k = [eval(x) for x in ids]
 						cancelled.add((p,i,j,k))
-					else:
+					elif len(ids) == 3:
 						f = open(line.strip("\n"))
 						lins = f.readlines()
 						f.close()
@@ -690,9 +696,8 @@ class myro_scan(object):
 		import pickle
 		temp = self.pyro
 		self.pyro = None
-		obj = open(filename,'wb')
-		pickle.dump(self,obj)
-		obj.close()
+		with open(filename,'wb') as obj:
+			pickle.dump(self,obj)
 		self.pyro = temp
 	
 	def quick_save(self, filename = None, directory = None, VikingSave = False):
@@ -720,7 +725,8 @@ class myro_scan(object):
 			job.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n#SBATCH --output=save_out.slurm\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
 			pyth = open(f"save_out.py",'w')
-			pyth.write(f"from Myrokinetics import myro_scan\nimport pickle\nscan = open(\"{directory}/scan.obj\",\'rb\')\nrun = pickle.load(scan)\nscan.close()\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\", VikingSave = True, QuickSave = {QuickSave})")
+			#pyth.write(f"from Myrokinetics import myro_scan\nimport pickle\nscan = open(\"{directory}/scan.obj\",\'rb\')\nrun = pickle.load(scan)\nscan.close()\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\", VikingSave = True, QuickSave = {QuickSave})")
+			pyth.write(f"from Myrokinetics import myro_scan\nimport pickle\nwith open(\"{directory}/scan.obj\",\'rb\') as obj\n\trun = pickle.load(obj)\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})")
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
@@ -760,10 +766,10 @@ class myro_scan(object):
 				time = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
 				theta = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
 			else:
-				omega = phi = apar = phi2 = time = theta = None
+				omega = phi = apar = bpar = phi2 = time = theta = None
 		
 		else:
-				gr = mf = grs = sym = syms = beta_prime_axis = shear_axis = akys = self.inputs['n_shat'] = self.inputs['n_beta'] = self.inputs['aky_values'] = eparN = eparNs = omega = phi = apar = phi2 = time = theta = None
+				gr = mf = grs = mfs = sym = syms = beta_prime_axis = shear_axis = akys = self.inputs['n_shat'] = self.inputs['n_beta'] = self.inputs['aky_values'] = eparN = eparNs = omega = phi = apar = bpar = phi2 = time = theta = None
 		
 		if self.inputs['Ideal']:
 			beta_prime_axis_ideal = full((len(psiNs),self.inputs['n_beta_ideal']),None).tolist()
@@ -991,6 +997,7 @@ class myro_scan(object):
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = delt
 			else:
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
+		self.info['itteration'] += 1
 		self._run_gyro(specificRuns = specificRuns)
 	
 	def rerun(self, specificRuns = None, nml = None, directory = None):
@@ -1005,6 +1012,7 @@ class myro_scan(object):
 			
 		for p,i,j,k in specificRuns:
 			self.namelist_diffs[p][i][j][k] = nml
+		self.info['itteration'] += 1
 		self._run_gyro(specificRuns = specificRuns, directory = directory)
 	
 	def _load_run_set(self, filename = None):
