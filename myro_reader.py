@@ -133,10 +133,6 @@ class myro_read(object):
 		if filetype in ['template_file', 'template', 'gk_template']:
 			lines = self.run['files']['template_file']
 			name = self.run['info']['template_file_name']
-			if type(lines) != list:
-				lines.write(os.path.join(directory,name))
-				print(f"Created {name} at {directory}")
-				return
 		elif filetype in ['eq','eq_file','geqdsk','geqdsk_file']:
 			lines = self.run['files']['eq_file']
 			name = self.run['info']['eq_file_name']
@@ -153,6 +149,10 @@ class myro_read(object):
 		if os.path.exists(f"{directory}/{name}"):
 			print(f"{os.path.join(directory,name)} Already Exists")
 			return
+		if type(lines) != list:
+			lines.write(os.path.join(directory,name))
+			print(f"Created {name} at {directory}")
+			return
 		f = open(os.path.join(directory,name),'w')
 		for line in lines:
 			f.write(line)
@@ -167,6 +167,22 @@ class myro_read(object):
 	
 	def write_kin_file(self, filename = None, directory = None):
 		self._write_file(filetype = 'kin', filename = filename, directory = directory)
+		
+	def write_input_file(self, filename = None, directory = "./"):
+		if directory is None and self.directory is None:
+			directory = "./"
+		elif directory is None:
+			directory = self.directory
+			
+		if filename is None:
+			filename = self.run['info']['input_file']
+		if "." not in filename:
+			filename = filename + ".in"
+		
+		with open(os.path.join(directory,filename),'w') as in_file:
+			for key in self.run['inputs'].keys():
+				in_file.write(f"{key} = {self.run['inputs'][key]}\n")
+		print(f"Created {filename} at {directory}")
 		
 	def _open_file(self, filename = None, directory = None):
 		if directory:
