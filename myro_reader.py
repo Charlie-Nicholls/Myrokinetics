@@ -15,6 +15,7 @@ class myro_read(object):
 		self.directory = directory
 		self.filename = filename
 		self.run = {}
+		self.plots = {}
 		self._open_file()
 		self._gr_type = "Normalised"
 		if not self.verify:		
@@ -228,11 +229,7 @@ class myro_read(object):
 			verify = data_in['verify'].item()
 		except:
 			verify = {}
-		
-		
-		
-		
-		
+
 		self.run = {'inputs': inputs, 'info': info, 'data': data, 'files': files}
 		self.verify = verify
 	
@@ -342,36 +339,36 @@ class myro_read(object):
 				print("Converted Growth Rates To Unnormalised")
 	
 	def plot_aky(self, init = [0,0]):
-		Plotters['Scan'](scan = self.run, verify = self.verify, aky = True, init = init)
-	
+		self.plots['aky'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = True, init = init)
+		
 	def plot_scan(self, init = [0,0], aky = False):
-		Plotters['Scan'](scan = self.run, verify = self.verify, aky = aky, init = init)
+		self.plots['scan'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = aky, init = init)
 	
-	def plot_ideal(self):
-		Plotters['Ideal'](scan = self.run)
+	def plot_ideal(self, init = 0):
+		self.plots['ideal'] = Plotters['Ideal'](scan = self.run, init = init)
 	
-	def plot_omega(self,init = [0,0,0,0], aky = True):
-		Plotters['Diag'](scan = self.run, var = 0, aky = aky, init = init, verify = self.verify)
+	def plot_omega(self, init = [0,0,0,0], aky = True):
+		self.plots['omega'] = Plotters['Diag'](scan = self.run, var = 0, aky = aky, init = init, verify = self.verify)
 	
-	def plot_phi(self,init = [0,0,0,0], aky = True):
-		Plotters['Diag'](scan = self.run, var = 1, aky = aky, init = init, verify = self.verify)
+	def plot_phi(self, init = [0,0,0,0], aky = True):
+		self.plots['phi'] = Plotters['Diag'](scan = self.run, var = 1, aky = aky, init = init, verify = self.verify)
 	
-	def plot_apar(self,init = [0,0,0,0], aky = True):
-		Plotters['Diag'](scan = self.run, var = 2, aky = aky, init = init, verify = self.verify)
+	def plot_apar(self, init = [0,0,0,0], aky = True):
+		self.plots['apar'] = Plotters['Diag'](scan = self.run, var = 2, aky = aky, init = init, verify = self.verify)
 		
-	def plot_bpar(self,init = [0,0,0,0], aky = True):
-		Plotters['Diag'](scan = self.run, var = 3, aky = aky, init = init, verify = self.verify)
+	def plot_bpar(self, init = [0,0,0,0], aky = True):
+		self.plots['bpar'] = Plotters['Diag'](scan = self.run, var = 3, aky = aky, init = init, verify = self.verify)
 		
-	def plot_phi2(self,init = [0,0,0,0], aky = True):
-		Plotters['Diag'](scan = self.run, var = 4, aky = aky, init = init, verify = self.verify)
+	def plot_phi2(self, init = [0,0,0,0], aky = True):
+		self.plots['phi2'] = Plotters['Diag'](scan = self.run, var = 4, aky = aky, init = init, verify = self.verify)
 	
-	def _plot_diag(self,init = [0,0,0,0], aky = True, var = 0):
-		Plotters['Diag'](scan = self.run, var = var, aky = aky, init = init, verify = self.verify)
+	def _plot_diag(self, init = [0,0,0,0], aky = True, var = 0):
+		self.plots['diag'] = Plotters['Diag'](scan = self.run, var = var, aky = aky, init = init, verify = self.verify)
 	
 	def plot_epar(self):
 		Plotters['Epar'](scan = self.run)
 	
-	def plot_theta(self,init = [0,0,0,0], aky = True, var = 0):
+	def plot_theta(self, init = [0,0,0,0], aky = True, var = 0):
 		Plotters['Theta'](scan = self.run, var = var, init = init, aky = aky)
 	
 	def load_equillibrium(self, eq_file = None, kin_file = None, kinetics_type = None, directory = None):
@@ -518,12 +515,3 @@ class myro_read(object):
 				p,i,j,k = [eval(x) for x in line.strip("\n").split("_")]
 				runs.add((p,i,j,k))
 		return runs
-			
-			
-		
-		
-		
-		
-		
-		
-		
