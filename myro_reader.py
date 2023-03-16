@@ -16,9 +16,9 @@ class myro_read(object):
 		self.filename = filename
 		self.run = {}
 		self.plots = {}
-		self._open_file()
+		opened = self._open_file()
 		self._gr_type = "Normalised"
-		if not self.verify:		
+		if opened and not self.verify:		
 			self._verify_run()
 		self.eqbm = self.pyro = None
 	
@@ -198,13 +198,13 @@ class myro_read(object):
 				data_in = load(os.path.join(self.directory,self.filename), allow_pickle=True)
 			except:
 				print(f"Could not load file {os.path.join(self.directory,self.filename)}")
-				return
+				return False
 		else:
 			try:
 				data_in = load(os.path.join(self.directory,self.filename) + ".npz", allow_pickle=True)
 			except:
 				print(f"Could not load file {os.path.join(self.directory,self.filename)}.npz")
-				return
+				return False
 		
 		try:
 			inputs = data_in['inputs'].item()
@@ -248,6 +248,7 @@ class myro_read(object):
 
 		self.run = {'inputs': inputs, 'info': info, 'data': data, 'files': files}
 		self.verify = verify
+		return True
 	
 	def _save_file(self, filename = None, directory = "./"):
 		if filename == None:

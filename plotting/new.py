@@ -5,108 +5,71 @@ from matplotlib.widgets import Slider, CheckButtons
 from matplotlib.colors import LinearSegmentedColormap
 
 class plot_scan(object):
-	def __init__(self, scan = None, verify = None, aky = False, init = [0,0]):
+	def __init__(scan = None, verify = None, aky = False, init = [0,0]):
 		if scan is None:
 			print("ERROR: no scan dictionary given")
 			return
 		self.scan = scan
 		self.data = scan['data']
 		self.inputs = scan['inputs']
-		self.psiNs = self.inputs['psiNs']
+		self.psiNs = inputs['psiNs']
 		self.verify = verify
 		self.aky = aky
 		self.init = init
 		if self.data['growth_rates'] is None:
 			print("Error: No Gyrokinetic Data")
 			return
-		
+		ion()
+		show()
+		self.draw_fig()
+	
+	def _make_setup(self):
 		self.bpmin = amin(self.data['beta_prime_axis'])
 		self.bpmax = amax(self.data['beta_prime_axis'])
 		self.shmin = amin(self.data['shear_axis'])
 		self.shmax = amax(self.data['shear_axis'])
+		
+		self.fig, self.ax = subplots(1,2,figsize=(14.6,7))
+		self.fig.subplots_adjust(bottom=0.15)   
+		self.fig.suptitle(self.scan['info']['run_name'])
+		
+		blank_norm = Normalize(vmin=-1,vmax=1)
+		self.cbar_mf = colorbar(ScalarMappable(norm = blank_norm), ax = ax[1])
+		self.cbar_gr = colorbar(ScalarMappable(norm = blank_norm), ax = ax[0])
+		
 		cdict = {'red':  ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.8, 0.8)),
 			'green':  ((0.0, 0.8, 0.8),(0.5, 1, 1),(1.0, 0.0, 0.0)),
 			'blue': ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.0, 0.0))}
 		self.cmap = LinearSegmentedColormap('GnRd', cdict)
-		
-		self.open_plot()
-		
-	def save_plot(self, filename = None):
-		self.open_plot(save = True, filename = None)
-		
-	def open_plot(self, save = False, filename = "Scan"):
-		self.fig, self.ax = subplots(1,2,figsize=(14.6,7))
-		self.fig.subplots_adjust(bottom=0.15)   
-		self.fig.suptitle(self.scan['info']['run_name'])
-	
-		blank_norm = Normalize(vmin=-1,vmax=1)
-		self.cbar_mf = colorbar(ScalarMappable(norm = blank_norm), ax = self.ax[1])
-		self.cbar_gr = colorbar(ScalarMappable(norm = blank_norm), ax = self.ax[0])
-		
-		try:
-			op_init = self.options.get_status()
-		except:
-			op_init = [False,False,False,True,False]
+
 		chaxes = axes([0.72, 0.01, 0.09, 0.1],frame_on = False)
-		self.options = CheckButtons(chaxes, ["Show Parities","Global Axis Limits","Global Colorbar","Show Equillibrium","Show Ideal"], op_init)
-		self.options.on_clicked(self.draw_fig)
+		self.options = CheckButtons(chaxes, ["Show Parities","Global Axis Limits","Global Colorbar","Show Equillibrium","Show Ideal"],[False,False,False,True,False])
+		self.options.on_clicked(draw_fig)
 		
-		try:
-			vr_init = self.vroptions.get_status()
-		except:
-			vr_init = [False,False,False,False,False]
 		vraxes = axes([0.85, 0.01, 0.09, 0.1],frame_on = False)
-		self.vroptions = CheckButtons(vraxes, ["Show ID","Show Convergence","Show Bad nstep","Show bad fields","Show Omega -> nan"], vr_init)
-		self.vroptions.on_clicked(self.draw_fig)
-		
-		try:
-			sl_init = self.slider.val
-		except:
-			sl_init = self.init[0]
+		self.vroptions = CheckButtons(vraxes, ["Show ID","Show Convergence","Show Bad nstep","Show bad fields","Show Omega -> nan"],[False,False,False,False,False])
+		self.vroptions.on_clicked(draw_fig)
+			
 		slaxes = axes([0.15, 0.01, 0.5, 0.03])
-		self.slider = Slider(slaxes, 'psiN index:', 0, len(self.psiNs)-1, valinit = sl_init, valstep = 1)
-		self.slider.on_changed(self.draw_fig)
-		
+		self.slider = Slider(slaxes, 'psiN index:', 0, len(self.psiNs)-1, valinit = init[0], valstep = 1)
+		self.slider.on_changed(draw_fig)
+	
 		if self.aky:
-			try:
-				ky_init = self.ky_slider.val
-			except:
-				ky_init = self.init[1]
 			kyaxes = axes([0.15, 0.05, 0.5, 0.03])
-			self.ky_slider = Slider(kyaxes, 'ky index:', 0, len(self.inputs['aky_values'])-1, valinit = ky_init, valstep = 1)
-			self.ky_slider.on_changed(self.draw_fig)
+			self.ky_slider = Slider(kyaxes, 'ky index:', 0, len(inputs['aky_values'])-1, valinit = init[1], valstep = 1)
+			self.ky_slider.on_changed(draw_fig)
 		
-		try:
-			gr_init = self.gr_slider.val
-		except:
-			gr_init = 100
 		gr_axes = axes([0.93, 0.15, 0.01, 0.73])
 		self.gr_slider = Slider(gr_axes, 'GR', 0, 100, valinit = 100, valstep = 1, orientation = 'vertical')
-		self.gr_slider.on_changed(self.draw_fig)
+		self.gr_slider.on_changed(draw_fig)
 		
-		try:
-			mf_init = self.mf_slider.val
-		except:
-			mf_init = 100
 		mf_axes = axes([0.97, 0.15, 0.01, 0.73])
 		self.mf_slider = Slider(mf_axes, 'MF', 0, 100, valinit = 100, valstep = 1, orientation = 'vertical')
-		self.mf_slider.on_changed(self.draw_fig)
+		self.mf_slider.on_changed(draw_fig)
 		
-		if save:
-			if filename is None and aky:
-				filename = f"Scan_{self.slider.val}"
-			elif filename is None:
-				filename = f"Scan_{self.slider.val}_{self.ky_slider.val}"
-			self.draw_fig()
-			self.fig.savefig(filename)
-		else:
-			ion()
-			show()
-			self.draw_fig()
-	
-	def draw_fig(self, val = None):
+	def draw_fig(val = None):
 		if len(self.psiNs) > 1:
-			idx = self.slider.val
+			idx = slider.val
 			psiN = self.psiNs[idx]
 			
 		else:
@@ -129,9 +92,6 @@ class plot_scan(object):
 		self.ax[1].set_xlabel("-\u03B2'")
 		self.ax[1].set_title("Mode Frequency")
 		
-		status = self.options.get_status()
-		vr_status = self.vroptions.get_status()
-		
 		if self.aky:
 			ky_idx = self.ky_slider.val
 			ky = self.inputs['aky_values'][ky_idx]
@@ -143,33 +103,34 @@ class plot_scan(object):
 			z_mf = transpose(self.data['mode_frequencies'][idx]).tolist()
 			self.ax[0].set_title(f"Growth Rate | PsiN: {psiN}")
 		
-		if status[2]:
+		if self.options.get_status()[2]:
 			mfmax = self.mf_slider.val * abs(amax(array(self.data['mode_frequencies'])[isfinite(self.data['mode_frequencies'])]))/100
 			grmax = self.gr_slider.val * abs(amax(array(self.data['growth_rates'])[isfinite(self.data['growth_rates'])]))/100
 		else:
-			try:
+			if [i for x in z_gr for i in x if str(i) != 'nan']:
 				grmax = self.gr_slider.val * amax(abs(array(z_gr)[isfinite(z_gr)]))/100
 				if grmax < 10e-10:
 					grmax = 10e-10
-			except:
+			else:
 				grmax = 1
 
-			try:
+			if [i for x in z_mf for i in x if str(i) != 'nan']:
 				mfmax = self.mf_slider.val * amax(abs(array(z_mf)[isfinite(z_mf)]))/100
 				if mfmax == 0:
 					mfmax = 10e-10
-			except:
+			else:
 				mfmax = 1
 		
 		norm_mf = Normalize(vmin=-mfmax,vmax=mfmax)
-		self.cbar_mf.update_normal(ScalarMappable(norm = norm_mf))
+		cbar_mf.update_normal(ScalarMappable(norm = norm_mf))
 		
 		norm_gr = Normalize(vmin=-grmax,vmax=grmax)
-		self.cbar_gr.update_normal(ScalarMappable(norm = norm_gr, cmap = self.cmap))
+		cbar_gr.update_normal(ScalarMappable(norm = norm_gr, cmap = self.cmap))
+
 		self.ax[0].pcolormesh(x, y, z_gr, cmap = self.cmap, norm=norm_gr)
 		self.ax[1].pcolormesh(x, y, z_mf, norm = norm_mf)
 		
-		if status[0]:
+		if self.options.get_status()[0]:
 			if self.aky:
 				parities = array(self.data['parities_all'])[idx,:,:,ky_idx]
 			else:
@@ -181,13 +142,13 @@ class plot_scan(object):
 			self.ax[0].plot(array(x)[anti_ids[0]], array(y)[anti_ids[1]], '_', color = 'cyan', label = 'par')
 			self.ax[1].plot(array(x)[anti_ids[0]], array(y)[anti_ids[1]], '_', color = 'cyan', label = 'par')
 		
-		if status[1]:
-			self.ax[0].set_ylim(self.shmin,self.shmax)
-			self.ax[0].set_xlim(self.bpmin,self.bpmax)
-			self.ax[1].set_ylim(self.shmin,self.shmax)
-			self.ax[1].set_xlim(self.bpmin,self.bpmax)
+		if self.options.get_status()[1]:
+			self.ax[0].set_ylim(shmin,shmax)
+			self.ax[0].set_xlim(bpmin,bpmax)
+			self.ax[1].set_ylim(shmin,shmax)
+			self.ax[1].set_xlim(bpmin,bpmax)
 
-		if status[3]:
+		if self.options.get_status()[3]:
 			self.ax[0].plot(beta_prime,shear,'kx')
 			self.ax[0].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
 			self.ax[0].annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
@@ -195,14 +156,14 @@ class plot_scan(object):
 			self.ax[1].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
 			self.ax[1].annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
 		
-		if status[4]:
+		if self.options.get_status()[4]:
 			if self.data['ideal_stabilities'] is not None and self.data['ideal_stabilities'][idx] is not None:
 				self.ax[0].contourf(self.data['beta_prime_axis_ideal'][idx], self.data['shear_axis_ideal'][idx], self.data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
 				self.ax[1].contourf(self.data['beta_prime_axis_ideal'][idx], self.data['shear_axis_ideal'][idx], self.data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
 			else:
 				self.ax[0].text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=self.ax[0].transAxes,color='k')
 		
-		if vr_status[0]:
+		if self.vroptions.get_status()[0]:
 			dx = x[1] - x[0]
 			dy = y[1] - y[0]
 			self.ax[0].set_xticks(array(x)-dx/2, minor=True)
@@ -229,7 +190,7 @@ class plot_scan(object):
 			self.ax[0].grid(which="minor",color='k')
 			self.ax[1].grid(which="minor",color='k')
 			
-		if vr_status[1]:
+		if self.vroptions.get_status()[1]:
 			if self.aky:
 				un_x = [i for p,i,j,k in self.verify['unconverged'] if p == idx and k == ky_idx]
 				un_y = [j for p,i,j,k in self.verify['unconverged'] if p == idx and k == ky_idx]
@@ -259,7 +220,7 @@ class plot_scan(object):
 			self.ax[1].plot(array(x)[cof_x], array(y)[cof_y], 'm<', label = 'Cf')
 			self.ax[0].legend(loc = 'center', bbox_to_anchor=(0.5,1.1), ncol = 4)
 		
-		if vr_status[2]:
+		if self.vroptions.get_status()[2]:
 			if self.aky:
 				ns_x = [i for p,i,j,k in self.verify['nstep'] if p == idx and k == ky_idx]
 				ns_y = [j for p,i,j,k in self.verify['nstep'] if p == idx and k == ky_idx]
@@ -269,7 +230,7 @@ class plot_scan(object):
 			self.ax[0].plot(array(x)[ns_x], array(y)[ns_y], 'kX')
 			self.ax[1].plot(array(x)[ns_x], array(y)[ns_y], 'kX')
 		
-		if vr_status[3]:
+		if self.vroptions.get_status()[3]:
 			for bpid, bp in enumerate(x):
 				for shid, sh in enumerate(y):
 					s = ''
@@ -283,7 +244,7 @@ class plot_scan(object):
 						self.ax[0].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
 						self.ax[1].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
 		
-		if vr_status[4]:
+		if self.vroptions.get_status()[4]:
 			if self.aky:
 				na_x = [i for p,i,j,k in self.verify['nan'] if p == idx and k == ky_idx]
 				na_y = [j for p,i,j,k in self.verify['nan'] if p == idx and k == ky_idx]
@@ -294,3 +255,4 @@ class plot_scan(object):
 			self.ax[1].plot(array(x)[na_x], array(y)[na_y], 'kX')
 
 		self.fig.canvas.draw_idle()
+		return

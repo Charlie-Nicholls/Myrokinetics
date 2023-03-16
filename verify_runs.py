@@ -1,4 +1,4 @@
-from numpy import shape, array, nonzero, imag, real, nan, amax, polyfit, log, inf, full, sign
+from numpy import shape, array, nonzero, imag, real, nan, amax, polyfit, log, inf, full, sign, log10
 
 class verify_scan(object):
 	
@@ -148,13 +148,18 @@ class verify_scan(object):
 			print("ERROR: No time data")
 			return
 		
-		def find_gr(nt, time, phi2, gr, mf, gradgr):
+		def find_gr(nt, time, phi2, gr, mf, gradgr, k):
 			fit = polyfit(time[-nt:],log(phi2[-nt:]),1)
 			fgr = fit[0]/2
 			pr = abs(pearsonr(time[-nt:],log(phi2[-nt:]))[0])
-			if abs((fgr-gr)/gr) < 0.05 and pr > 0.99:
+			drop = log10(phi2[-1]/phi2[0])
+			ky = self.scan['inputs']['aky_values'][k]
+			if gr == 0:
+				diff = fgr
+			else:
+				diff = (fgr-gr)/gr
+			if abs(diff) < 0.05 and pr > 0.99:
 				return gr, mf, 'converged'
-
 			elif pr > 0.99:
 				#MARKER FOR MF SAYING POTENTIALLY WRONG
 				return fgr, mf, 'converged_fit'
@@ -163,7 +168,7 @@ class verify_scan(object):
 					return fgr, nan, 'unconverged_stable'
 				else:
 					return gradgr, nan, 'unconverged_stable'
-			elif phi2[-1]/phi2[0] < 0.001 and nt > 10:
+			elif drop < -3 and nt > 10:
 				return gradgr, nan, 'unconverged_stable'
 			else:
 				return nan, nan, 'unconverged'
@@ -204,10 +209,12 @@ class verify_scan(object):
 									nt = len(phi2)//10 + 10
 									while findingGR:
 										nt = nt - 10
-										new_gr, new_mf, cat = find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr)
+										new_gr, new_mf, cat = find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr, k = l)
 										
 										if cat not in ['unconverged','unconverged_stable'] or nt < 110:
 											findingGR = False
+											if cat in ['unconverged','unconverged_stable']:
+												nt = len(phi2)//10
 								else:
 									
 									nt = 11
@@ -215,9 +222,11 @@ class verify_scan(object):
 										nt = nt - 1
 										if nt > len(phi2):
 											nt = len(phi2)
-										new_gr, new_mf, cat =  find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr)
+										new_gr, new_mf, cat =  find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr, k = l)
 										if cat != 'unconverged' or nt == 2:
 											findingGR = False
+											if cat in ['unconverged','unconverged_stable']:
+												nt = 10
 								
 								self.new_data['gra'][i][j][k][l] = new_gr
 								self.new_data['mfa'][i][j][k][l] = new_mf

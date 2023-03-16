@@ -25,6 +25,9 @@ class myro_single(object):
 			self.open_in()
 		self.run['gr'] = imag(self.run['omega'])
 		self.run['mf'] = real(self.run['omega'])
+		self.gr = self.run['gr'][-1]
+		self.mf = self.run['mf'][-1]
+		self.ky = self.run['ky'][0]
 		
 	def __getitem__(self, key):
 		if key in self.run.keys():

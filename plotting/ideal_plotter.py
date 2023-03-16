@@ -98,3 +98,6 @@ class plot_ideal(object):
 		
 	def toggles(self, label):
 		self.draw_fig()
+		
+	def __call__(self, val):
+		self.slider.set_val(val)
