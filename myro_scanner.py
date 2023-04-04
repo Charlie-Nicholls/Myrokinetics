@@ -423,7 +423,7 @@ class myro_scan(object):
 			else:
 				
 				jobfile = open(f"{run_path}/{psiN}.job",'w')
-				jobfile.write(f"#!/bin/bash\n#SBATCH --time=01:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={psiN}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\nideal_ball \"{run_path}/{psiN}.in\"")
+				jobfile.write(f"#!/bin/bash\n#SBATCH --time=01:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={psiN}.slurm\n#SBATCH --mem=50mb\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\nideal_ball \"{run_path}/{psiN}.in\"")
 				jobfile.close()
 				os.chdir(f"{run_path}")
 				os.system(f"sbatch \"{run_path}/{psiN}.job\"")
@@ -527,8 +527,8 @@ class myro_scan(object):
 									subnml[spec]['fprim'] = nml[spec]['fprim']*mul
 							if self.inputs['Fixed_delt'] is False:
 								delt = 0.04/aky
-								if delt > 0.1:
-									delt = 0.1
+								if delt > 0.01:
+									delt = 0.01
 								subnml['knobs']['delt'] = delt
 							
 							if self.namelist_diffs[p][i][j][k]:
@@ -558,6 +558,8 @@ class myro_scan(object):
 				
 					if self.inputs['Viking'] and group_runs and group_kys:
 						hours = 4*len(self.inputs['aky_values'])
+						if hours > 36:
+							hours = 36
 						jobfile = open(f"{sub_path}/{p}_{fol}.job",'w')
 						jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={p}_{fol}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\n")
 
@@ -565,7 +567,7 @@ class myro_scan(object):
 							jobfile.write(f"echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{p}_{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\ngs2 \"{sub_path}/{p}_{fol}_{k}.in\"\n")
 						jobfile.close()
 						os.chdir(f"{sub_path}")
-						os.system(f"sbatch \"{sub_path}/{fol}.job\"")
+						os.system(f"sbatch \"{sub_path}/{p}_{fol}.job\"")
 						os.chdir(f"{self.path}")
 	def _create_run_info(self):
 		try:
@@ -589,6 +591,7 @@ class myro_scan(object):
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
 			date = None
+		itt = 0
 		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path, 'itteration': 0}
 	
 	def rerun_cancelled(self, directory = None, checkSetup = True):
@@ -698,6 +701,13 @@ class myro_scan(object):
 		with open(filename,'wb') as obj:
 			pickle.dump(self,obj)
 		self.pyro = temp
+
+	def _save_for_save(self, filename = None, directory = None):
+		if filename is None:
+			filename = "nlinfo"
+		if directory is None:
+			directory = self.path
+		savez(f"{directory}/{filename}", name_diffs = self.namelist_diffs, info = self.info)
 	
 	def quick_save(self, filename = None, directory = None, VikingSave = False):
 		self.save_out(filename = filename, directory = directory, VikingSave = VikingSave, QuickSave = True)
@@ -719,13 +729,12 @@ class myro_scan(object):
 		
 		if self.inputs['Viking'] and not VikingSave:
 			os.chdir(f"{directory}")
-			self._save_obj(filename = "scan.obj", directory = directory)
+			self._save_for_save(filename = "nlinfo", directory = directory)
 			job = open(f"save_out.job",'w')
-			job.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n#SBATCH --output=save_out.slurm\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
+			job.write(f"#!/bin/bash\n#SBATCH --time=36:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n#SBATCH --output=save_out.slurm\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
 			job.close()
 			pyth = open(f"save_out.py",'w')
-			#pyth.write(f"from Myrokinetics import myro_scan\nimport pickle\nscan = open(\"{directory}/scan.obj\",\'rb\')\nrun = pickle.load(scan)\nscan.close()\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\", VikingSave = True, QuickSave = {QuickSave})")
-			pyth.write(f"from Myrokinetics import myro_scan\nimport pickle\nwith open(\"{directory}/scan.obj\",\'rb\') as obj\n\trun = pickle.load(obj)\nrun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})")
+			pyth.write(f"from Myrokinetics import myro_scan\nfrom numpy import load\nwith load(\"{directory}/nlinfo.npz\",allow_pickle = True) as obj:\n\tnd = obj['name_diffs']\n\tinfo = obj['info'].item()\n\trun = myro_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\n\trun.info = info\n\trun.namelist_diffs = nd\n\trun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})")
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
@@ -809,6 +818,8 @@ class myro_scan(object):
 									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi'])	
 								
 								om = data['omega'][-1,0,0]
+								if (p,i,j,k) == (1,0,8,0):
+									om = data['omega'][-2,0,0]
 								gr_list.append(imag(om))
 								mf_list.append(real(om))
 								gr_aky.append(imag(om)/(ky**2))
@@ -1011,7 +1022,8 @@ class myro_scan(object):
 			
 		for p,i,j,k in specificRuns:
 			self.namelist_diffs[p][i][j][k] = nml
-		self.info['itteration'] += 1
+		if self.info:
+			self.info['itteration'] += 1
 		self._run_gyro(specificRuns = specificRuns, directory = directory)
 	
 	def _load_run_set(self, filename = None):
