@@ -226,14 +226,14 @@ class myro_scan(object):
 
 		if self.inputs['Ideal']:
 			if self.inputs['beta_div'] is None:
-				beta_div = beta_prim/self.inputs['beta_min']
+				beta_div = abs(beta_prim/self.inputs['beta_min'])
 			elif self.inputs['beta_min'] is None:
 				beta_div = self.inputs['beta_div']
 			else:
 				beta_div = min(self.inputs['beta_div'],beta_prim/self.inputs['beta_min'])
 				
 			if self.inputs['beta_mul'] is None:
-				beta_mul = self.inputs['beta_max']/beta_prim
+				beta_mul = abs(self.inputs['beta_max']/beta_prim)
 			elif self.inputs['beta_max'] is None:
 				beta_mul = self.inputs['beta_mul']
 			else:
@@ -461,14 +461,14 @@ class myro_scan(object):
 			if self.inputs['beta_min'] is None:
 				beta_min = beta_prim/self.inputs['beta_div']
 			elif self.inputs['beta_div'] is None:
-				beta_min = self.inputs['beta_min']
+				beta_min = -1*abs(self.inputs['beta_min'])
 			else:
 				beta_min = max(self.inputs['beta_min'],beta_prim/self.inputs['beta_div'])
 				
 			if self.inputs['beta_max'] is None:
 				beta_max = self.inputs['beta_mul']*beta_prim
 			elif self.inputs['beta_mul'] is None:
-				beta_max = self.inputs['beta_max']
+				beta_max = -1*abs(self.inputs['beta_max'])
 			else:
 				beta_max = min(self.inputs['beta_max'],self.inputs['beta_mul']*beta_prim)
 			if self.inputs['shat_min'] is None:
@@ -818,7 +818,7 @@ class myro_scan(object):
 									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi'])	
 								
 								om = data['omega'][-1,0,0]
-								if (p,i,j,k) == (1,0,8,0):
+								if type(om) != complex:
 									om = data['omega'][-2,0,0]
 								gr_list.append(imag(om))
 								mf_list.append(real(om))
