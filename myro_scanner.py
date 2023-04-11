@@ -210,6 +210,18 @@ class myro_scan(object):
 		nml['dist_fn_species_knobs_2']['bakdif'] = 0
 		nml['dist_fn_species_knobs_3']['bakdif'] = 0
 		
+		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+			if self.inputs['grad_type'] == 2:
+				mul = (beta_prim/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
+				subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+			elif self.inputs['grad_type'] == 1:
+				mul = (beta_prim/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
+				subnml[spec]['tprim'] = nml[spec]['fprim']*mul
+			else:
+				mul = beta_prim/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
+				subnml[spec]['tprim'] = nml[spec]['tprim']*mul
+				subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
 			nml['theta_grid_eik_knobs']['local_eq'] = True
