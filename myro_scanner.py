@@ -84,12 +84,12 @@ class myro_scan(object):
 				val = input(f"Input value for {key} (Current value: None): ")
 			else:
 				val = input(f"Input value for {key} (Current value: {self.inputs[key]}): ")
-			if key == 'psiNs' or key == 'aky_values':
+			if (key == 'psiNs' or key == 'aky_values') and val != "":
 				if val[0] != "[":
 					val = "[" + val
 				if val[-1] != "]":
 					val = val+ "]"
-			if val not in ["","[]"]:
+			if val != "":
 				self.inputs[key] = eval(val)
 	
 	def load_geqdsk(self, eq_file = None, directory = None):
@@ -213,14 +213,14 @@ class myro_scan(object):
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 			if self.inputs['grad_type'] == 2:
 				mul = (beta_prim/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-				subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+				nml[spec]['fprim'] = nml[spec]['fprim']*mul
 			elif self.inputs['grad_type'] == 1:
 				mul = (beta_prim/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-				subnml[spec]['tprim'] = nml[spec]['fprim']*mul
+				nml[spec]['tprim'] = nml[spec]['fprim']*mul
 			else:
 				mul = beta_prim/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
-				subnml[spec]['tprim'] = nml[spec]['tprim']*mul
-				subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+				nml[spec]['tprim'] = nml[spec]['tprim']*mul
+				nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
