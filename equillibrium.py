@@ -71,7 +71,7 @@ class equillibrium(object):
 			from .peqdsk_reader import peqdsk
 			self.kin_data = peqdsk(filename = self.kin_name, directory = directory)
 			if 'rhonorm' not in self.kin_data.keys():
-				self.AmmendPEQDSK(peq_file = os.path.join(directory,self.kin_name), geq = self.eq_data)
+				self.AmmendPEQDSK()
 				self.kin_data = peqdsk(self.kin_name, directory)
 				if 'rhonorm' not in self.kin_data.keys():
 					print("ERROR: Could not load rho data from PEQDSK file")
@@ -140,7 +140,7 @@ class equillibrium(object):
 				rho.append((max(fs['R']) - min(fs['R']))/2)
 		rhonorm = rho/max(rho)
 		
-		f = open(self.kin_file,'a')
+		f = open(self.kin_name,'a')
 		f.write(f"{len(rho)+1} psinorm rho rhonorm")
 		f.write("\n 0.0000000   0.0000000   0.0000000")
 		for i in range(len(rho)):
@@ -176,10 +176,8 @@ class equillibrium(object):
 		sh = self.shear_profile(psiNs)
 		
 		ax[0].plot(psiNs, bp, 'b')
-		ax[0].plot(0.01, bp[0], 'b.')
 		ax[0].invert_yaxis()
 		ax[1].plot(psiNs, sh, 'b')
-		ax[1].plot(0.01, sh[0], 'b.')
 		ax[0].set_xlabel("psiN")
 		ax[1].set_xlabel("psiN")
 		ax[0].set_ylabel("beta_prime")
