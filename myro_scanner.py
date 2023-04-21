@@ -1,6 +1,6 @@
 import os
 from numpy import full, real, imag, nan, amax, array, isfinite, loadtxt, transpose, savez
-from ncdf2dict import ncdf2dict as readnc
+from .ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
 import f90nml
 
@@ -395,7 +395,7 @@ class myro_scan(object):
 			print(f"ERROR: the following inputs are empty: {empty_elements}")
 			return False
 		
-		if gyro and self.namelist_diffs is None:
+		if gyro and not self.namelist_diffs:
 			self.namelist_diffs = self.namelist_diffs = [[[[{} for _ in range(len(self.inputs['aky_values']))] for _ in range(self.inputs['n_shat'])] for _ in range(self.inputs['n_beta'])] for _ in range(len(self.inputs['psiNs']))]
 		
 		if not os.path.exists(self.info['data_path']):
@@ -435,7 +435,7 @@ class myro_scan(object):
 			else:
 				
 				jobfile = open(f"{run_path}/{psiN}.job",'w')
-				jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={psiN}.slurm\n#SBATCH --mem=500mb\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\nideal_ball \"{run_path}/{psiN}.in\"")
+				jobfile.write(f"#!/bin/bash\n#SBATCH --time=01:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={psiN}.slurm\n#SBATCH --mem=500mb\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\nideal_ball \"{run_path}/{psiN}.in\"")
 				jobfile.close()
 				os.chdir(f"{run_path}")
 				os.system(f"sbatch \"{run_path}/{psiN}.job\"")
@@ -1063,3 +1063,4 @@ class myro_scan(object):
 		for p,i,j,k in runs:
 			f.write(f"{p}_{i}_{j}_{k}\n")
 		f.close()
+		

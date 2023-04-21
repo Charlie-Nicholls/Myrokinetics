@@ -2,7 +2,7 @@ from .peqdsk_reader import peqdsk as readp
 from matplotlib.pyplot import *
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from matplotlib.widgets import TextBox
-from numpy import linspace, array, diff, insert
+from numpy import linspace, array, diff, insert, zeros
 
 
 class peqdsk_interpolator(object):
@@ -91,6 +91,7 @@ class peqdsk_interpolator(object):
             return
         a = self.time(t = t)
         a.write_peqdsk(filename = filename)
+      
     
     def plot(self):
             def draw_fig(val = None):
@@ -151,6 +152,7 @@ class peqdsk_interpolator(object):
                 differ = insert(differ, 0,0)
                 f.write(f" {psi:.7f}   {self.te[p]:.7f}   {differ[p]:.7f}\n")
             f.close()
+            print(f"Created {filename}")
         
         def plot(self):
             fig, ax = subplots(1,3,figsize=(15,5))

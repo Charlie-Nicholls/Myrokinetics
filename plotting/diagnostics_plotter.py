@@ -141,7 +141,7 @@ class plot_diag(object):
 
 			self.ax.plot(theta,real(phi),'r',label="real")
 			self.ax.plot(theta,imag(phi),'b',label="imaginary")
-			self.ax.plot(theta,[abs(x) if real(x) + imag(x) > 0 else -abs(x) for x in phi],'k--',label="absolute")
+			#self.ax.plot(theta,[abs(x) for x in phi],'k--',label="absolute")
 			
 			self.ax.set_ylabel("Electric Potential")
 			self.ax.set_xlabel("Ballooning Angle")
@@ -154,7 +154,7 @@ class plot_diag(object):
 				apar = self.data['apar'][psi_idx][bp_idx][sh_idx][aky_idx]
 			self.ax.plot(theta,real(apar),'r',label="real")
 			self.ax.plot(theta,imag(apar),'b',label="imaginary")
-			self.ax.plot(theta,[abs(x) if real(x) + imag(x) > 0 else -abs(x) for x in apar],'k--',label="absolute")
+			#self.ax.plot(theta,[abs(x) for x in apar],'k--',label="absolute")
 			
 			self.ax.set_ylabel("Parallel Mangetic Potential")
 			self.ax.set_xlabel("Ballooning Angle")
@@ -167,7 +167,7 @@ class plot_diag(object):
 				bpar = self.data['bpar'][psi_idx][bp_idx][sh_idx][aky_idx]
 			self.ax.plot(theta,real(bpar),'r',label="real")
 			self.ax.plot(theta,imag(bpar),'b',label="imaginary")
-			self.ax.plot(theta,[abs(x) if real(x) + imag(x) > 0 else -abs(x) for x in bpar],'k--',label="absolute")
+			#self.ax.plot(theta,[abs(x) for x in bpar],'k--',label="absolute")
 			
 			self.ax.set_ylabel("Parallel Mangetic Field")
 			self.ax.set_xlabel("Ballooning Angle")
@@ -267,7 +267,7 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None, ax2 = None):
 
 		ax.plot(theta,real(phi),'r',label="real")
 		ax.plot(theta,imag(phi),'b',label="imaginary")
-		ax.plot(theta,[abs(x) if real(x) + imag(x) > 0 else -abs(x) for x in phi],'k--',label="absolute")
+		#ax.plot(theta,[abs(x) for x in phi],'k--',label="absolute")
 		
 		ax.set_ylabel("Electric Potential")
 		ax.set_xlabel("Ballooning Angle")
@@ -279,7 +279,7 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None, ax2 = None):
 
 		ax.plot(theta,real(apar),'r',label="real")
 		ax.plot(theta,imag(apar),'b',label="imaginary")
-		ax.plot(theta,[abs(x) if real(x) + imag(x) > 0 else -abs(x) for x in apar],'k--',label="absolute")
+		#ax.plot(theta,[abs(x) for x in apar],'k--',label="absolute")
 		
 		ax.set_ylabel("Parallel Mangetic Potential")
 		ax.set_xlabel("Ballooning Angle")
@@ -291,7 +291,7 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None, ax2 = None):
 
 		ax.plot(theta,real(bpar),'r',label="real")
 		ax.plot(theta,imag(bpar),'b',label="imaginary")
-		ax.plot(theta,[abs(x) if real(x) + imag(x) > 0 else -abs(x) for x in bpar],'k--',label="absolute")
+		#ax.plot(theta,[abs(x) for x in bpar],'k--',label="absolute")
 		
 		ax.set_ylabel("Parallel Mangetic Field")
 		ax.set_xlabel("Ballooning Angle")

@@ -306,11 +306,19 @@ class myro_read(object):
 			for psiN in range(len(self.run['inputs']['psiNs'])):
 				for i in range(self.run['inputs']['n_beta']):
 					for j in range(self.run['inputs']['n_shat']):
-						idx = array(self.run['data']['growth_rates_all'][psiN][i][j]).tolist().index(max([x for x in self.run['data']['growth_rates_all'][psiN][i][j] if (str(x) != 'nan')]))
-						GR[psiN][i][j] = self.run['data']['growth_rates_all'][psiN][i][j][idx]
-						MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
-						KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
-						SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
+						nonan = [x for x in self.run['data']['growth_rates_all'][psiN][i][j] if (str(x) != 'nan')]
+						if len(nonan) != 0:
+							idx = array(self.run['data']['growth_rates_all'][psiN][i][j]).tolist().index(max(nonan))
+							GR[psiN][i][j] = self.run['data']['growth_rates_all'][psiN][i][j][idx]
+							MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
+							KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
+							SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
+						else:
+							GR[psiN][i][j] = nan
+							MF[psiN][i][j] = nan
+							KY[psiN][i][j] = self.run['inputs']['aky_values'][0]
+							SYM[psiN][i][j] = 0
+							
 			self.run['data']['growth_rates'] = GR
 			self.run['data']['mode_frequencies'] = MF
 			self.run['data']['akys'] = KY
@@ -324,11 +332,19 @@ class myro_read(object):
 					for j in range(self.run['inputs']['n_shat']):
 						grns = array(self.run['data']['growth_rates_all'][psiN][i][j])/array(self.run['inputs']['aky_values'])**2
 						grns = grns.tolist()
-						idx = grns.index(max([x for x in grns if (str(x) != 'nan')]))
-						GR[psiN][i][j] = grns[idx]
-						MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
-						KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
-						SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
+						nonan = [x for x in grns if (str(x) != 'nan')]
+						if len(nonan) != 0:
+							idx = grns.index(max(nonan))
+							GR[psiN][i][j] = grns[idx]
+							MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
+							KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
+							SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
+						else:
+							GR[psiN][i][j] = nan
+							MF[psiN][i][j] = nan
+							KY[psiN][i][j] = self.run['inputs']['aky_values'][0]
+							SYM[psiN][i][j] = 0
+							
 			self.run['data']['growth_rates'] = GR
 			self.run['data']['mode_frequencies'] = MF
 			self.run['data']['akys'] = KY
@@ -342,11 +358,19 @@ class myro_read(object):
 					for j in range(self.run['inputs']['n_shat']):
 						grns = array(self.run['data']['growth_rates_all'][psiN][i][j])/array(self.run['inputs']['aky_values'])**2
 						grns = grns.tolist()
-						idx = grns.index(max([x for x in grns if (str(x) != 'nan')]))
-						GR[psiN][i][j] = self.run['data']['growth_rates_all'][psiN][i][j][idx]
-						MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
-						KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
-						SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
+						nonan = [x for x in grns if (str(x) != 'nan')]
+						if len(nonan) != 0:
+							idx = grns.index(max(nonan))
+							GR[psiN][i][j] = self.run['data']['growth_rates_all'][psiN][i][j][idx]
+							MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
+							KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
+							SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
+						else:
+							GR[psiN][i][j] = nan
+							MF[psiN][i][j] = nan
+							KY[psiN][i][j] = self.run['inputs']['aky_values'][0]
+							SYM[psiN][i][j] = 0
+						
 			self.run['data']['growth_rates'] = GR
 			self.run['data']['mode_frequencies'] = MF
 			self.run['data']['akys'] = KY

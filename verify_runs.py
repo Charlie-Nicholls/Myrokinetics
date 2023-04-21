@@ -131,11 +131,17 @@ class verify_scan(object):
 							if str(self.scan['data']['phi2'][i][j][k][l][-1]) == 'nan':
 								self.bad_runs['nan'].add((i,j,k,l))
 							self.scan['data']['phi2'][i][j][k][l] = [x for x in self.scan['data']['phi2'][i][j][k][l] if str(x) not in ['nan','inf','0.0','0']]
-							self.scan['data']['omega'][i][j][k][l] = self.scan['data']['omega'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
-							self.scan['data']['time'][i][j][k][l] = self.scan['data']['time'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
-							self.new_data['gra'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
-							self.new_data['mfa'][i][j][k][l] = real(self.scan['data']['omega'][i][j][k][l][-1])
-						
+							if len(self.scan['data']['phi2'][i][j][k][l]) == 0:
+								self.scan['data']['phi2'][i][j][k][l] = None
+								self.scan['data']['omega'][i][j][k][l] = None
+								self.scan['data']['time'][i][j][k][l] = None
+								self.new_data['gra'][i][j][k][l] = nan
+								self.new_data['mfa'][i][j][k][l] = nan
+							else:
+								self.scan['data']['omega'][i][j][k][l] = self.scan['data']['omega'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
+								self.scan['data']['time'][i][j][k][l] = self.scan['data']['time'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
+								self.new_data['gra'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
+								self.new_data['mfa'][i][j][k][l] = real(self.scan['data']['omega'][i][j][k][l][-1])
 	def check_convergence(self):
 		from scipy.stats import pearsonr
 		if self.scan['data']['omega'] is None:
