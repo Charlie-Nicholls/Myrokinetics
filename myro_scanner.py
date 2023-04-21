@@ -202,25 +202,27 @@ class myro_scan(object):
 		
 		shear = nml['theta_grid_eik_knobs']['s_hat_input']
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
-		tprim =  nml['species_parameters_1']['tprim']
-		fprim =  nml['species_parameters_1']['fprim']
 		beta =  nml['parameters']['beta']
 		#Set bakdif to 0 for Electormagnetic Runs as a default
 		nml['dist_fn_species_knobs_1']['bakdif'] = 0
 		nml['dist_fn_species_knobs_2']['bakdif'] = 0
-		nml['dist_fn_species_knobs_3']['bakdif'] = 0
+		nml['dist_fn_species_knobs_3']['bakdif'] = 0	
 		
+		if self.inputs['grad_type'] == 2:
+			print("grad_type != 0 NOTE YET IMPLIMENTED")
+			quit()
+		elif self.inputs['grad_type'] == 1:
+			print("grad_type != 0 NOTE YET IMPLIMENTED")
+			quit()
+		
+		bp_cal = 0
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			if self.inputs['grad_type'] == 2:
-				mul = (beta_prim/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-				nml[spec]['fprim'] = nml[spec]['fprim']*mul
-			elif self.inputs['grad_type'] == 1:
-				mul = (beta_prim/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-				nml[spec]['tprim'] = nml[spec]['fprim']*mul
-			else:
-				mul = beta_prim/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
-				nml[spec]['tprim'] = nml[spec]['tprim']*mul
-				nml[spec]['fprim'] = nml[spec]['fprim']*mul
+			bp_cal += (nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']
+		bp_cal = bp_cal*nml['parameters']['beta']*-1	
+		mul = beta_prim/bp_cal
+		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+			nml[spec]['tprim'] = nml[spec]['tprim']*mul
+			nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
@@ -272,7 +274,7 @@ class myro_scan(object):
 		except:
 			nml['knobs']['wstar_units'] = False
 		nml.write(file_name, force=True)
-		return shear, beta_prim, tprim, fprim, beta, nml
+		return shear, beta_prim, beta, nml
 	
 	def run_scan(self, gyro = None, ideal = None, directory = None):
 		if directory is None and self.path is None:
@@ -468,7 +470,7 @@ class myro_scan(object):
 			except:
 				pass
 				
-			shear, beta_prim, tprim, fprim, beta, nml = self._make_fs_in(run_path=run_path, psiN=psiN)
+			shear, beta_prim, beta, nml = self._make_fs_in(run_path=run_path, psiN=psiN)
 			
 			if self.inputs['beta_min'] is None:
 				beta_min = beta_prim/self.inputs['beta_div']
@@ -528,15 +530,19 @@ class myro_scan(object):
 							subnml['kt_grids_single_parameters']['aky'] = aky
 							for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 								if self.inputs['grad_type'] == 2:
-									mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-									subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+									break
 								elif self.inputs['grad_type'] == 1:
-									mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-									subnml[spec]['tprim'] = nml[spec]['fprim']*mul
+									break
 								else:
-									mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
-									subnml[spec]['tprim'] = nml[spec]['tprim']*mul
-									subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+									bp_cal = 0
+									for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+										bp_cal += (nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']	
+									bp_cal = bp_cal*beta*-1	
+									mul = bp/bp_cal
+									for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+										subnml[spec]['tprim'] = nml[spec]['tprim']*mul
+										subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+										
 							if self.inputs['Fixed_delt'] is False:
 								delt = 0.04/aky
 								if delt > 0.01:
