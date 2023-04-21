@@ -528,20 +528,15 @@ class myro_scan(object):
 							subnml['theta_grid_eik_knobs']['s_hat_input'] = sh
 							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
 							subnml['kt_grids_single_parameters']['aky'] = aky
+						
+							bp_cal = 0
 							for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-								if self.inputs['grad_type'] == 2:
-									break
-								elif self.inputs['grad_type'] == 1:
-									break
-								else:
-									bp_cal = 0
-									for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-										bp_cal += (nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']	
-									bp_cal = bp_cal*beta*-1	
-									mul = bp/bp_cal
-									for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-										subnml[spec]['tprim'] = nml[spec]['tprim']*mul
-										subnml[spec]['fprim'] = nml[spec]['fprim']*mul
+								bp_cal += (nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']	
+							bp_cal = bp_cal*beta*-1	
+							mul = bp/bp_cal
+							for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+								subnml[spec]['tprim'] = nml[spec]['tprim']*mul
+								subnml[spec]['fprim'] = nml[spec]['fprim']*mul
 										
 							if self.inputs['Fixed_delt'] is False:
 								delt = 0.04/aky

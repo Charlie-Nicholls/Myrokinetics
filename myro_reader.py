@@ -483,21 +483,15 @@ class myro_read(object):
 		nml['theta_grid_eik_knobs']['beta_prime_input'] = bp
 		nml['kt_grids_single_parameters']['aky'] = self.run['inputs']['aky_values'][k]
 		beta = nml['parameters']['beta']
+		
+		bp_cal = 0
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			try:
-				grad_type = self.run['inputs']['grad_type']
-			except:
-				grad_type = 0
-			if grad_type == 2:
-				mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-				nml[spec]['fprim'] = mul*nml[spec]['fprim']*mul
-			elif grad_type == 1:
-				mul = (bp/(beta*-2) - nml[spec]['tprim'])/nml[spec]['fprim']
-				nml[spec]['tprim'] = mul*nml[spec]['fprim']*mul
-			else:
-				mul = bp/(-2*(nml[spec]['tprim'] + nml[spec]['fprim'])*beta)
-				nml[spec]['tprim'] = nml[spec]['tprim']*mul
-				nml[spec]['fprim'] = nml[spec]['fprim']*mul
+			bp_cal += (nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']	
+		bp_cal = bp_cal*beta*-1	
+		mul = bp/bp_cal
+		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+			nml[spec]['tprim'] = nml[spec]['tprim']*mul
+			nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		if self.run['inputs']['Fixed_delt'] is False:
 			delt = 0.04/self.run['inputs']['aky_values'][k]
 			if delt > 0.1:
