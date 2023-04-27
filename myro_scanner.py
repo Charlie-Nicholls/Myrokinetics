@@ -15,6 +15,7 @@ class myro_scan(object):
 		self.input_name = input_file
 		self.run_name = run_name
 		self._template_path = self.info = self.pyro = self._template_lines = self.dat = self.file_lines = self.verify = self.namelist_diffs = None
+		self.jobs = set()
 
 		if directory == "./":
 			directory = os.getcwd() 
@@ -311,9 +312,10 @@ class myro_scan(object):
 		if not self._check_setup(ideal = ideal, gyro = gyro):
 			return
 		if self.inputs['Gyro']:
-			self._run_gyro(directory = run_path)
+			self._make_gyro_files(directory = run_path)
 		if self.inputs['Ideal']:
-			self._run_ideal(directory = run_path)
+			self._make_ideal_files(directory = run_path)
+		self._run_jobs()
 		if not self.inputs['Viking']:
 			self.save_out(directory = run_path)
 	
@@ -412,7 +414,11 @@ class myro_scan(object):
 		
 		return True
 	
-	def _run_ideal(self, directory = None, checkSetup = True):
+	def _run_jobs(self):
+		for job in self.jobs:
+			os.system(jobs)
+	
+	def _make_ideal_files(self, directory = None, checkSetup = True):
 		self.inputs['Ideal'] = True
 		if checkSetup:
 			if not self._check_setup():
@@ -433,18 +439,15 @@ class myro_scan(object):
 				self._make_fs_in(run_path=run_path,psiN=psiN)
 			
 			if not self.inputs['Viking']:
-				os.system(f"ideal_ball \"{run_path}/{psiN}.in\"")
+				self.jobs.add(f"ideal_ball \"{run_path}/{psiN}.in\"")
 			else:
 				
 				jobfile = open(f"{run_path}/{psiN}.job",'w')
-				jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={psiN}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\nideal_ball \"{run_path}/{psiN}.in\"")
+				jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={run_path}/{psiN}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\nideal_ball \"{run_path}/{psiN}.in\"")
 				jobfile.close()
-				os.chdir(f"{run_path}")
-				os.system(f"sbatch \"{run_path}/{psiN}.job\"")
-				os.chdir(f"{self.path}")
-
-	def _run_gyro(self, directory = None, checkSetup = True, specificRuns = None):
-		self.inputs['Gyro'] = True
+				self.jobs.add(f"sbatch \"{run_path}/{psiN}.job\"")
+				
+	def _make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None):
 		if checkSetup:
 			if not self._check_setup():
 				return
@@ -516,12 +519,12 @@ class myro_scan(object):
 
 					for k, aky in enumerate(self.inputs['aky_values']):
 						if (p,i,j,k) in runs:
-							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}_old.out.nc"):
-								os.remove(f"{sub_path}/{p}_{fol}_{k}_old.out.nc")
-							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.out.nc"):
-								os.rename(f"{sub_path}/{p}_{fol}_{k}.out.nc",f"{sub_path}/{p}_{fol}_{k}_old.out.nc")
-							if os.path.exists(f"{sub_path}/{p}_{fol}_{k}.slurm"):
-								os.rename(f"{sub_path}/{p}_{fol}_{k}.slurm",f"{sub_path}/{p}_{fol}_{k}_old.slurm")
+							if os.path.exists(f"{sub_path}/{fol}_{k}_old.out.nc"):
+								os.remove(f"{sub_path}/{fol}_{k}_old.out.nc")
+							if os.path.exists(f"{sub_path}/{fol}_{k}.out.nc"):
+								os.rename(f"{sub_path}/{fol}_{k}.out.nc",f"{sub_path}/{fol}_{k}_old.out.nc")
+							if os.path.exists(f"{sub_path}/{fol}_{k}.slurm"):
+								os.rename(f"{sub_path}/{fol}_{k}.slurm",f"{sub_path}/{fol}_{k}_old.slurm")
 							if os.path.exists(f"{sub_path}/{p}_{fol}.slurm"):
 								os.rename(f"{sub_path}/{p}_{fol}.slurm",f"{sub_path}/{p}_{fol}_old.slurm")
 							subnml = nml
@@ -549,19 +552,18 @@ class myro_scan(object):
 									for skey in self.namelist_diffs[p][i][j][k][key].keys():
 										subnml[key][skey] = self.namelist_diffs[p][i][j][k][key][skey]
 							
-							subnml.write(f"{sub_path}/{p}_{fol}_{k}.in", force=True)
+							subnml.write(f"{sub_path}/{fol}_{k}.in", force=True)
 							
 							if not self.inputs['Viking']:
-								os.system(f"mpirun -np 8 gs2 \"{sub_path}/{p}_{fol}_{k}.in\"")
+								self.jobs.add(f"mpirun -np 8 gs2 \"{sub_path}/{fol}_{k}.in\"")
 							elif not group_runs:
 								
-								jobfile = open(f"{sub_path}/{p}_{fol}_{k}.job",'w')
-								jobfile.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={p}_{fol}_{k}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{p}_{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{p}_{fol}_{k}.in\"")
+								jobfile = open(f"{sub_path}/{fol}_{k}.job",'w')
+								jobfile.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={sub_path}/{fol}_{k}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
 								
 								jobfile.close()
-								os.chdir(f"{sub_path}")
-								os.system(f"sbatch \"{sub_path}/{p}_{fol}_{k}.job\"")
-								os.chdir(f"{self.path}")
+								self.jobs.add(f"sbatch \"{sub_path}/{fol}_{k}.job\"")
+
 							
 							else:
 								group_kys.append(k)
@@ -574,14 +576,15 @@ class myro_scan(object):
 						if hours > 36:
 							hours = 36
 						jobfile = open(f"{sub_path}/{p}_{fol}.job",'w')
-						jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={p}_{fol}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\n")
+						jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={sub_path}/{p}_{fol}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\n")
 
 						for k in group_kys:
-							jobfile.write(f"echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{p}_{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\ngs2 \"{sub_path}/{p}_{fol}_{k}.in\"\n")
+							jobfile.write(f"echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\ngs2 \"{sub_path}/{fol}_{k}.in\"\n")
 						jobfile.close()
-						os.chdir(f"{sub_path}")
-						os.system(f"sbatch \"{sub_path}/{p}_{fol}.job\"")
-						os.chdir(f"{self.path}")
+						self.jobs.add(f"sbatch \"{sub_path}/{p}_{fol}.job\"")
+						
+		self.jobs | jobs
+
 	def _create_run_info(self):
 		try:
 			import uuid
@@ -822,13 +825,13 @@ class myro_scan(object):
 							try:
 							
 								if self.inputs['Epar'] and not QuickSave:
-									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta'])
+									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta'])
 								elif self.inputs['Epar']:
-									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi','bpar'])
+									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar'])
 								elif not QuickSave:
-									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi','apar','bpar','phi2','t','theta'])
+									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','apar','bpar','phi2','t','theta'])
 								else:
-									data = readnc(f"{run_path}/{fol}/{p}_{fol}_{k}.out.nc",only=['omega','phi'])	
+									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi'])	
 								
 								om = data['omega'][-1,0,0]
 								if type(om) != complex:
@@ -849,34 +852,34 @@ class myro_scan(object):
 									try:
 										omega[p][i][j][k] = data['omega'][:,0,0].tolist()
 									except: 
-										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: omega")
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: omega")
 									try:
 										phi[p][i][j][k] = data['phi'][0,0,:].tolist()
 									except: 
-										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: phi")
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: phi")
 									try:
 										apar[p][i][j][k] = data['apar'][0,0,:].tolist()
 									except: 
-										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: apar")
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: apar")
 									try:
 										bpar[p][i][j][k] = data['bpar'][0,0,:].tolist()
 									except: 
-										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: bpar")
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: bpar")
 									try:
 										phi2[p][i][j][k] = data['phi2'].tolist()
 									except: 
-										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: phi2")
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: phi2")
 									try:
 										time[p][i][j][k] = data['t'].tolist()
 									except: 
-										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: time")
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: time")
 									try:
 										theta[p][i][j][k] = data['theta'].tolist()
 									except: 
-										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: theta")
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: theta")
 								
 								if self.inputs['Epar']:
-									epar_path = f"{run_path}/{fol}/{p}_{fol}_{k}.epar"
+									epar_path = f"{run_path}/{fol}/{fol}_{k}.epar"
 									bpar = data['bpar'][0,0,:]
 									try:
 										epar_data = loadtxt(epar_path)
@@ -888,10 +891,10 @@ class myro_scan(object):
 										
 										epars.append(epar_norm)
 									except:
-										print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: epar")
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: epar")
 								
 							except Exception as e:
-								print(f"Save Error {psiN}/{fol}/{p}_{fol}_{k}: {e}")
+								print(f"Save Error {psiN}/{fol}/{fol}_{k}: {e}")
 								gr_aky.append(nan)
 								gr_list.append(nan)
 								mf_list.append(nan)
