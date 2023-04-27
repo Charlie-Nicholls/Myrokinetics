@@ -582,8 +582,6 @@ class myro_scan(object):
 							jobfile.write(f"echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\ngs2 \"{sub_path}/{fol}_{k}.in\"\n")
 						jobfile.close()
 						self.jobs.add(f"sbatch \"{sub_path}/{p}_{fol}.job\"")
-						
-		self.jobs | jobs
 
 	def _create_run_info(self):
 		try:
