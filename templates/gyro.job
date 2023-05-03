@@ -1,0 +1,27 @@
+#!/bin/bash
+#SBATCH --time=6:00:00
+#SBATCH --job-name={self.info['run_name']}
+#SBATCH --ntasks=1
+#SBATCH --output={sub_path}/{fol}_$SLURM_ARRAY_TASK_ID.slurm
+
+module purge
+module load tools/git
+module load compiler/ifort
+module load mpi/impi
+module load numlib/FFTW
+module load data/netCDF/4.6.1-intel-2018b
+module load data/netCDF-Fortran/4.4.4-intel-2018b
+module load numlib/imkl/2018.3.222-iimpi-2018b
+module load lang/Python/3.7.0-intel-2018b
+export GK_SYSTEM=viking
+export MAKEFLAGS=-IMakefiles
+export PATH=$PATH:$HOME/gs2/bin
+
+which gs2
+
+gs2 --build-config
+
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+echo "Input: {sub_path}/{fol}_$SLURM_ARRAY_TASK_ID.in"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+gs2 "{sub_path}/{fol}_$SLURM_ARRAY_TASK_ID.in"
