@@ -270,7 +270,7 @@ class verify_scan(object):
 					for l in range(sha[3]):
 						if self.scan['data']['omega'][i][j][k][l] is None:
 							self.save_errors['omega'].add((i,j,k,l))
-						elif len(self.scan['data']['omega'][i][j][k][l]) == lim:
+						elif len(self.scan['data']['omega'][i][j][k][l]) in [lim,lim+1]:
 							self.bad_runs['nstep'].add((i,j,k,l))
 							#self.new_data['gra'][i][j][k][l] = nan
 							#self.new_data['mfa'][i][j][k][l] = nan

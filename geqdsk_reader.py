@@ -14,6 +14,7 @@ class geqdsk(object):
         self.filename = os.path.join(directory, filename)
         self.data = {}
         self.lines = {}
+        self.levels = []
 
         if self.filename is not None:
             self._open_and_parse()
@@ -399,11 +400,13 @@ class geqdsk(object):
 
     def _plot_psi(self):
         import matplotlib.pyplot as plt
-
+        
         plt.figure()
         plt.contourf(self['R'], self['Z'], self['psirz'].T, 256, vmin = self['simag'], vmax = self['sibry'])
         plt.colorbar()
         plt.contour(self['R'], self['Z'], self['psirz'].T, levels=[self['sibry']], colors=['g'])
+        if self.levels:
+        	plt.contour(self['R'], self['Z'], self['psirz'].T, levels=self.levels, colors=['k'])
         plt.plot(self['rbbbs'],self['zbbbs'],'k--')
         plt.axis('equal')
         plt.show()

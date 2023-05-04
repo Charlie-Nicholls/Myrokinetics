@@ -2,7 +2,7 @@ import os
 from numpy import full, real, imag, nan, amax, array, isfinite, loadtxt, transpose, savez
 from .ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
-from .templates import template_dir, gs2_template, gyro_job, ideal_job
+from .templates import modules, save_modules
 import f90nml
 
 '''
@@ -15,7 +15,8 @@ class myro_scan(object):
 		self.input_name = input_file
 		self.template_name = template_file
 		self.run_name = run_name
-		self._template_path = self.info = self.pyro = self._template_lines = self.dat = self.file_lines = self.verify = self.namelist_diffs = None
+		self.namelist_diffs = None
+		self._template_path = self.info = self.dat = self.file_lines = self.verify = self.namelist_diffs = None
 		self.jobs = []
 
 		if directory == "./":
@@ -33,7 +34,6 @@ class myro_scan(object):
 		else:
         		return self.inputs[key]
 
-	@property
 	def print_inputs(self):
         	for key, val in self.inputs.items():
         		print(f"{key} = {val}")
@@ -57,13 +57,12 @@ class myro_scan(object):
 		'n_beta_ideal': None,
 		'psiNs': None,
 		'aky_values': None,
-		'Miller': True,
+		'Miller': False,
 		'Ideal': True,
 		'Gyro': True,
 		'Viking': False,
 		'Fixed_delt': False,
 		'Epar': False,
-		'grad_type': 0
 		}
 
 	def create_inputs(self, key = None, val = None):
@@ -94,53 +93,14 @@ class myro_scan(object):
 			if val != "":
 				self.inputs[key] = eval(val)
 	
-	def load_geqdsk(self, eq_file = None, directory = None):
-		if directory is None and self.path is None:
-			directory = "./"
-		elif directory is None:
-			directory = self.path
-			
-		if eq_file is None:
-			print("ERROR: eq_file Not Given")
-			return
-		
+	def load_geqdsk(self, eq_file, directory = None):
 		self.eqbm.load_geqdsk(eq_file = eq_file, directory = directory)
 	
-	def load_kinetics(self, kin_file = None, kinetics_type = None, directory = None):
-		if directory is None and self.path is None:
-			directory = "./"
-		elif directory is None:
-			directory = self.path
-
-		if kin_file is None:
-			print("ERROR: kin_file Not Given")
-			return
-		
-		if kinetics_type is None:
-			print("ERROR: kinetics_type Not Given, trying PEQDSK")
-			kinetics_type = "PEQDSK"
-			
+	def load_kinetics(self, kin_file, kinetics_type = None, directory = None):
 		self.eqbm.load_kinetics(self, kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
 	
 	def load_pyro(self, template_file = None, directory = None):
-		if template_file is not None:
-				self.template_name = template_file
-		if self.template_name is None:
-			self.template_name = gs2_template
-			directory = template_dir
-		if directory is None and self.path is None:
-			directory = "./"
-		elif directory is None:
-			directory = self.path
-		if directory == "./":
-			directory = os.getcwd()
-		self._template_path = directory
-		
-		if self.template_name:
-			self._template_lines = f90nml.read(os.path.join(directory,self.template_name))
-		
-		self.pyro = self.eqbm.load_pyro(template_file = self.template_name, directory = directory)
-		
+		self.eqbm.load_pyro(template_file = template_file, directory = directory)
 		
 	def load_inputs(self, filename = None, directory = "./"):
 		if self.input_name is None and filename is None:
@@ -190,97 +150,6 @@ class myro_scan(object):
 			for key in self.inputs.keys():
 				in_file.write(f"{key} = {self.inputs[key]}\n")
 	
-	def _make_fs_in(self, run_path = None, psiN = None):
-		if self.pyro is None:
-			self.load_pyro()
-		if run_path is None:
-			run_path = self.path
-		if psiN is None:
-			print("ERROR: please speicify psiN")
-			return
-			
-		self.pyro.load_local_geometry(psi_n=psiN)
-		self.pyro.load_local_species(psi_n=psiN)
-		file_name=f"{run_path}/{psiN}.in"
-		self.pyro.write_gk_file(file_name)
-		nml = self.pyro._gk_input_record["GS2"].data
-		
-		shear = nml['theta_grid_eik_knobs']['s_hat_input']
-		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
-		beta =  nml['parameters']['beta']
-		#Set bakdif to 0 for Electormagnetic Runs as a default
-		nml['dist_fn_species_knobs_1']['bakdif'] = 0
-		nml['dist_fn_species_knobs_2']['bakdif'] = 0
-		nml['dist_fn_species_knobs_3']['bakdif'] = 0	
-		
-		if self.inputs['grad_type'] == 2:
-			print("grad_type != 0 NOTE YET IMPLIMENTED")
-			quit()
-		elif self.inputs['grad_type'] == 1:
-			print("grad_type != 0 NOTE YET IMPLIMENTED")
-			quit()
-		
-		bp_cal = 0
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			bp_cal += (nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp']
-		bp_cal = bp_cal*nml['parameters']['beta']*-1	
-		mul = beta_prim/bp_cal
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			nml[spec]['tprim'] = nml[spec]['tprim']*mul
-			nml[spec]['fprim'] = nml[spec]['fprim']*mul
-		
-		if self.inputs['Miller']:
-			nml['theta_grid_eik_knobs']['iflux'] = 0
-			nml['theta_grid_eik_knobs']['local_eq'] = True
-		else:
-			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.path,self.eqbm.eq_name)
-			nml['theta_grid_eik_knobs']['efit_eq'] =  True
-			nml['theta_grid_eik_knobs']['iflux'] = 1
-			nml['theta_grid_eik_knobs']['local_eq'] = False
-			
-		if self.inputs['Epar']:
-			nml['gs2_diagnostics_knobs']['write_final_epar'] = True
-		else:
-			nml['gs2_diagnostics_knobs']['write_final_epar'] = False
-
-		if self.inputs['Ideal']:
-			if self.inputs['beta_div'] is None:
-				beta_div = abs(beta_prim/self.inputs['beta_min'])
-			elif self.inputs['beta_min'] is None:
-				beta_div = self.inputs['beta_div']
-			else:
-				beta_div = min(self.inputs['beta_div'],beta_prim/self.inputs['beta_min'])
-				
-			if self.inputs['beta_mul'] is None:
-				beta_mul = abs(self.inputs['beta_max']/beta_prim)
-			elif self.inputs['beta_max'] is None:
-				beta_mul = self.inputs['beta_mul']
-			else:
-				beta_mul = min(self.inputs['beta_mul'],self.inputs['beta_max']/beta_prim)
-				
-			if self.inputs['shat_min'] is None:
-				shat_min = shear/self.inputs['shat_div']
-			elif self.inputs['shat_div'] is None:
-				shat_min = self.inputs['shat_min']
-			else:
-				shat_min = max(self.inputs['shat_min'],shear/self.inputs['shat_div'])
-				
-			if self.inputs['shat_max'] is None:
-				shat_max = self.inputs['shat_mul']*shear
-			elif self.inputs['shat_mul'] is None:
-				shat_max = self.inputs['shat_max']
-			else:
-				shat_max = min(self.inputs['shat_max'],self.inputs['shat_mul']*shear)
-				
-			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': shat_min, 'shat_max': shat_max, 'beta_mul': beta_mul, 'beta_div': beta_div}
-		try:
-			if nml['kt_grids_knobs']['grid_option'] in ['single','default']:
-				nml['knobs']['wstar_units'] = False
-		except:
-			nml['knobs']['wstar_units'] = False
-		nml.write(file_name, force=True)
-		return shear, beta_prim, beta, nml
-	
 	def run_scan(self, gyro = None, ideal = None, directory = None):
 		if directory is None and self.path is None:
 			directory = "./"
@@ -288,16 +157,16 @@ class myro_scan(object):
 			directory = self.path
 		
 		if gyro is None:
-			gyro = self.inputs['Gyro']
+			gyro = self['Gyro']
 		elif type(gyro) == bool:	
-			self.inputs['Gyro'] = gyro
+			self['Gyro'] = gyro
 		else:
 			print("ERROR: gyro must be boolean")
 			return
 		if ideal is None:
-			ideal = self.inputs['Ideal']
+			ideal = self['Ideal']
 		elif type(ideal) == bool:
-			self.inputs['Ideal'] = ideal
+			self['Ideal'] = ideal
 		else:
 			print("ERROR: ideal must be boolean")
 			return
@@ -315,26 +184,26 @@ class myro_scan(object):
 		
 		if not self._check_setup(ideal = ideal, gyro = gyro):
 			return
-		if self.inputs['Gyro']:
-			self._make_gyro_files(directory = run_path)
-		if self.inputs['Ideal']:
+		if self['Ideal']:
 			self._make_ideal_files(directory = run_path)
+		if self['Gyro']:
+			self._make_gyro_files(directory = run_path)
 		self._run_jobs()
-		if not self.inputs['Viking']:
+		if not self['Viking']:
 			self.save_out(directory = run_path)
 	
 	def _check_setup(self, ideal = None, gyro = None):
 		if gyro is None:
-			gyro = self.inputs['Gyro']
+			gyro = self['Gyro']
 		elif type(gyro) == bool:	
-			self.inputs['Gyro'] = gyro
+			self['Gyro'] = gyro
 		else:
 			print("ERROR: gyro must be boolean")
 			return False
 		if ideal is None:
-			ideal = self.inputs['Ideal']
+			ideal = self['Ideal']
 		elif type(ideal) == bool:
-			self.inputs['Ideal'] = ideal
+			self['Ideal'] = ideal
 		else:
 			print("ERROR: ideal must be boolean")
 			return False
@@ -349,54 +218,51 @@ class myro_scan(object):
 				print("ERROR: No kin_file loaded")
 			return False
 			
-		if not self.pyro:
-			self.load_pyro()
-			
 		empty_elements = []
-		if type(self.inputs['psiNs']) in [int,float]:
-			self.inputs['psiNs'] = [self.inputs['psiNs']]
-		elif self.inputs['psiNs'] is None:
+		if type(self['psiNs']) in [int,float]:
+			self['psiNs'] = [self['psiNs']]
+		elif self['psiNs'] is None:
 			empty_elements.append('psiNs')
 		else:
-			self.inputs['psiNs'].sort()
+			self['psiNs'].sort()
 		
 		if gyro:
-			if type(self.inputs['aky_values']) in [int,float]:
-				self.inputs['aky_values'] = [self.inputs['aky_values']]
-			elif self.inputs['aky_values'] is None:
+			if type(self['aky_values']) in [int,float]:
+				self['aky_values'] = [self['aky_values']]
+			elif self['aky_values'] is None:
 				empty_elements.append('aky_values')
 			else:
-				self.inputs['aky_values'].sort()
+				self['aky_values'].sort()
 
-		if self.inputs['beta_min'] is None and self.inputs['beta_div'] is None:
+		if self['beta_min'] is None and self['beta_div'] is None:
 			empty_elements.append('beta_min/beta_div')
-		if self.inputs['beta_max'] is None and self.inputs['beta_mul'] is None:
+		if self['beta_max'] is None and self['beta_mul'] is None:
 			empty_elements.append('beta_max/beta_mul')
-		if self.inputs['shat_min'] is None and self.inputs['shat_div'] is None:
+		if self['shat_min'] is None and self['shat_div'] is None:
 			empty_elements.append('shat_min/shat_div')
-		if self.inputs['shat_max'] is None and self.inputs['shat_mul'] is None:
+		if self['shat_max'] is None and self['shat_mul'] is None:
 			empty_elements.append('shat_max/shat_mul')
 		
-		if self.inputs['n_shat_ideal'] is None and self.inputs['n_shat'] is None:
+		if self['n_shat_ideal'] is None and self['n_shat'] is None:
 			if ideal:
 				empty_elements.append('n_shat_ideal')
 			if gyro:
 				empty_elements.append('n_shat')
-		elif gyro and not self.inputs['n_shat']:
+		elif gyro and not self['n_shat']:
 			empty_elements.append('n_shat')
-		elif ideal and not self.inputs['n_shat_ideal']:
-			self.inputs['n_shat_ideal'] = self.inputs['n_shat']
+		elif ideal and not self['n_shat_ideal']:
+			self['n_shat_ideal'] = self['n_shat']
 			print("n_shat_ideal is empty, setting equal to n_shat")
 		
-		if self.inputs['n_beta_ideal'] is None and self.inputs['n_beta'] is None:
+		if self['n_beta_ideal'] is None and self['n_beta'] is None:
 			if ideal:
 				empty_elements.append('n_beta_ideal')
 			if gyro:
 				empty_elements.append('n_beta')
-		elif gyro and not self.inputs['n_beta']:
+		elif gyro and not self['n_beta']:
 			empty_elements.append('n_beta')
-		elif ideal and not self.inputs['n_beta_ideal']:
-			self.inputs['n_beta_ideal'] = self.inputs['n_beta']
+		elif ideal and not self['n_beta_ideal']:
+			self['n_beta_ideal'] = self['n_beta']
 			print("n_beta_ideal is empty, setting equal to n_beta")
 		
 		if empty_elements:
@@ -404,7 +270,7 @@ class myro_scan(object):
 			return False
 		
 		if gyro and self.namelist_diffs is None:
-			self.namelist_diffs = self.namelist_diffs = [[[[{} for _ in range(len(self.inputs['aky_values']))] for _ in range(self.inputs['n_shat'])] for _ in range(self.inputs['n_beta'])] for _ in range(len(self.inputs['psiNs']))]
+			self.namelist_diffs = self.namelist_diffs = [[[[{} for _ in range(len(self['aky_values']))] for _ in range(self['n_shat'])] for _ in range(self['n_beta'])] for _ in range(len(self['psiNs']))]
 		
 		if not os.path.exists(self.info['data_path']):
 				os.mkdir(self.info['data_path'])
@@ -421,9 +287,10 @@ class myro_scan(object):
 	def _run_jobs(self):
 		for job in self.jobs:
 			os.system(job)
+			self.jobs.remove(job)
 	
 	def _make_ideal_files(self, directory = None, checkSetup = True):
-		self.inputs['Ideal'] = True
+		self['Ideal'] = True
 		if checkSetup:
 			if not self._check_setup():
 				return
@@ -439,15 +306,24 @@ class myro_scan(object):
 			except:
 				pass
 			file_name = os.path.join(run_path, f"{psiN}.in")
-			if not os.path.isfile(file_name):
-				self._make_fs_in(run_path=run_path,psiN=psiN)
-			
-			if not self.inputs['Viking']:
+			nml = self.get_surface_input(psiN = psiN)
+			nml.write(f"{run_path}/{psiN}.in", force=True)
+			if not self['Viking']:
 				self.jobs.append(f"ideal_ball \"{run_path}/{psiN}.in\"")
 			else:
-				
 				jobfile = open(f"{run_path}/{psiN}.job",'w')
-				jobfile.write(f"#!/bin/bash\n#SBATCH --time=05:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={run_path}/{psiN}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config\n\nideal_ball \"{run_path}/{psiN}.in\"")
+				jobfile.write(f"""#!/bin/bash
+				#SBATCH --time=05:00:00
+				#SBATCH --job-name={self.info['run_name']}
+				#SBATCH --ntasks=1
+				#SBATCH --output={run_path}/{psiN}.slurm
+				
+				{modules}
+				
+				which gs2
+				gs2 --build-config
+				
+				ideal_ball \"{run_path}/{psiN}.in\"""")
 				jobfile.close()
 				self.jobs.append(f"sbatch \"{run_path}/{psiN}.job\"")
 				
@@ -470,7 +346,7 @@ class myro_scan(object):
 		else:
 			group_runs = True#False
 		
-		for p, psiN in enumerate(self.inputs['psiNs']):
+		for p, psiN in enumerate(self['psiNs']):
 			run_path = os.path.join(directory, str(psiN))
 			try:
 				os.mkdir(run_path)
@@ -479,36 +355,35 @@ class myro_scan(object):
 				
 			shear, beta_prim, beta, nml = self._make_fs_in(run_path=run_path, psiN=psiN)
 			
-			if self.inputs['beta_min'] is None:
-				beta_min = beta_prim/self.inputs['beta_div']
-			elif self.inputs['beta_div'] is None:
-				beta_min = -1*abs(self.inputs['beta_min'])
+			if self['beta_min'] is None:
+				beta_min = beta_prim/self['beta_div']
+			elif self['beta_div'] is None:
+				beta_min = -1*abs(self['beta_min'])
 			else:
-				beta_min = max(self.inputs['beta_min'],beta_prim/self.inputs['beta_div'])
+				beta_min = max(self['beta_min'],beta_prim/self['beta_div'])
 				
-			if self.inputs['beta_max'] is None:
-				beta_max = self.inputs['beta_mul']*beta_prim
-			elif self.inputs['beta_mul'] is None:
-				beta_max = -1*abs(self.inputs['beta_max'])
+			if self['beta_max'] is None:
+				beta_max = self['beta_mul']*beta_prim
+			elif self['beta_mul'] is None:
+				beta_max = -1*abs(self['beta_max'])
 			else:
-				beta_max = min(self.inputs['beta_max'],self.inputs['beta_mul']*beta_prim)
-			if self.inputs['shat_min'] is None:
-				shat_min = shear/self.inputs['shat_div']
-			elif self.inputs['shat_div'] is None:
-				shat_min = self.inputs['shat_min']
+				beta_max = min(self['beta_max'],self['beta_mul']*beta_prim)
+			if self['shat_min'] is None:
+				shat_min = shear/self['shat_div']
+			elif self['shat_div'] is None:
+				shat_min = self['shat_min']
 			else:
-				shat_min = max(self.inputs['shat_min'],shear/self.inputs['shat_div'])
+				shat_min = max(self['shat_min'],shear/self['shat_div'])
 				
-			if self.inputs['shat_max'] is None:
-				shat_max = self.inputs['shat_mul']*shear
-			elif self.inputs['shat_mul'] is None:
-				shat_max = self.inputs['shat_max']
+			if self['shat_max'] is None:
+				shat_max = self['shat_mul']*shear
+			elif self['shat_mul'] is None:
+				shat_max = self['shat_max']
 			else:
-				shat_max = min(self.inputs['shat_max'],self.inputs['shat_mul']*shear)
+				shat_max = min(self['shat_max'],self['shat_mul']*shear)
 			
-			
-			for i in range(self.inputs['n_beta']):
-				for j in range(self.inputs['n_shat']):
+			for i in range(self['n_beta']):
+				for j in range(self['n_shat']):
 					group_kys = []
 					fol = f"{i}_{j}"
 					sub_path = os.path.join(run_path,fol)
@@ -516,12 +391,12 @@ class myro_scan(object):
 						os.mkdir(sub_path)
 					except:
 						pass
-					bp = (beta_max - beta_min)*i/(self.inputs['n_beta']-1) + beta_min
-					sh = (shat_max - shat_min)*j/(self.inputs['n_shat']-1) + shat_min
+					bp = (beta_max - beta_min)*i/(self['n_beta']-1) + beta_min
+					sh = (shat_max - shat_min)*j/(self['n_shat']-1) + shat_min
 					if sh < 1e-4:
 						sh = 1e-4
 
-					for k, aky in enumerate(self.inputs['aky_values']):
+					for k, aky in enumerate(self['aky_values']):
 						if (p,i,j,k) in runs:
 							if os.path.exists(f"{sub_path}/{fol}_{k}_old.out.nc"):
 								os.remove(f"{sub_path}/{fol}_{k}_old.out.nc")
@@ -531,57 +406,58 @@ class myro_scan(object):
 								os.rename(f"{sub_path}/{fol}_{k}.slurm",f"{sub_path}/{fol}_{k}_old.slurm")
 							if os.path.exists(f"{sub_path}/{fol}.slurm"):
 								os.rename(f"{sub_path}/{fol}.slurm",f"{sub_path}/_{fol}_old.slurm")
-							subnml = nml
-							subnml['theta_grid_eik_knobs']['s_hat_input'] = sh
-							subnml['theta_grid_eik_knobs']['beta_prime_input'] = bp
-							subnml['kt_grids_single_parameters']['aky'] = aky
-						
-							bp_cal = 0
-							for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-								bp_cal += (nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp']
-							bp_cal = bp_cal*beta*-1	
-							mul = bp/bp_cal
-							for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-								subnml[spec]['tprim'] = nml[spec]['tprim']*mul
-								subnml[spec]['fprim'] = nml[spec]['fprim']*mul
-										
-							if self.inputs['Fixed_delt'] is False:
-								delt = 0.04/aky
-								if delt > 0.01:
-									delt = 0.01
-								subnml['knobs']['delt'] = delt
 							
-							if self.namelist_diffs[p][i][j][k]:
-								for key in self.namelist_diffs[p][i][j][k].keys():
-									for skey in self.namelist_diffs[p][i][j][k][key].keys():
-										subnml[key][skey] = self.namelist_diffs[p][i][j][k][key][skey]
-							
+							nml = self.eqbm.get_gyro_input(psiN = psiN, bp = bp, sh = sh, aky = aky, namelist_diff = self.namelist_diffs[p][i][j][k])
 							subnml.write(f"{sub_path}/{fol}_{k}.in", force=True)
 							
-							if not self.inputs['Viking']:
+							if not self['Viking']:
 								self.jobs.append(f"mpirun -np 8 gs2 \"{sub_path}/{fol}_{k}.in\"")
 							elif not group_runs:
-								
 								jobfile = open(f"{sub_path}/{fol}_{k}.job",'w')
-								jobfile.write(f"#!/bin/bash\n#SBATCH --time=24:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={sub_path}/{fol}_{k}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\n\nwhich gs2\n\ngs2 --build-config\n\ngs2 \"{sub_path}/{fol}_{k}.in\"")
+								jobfile.write(f"""#!/bin/bash
+								#SBATCH --time=24:00:00
+								#SBATCH --job-name={self.info['run_name']}
+								#SBATCH --ntasks=1
+								#SBATCH --output={sub_path}/{fol}_{k}.slurm
 								
+								{modules}
+								
+								which gs2
+								gs2 --build-config
+								
+								echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
+								echo \"Input: {sub_path}/{fol}_{k}.in\"
+								gs2 \"{sub_path}/{fol}_{k}.in\"
+								echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 								jobfile.close()
 								self.jobs.append(f"sbatch \"{sub_path}/{fol}_{k}.job\"")
-							
 							else:
 								group_kys.append(k)
 							
 						else:
 							pass
 				
-					if self.inputs['Viking'] and group_runs and group_kys:
+					if self['Viking'] and group_runs and group_kys:
 						hours = 2*len(self['aky_values'])
 						if hours > 36:
 							hours = 36
 						jobfile = open(f"{sub_path}/{fol}.job",'w')
-						jobfile.write(f"#!/bin/bash\n#SBATCH --time={hours}:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --output={sub_path}/{fol}.slurm\n\nmodule purge\nmodule load tools/git\nmodule load compiler/ifort\nmodule load mpi/impi\nmodule load numlib/FFTW\nmodule load data/netCDF/4.6.1-intel-2018b\nmodule load data/netCDF-Fortran/4.4.4-intel-2018b\nmodule load numlib/imkl/2018.3.222-iimpi-2018b\nmodule load lang/Python/3.7.0-intel-2018b\nexport GK_SYSTEM=viking\nexport MAKEFLAGS=-IMakefiles\nexport PATH=$PATH:$HOME/gs2/bin\n\nwhich gs2\n\ngs2 --build-config")
+						jobfile.write(f"""#!/bin/bash
+						#SBATCH --time={hours}:00:00
+						#SBATCH --job-name={self.info['run_name']}
+						#SBATCH --ntasks=1
+						#SBATCH --output={sub_path}/{fol}.slurm
+						
+						{modules}
+						
+						which gs2
+						gs2 --build-config""")
 						for k in group_kys:
-							jobfile.write(f"\n\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\necho \"Input: {sub_path}/{fol}_{k}.in\"\necho \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"\ngs2 \"{sub_path}/{fol}_{k}.in\"")
+							jobfile.write(f"""
+							echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
+							echo \"Input: {sub_path}/{fol}_{k}.in\"
+							gs2 \"{sub_path}/{fol}_{k}.in\"
+							echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 						jobfile.close()
 						self.jobs.append(f"sbatch \"{sub_path}/{fol}.job\"")
 
@@ -620,8 +496,8 @@ class myro_scan(object):
 			print("No Cancelled Runs")
 			return
 		for p, i, j, k in cancelled:
-			if os.path.exists(f"{directory}/{self.inputs['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
-				os.remove(f"{directory}/{self.inputs['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc")
+			if os.path.exists(f"{directory}/{self['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
+				os.remove(f"{directory}/{self['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc")
 		self._make_gyro_files(directory = directory, specificRuns = cancelled)
 		self._run_jobs()
 		
@@ -630,7 +506,7 @@ class myro_scan(object):
 			self._create_run_info()		
 		if directory is None:
 			directory = self.info['data_path']
-		if not self.inputs['Gyro']:
+		if not self['Gyro']:
 			print("Only Used For Gyro Runs")
 			return
 		
@@ -656,7 +532,7 @@ class myro_scan(object):
 							if ".in" in l:
 								inp = l.split("/")[-1].split(".")[0]
 						i, j, k = [eval(x) for x in inp.split("_")]
-						for ki in range(k, len(self.inputs['aky_values'])):
+						for ki in range(k, len(self['aky_values'])):
 							cancelled.add((p,i,j,ki))
 		if doPrint:		
 			print(f"{len(cancelled)} Cancelled Runs")
@@ -671,12 +547,12 @@ class myro_scan(object):
 			directory = self.info['data_path']
 			
 		if gyro is None:
-			gyro = self.inputs['Gyro']
+			gyro = self['Gyro']
 		elif type(gyro) != bool:	
 			print("ERROR: gyro must be boolean")
 			return
 		if ideal is None:
-			ideal = self.inputs['Ideal']
+			ideal = self['Ideal']
 		elif type(ideal) != bool:
 			print("ERROR: ideal must be boolean")
 			return
@@ -684,10 +560,10 @@ class myro_scan(object):
 		unfinished_gyro = set()
 		finished_gyro = set()
 		if gyro:
-			for p, psiN in enumerate(self.inputs['psiNs']):
-				for i in range(self.inputs['n_beta']):
-					for j in range(self.inputs['n_shat']):
-						for k, aky in enumerate(self.inputs['aky_values']):
+			for p, psiN in enumerate(self['psiNs']):
+				for i in range(self['n_beta']):
+					for j in range(self['n_shat']):
+						for k, aky in enumerate(self['aky_values']):
 							if os.path.exists(f"{directory}/{psiN}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
 								finished_gyro.add((p,i,j,k))
 							else:
@@ -696,7 +572,7 @@ class myro_scan(object):
 		unfinished_ideal = set()
 		finished_ideal = set()
 		if ideal:
-			for p, psiN in enumerate(self.inputs['psiNs']):
+			for p, psiN in enumerate(self['psiNs']):
 				if os.path.exists(f"{directory}/{psiN}/{psiN}.ballstab_2d"):
 					finished_ideal.add(psiN)
 				else:
@@ -715,15 +591,15 @@ class myro_scan(object):
 		if directory is None:
 			directory = self.path
 		import pickle
-		temp = self.pyro
-		self.pyro = None
+		temp = self.eqbm.pyro
+		self.eqbm.pyro = None
 		with open(filename,'wb') as obj:
 			pickle.dump(self,obj)
-		self.pyro = temp
+		self.eqbm.pyro = temp
 
 	def _save_for_save(self, filename = None, directory = None):
 		if filename is None:
-			filename = "nlinfo"
+			filename = "save_info"
 		if directory is None:
 			directory = self.path
 		savez(f"{directory}/{filename}", name_diffs = self.namelist_diffs, info = self.info)
@@ -742,18 +618,35 @@ class myro_scan(object):
 		if directory is None:
 			directory = self.info['data_path']
 		
-		if not self.inputs['Gyro'] and not self.inputs['Ideal']:
+		if not self['Gyro'] and not self['Ideal']:
 			print("Error: Both Gyro and Ideal are False")
 			return
 		
-		if self.inputs['Viking'] and not VikingSave:
+		if self['Viking'] and not VikingSave:
 			os.chdir(f"{directory}")
-			self._save_for_save(filename = "nlinfo", directory = directory)
+			self._save_for_save(filename = "save_info", directory = directory)
 			job = open(f"save_out.job",'w')
-			job.write(f"#!/bin/bash\n#SBATCH --time=36:00:00\n#SBATCH --job-name={self.info['run_name']}\n#SBATCH --ntasks=1\n#SBATCH --mem=10gb\n#SBATCH --output=save_out.slurm\n\nmodule load lang/Python/3.7.0-intel-2018b\nmodule swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0\n\nsource $HOME/pyroenv2/bin/activate\n\npython {directory}/save_out.py")
+			job.write(f"""#!/bin/bash
+			#SBATCH --time=36:00:00
+			#SBATCH --job-name={self.info['run_name']}
+			#SBATCH --ntasks=1
+			#SBATCH --mem=10gb
+			#SBATCH --output=save_out.slurm
+			
+			{save_modules}
+			
+			python {directory}/save_out.py""")
 			job.close()
 			pyth = open(f"save_out.py",'w')
-			pyth.write(f"from Myrokinetics import myro_scan\nfrom numpy import load\nwith load(\"{directory}/nlinfo.npz\",allow_pickle = True) as obj:\n\tnd = obj['name_diffs']\n\tinfo = obj['info'].item()\n\trun = myro_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")\n\trun.info = info\n\trun.namelist_diffs = nd\n\trun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})")
+			pyth.write(f"""from Myrokinetics import myro_scan
+			from numpy import load
+			with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
+			\tnd = obj['name_diffs']
+			\tinfo = obj['info'].item()
+			\trun = myro_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")
+			\trun.info = info
+			\trun.namelist_diffs = nd
+			\trun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})""")
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
@@ -762,48 +655,48 @@ class myro_scan(object):
 		if not self._check_setup():
 			return
 			
-		psiNs = self.inputs['psiNs']
+		psiNs = self['psiNs']
 		beta_prime_values = full((len(psiNs)),None)
 		shear_values = full((len(psiNs)),None)
 		
-		if self.inputs['Gyro']:
-			beta_prime_axis = full((len(psiNs),self.inputs['n_beta']),None).tolist()
-			shear_axis = full((len(psiNs),self.inputs['n_beta']),None).tolist()
-			gr = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat']),None).tolist()
-			mf = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat']),None).tolist()
-			sym = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat']),None).tolist()
-			akys = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat']),None).tolist()
-			grs = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
-			mfs = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
-			syms = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
+		if self['Gyro']:
+			beta_prime_axis = full((len(psiNs),self['n_beta']),None).tolist()
+			shear_axis = full((len(psiNs),self['n_beta']),None).tolist()
+			gr = full((len(psiNs),self['n_beta'],self['n_shat']),None).tolist()
+			mf = full((len(psiNs),self['n_beta'],self['n_shat']),None).tolist()
+			sym = full((len(psiNs),self['n_beta'],self['n_shat']),None).tolist()
+			akys = full((len(psiNs),self['n_beta'],self['n_shat']),None).tolist()
+			grs = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+			mfs = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+			syms = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
 			
-			if self.inputs['Epar']:
-				eparN = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat']),None).tolist()
-				eparNs = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
+			if self['Epar']:
+				eparN = full((len(psiNs),self['n_beta'],self['n_shat']),None).tolist()
+				eparNs = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
 			else:
 				eparN = None
 				eparNs = None
 			
 			if not QuickSave:
-				omega = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
-				phi = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
-				apar = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
-				bpar = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
-				phi2 = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
-				time = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
-				theta = full((len(psiNs),self.inputs['n_beta'],self.inputs['n_shat'],len(self.inputs['aky_values'])),None).tolist()
+				omega = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+				phi = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+				apar = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+				bpar = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+				phi2 = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+				time = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+				theta = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
 			else:
 				omega = phi = apar = bpar = phi2 = time = theta = None
 		
 		else:
-				gr = mf = grs = mfs = sym = syms = beta_prime_axis = shear_axis = akys = self.inputs['n_shat'] = self.inputs['n_beta'] = self.inputs['aky_values'] = eparN = eparNs = omega = phi = apar = bpar = phi2 = time = theta = None
+				gr = mf = grs = mfs = sym = syms = beta_prime_axis = shear_axis = akys = self['n_shat'] = self['n_beta'] = self['aky_values'] = eparN = eparNs = omega = phi = apar = bpar = phi2 = time = theta = None
 		
-		if self.inputs['Ideal']:
-			beta_prime_axis_ideal = full((len(psiNs),self.inputs['n_beta_ideal']),None).tolist()
-			shear_axis_ideal = full((len(psiNs),self.inputs['n_shat_ideal']),None).tolist()
-			stabilities = full((len(psiNs),self.inputs['n_beta_ideal'],self.inputs['n_shat_ideal']),None).tolist()
+		if self['Ideal']:
+			beta_prime_axis_ideal = full((len(psiNs),self['n_beta_ideal']),None).tolist()
+			shear_axis_ideal = full((len(psiNs),self['n_shat_ideal']),None).tolist()
+			stabilities = full((len(psiNs),self['n_beta_ideal'],self['n_shat_ideal']),None).tolist()
 		else:
-			beta_prime_axis_ideal = shear_axis_ideal = self.inputs['n_shat_ideal'] = self.inputs['n_beta_ideal'] = stabilities = None
+			beta_prime_axis_ideal = shear_axis_ideal = self['n_shat_ideal'] = self['n_beta_ideal'] = stabilities = None
 		
 		for p, psiN in enumerate(psiNs):
 			run_path = os.path.join(directory,str(psiN))
@@ -813,23 +706,23 @@ class myro_scan(object):
 			shear_values[p] = shear
 			beta_prime_values[p] = beta_prim
 			
-			if self.inputs['Gyro']:
-				for i in range(self.inputs['n_beta']):
-					per = 100*(p*self.inputs['n_beta']+i)/(self.inputs['n_beta']*len(psiNs))
+			if self['Gyro']:
+				for i in range(self['n_beta']):
+					per = 100*(p*self['n_beta']+i)/(self['n_beta']*len(psiNs))
 					print(f"Saving {per:.2f}%", end='\r')
-					for j in range(self.inputs['n_shat']):
+					for j in range(self['n_shat']):
 						fol = str(i) + "_" + str(j)
 						gr_aky = []
 						gr_list = []
 						mf_list = []
 						sym_list = []
 						epars = []
-						for k, ky in enumerate(self.inputs['aky_values']):
+						for k, ky in enumerate(self['aky_values']):
 							try:
 							
-								if self.inputs['Epar'] and not QuickSave:
+								if self['Epar'] and not QuickSave:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta'])
-								elif self.inputs['Epar']:
+								elif self['Epar']:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar'])
 								elif not QuickSave:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','apar','bpar','phi2','t','theta'])
@@ -881,7 +774,7 @@ class myro_scan(object):
 									except: 
 										print(f"Save Error {psiN}/{fol}/{fol}_{k}: theta")
 								
-								if self.inputs['Epar']:
+								if self['Epar']:
 									epar_path = f"{run_path}/{fol}/{fol}_{k}.epar"
 									bpar = data['bpar'][0,0,:]
 									try:
@@ -909,11 +802,11 @@ class myro_scan(object):
 							grs[p][i][j] = gr_list
 							mfs[p][i][j] = mf_list
 							syms[p][i][j] = sym_list
-							akys[p][i][j] = self.inputs['aky_values'][aky_idx]
+							akys[p][i][j] = self['aky_values'][aky_idx]
 							gr[p][i][j] = gr_list[aky_idx]
 							mf[p][i][j] = mf_list[aky_idx]
 							sym[p][i][j] = sym_list[aky_idx]
-							if self.inputs['Epar']:
+							if self['Epar']:
 								eparNs[p][i][j] = epars
 								eparN[p][i][j] = epars[aky_idx]
 						except:
@@ -924,36 +817,36 @@ class myro_scan(object):
 							gr[p][i][j] = nan
 							mf[p][i][j] = nan
 							sym[p][i][j] = None
-							if self.inputs['Epar']:
+							if self['Epar']:
 								eparNs[p][i][j] = None
 								eparN[p][i][j] = None
 							
-				if self.inputs['beta_min'] is None:
-					beta_min = beta_prim/self.inputs['beta_div']
+				if self['beta_min'] is None:
+					beta_min = beta_prim/self['beta_div']
 				else:
-					beta_min = self.inputs['beta_min']
-				if self.inputs['beta_max'] is None:
-					beta_max = beta_prim*self.inputs['beta_mul']
+					beta_min = self['beta_min']
+				if self['beta_max'] is None:
+					beta_max = beta_prim*self['beta_mul']
 				else:
-					beta_max = self.inputs['beta_max']
-				for i in range(self.inputs['n_beta']):
-					beta_prime_axis[p][i] = abs((beta_max - beta_min)*i/(self.inputs['n_beta']-1) + beta_min)
+					beta_max = self['beta_max']
+				for i in range(self['n_beta']):
+					beta_prime_axis[p][i] = abs((beta_max - beta_min)*i/(self['n_beta']-1) + beta_min)
 					
-				if self.inputs['shat_min'] is None:
-					shat_min = shear/self.inputs['shat_div']
+				if self['shat_min'] is None:
+					shat_min = shear/self['shat_div']
 				else:
-					shat_min = self.inputs['shat_min']
-				if self.inputs['shat_max'] is None:
-					shat_max = shear*self.inputs['shat_mul']
+					shat_min = self['shat_min']
+				if self['shat_max'] is None:
+					shat_max = shear*self['shat_mul']
 				else:
-					shat_max = self.inputs['shat_max']
-				for i in range(self.inputs['n_shat']):
-					sh = (shat_max - shat_min)*i/(self.inputs['n_shat']-1) + shat_min
+					shat_max = self['shat_max']
+				for i in range(self['n_shat']):
+					sh = (shat_max - shat_min)*i/(self['n_shat']-1) + shat_min
 					if sh == 0:
 						sh = 1e-4
 					shear_axis[p][i] = sh
 
-			if self.inputs['Ideal']:
+			if self['Ideal']:
 				shear = loadtxt(f"{run_path}/{psiN}.ballstab_shat")
 				bp = loadtxt(f"{run_path}/{psiN}.ballstab_bp")
 				stab = loadtxt(f"{run_path}/{psiN}.ballstab_2d")
@@ -987,7 +880,7 @@ class myro_scan(object):
 		'time': time,
 		'theta': theta
 		}
-		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self._template_lines, 'namelist_differences': self.namelist_diffs}
+		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines, 'namelist_differences': self.namelist_diffs}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = self.dat, run_info = self.info, files = self.file_lines)
 		
 	def rerun_errors(self, save = None, specificRuns = None, directory = None):
@@ -1004,28 +897,24 @@ class myro_scan(object):
 				self.verify = myro.verify
 			
 			specificRuns = self.verify.runs_with_errors
-			
-		if not self.pyro:
-			self.load_pyro()
-			
-		
+
 		if not self.namelist_diffs:
-			self.namelist_diffs = [[[[{} for _ in range(len(self.inputs['aky_values']))] for _ in range(self.inputs['n_shat'])] for _ in range(self.inputs['n_beta'])] for _ in range(len(self.inputs['psiNs']))]
+			self.namelist_diffs = [[[[{} for _ in range(len(self['aky_values']))] for _ in range(self['n_shat'])] for _ in range(self['n_beta'])] for _ in range(len(self['psiNs']))]
 		for [p,i,j,k] in specificRuns:
 			if 'knobs' not in self.namelist_diffs[p][i][j][k].keys():
 				self.namelist_diffs[p][i][j][k]['knobs'] = {}
 			if 'theta_grid_parameters' not in self.namelist_diffs[p][i][j][k].keys():
 				self.namelist_diffs[p][i][j][k]['theta_grid_parameters'] = {}
-			self.namelist_diffs[p][i][j][k]['knobs']['nstep'] = 2*self._template_lines['knobs']['nstep']
-			self.namelist_diffs[p][i][j][k]['theta_grid_parameters']['ntheta'] = 2*self._template_lines['theta_grid_parameters']['ntheta']
-			self.namelist_diffs[p][i][j][k]['theta_grid_parameters']['nperiod'] = 2*self._template_lines['theta_grid_parameters']['nperiod']
-			if self.inputs['Fixed_delt'] is False:
-				delt = 0.004/self.inputs['aky_values'][k]
+			self.namelist_diffs[p][i][j][k]['knobs']['nstep'] = 2*self.eqbm._template_lines['knobs']['nstep']
+			self.namelist_diffs[p][i][j][k]['theta_grid_parameters']['ntheta'] = 2*self.eqbm._template_lines['theta_grid_parameters']['ntheta']
+			self.namelist_diffs[p][i][j][k]['theta_grid_parameters']['nperiod'] = 2*self.eqbm._template_lines['theta_grid_parameters']['nperiod']
+			if self['Fixed_delt'] is False:
+				delt = 0.004/self['aky_values'][k]
 				if delt > 0.01:
 					delt = 0.01
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = delt
 			else:
-				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
+				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self.eqbm._template_lines['knobs']['delt']/10
 		self.info['itteration'] += 1
 		self._make_gyro_files(specificRuns = specificRuns)
 		self._run_jobs
@@ -1038,7 +927,7 @@ class myro_scan(object):
 			print("ERROR: nml not given")
 			return
 		if not self.namelist_diffs:
-			self.namelist_diffs = [[[[{} for _ in range(len(self.inputs['aky_values']))] for _ in range(self.inputs['n_shat'])] for _ in range(self.inputs['n_beta'])] for _ in range(len(self.inputs['psiNs']))]
+			self.namelist_diffs = [[[[{} for _ in range(len(self['aky_values']))] for _ in range(self['n_shat'])] for _ in range(self['n_beta'])] for _ in range(len(self['psiNs']))]
 			
 		for p,i,j,k in specificRuns:
 			self.namelist_diffs[p][i][j][k] = nml
@@ -1046,29 +935,3 @@ class myro_scan(object):
 			self.info['itteration'] += 1
 		self._make_gyro_files(specificRuns = specificRuns, directory = directory)
 		self.run_jobs()
-	
-	def _load_run_set(self, filename = None):
-		if filename is None:
-			print("ERROR: filename not given")
-			return
-		
-		runs = set()		
-		with open(filename) as f:
-			lines = f.readlines()
-			for line in lines:
-				p,i,j,k = [eval(x) for x in line.strip("\n").split("_")]
-				runs.add((p,i,j,k))
-		return runs
-
-	def _save_run_set(self, runs = None, filename = None):
-		if runs is None:
-			print("ERROR: runs not given")
-			return
-		if filename is None:
-			print("ERROR: filename not given")
-			return
-
-		f = open(filename, 'w')
-		for p,i,j,k in runs:
-			f.write(f"{p}_{i}_{j}_{k}\n")
-		f.close()

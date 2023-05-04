@@ -20,7 +20,7 @@ class myro_read(object):
 		self._gr_type = "Normalised"
 		if opened and not self.verify:		
 			self._verify_run()
-		self.eqbm = self.pyro = None
+		self.eqbm = None
 	
 	def __getitem__(self, key):
 		if key not in ["Miller", "Ideal", "Gyro", "Viking", "Fixed_delt", "Epar","psiNs","eparN","eparN_all"]:
@@ -61,21 +61,19 @@ class myro_read(object):
 			print(f"{key} Not Found")
 			
 	def __len__(self):
-		return len(self.run['inputs']['psiNs'])*self.run['inputs']['n_beta']*self.run['inputs']['n_shat']*len(self.run['inputs']['aky_values'])
+		return len(self['psiNs'])*self['n_beta']*self['n_shat']*len(self['aky_values'])
 	
-	@property	
 	def data(self):
         	for key, val in self.run['data'].items():
         		print(key)
-	@property
 	def inputs(self):
         	for key, val in self.run['inputs'].items():
         		print(f"{key} = {val}")
-	@property
+
 	def info(self):
 		for key, val in self.run['info'].items():
         		print(f"{key} = {val}")
-	@property
+
 	def keys(self):
 		print("Data Keys:")
 		for key in self.run['data'].keys():
@@ -86,10 +84,6 @@ class myro_read(object):
 		print("\nRun Info Keys:")
 		for key in self.run['info'].keys():
 			print(key)
-	@property
-	def help(self):
-		#Needs Updating, split into help and _help
-		print("Available Commands:\n\nkeys(): List available dictionary keys.\n\ninputs(): List inputs used for run.\n\ninfo(): List run information\n\data(): List available data keys.\n\ntemplate_file(): Print gyrokinetics template file.\n\nplot_scan(): Display S-Alpha plot for growth rate and mode frequency for each flux surface. Uses gyrokinetic data with options to overlay ideal_ball data and parities.\n\nplot_ideal():Display S-Alpha plot for ideal_ball stability only.\n\nplot_omega(): Display the complext frequency as a function of time for specific runs\n\nplot_phi(): Display the electric potential as a function of ballooning angle for specific runs\n\nplot_apar(): Display the parallel magnetic potential as a function of ballooning angle for specific runs.\n\nplot_phi2(): Display the electrostatic potential squared and averaged over theta, kx and ky, as a function of time for specific runs.\n\n_open_file(): Opens and reads data files. Arguments: filename - Name of data file, defaults to stored self.filename; directory - Location of data file, defaults to stored self.directory.")
 		
 	def _print_file(self, filetype = ''):
 		if self.run['files'] is None:
@@ -100,11 +94,12 @@ class myro_read(object):
 			print("ERROR: filetype not given")
 			return
 		if filetype in ['template_file', 'template', 'gk_template']:
-			lines = self.run['files']['template_file']
+			print(self['template_file'])
+			return
 		elif filetype in ['eq','eq_file','geqdsk','geqdsk_file']:
-			lines = self.run['files']['eq_file']
+			lines = self['eq_file']
 		elif filetype in ['kin','kin_file','kinetics','kinetics_file','peqdsk','peqdsk_file']:
-			lines = self.run['files']['kin_file']
+			lines = self['kin_file']
 		else:
 			print(f"ERROR: File Type {filetype} Not Found")
 			return
@@ -112,13 +107,13 @@ class myro_read(object):
 			print("ERROR: File Not Found")
 		for line in lines:
 			print(line,end='')
-	@property	
+
 	def template_file(self):
 		self._print_file(filetype = 'template')
-	@property
+
 	def eq_file(self):
 		self._print_file(filetype = 'eq')
-	@property
+
 	def kin_file(self):
 		self._print_file(filetype = 'kin')
 		
@@ -131,14 +126,14 @@ class myro_read(object):
 			print("ERROR: filetype not given")
 			return
 		if filetype in ['template_file', 'template', 'gk_template']:
-			lines = self.run['files']['template_file']
-			name = self.run['info']['template_file_name']
+			lines = self['template_file']
+			name = self['template_file_name']
 		elif filetype in ['eq','eq_file','geqdsk','geqdsk_file']:
-			lines = self.run['files']['eq_file']
-			name = self.run['info']['eq_file_name']
+			lines = self['eq_file']
+			name = self['eq_file_name']
 		elif filetype in ['kin','kin_file','kinetics','kinetics_file','peqdsk','peqdsk_file']:
-			lines = self.run['files']['kin_file']
-			name = self.run['info']['kin_file_name']
+			lines = self['kin_file']
+			name = self['kin_file_name']
 		else:
 			print(f"ERROR: File Type {filetype} Not Found")
 			return
@@ -175,7 +170,7 @@ class myro_read(object):
 			directory = self.directory
 			
 		if filename is None:
-			filename = self.run['info']['input_file']
+			filename = self['input_file']
 		if "." not in filename:
 			filename = filename + ".in"
 		
@@ -252,7 +247,7 @@ class myro_read(object):
 	
 	def _save_file(self, filename = None, directory = "./"):
 		if filename == None:
-			filename = self.run['info']['run_name']
+			filename = self['run_name']
 		savez(f"{directory}/{filename}", inputs = self.run['inputs'], data = self.run['data'], run_info = self.run['info'], files = self.run['files'], verify = self.verify)
 		
 	def _remove_akys(self, akys = None, ids = None):
@@ -262,22 +257,22 @@ class myro_read(object):
 		if akys:
 			ids = []
 			for aky in akys:
-				ids.append(self.run['inputs']['aky_values'].index(aky))
-		grs = array(self.run['data']['growth_rates_all'])
+				ids.append(self['aky_values'].index(aky))
+		grs = array(self['growth_rates_all'])
 		for idx in ids:
 			grs[:,:,:,idx] = nan
-		self.run['data']['growth_rates_all'] = grs.tolist()
+		self['growth_rates_all'] = grs.tolist()
 		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 		
 	def _verify_run(self):
-		if not self.run['inputs']['Gyro']:
+		if not self['Gyro']:
 			return
 		self.verify = verify_scan(scan = self.run)
-		self.run['data']['growth_rates_all'] = self.verify.new_data['gra']
-		self.run['data']['mode_frequncies_all'] = self.verify.new_data['mfa']
-		self.run['data']['phi2'] = self.verify.scan['data']['phi2']
-		self.run['data']['omega'] = self.verify.scan['data']['omega']
-		self.run['data']['time'] = self.verify.scan['data']['time']
+		self['growth_rates_all'] = self.verify.new_data['gra']
+		self['mode_frequncies_all'] = self.verify.new_data['mfa']
+		self['phi2'] = self.verify.scan['data']['phi2']
+		self['omega'] = self.verify.scan['data']['omega']
+		self['time'] = self.verify.scan['data']['time']
 		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 	
 	def _reset_data(self):
@@ -289,10 +284,10 @@ class myro_read(object):
 		self._convert_gr(gr_type = "Normalised", doPrint = False)
 		
 	def _convert_gr(self, gr_type = None, doPrint = True):
-		GR = full((len(self.run['inputs']['psiNs']),self.run['inputs']['n_beta'],self.run['inputs']['n_shat']),None).tolist()
-		MF = full((len(self.run['inputs']['psiNs']),self.run['inputs']['n_beta'],self.run['inputs']['n_shat']),None).tolist()
-		KY = full((len(self.run['inputs']['psiNs']),self.run['inputs']['n_beta'],self.run['inputs']['n_shat']),None).tolist()
-		SYM = full((len(self.run['inputs']['psiNs']),self.run['inputs']['n_beta'],self.run['inputs']['n_shat']),None).tolist()
+		GR = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
+		MF = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
+		KY = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
+		SYM = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
 		
 		if gr_type is None:
 			if self._gr_type == "Unnormalised":
@@ -303,78 +298,78 @@ class myro_read(object):
 				gr_type = "Unnormalised"
 
 		if gr_type == "Absolute":
-			for psiN in range(len(self.run['inputs']['psiNs'])):
-				for i in range(self.run['inputs']['n_beta']):
-					for j in range(self.run['inputs']['n_shat']):
-						nonan = [x for x in self.run['data']['growth_rates_all'][psiN][i][j] if (str(x) != 'nan')]
+			for psiN in range(len(self['psiNs'])):
+				for i in range(self['n_beta']):
+					for j in range(self['n_shat']):
+						nonan = [x for x in self['growth_rates_all'][psiN][i][j] if (str(x) != 'nan')]
 						if len(nonan) != 0:
-							idx = array(self.run['data']['growth_rates_all'][psiN][i][j]).tolist().index(max(nonan))
-							GR[psiN][i][j] = self.run['data']['growth_rates_all'][psiN][i][j][idx]
-							MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
-							KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
-							SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
+							idx = array(self['growth_rates_all'][psiN][i][j]).tolist().index(max(nonan))
+							GR[psiN][i][j] = self['growth_rates_all'][psiN][i][j][idx]
+							MF[psiN][i][j] = self['mode_frequencies_all'][psiN][i][j][idx]
+							KY[psiN][i][j] = self['aky_values'][idx]
+							SYM[psiN][i][j] = self['parities_all'][psiN][i][j][idx]
 						else:
 							GR[psiN][i][j] = nan
 							MF[psiN][i][j] = nan
-							KY[psiN][i][j] = self.run['inputs']['aky_values'][0]
+							KY[psiN][i][j] = self['aky_values'][0]
 							SYM[psiN][i][j] = 0
 							
-			self.run['data']['growth_rates'] = GR
-			self.run['data']['mode_frequencies'] = MF
-			self.run['data']['akys'] = KY
-			self.run['data']['parities'] = SYM
+			self['growth_rates'] = GR
+			self['mode_frequencies'] = MF
+			self['akys'] = KY
+			self['parities'] = SYM
 			self._gr_type = "Absolute"
 			if doPrint:
 				print("Converted Growth Rates To Absolute")
 		elif gr_type == "Normalised":
-			for psiN in range(len(self.run['inputs']['psiNs'])):
-				for i in range(self.run['inputs']['n_beta']):
-					for j in range(self.run['inputs']['n_shat']):
-						grns = array(self.run['data']['growth_rates_all'][psiN][i][j])/array(self.run['inputs']['aky_values'])**2
+			for psiN in range(len(self['psiNs'])):
+				for i in range(self['n_beta']):
+					for j in range(self['n_shat']):
+						grns = array(self['growth_rates_all'][psiN][i][j])/array(self['aky_values'])**2
 						grns = grns.tolist()
 						nonan = [x for x in grns if (str(x) != 'nan')]
 						if len(nonan) != 0:
 							idx = grns.index(max(nonan))
 							GR[psiN][i][j] = grns[idx]
-							MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
-							KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
-							SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
+							MF[psiN][i][j] = self['mode_frequencies_all'][psiN][i][j][idx]
+							KY[psiN][i][j] = self['aky_values'][idx]
+							SYM[psiN][i][j] = self['parities_all'][psiN][i][j][idx]
 						else:
 							GR[psiN][i][j] = nan
 							MF[psiN][i][j] = nan
-							KY[psiN][i][j] = self.run['inputs']['aky_values'][0]
+							KY[psiN][i][j] = self['aky_values'][0]
 							SYM[psiN][i][j] = 0
 							
-			self.run['data']['growth_rates'] = GR
-			self.run['data']['mode_frequencies'] = MF
-			self.run['data']['akys'] = KY
-			self.run['data']['parities'] = SYM
+			self['growth_rates'] = GR
+			self['mode_frequencies'] = MF
+			self['akys'] = KY
+			self['parities'] = SYM
 			self._gr_type = "Normalised"
 			if doPrint:
 				print("Converted Growth Rates To Normalised")
 		elif gr_type == "Unnormalised":
-			for psiN in range(len(self.run['inputs']['psiNs'])):
-				for i in range(self.run['inputs']['n_beta']):
-					for j in range(self.run['inputs']['n_shat']):
-						grns = array(self.run['data']['growth_rates_all'][psiN][i][j])/array(self.run['inputs']['aky_values'])**2
+			for psiN in range(len(self['psiNs'])):
+				for i in range(self['n_beta']):
+					for j in range(self['n_shat']):
+						grns = array(self['growth_rates_all'][psiN][i][j])/array(self['aky_values'])**2
 						grns = grns.tolist()
 						nonan = [x for x in grns if (str(x) != 'nan')]
 						if len(nonan) != 0:
 							idx = grns.index(max(nonan))
-							GR[psiN][i][j] = self.run['data']['growth_rates_all'][psiN][i][j][idx]
-							MF[psiN][i][j] = self.run['data']['mode_frequencies_all'][psiN][i][j][idx]
-							KY[psiN][i][j] = self.run['inputs']['aky_values'][idx]
-							SYM[psiN][i][j] = self.run['data']['parities_all'][psiN][i][j][idx]
+							GR[psiN][i][j] = self['growth_rates_all'][psiN][i][j][idx]
+							MF[psiN][i][j] = self['mode_frequencies_all'][psiN][i][j][idx]
+							KY[psiN][i][j] = self['aky_values'][idx]
+							SYM[psiN][i][j] = self['parities_all'][psiN][i][j][idx]
 						else:
 							GR[psiN][i][j] = nan
 							MF[psiN][i][j] = nan
-							KY[psiN][i][j] = self.run['inputs']['aky_values'][0]
+							KY[psiN][i][j] = self['aky_values'][0]
 							SYM[psiN][i][j] = 0
 						
-			self.run['data']['growth_rates'] = GR
-			self.run['data']['mode_frequencies'] = MF
-			self.run['data']['akys'] = KY
-			self.run['data']['parities'] = SYM
+			self['growth_rates'] = GR
+			self['mode_frequencies'] = MF
+			self['akys'] = KY
+			self['parities'] = SYM
 			self._gr_type = "Unnormalised"
 			if doPrint:
 				print("Converted Growth Rates To Unnormalised")
@@ -412,21 +407,28 @@ class myro_read(object):
 	def plot_theta(self, init = [0,0,0,0], aky = True, var = 0):
 		Plotters['Theta'](scan = self.run, var = var, init = init, aky = aky)
 	
-	def load_equillibrium(self, eq_file = None, kin_file = None, kinetics_type = None, directory = None):
+	def plot_eq(self):
+		self.eqbm.plot_eq()
+	
+	def load_equillibrium(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None):
 		from .equillibrium import equillibrium
 		if directory is None:
 			directory = self.directory
 		if eq_file is None:
-			eq_file = self.run['info']['eq_file_name']
+			eq_file = self['eq_file_name']
 			if not os.path.exists(f"{os.path.join(directory,eq_file)}"):
 				self.write_eq_file(filename = eq_file, directory = directory)
 		if kin_file is None:
-			kin_file = self.run['info']['kin_file_name']
+			kin_file = self['kin_file_name']
 			if not os.path.exists(f"{os.path.join(directory,kin_file)}"):
 				self.write_kin_file(filename = kin_file, directory = directory)
 		if kinetics_type is None:
-			kinetics_type = self.run['info']['kinetics_type']
-		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
+			kinetics_type = self['kinetics_type']
+		if template_file is None:
+			template_file = self['template_file_name']
+			if not os.path.exists(f"{os.path.join(directory,template_file)}"):
+				self.write_template_file(filename = template_file, directory = directory)
+		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory)
 	
 	def write_gs2_input(self, indexes = None, filename = None, eq_file = None, kin_file = None, template_file = None, directory = None):
 		import f90nml
@@ -444,65 +446,16 @@ class myro_read(object):
 		p,i,j,k = indexes
 		if filename is None:
 			filename = f"{p}_{i}_{j}_{k}.in"
+		psiN = self['psiNs'][p]
+		bp = self['beta_prime_axis'][p][i]
+		sh = self['shear_axis'][p][j]
+		aky = self['akyv'][k]
 		
 		if self.eqbm is None:
 			self.load_equillibrium(eq_file = eq_file, kin_file = kin_file, directory = directory)
-		
-		if template_file is None and self.run['files']['template_file'] is not None:	
-			template_file = self.run['info']['template_file_name']
-			if not os.path.exists(f"{os.path.join(directory,template_file)}"):
-				self.write_template_file(filename = template_file, directory = directory)
-
-		if self.pyro is None:
-			self.pyro = self.eqbm.load_pyro(template_file = template_file, directory = directory)
 	
-		self.pyro.gk_code = "GS2"
-		self.pyro.load_local_geometry(self.run['inputs']['psiNs'][p])
-		self.pyro.load_local_species(self.run['inputs']['psiNs'][p])
-		self.pyro.write_gk_file(os.path.join(directory,filename))
-		nml = self.pyro._gk_input_record["GS2"].data
-			
-		if self.run['inputs']['Miller']:
-			nml['theta_grid_eik_knobs']['iflux'] = 0
-			nml['theta_grid_eik_knobs']['local_eq'] = True
-		else:
-			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.eqbm._eq_path,self.eqbm.eq_name)
-			nml['theta_grid_eik_knobs']['efit_eq'] =  True
-			nml['theta_grid_eik_knobs']['iflux'] = 1
-			nml['theta_grid_eik_knobs']['local_eq'] = False
-		
-		if self.run['inputs']['Epar']:
-			nml['gs2_diagnostics_knobs']['write_final_epar'] = True
-		else:
-			nml['gs2_diagnostics_knobs']['write_final_epar'] = False
-		
-		bp = -self.run['data']['beta_prime_axis'][p][i]
-		sh = self.run['data']['shear_axis'][p][j]
-		
-		nml['theta_grid_eik_knobs']['s_hat_input'] = sh
-		nml['theta_grid_eik_knobs']['beta_prime_input'] = bp
-		nml['kt_grids_single_parameters']['aky'] = self.run['inputs']['aky_values'][k]
-		beta = nml['parameters']['beta']
-		
-		bp_cal = 0
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			bp_cal += (nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']	
-		bp_cal = bp_cal*beta*-1	
-		mul = bp/bp_cal
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			nml[spec]['tprim'] = nml[spec]['tprim']*mul
-			nml[spec]['fprim'] = nml[spec]['fprim']*mul
-		if self.run['inputs']['Fixed_delt'] is False:
-			delt = 0.04/self.run['inputs']['aky_values'][k]
-			if delt > 0.1:
-				delt = 0.1
-			nml['knobs']['delt'] = delt
-								
-		if 'namelist_differences' in self.run['files'].keys() and self.run['files']['namelist_differences'] is not None:
-			if self.run['files']['namelist_differences'][p][i][j][k]:
-				for key in self.run['files']['namelist_differences'][p][i][j][k].keys():
-					for skey in self.run['files']['namelist_differences'][p][i][j][k][key].keys():
-						nml[key][skey] = self.run['files']['namelist_differences'][p][i][j][k][key][skey]
+		namelist_diff = self['namelist_diffs'][p][i][j][k]
+		nml = self.eqbm.get_gyro_input(psiN = psiN, bp = bp, sh = sh, aky = aky, namelist_diff = namelist_diff)
 		
 		nml.write(os.path.join(directory,filename), force=True)
 		print(f"Created {filename} at {directory}")
@@ -511,7 +464,7 @@ class myro_read(object):
 		if (mf is None or mferr is None) and (mfmax is None or mfmin is None):
 			print("ERROR: insufficient mf specifications")
 			return
-		mfs = array(self.run['data']['mode_frequencies_all'])[psi_id,:,:,ky_id].tolist()
+		mfs = array(self['mode_frequencies_all'])[psi_id,:,:,ky_id].tolist()
 		if type(mf) == list:
 			mf = mfs[mf[0]][mf[1]]
 		if mfmax is None:
@@ -519,8 +472,8 @@ class myro_read(object):
 		if mfmin is None:
 			mfmin = mf - mferr
 		runs = set()
-		for i in range(self.run['inputs']['n_beta']):
-			for j in range(self.run['inputs']['n_shat']):
+		for i in range(self['n_beta']):
+			for j in range(self['n_shat']):
 				if mfmin < mfs[i][j] and mfmax > mfs[i][j]:
 					runs.add((psi_id,i,j,ky_id))
 		return runs
