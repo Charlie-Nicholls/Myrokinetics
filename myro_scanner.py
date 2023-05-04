@@ -622,7 +622,8 @@ class myro_scan(object):
 		for p, i, j, k in cancelled:
 			if os.path.exists(f"{directory}/{self.inputs['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
 				os.remove(f"{directory}/{self.inputs['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc")
-		self._run_gyro(directory = directory, specificRuns = cancelled)
+		self._make_gyro_files(directory = directory, specificRuns = cancelled)
+		self._run_jobs()
 		
 	def check_cancelled(self, directory = None, doPrint = True):
 		if self.info is None:
@@ -642,17 +643,19 @@ class myro_scan(object):
 			for line in lines:
 				if "_old.slurm" not in line:
 					ids = line.split("/")[-1].strip("\n").strip(".slurm").split("_")
-					if len(ids) == 4:
-						p, i, j, k = [eval(x) for x in ids]
+					psiN = eval(line.split("/")[-3])
+					p = self['psiNs'].index(psiN)
+					if len(ids) == 3:
+						i, j, k = [eval(x) for x in ids]
 						cancelled.add((p,i,j,k))
-					elif len(ids) == 3:
+					elif len(ids) == 2:
 						f = open(line.strip("\n"))
 						lins = f.readlines()
 						f.close()
 						for l in lins:
 							if ".in" in l:
 								inp = l.split("/")[-1].split(".")[0]
-						p, i, j, k = [eval(x) for x in inp.split("_")]
+						i, j, k = [eval(x) for x in inp.split("_")]
 						for ki in range(k, len(self.inputs['aky_values'])):
 							cancelled.add((p,i,j,ki))
 		if doPrint:		
@@ -1024,7 +1027,8 @@ class myro_scan(object):
 			else:
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self._template_lines['knobs']['delt']/10
 		self.info['itteration'] += 1
-		self._run_gyro(specificRuns = specificRuns)
+		self._make_gyro_files(specificRuns = specificRuns)
+		self._run_jobs
 	
 	def rerun(self, specificRuns = None, nml = None, directory = None):
 		if specificRuns is None:
@@ -1040,7 +1044,8 @@ class myro_scan(object):
 			self.namelist_diffs[p][i][j][k] = nml
 		if self.info:
 			self.info['itteration'] += 1
-		self._run_gyro(specificRuns = specificRuns, directory = directory)
+		self._make_gyro_files(specificRuns = specificRuns, directory = directory)
+		self.run_jobs()
 	
 	def _load_run_set(self, filename = None):
 		if filename is None:
