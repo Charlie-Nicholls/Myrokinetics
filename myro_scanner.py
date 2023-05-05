@@ -313,17 +313,17 @@ class myro_scan(object):
 			else:
 				jobfile = open(f"{run_path}/{psiN}.job",'w')
 				jobfile.write(f"""#!/bin/bash
-				#SBATCH --time=05:00:00
-				#SBATCH --job-name={self.info['run_name']}
-				#SBATCH --ntasks=1
-				#SBATCH --output={run_path}/{psiN}.slurm
-				
-				{modules}
-				
-				which gs2
-				gs2 --build-config
-				
-				ideal_ball \"{run_path}/{psiN}.in\"""")
+#SBATCH --time=05:00:00
+#SBATCH --job-name={self.info['run_name']}
+#SBATCH --ntasks=1
+#SBATCH --output={run_path}/{psiN}.slurm
+
+{modules}
+
+which gs2
+gs2 --build-config
+
+ideal_ball \"{run_path}/{psiN}.in\"""")
 				jobfile.close()
 				self.jobs.append(f"sbatch \"{run_path}/{psiN}.job\"")
 				
@@ -415,20 +415,20 @@ class myro_scan(object):
 							elif not group_runs:
 								jobfile = open(f"{sub_path}/{fol}_{k}.job",'w')
 								jobfile.write(f"""#!/bin/bash
-								#SBATCH --time=24:00:00
-								#SBATCH --job-name={self.info['run_name']}
-								#SBATCH --ntasks=1
-								#SBATCH --output={sub_path}/{fol}_{k}.slurm
-								
-								{modules}
-								
-								which gs2
-								gs2 --build-config
-								
-								echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
-								echo \"Input: {sub_path}/{fol}_{k}.in\"
-								gs2 \"{sub_path}/{fol}_{k}.in\"
-								echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
+#SBATCH --time=24:00:00
+#SBATCH --job-name={self.info['run_name']}
+#SBATCH --ntasks=1
+#SBATCH --output={sub_path}/{fol}_{k}.slurm
+
+{modules}
+
+which gs2
+gs2 --build-config
+
+echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
+echo \"Input: {sub_path}/{fol}_{k}.in\"
+gs2 \"{sub_path}/{fol}_{k}.in\"
+echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 								jobfile.close()
 								self.jobs.append(f"sbatch \"{sub_path}/{fol}_{k}.job\"")
 							else:
@@ -443,21 +443,21 @@ class myro_scan(object):
 							hours = 36
 						jobfile = open(f"{sub_path}/{fol}.job",'w')
 						jobfile.write(f"""#!/bin/bash
-						#SBATCH --time={hours}:00:00
-						#SBATCH --job-name={self.info['run_name']}
-						#SBATCH --ntasks=1
-						#SBATCH --output={sub_path}/{fol}.slurm
-						
-						{modules}
-						
-						which gs2
-						gs2 --build-config""")
+#SBATCH --time={hours}:00:00
+#SBATCH --job-name={self.info['run_name']}
+#SBATCH --ntasks=1
+#SBATCH --output={sub_path}/{fol}.slurm
+
+{modules}
+
+which gs2
+gs2 --build-config""")
 						for k in group_kys:
 							jobfile.write(f"""
-							echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
-							echo \"Input: {sub_path}/{fol}_{k}.in\"
-							gs2 \"{sub_path}/{fol}_{k}.in\"
-							echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
+echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
+echo \"Input: {sub_path}/{fol}_{k}.in\"
+gs2 \"{sub_path}/{fol}_{k}.in\"
+echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 						jobfile.close()
 						self.jobs.append(f"sbatch \"{sub_path}/{fol}.job\"")
 
@@ -627,26 +627,26 @@ class myro_scan(object):
 			self._save_for_save(filename = "save_info", directory = directory)
 			job = open(f"save_out.job",'w')
 			job.write(f"""#!/bin/bash
-			#SBATCH --time=36:00:00
-			#SBATCH --job-name={self.info['run_name']}
-			#SBATCH --ntasks=1
-			#SBATCH --mem=10gb
-			#SBATCH --output=save_out.slurm
-			
-			{save_modules}
-			
-			python {directory}/save_out.py""")
+#SBATCH --time=36:00:00
+#SBATCH --job-name={self.info['run_name']}
+#SBATCH --ntasks=1
+#SBATCH --mem=10gb
+#SBATCH --output=save_out.slurm
+
+{save_modules}
+
+python {directory}/save_out.py""")
 			job.close()
 			pyth = open(f"save_out.py",'w')
 			pyth.write(f"""from Myrokinetics import myro_scan
-			from numpy import load
-			with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
-			\tnd = obj['name_diffs']
-			\tinfo = obj['info'].item()
-			\trun = myro_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")
-			\trun.info = info
-			\trun.namelist_diffs = nd
-			\trun.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})""")
+from numpy import load
+with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
+	nd = obj['name_diffs']
+	info = obj['info'].item()
+	run = myro_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")
+	run.info = info
+	run.namelist_diffs = nd
+	run.save_out(filename = \"{filename}\", directory = \"{directory}\",VikingSave = True,QuickSave = {QuickSave})""")
 			pyth.close()
 			os.system(f"sbatch \"save_out.job\"")
 			os.chdir(f"{self.path}")
