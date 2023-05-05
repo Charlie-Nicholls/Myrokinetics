@@ -261,18 +261,18 @@ class myro_read(object):
 		grs = array(self['growth_rates_all'])
 		for idx in ids:
 			grs[:,:,:,idx] = nan
-		self['growth_rates_all'] = grs.tolist()
+		self.run['data']['growth_rates_all'] = grs.tolist()
 		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 		
 	def _verify_run(self):
 		if not self['Gyro']:
 			return
 		self.verify = verify_scan(scan = self.run)
-		self['growth_rates_all'] = self.verify.new_data['gra']
-		self['mode_frequncies_all'] = self.verify.new_data['mfa']
-		self['phi2'] = self.verify.scan['data']['phi2']
-		self['omega'] = self.verify.scan['data']['omega']
-		self['time'] = self.verify.scan['data']['time']
+		self.run['data']['growth_rates_all'] = self.verify.new_data['gra']
+		self.run['data']['mode_frequncies_all'] = self.verify.new_data['mfa']
+		self.run['data']['phi2'] = self.verify.scan['data']['phi2']
+		self.run['data']['omega'] = self.verify.scan['data']['omega']
+		self.run['data']['time'] = self.verify.scan['data']['time']
 		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 	
 	def _reset_data(self):
@@ -314,10 +314,10 @@ class myro_read(object):
 							KY[psiN][i][j] = self['aky_values'][0]
 							SYM[psiN][i][j] = 0
 							
-			self['growth_rates'] = GR
-			self['mode_frequencies'] = MF
-			self['akys'] = KY
-			self['parities'] = SYM
+			self.run['data']['growth_rates'] = GR
+			self.run['data']['mode_frequencies'] = MF
+			self.run['data']['akys'] = KY
+			self.run['data']['parities'] = SYM
 			self._gr_type = "Absolute"
 			if doPrint:
 				print("Converted Growth Rates To Absolute")
@@ -340,10 +340,10 @@ class myro_read(object):
 							KY[psiN][i][j] = self['aky_values'][0]
 							SYM[psiN][i][j] = 0
 							
-			self['growth_rates'] = GR
-			self['mode_frequencies'] = MF
-			self['akys'] = KY
-			self['parities'] = SYM
+			self.run['data']['growth_rates'] = GR
+			self.run['data']['mode_frequencies'] = MF
+			self.run['data']['akys'] = KY
+			self.run['data']['parities'] = SYM
 			self._gr_type = "Normalised"
 			if doPrint:
 				print("Converted Growth Rates To Normalised")
@@ -366,10 +366,10 @@ class myro_read(object):
 							KY[psiN][i][j] = self['aky_values'][0]
 							SYM[psiN][i][j] = 0
 						
-			self['growth_rates'] = GR
-			self['mode_frequencies'] = MF
-			self['akys'] = KY
-			self['parities'] = SYM
+			self.run['data']['growth_rates'] = GR
+			self.run['data']['mode_frequencies'] = MF
+			self.run['data']['akys'] = KY
+			self.run['data']['parities'] = SYM
 			self._gr_type = "Unnormalised"
 			if doPrint:
 				print("Converted Growth Rates To Unnormalised")

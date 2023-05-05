@@ -159,14 +159,14 @@ class myro_scan(object):
 		if gyro is None:
 			gyro = self['Gyro']
 		elif type(gyro) == bool:	
-			self['Gyro'] = gyro
+			self.inputs['Gyro'] = gyro
 		else:
 			print("ERROR: gyro must be boolean")
 			return
 		if ideal is None:
 			ideal = self['Ideal']
 		elif type(ideal) == bool:
-			self['Ideal'] = ideal
+			self.inputs['Ideal'] = ideal
 		else:
 			print("ERROR: ideal must be boolean")
 			return
@@ -196,14 +196,14 @@ class myro_scan(object):
 		if gyro is None:
 			gyro = self['Gyro']
 		elif type(gyro) == bool:	
-			self['Gyro'] = gyro
+			self.inputs['Gyro'] = gyro
 		else:
 			print("ERROR: gyro must be boolean")
 			return False
 		if ideal is None:
 			ideal = self['Ideal']
 		elif type(ideal) == bool:
-			self['Ideal'] = ideal
+			self.inputs['Ideal'] = ideal
 		else:
 			print("ERROR: ideal must be boolean")
 			return False
@@ -220,19 +220,19 @@ class myro_scan(object):
 			
 		empty_elements = []
 		if type(self['psiNs']) in [int,float]:
-			self['psiNs'] = [self['psiNs']]
+			self.inputs['psiNs'] = [self['psiNs']]
 		elif self['psiNs'] is None:
 			empty_elements.append('psiNs')
 		else:
-			self['psiNs'].sort()
+			self.inputs['psiNs'].sort()
 		
 		if gyro:
 			if type(self['aky_values']) in [int,float]:
-				self['aky_values'] = [self['aky_values']]
+				self.inputs['aky_values'] = [self['aky_values']]
 			elif self['aky_values'] is None:
 				empty_elements.append('aky_values')
 			else:
-				self['aky_values'].sort()
+				self.inputs['aky_values'].sort()
 
 		if self['beta_min'] is None and self['beta_div'] is None:
 			empty_elements.append('beta_min/beta_div')
@@ -251,7 +251,7 @@ class myro_scan(object):
 		elif gyro and not self['n_shat']:
 			empty_elements.append('n_shat')
 		elif ideal and not self['n_shat_ideal']:
-			self['n_shat_ideal'] = self['n_shat']
+			self.inputs['n_shat_ideal'] = self['n_shat']
 			print("n_shat_ideal is empty, setting equal to n_shat")
 		
 		if self['n_beta_ideal'] is None and self['n_beta'] is None:
@@ -262,7 +262,7 @@ class myro_scan(object):
 		elif gyro and not self['n_beta']:
 			empty_elements.append('n_beta')
 		elif ideal and not self['n_beta_ideal']:
-			self['n_beta_ideal'] = self['n_beta']
+			self.inputs['n_beta_ideal'] = self['n_beta']
 			print("n_beta_ideal is empty, setting equal to n_beta")
 		
 		if empty_elements:
@@ -290,7 +290,7 @@ class myro_scan(object):
 			self.jobs.remove(job)
 	
 	def _make_ideal_files(self, directory = None, checkSetup = True):
-		self['Ideal'] = True
+		self.inputs['Ideal'] = True
 		if checkSetup:
 			if not self._check_setup():
 				return
