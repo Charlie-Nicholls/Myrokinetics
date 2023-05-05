@@ -1,18 +1,19 @@
 import os
 import f90nml
 from .templates import template_dir, gs2_template
+from copy import deepcopy
 
 class equillibrium(object):
 	
-	def __init__(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None, inputs = None):
+	def __init__(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None, inputs = {}):
 		self.eq_name = eq_file
 		self.kin_name = kin_file
-		self.template_file = template_file
+		self.template_name = template_file
 		self.kinetics_type = kinetics_type
 		self.path = directory
 		self.eq_data = self.kin_data = self.pyro = self._eq_path = self._kin_path = self._eq_lines = self._kin_lines = self.beta_prime_profile = self.shear_profile = None
 		self.surface_namelists = {}
-		self.inputs = inputs
+		self.inputs = {}
 		self._inputs = {
 		'shat_min': 0,
 		'shat_max': 10,
@@ -33,6 +34,8 @@ class equillibrium(object):
 			self.load_geqdsk()
 		if kin_file:
 			self.load_kinetics()
+		if inputs:
+			self.load_inputs(inputs)
 
 	def load_geqdsk(self, eq_file = None, directory = None):
 		from .geqdsk_reader import geqdsk
@@ -143,18 +146,17 @@ class equillibrium(object):
 		 	eq_type = "GEQDSK",
 		 	kinetics_file = kin_file,
 		 	kinetics_type = self.kinetics_type,
-		 	gk_file = Path(directory) / self.template_file)
+		 	gk_file = Path(directory) / self.template_name)
 		self.pyro.gk_code = "GS2"
 		
 	def load_inputs(self, inputs):
 		self.surface_namelists = {}
 		for key, val in inputs.items():
 			if key in self._inputs.keys():
-				self.edit_inputs(key=key,val=val)
+				self.inputs[key] = val
 	
 	def edit_inputs(self, key = None, val = None):
-		if self.inputs is None:
-			self.inputs = self._inputs.copy()
+		self.surface_namelists = {}
 		if key is not None and key not in self._inputs.keys():
 			print(f"ERROR: {key} is not a valid key. Valid keys: {self.inputs.keys()}")
 			return
@@ -166,10 +168,13 @@ class equillibrium(object):
 		else:
 			keys = self._inputs.keys()
 		for key in keys:
-			if self.inputs[key] is None:
-				val = input(f"Input value for {key} (Current value: None): ")
+			if key in self.inputs.keys():
+				if self.inputs[key] is None:
+					val = input(f"Input value for {key} (Current value: None): ")
+				else:
+					val = input(f"Input value for {key} (Current value: {self.inputs[key]}): ")
 			else:
-				val = input(f"Input value for {key} (Current value: {self.inputs[key]}): ")
+				val = input(f"Input value for {key} (Current value: None): ")
 			if val != "":
 				self.inputs[key] = eval(val)
 
@@ -207,12 +212,32 @@ class equillibrium(object):
 	
 	def get_surface_input(self, psiN):
 		if psiN in self.surface_namelists.keys():
-			return self.surface_namelists[psiN].copy()
+			return deepcopy(self.surface_namelists[psiN])
 		if self.pyro is None:
 			self.load_pyro()
-		if self.inputs is None:
-			print("Warning: No input dictonary given, using default")
-			self.inputs = self._inputs.copy()
+		if self.inputs.keys() != self._inputs.keys():
+			idiff = [x for x in self._inputs.keys() if x not in self.inputs.keys()]
+			if 'beta_min' not in idiff and 'beta_div' in idiff:
+				idiff.remove('beta_div')
+			if 'beta_max' not in idiff and 'beta_mul' in idiff:
+				idiff.remove('beta_mul')
+			if 'shear_min' not in idiff and 'shear_div' in idiff:
+				idiff.remove('shear_div')
+			if 'shear_max' not in idiff and 'shear_mul' in idiff:
+				idiff.remove('shear_mul')
+			if 'beta_min' in idiff and 'beta_div' not in idiff:
+				idiff.remove('beta_min')
+			if 'beta_max' in idiff and 'beta_mul' not in idiff:
+				idiff.remove('beta_max')
+			if 'shear_min' in idiff and 'shear_div' not in idiff:
+				idiff.remove('shear_min')
+			if 'shear_max' in idiff and 'shear_mul' not in idiff:
+				idiff.remove('shear_max')
+			
+			if idiff:
+				print("Warning: {idiff} input keys missing, using default")
+				for key in idiff:
+					self.inputs[key] = self._inputs[key]
 
 		self.pyro.load_local(psi_n=psiN)
 		self.pyro.update_gk_code()
@@ -286,7 +311,7 @@ class equillibrium(object):
 		
 		self.surface_namelists[psiN] = nml
 		
-		return nml.copy()
+		return deepcopy(self.surface_namelists[psiN])
 				
 	def get_gyro_input(self, psiN, bp, sh, aky, namelist_diff = {}):
 		nml = self.get_surface_input(psiN)
@@ -296,7 +321,7 @@ class equillibrium(object):
 		nml['theta_grid_eik_knobs']['beta_prime_input'] = -1*abs(bp)
 		nml['kt_grids_single_parameters']['aky'] = aky
 	
-		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])**nml['parameters']['beta']*-1
+		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
 		
 		mul = beta_prim/bp_cal
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:

@@ -23,7 +23,7 @@ class myro_scan(object):
 			directory = os.getcwd() 
 		self.path = directory
 
-		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
+		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory)
 		
 		if input_file is not None:
 			self.load_inputs()
@@ -92,6 +92,8 @@ class myro_scan(object):
 					val = val+ "]"
 			if val != "":
 				self.inputs[key] = eval(val)
+
+		self.eqbm.load_inputs(self.inputs)
 	
 	def load_geqdsk(self, eq_file, directory = None):
 		self.eqbm.load_geqdsk(eq_file = eq_file, directory = directory)
@@ -132,6 +134,8 @@ class myro_scan(object):
 				
 				else:
 					self.inputs[key] = eval(val)
+
+		self.eqbm.load_inputs(self.inputs)
 			
 	def write_scan_input(self, filename = None, directory = "./"):
 		if directory is None and self.directory is None:
@@ -275,8 +279,11 @@ class myro_scan(object):
 		if not os.path.exists(self.info['data_path']):
 				os.mkdir(self.info['data_path'])
 
+		if not self.eqbm.pyro:
+			self.eqbm.load_pyro()
+
 		if self.template_name is not None:
-			os.system(f"cp \"{self._template_path}/{self.template_name}\" \"{self.info['data_path']}/{self.template_name}\"")
+			os.system(f"cp \"{self.eqbm._template_path}/{self.template_name}\" \"{self.info['data_path']}/{self.template_name}\"")
 		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{self.info['data_path']}/{self.eqbm.kin_name}\"")
 		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{self.info['data_path']}/{self.eqbm.eq_name}\"")
 		if self.input_name is not None:		
@@ -306,7 +313,7 @@ class myro_scan(object):
 			except:
 				pass
 			file_name = os.path.join(run_path, f"{psiN}.in")
-			nml = self.get_surface_input(psiN = psiN)
+			nml = self.eqbm.get_surface_input(psiN = psiN)
 			nml.write(f"{run_path}/{psiN}.in", force=True)
 			if not self['Viking']:
 				self.jobs.append(f"ideal_ball \"{run_path}/{psiN}.in\"")
@@ -341,10 +348,10 @@ ideal_ball \"{run_path}/{psiN}.in\"""")
 		else:
 			runs = specificRuns
 
-		if len(runs) > 10000:
+		if len(runs) > 5000:
 			group_runs = True
 		else:
-			group_runs = True#False
+			group_runs = False
 		
 		for p, psiN in enumerate(self['psiNs']):
 			run_path = os.path.join(directory, str(psiN))
@@ -352,8 +359,11 @@ ideal_ball \"{run_path}/{psiN}.in\"""")
 				os.mkdir(run_path)
 			except:
 				pass
-				
-			shear, beta_prim, beta, nml = self._make_fs_in(run_path=run_path, psiN=psiN)
+			
+			nml = self.eqbm.get_surface_input(psiN = psiN)
+			shear = nml['theta_grid_eik_knobs']['s_hat_input']
+			beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
+			beta =  nml['parameters']['beta']
 			
 			if self['beta_min'] is None:
 				beta_min = beta_prim/self['beta_div']
@@ -407,7 +417,7 @@ ideal_ball \"{run_path}/{psiN}.in\"""")
 							if os.path.exists(f"{sub_path}/{fol}.slurm"):
 								os.rename(f"{sub_path}/{fol}.slurm",f"{sub_path}/_{fol}_old.slurm")
 							
-							nml = self.eqbm.get_gyro_input(psiN = psiN, bp = bp, sh = sh, aky = aky, namelist_diff = self.namelist_diffs[p][i][j][k])
+							subnml = self.eqbm.get_gyro_input(psiN = psiN, bp = bp, sh = sh, aky = aky, namelist_diff = self.namelist_diffs[p][i][j][k])
 							subnml.write(f"{sub_path}/{fol}_{k}.in", force=True)
 							
 							if not self['Viking']:
@@ -415,7 +425,7 @@ ideal_ball \"{run_path}/{psiN}.in\"""")
 							elif not group_runs:
 								jobfile = open(f"{sub_path}/{fol}_{k}.job",'w')
 								jobfile.write(f"""#!/bin/bash
-#SBATCH --time=24:00:00
+#SBATCH --time=8:00:00
 #SBATCH --job-name={self.info['run_name']}
 #SBATCH --ntasks=1
 #SBATCH --output={sub_path}/{fol}_{k}.slurm
