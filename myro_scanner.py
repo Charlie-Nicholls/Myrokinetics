@@ -496,8 +496,8 @@ class myro_scan(object):
 			print("No Cancelled Runs")
 			return
 		for p, i, j, k in cancelled:
-			if os.path.exists(f"{directory}/{self['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
-				os.remove(f"{directory}/{self['psiNs'][p]}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc")
+			if os.path.exists(f"{directory}/{self['psiNs'][p]}/{i}_{j}/{i}_{j}_{k}.out.nc"):
+				os.remove(f"{directory}/{self['psiNs'][p]}/{i}_{j}/{i}_{j}_{k}.out.nc")
 		self._make_gyro_files(directory = directory, specificRuns = cancelled)
 		self._run_jobs()
 		
@@ -564,7 +564,7 @@ class myro_scan(object):
 				for i in range(self['n_beta']):
 					for j in range(self['n_shat']):
 						for k, aky in enumerate(self['aky_values']):
-							if os.path.exists(f"{directory}/{psiN}/{i}_{j}/{p}_{i}_{j}_{k}.out.nc"):
+							if os.path.exists(f"{directory}/{psiN}/{i}_{j}/{i}_{j}_{k}.out.nc"):
 								finished_gyro.add((p,i,j,k))
 							else:
 								unfinished_gyro.add((p,i,j,k))
