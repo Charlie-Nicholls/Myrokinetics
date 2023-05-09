@@ -899,8 +899,8 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		'bpar': bpar,
 		'phi2': phi2,
 		'time': time,
-		'theta': theta
-		'jacob': jacob
+		'theta': theta,
+		'jacob': jacob,
 		'gds2': gds2
 		}
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines, 'namelist_differences': self.namelist_diffs}
