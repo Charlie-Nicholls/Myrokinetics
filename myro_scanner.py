@@ -294,7 +294,7 @@ class myro_scan(object):
 	def _run_jobs(self):
 		for job in self.jobs:
 			os.system(job)
-			self.jobs.remove(job)
+		self.jobs = []
 	
 	def _make_ideal_files(self, directory = None, checkSetup = True):
 		self.inputs['Ideal'] = True
@@ -529,21 +529,22 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 			for line in lines:
 				if "_old.slurm" not in line:
 					ids = line.split("/")[-1].strip("\n").strip(".slurm").split("_")
-					psiN = eval(line.split("/")[-3])
-					p = self['psiNs'].index(psiN)
-					if len(ids) == 3:
-						i, j, k = [eval(x) for x in ids]
-						cancelled.add((p,i,j,k))
-					elif len(ids) == 2:
-						f = open(line.strip("\n"))
-						lins = f.readlines()
-						f.close()
-						for l in lins:
-							if ".in" in l:
-								inp = l.split("/")[-1].split(".")[0]
-						i, j, k = [eval(x) for x in inp.split("_")]
-						for ki in range(k, len(self['aky_values'])):
-							cancelled.add((p,i,j,ki))
+					if len(ids) != 1:
+						psiN = eval(line.split("/")[-3])
+						p = self['psiNs'].index(psiN)
+						if len(ids) == 3:
+							i, j, k = [eval(x) for x in ids]
+							cancelled.add((p,i,j,k))
+						elif len(ids) == 2:
+							f = open(line.strip("\n"))
+							lins = f.readlines()
+							f.close()
+							for l in lins:
+								if ".in" in l:
+									inp = l.split("/")[-1].split(".")[0]
+							i, j, k = [eval(x) for x in inp.split("_")]
+							for ki in range(k, len(self['aky_values'])):
+								cancelled.add((p,i,j,ki))
 		if doPrint:		
 			print(f"{len(cancelled)} Cancelled Runs")
 			return
@@ -695,6 +696,8 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				phi2 = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
 				time = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
 				theta = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+				jacob = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
+				gds2 = full((len(psiNs),self['n_beta'],self['n_shat'],len(self['aky_values'])),None).tolist()
 			else:
 				omega = phi = apar = bpar = phi2 = time = theta = None
 		
@@ -783,6 +786,14 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 										theta[p][i][j][k] = data['theta'].tolist()
 									except: 
 										print(f"Save Error {psiN}/{fol}/{fol}_{k}: theta")
+									try:
+										jacob[p][i][j][k] = data['jacob'].tolist()
+									except: 
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: jacob")
+									try:
+										gds2[p][i][j][k] = data['gds2'].tolist()
+									except: 
+										print(f"Save Error {psiN}/{fol}/{fol}_{k}: gds2")
 								
 								if self['Epar']:
 									epar_path = f"{run_path}/{fol}/{fol}_{k}.epar"
@@ -889,6 +900,8 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		'phi2': phi2,
 		'time': time,
 		'theta': theta
+		'jacob': jacob
+		'gds2': gds2
 		}
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines, 'namelist_differences': self.namelist_diffs}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = self.dat, run_info = self.info, files = self.file_lines)
@@ -938,10 +951,25 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			return
 		if not self.namelist_diffs:
 			self.namelist_diffs = [[[[{} for _ in range(len(self['aky_values']))] for _ in range(self['n_shat'])] for _ in range(self['n_beta'])] for _ in range(len(self['psiNs']))]
-			
+		
+		if type(nml) == str:
+			nml = f90nml.read(nml)
 		for p,i,j,k in specificRuns:
 			self.namelist_diffs[p][i][j][k] = nml
 		if self.info:
 			self.info['itteration'] += 1
 		self._make_gyro_files(specificRuns = specificRuns, directory = directory)
-		self.run_jobs()
+		self._run_jobs()
+	
+	def _load_run_set(self, filename = None):
+		if filename is None:
+			print("ERROR: filename not given")
+			return
+		
+		runs = set()		
+		with open(filename) as f:
+			lines = f.readlines()
+			for line in lines:
+				p,i,j,k = [eval(x) for x in line.strip("\n").split("_")]
+				runs.add((p,i,j,k))
+		return runs

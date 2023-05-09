@@ -335,8 +335,8 @@ class equillibrium(object):
 			nml['knobs']['delt'] = delt
 		
 		for key in namelist_diff.keys():
-			for skey in self.namelist_diff.keys():
-				nml[key][skey] = self.namelist_diff[key][skey]
+			for skey in namelist_diff[key].keys():
+				nml[key][skey] = namelist_diff[key][skey]
 			
 		return nml
 	

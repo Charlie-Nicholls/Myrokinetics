@@ -15,14 +15,15 @@ def plot_set(runs = None, var = None, variables = None, init = 0, aky_axis = Fal
 	def draw_fig(val):
 		ax[1].cla()
 		ax[0].cla()
-		psiN = psiNs[slider.val]
+		if psiNs:
+			psiN = psiNs[slider.val]
 		for run in runs.values():
 			if (not psiNs or run['psiN'] == psiN) and run['data'] is not None:
 				if options.get_status()[0] and akys:
 					col = colours[variables[var].index(run[var])%len(colours)]
 					mar = markers[variables[var].index(run[var])//len(markers)]
-					ax[1].plot(run['aky'],run['data'].run['gr'],marker=mar,c=col,label=str(run[var]))
-					ax[0].plot(run['aky'],run['data'].run['mf'],marker=mar,c=col,label=str(run[var]))
+					ax[1].plot(run['aky'],run['data'].gr,marker=mar,c=col,label=str(run[var]))
+					ax[0].plot(run['aky'],run['data'].mf,marker=mar,c=col,label=str(run[var]))
 				else:
 					aky = None
 					col = colours[0]
@@ -31,8 +32,8 @@ def plot_set(runs = None, var = None, variables = None, init = 0, aky_axis = Fal
 						aky = run['aky']
 						col = colours[akys.index(aky)%len(colours)]
 						mar = markers[akys.index(aky)//len(markers)]
-					ax[1].plot(run[var],run['data'].run['gr'],marker=mar,c=col,label=str(aky))
-					ax[0].plot(run[var],run['data'].run['mf'],marker=mar,c=col,label=str(aky))
+					ax[1].plot(run[var],run['data'].gr,marker=mar,c=col,label=str(aky))
+					ax[0].plot(run[var],run['data'].mf,marker=mar,c=col,label=str(aky))
 		if options.get_status()[0]:
 			ax[1].set_xlabel("aky")
 			if not akys:
@@ -44,7 +45,10 @@ def plot_set(runs = None, var = None, variables = None, init = 0, aky_axis = Fal
 			ax[1].set_xscale("log")
 		ax[1].set_ylabel("Growth Rate")
 		ax[0].set_ylabel("Mode Frequency")
-		fig.suptitle(f"{var} | psiN = {psiN}")
+		if psiNs:
+			fig.suptitle(f"{var} | psiN = {psiN}")
+		else:
+			fig.suptitle(f"{var}")
 		lin, han = ax[0].get_legend_handles_labels()
 		leg = dict(zip(han, lin))
 		if options.get_status()[0]:

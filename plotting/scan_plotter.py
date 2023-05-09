@@ -5,7 +5,7 @@ from matplotlib.widgets import Slider, CheckButtons
 from matplotlib.colors import LinearSegmentedColormap
 
 class plot_scan(object):
-	def __init__(self, scan = None, verify = None, aky = False, init = [0,0]):
+	def __init__(self, scan = None, verify = None, aky = False, init = [0,0], gr_type = "Normalised"):
 		if scan is None:
 			print("ERROR: no scan dictionary given")
 			return
@@ -137,11 +137,17 @@ class plot_scan(object):
 			ky = self.inputs['aky_values'][ky_idx]
 			z_gr = transpose(array(self.data['growth_rates_all'])[idx,:,:,ky_idx]).tolist()
 			z_mf = transpose(array(self.data['mode_frequencies_all'])[idx,:,:,ky_idx]).tolist()
-			self.ax[0].set_title(f"Growth Rate | PsiN: {psiN} | ky: {ky}")
+			if gr_type == "Normalised":
+				self.ax[0].set_title(f"Growth Rate/ky\u00b2 | PsiN: {psiN} | ky: {ky}")
+			else:
+				self.ax[0].set_title(f"Growth Rate | PsiN: {psiN} | ky: {ky}")
 		else:
 			z_gr = transpose(self.data['growth_rates'][idx]).tolist()
 			z_mf = transpose(self.data['mode_frequencies'][idx]).tolist()
-			self.ax[0].set_title(f"Growth Rate | PsiN: {psiN}")
+			if gr_type == "Normalised":
+				self.ax[0].set_title(f"Growth Rate/ky\u00b2 | PsiN: {psiN}")
+			else:
+				self.ax[0].set_title(f"Growth Rate | PsiN: {psiN}")
 		
 		if status[2]:
 			mfmax = self.mf_slider.val * abs(amax(array(self.data['mode_frequencies'])[isfinite(self.data['mode_frequencies'])]))/100

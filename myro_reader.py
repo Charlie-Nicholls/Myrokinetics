@@ -375,10 +375,10 @@ class myro_read(object):
 				print("Converted Growth Rates To Unnormalised")
 	
 	def plot_aky(self, init = [0,0]):
-		self.plots['aky'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = True, init = init)
+		self.plots['aky'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = True, init = init, gr_type = self._gr_type)
 		
 	def plot_scan(self, init = [0,0], aky = False):
-		self.plots['scan'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = aky, init = init)
+		self.plots['scan'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = aky, init = init, gr_type = self._gr_type)
 	
 	def plot_ideal(self, init = 0):
 		self.plots['ideal'] = Plotters['Ideal'](scan = self.run, init = init)
@@ -428,7 +428,7 @@ class myro_read(object):
 			template_file = self['template_file_name']
 			if not os.path.exists(f"{os.path.join(directory,template_file)}"):
 				self.write_template_file(filename = template_file, directory = directory)
-		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory)
+		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.run['inputs'])
 	
 	def write_gs2_input(self, indexes = None, filename = None, eq_file = None, kin_file = None, template_file = None, directory = None):
 		import f90nml
