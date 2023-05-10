@@ -53,6 +53,8 @@ class myro_read(object):
 			return self.run['inputs']['aky_values']
 		elif key in ["namelist_diffs", "nml_diffs", "namelist_diff", "nml_diff", "namelists", "nmls"]:
 			return self.run['files']['namelist_differences']
+		elif key in ["ql", "quasi linear", "quasi_linear"]:
+			return self.run['data']['quasilinear']
 			
 		elif key in self.verify._all_keys():
 			return self.verify[key]
@@ -222,7 +224,7 @@ class myro_read(object):
 		try:
 			data = data_in['data'].item()
 			possible_data = ['beta_prime_values','shear_values','beta_prime_axis','shear_axis','beta_prime_axis_ideal','shear_axis_ideal','growth_rates','mode_frequencies','growth_rates_all',
-			'mode_frequencies_all','parities','parities_all','ideal_stabilities','eparN','eparN_all','akys','omega','phi','apar','bpar','phi2','time','theta']
+			'mode_frequencies_all','parities','parities_all','ideal_stabilities','eparN','eparN_all','akys','omega','phi','apar','bpar','phi2','time','theta','quasilinear']
 			for key in [x for x in possible_data if x not in data.keys()]:
 				data[key] = None
 		except:
@@ -282,6 +284,15 @@ class myro_read(object):
 	def _reset_all(self):
 		self.run = self.verify.scan
 		self._convert_gr(gr_type = "Normalised", doPrint = False)
+	
+	def _calculate_QL(self):
+		from .QuasiLinear import QL
+		QLs = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
+		for p in range(len(self['psiNs'])):
+			for i in range(self['n_beta']):
+				for j in range(self['n_shat']):
+					QLs[p][i][j] = QL((p,i,j),self.run['data'],self['akyv'])
+		self.run['data']['quasilinear'] = QLs
 		
 	def _convert_gr(self, gr_type = None, doPrint = True):
 		GR = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
@@ -379,6 +390,11 @@ class myro_read(object):
 		
 	def plot_scan(self, init = [0,0], aky = False):
 		self.plots['scan'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = aky, init = init, gr_type = self._gr_type)
+	
+	def plot_QL(self, init = [0]):
+		if self['QL'] is None:
+			self._calculate_QL()
+		self.plots['QL'] = Plotters['QL'](scan = self.run, init = init)
 	
 	def plot_ideal(self, init = 0):
 		self.plots['ideal'] = Plotters['Ideal'](scan = self.run, init = init)

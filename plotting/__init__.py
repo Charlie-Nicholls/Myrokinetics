@@ -4,6 +4,7 @@ from .ideal_plotter import plot_ideal
 from .epar_plotter import plot_epar
 from .set_plotter import plot_set
 from .theta_plotter import plot_theta, plot_theta_scan, plot_theta_set
+from .QL_plotter import plot_QL
 
 Plotters = {}
 Plotters["Scan"] = plot_scan
@@ -16,5 +17,6 @@ Plotters["Set"] = plot_set
 Plotters["Theta"] = plot_theta_scan
 Plotters["Theta_Single"] = plot_theta
 Plotters["Theta_Set"] = plot_theta_set
+Plotters["QL"] = plot_QL
 
 __all__ = ["Plotters"]

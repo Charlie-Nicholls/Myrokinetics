@@ -734,11 +734,11 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 							try:
 							
 								if self['Epar'] and not QuickSave:
-									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta'])
+									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob'])
 								elif self['Epar']:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','bpar'])
 								elif not QuickSave:
-									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','apar','bpar','phi2','t','theta'])
+									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi','apar','bpar','phi2','t','theta', 'gds2', 'jacob'])
 								else:
 									data = readnc(f"{run_path}/{fol}/{fol}_{k}.out.nc",only=['omega','phi'])	
 								
@@ -973,7 +973,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				p,i,j,k = [eval(x) for x in line.strip("\n").split("_")]
 				runs.add((p,i,j,k))
 		return runs
-
+	
 	def load_info(self, directory = None, filename = "save_info.npz"):
 		from numpy import load
 		if directory is None:

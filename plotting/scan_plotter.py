@@ -16,6 +16,7 @@ class plot_scan(object):
 		self.verify = verify
 		self.aky = aky
 		self.init = init
+		self.gr_type = gr_type
 		if self.data['growth_rates'] is None:
 			print("Error: No Gyrokinetic Data")
 			return
@@ -137,14 +138,11 @@ class plot_scan(object):
 			ky = self.inputs['aky_values'][ky_idx]
 			z_gr = transpose(array(self.data['growth_rates_all'])[idx,:,:,ky_idx]).tolist()
 			z_mf = transpose(array(self.data['mode_frequencies_all'])[idx,:,:,ky_idx]).tolist()
-			if gr_type == "Normalised":
-				self.ax[0].set_title(f"Growth Rate/ky\u00b2 | PsiN: {psiN} | ky: {ky}")
-			else:
-				self.ax[0].set_title(f"Growth Rate | PsiN: {psiN} | ky: {ky}")
+			self.ax[0].set_title(f"Growth Rate | PsiN: {psiN} | ky: {ky}")
 		else:
 			z_gr = transpose(self.data['growth_rates'][idx]).tolist()
 			z_mf = transpose(self.data['mode_frequencies'][idx]).tolist()
-			if gr_type == "Normalised":
+			if self.gr_type == "Normalised":
 				self.ax[0].set_title(f"Growth Rate/ky\u00b2 | PsiN: {psiN}")
 			else:
 				self.ax[0].set_title(f"Growth Rate | PsiN: {psiN}")
