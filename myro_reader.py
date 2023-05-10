@@ -286,7 +286,7 @@ class myro_read(object):
 		self._convert_gr(gr_type = "Normalised", doPrint = False)
 	
 	def _calculate_QL(self):
-		from .QuasiLinear import QL
+		from .quasilinear import QL
 		QLs = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
 		for p in range(len(self['psiNs'])):
 			for i in range(self['n_beta']):
