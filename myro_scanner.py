@@ -973,3 +973,13 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				p,i,j,k = [eval(x) for x in line.strip("\n").split("_")]
 				runs.add((p,i,j,k))
 		return runs
+
+	def load_info(self, directory = None, filename = "save_info.npz"):
+		from numpy import load
+		if directory is None:
+			directory = os.path.join(self.path, self.run_name)
+		with load(f"{directory}/{filename}",allow_pickle = True) as obj:
+			nd = obj['name_diffs']
+			info = obj['info'].item()
+			self.info = info
+			self.namelist_diffs = nd
