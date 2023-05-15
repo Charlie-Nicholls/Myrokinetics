@@ -672,7 +672,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		
 		if self['Gyro']:
 			beta_prime_axis = full((len(psiNs),self['n_beta']),None).tolist()
-			shear_axis = full((len(psiNs),self['n_beta']),None).tolist()
+			shear_axis = full((len(psiNs),self['n_shat']),None).tolist()
 			gr = full((len(psiNs),self['n_beta'],self['n_shat']),None).tolist()
 			mf = full((len(psiNs),self['n_beta'],self['n_shat']),None).tolist()
 			sym = full((len(psiNs),self['n_beta'],self['n_shat']),None).tolist()
