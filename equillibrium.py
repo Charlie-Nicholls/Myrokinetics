@@ -241,23 +241,23 @@ class equillibrium(object):
 
 		self.pyro.load_local(psi_n=psiN)
 		self.pyro.update_gk_code()
-		nml = self.pyro.gk_input.data
+		nml = deepcopy(self.pyro.gk_input.data)
 		
 		shear = nml['theta_grid_eik_knobs']['s_hat_input']
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
 		beta =  nml['parameters']['beta']
 		
-		#Set bakdif to 0 for Electormagnetic Runs as a default
-		nml['dist_fn_species_knobs_1']['bakdif'] = 0
-		nml['dist_fn_species_knobs_2']['bakdif'] = 0
-		nml['dist_fn_species_knobs_3']['bakdif'] = 0	
-		
-		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])**nml['parameters']['beta']*-1
-		
+		bp_cal = self.cal_bp(nml)
+
 		mul = beta_prim/bp_cal
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 			nml[spec]['tprim'] = nml[spec]['tprim']*mul
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul
+		
+		#Set bakdif to 0 for Electormagnetic Runs as a default
+		nml['dist_fn_species_knobs_1']['bakdif'] = 0
+		nml['dist_fn_species_knobs_2']['bakdif'] = 0
+		nml['dist_fn_species_knobs_3']['bakdif'] = 0	
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
@@ -315,15 +315,15 @@ class equillibrium(object):
 				
 	def get_gyro_input(self, psiN, bp, sh, aky, namelist_diff = {}):
 		nml = self.get_surface_input(psiN)
-		
+
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
 		nml['theta_grid_eik_knobs']['s_hat_input'] = sh
 		nml['theta_grid_eik_knobs']['beta_prime_input'] = -1*abs(bp)
 		nml['kt_grids_single_parameters']['aky'] = aky
 	
-		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
-		
-		mul = beta_prim/bp_cal
+		bp_cal = self.cal_bp(nml)
+
+		mul = bp/bp_cal
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 			nml[spec]['tprim'] = nml[spec]['tprim']*mul
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul
@@ -340,6 +340,10 @@ class equillibrium(object):
 			
 		return nml
 	
+	def cal_bp(self, nml):
+		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
+		return bp_cal
+		
 	def make_profiles(self):
 		from scipy.interpolate import InterpolatedUnivariateSpline
 		from numpy import linspace

@@ -124,8 +124,8 @@ class plot_diag(object):
 			self.ax2.plot(t,real(omega),'r',label="mode frequency")
 			self.ax.plot(t,imag(omega),'b',label="growth rate")
 			
-			self.ax.text(0.01,0.99,f"GR: {self.data['growth_rates_all'][psi_idx][bp_idx][sh_idx][aky_idx]:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=ax.transAxes)
-			self.ax2.text(0.01,0.99,f"MF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=ax2.transAxes)
+			self.ax.text(0.01,0.99,f"GR: {self.data['growth_rates_all'][psi_idx][bp_idx][sh_idx][aky_idx]:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes)
+			self.ax2.text(0.01,0.99,f"MF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax2.transAxes)
 			self.ax.set_ylabel("Growth Rate")
 			self.ax.set_xlabel(f"Time ({len(t)} steps)")
 			self.ax2.set_ylabel("Mode_Frequency")

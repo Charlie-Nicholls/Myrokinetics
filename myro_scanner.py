@@ -906,8 +906,8 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines, 'namelist_differences': self.namelist_diffs}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = self.dat, run_info = self.info, files = self.file_lines)
 		
-	def rerun_errors(self, save = None, specificRuns = None, directory = None):
-		if specificRuns is None:
+	def rerun_errors(self, save = None, runs = None, directory = None):
+		if runs is None:
 			if self.dat:
 				scan = {'inputs': self.inputs, 'data': self.dat, 'info': self.info, 'files': self.file_lines}
 				self.verify = verify_scan(scan = scan)
@@ -919,11 +919,11 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				myro = myro_read(filename = save, directory = directory)
 				self.verify = myro.verify
 			
-			specificRuns = self.verify.runs_with_errors
+			runs = self.verify.runs_with_errors
 
 		if not self.namelist_diffs:
 			self.namelist_diffs = [[[[{} for _ in range(len(self['aky_values']))] for _ in range(self['n_shat'])] for _ in range(self['n_beta'])] for _ in range(len(self['psiNs']))]
-		for [p,i,j,k] in specificRuns:
+		for [p,i,j,k] in runs:
 			if 'knobs' not in self.namelist_diffs[p][i][j][k].keys():
 				self.namelist_diffs[p][i][j][k]['knobs'] = {}
 			if 'theta_grid_parameters' not in self.namelist_diffs[p][i][j][k].keys():
@@ -939,10 +939,10 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			else:
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self.eqbm._template_lines['knobs']['delt']/10
 		self.info['itteration'] += 1
-		self._make_gyro_files(specificRuns = specificRuns)
+		self._make_gyro_files(specificRuns = runs)
 		self._run_jobs
 	
-	def rerun(self, specificRuns = None, nml = None, directory = None):
+	def rerun(self, runs = None, nml = None, directory = None):
 		if specificRuns is None:
 			print("ERROR: specificRuns not given")
 			return
@@ -954,11 +954,11 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		
 		if type(nml) == str:
 			nml = f90nml.read(nml)
-		for p,i,j,k in specificRuns:
+		for p,i,j,k in runs:
 			self.namelist_diffs[p][i][j][k] = nml
 		if self.info:
 			self.info['itteration'] += 1
-		self._make_gyro_files(specificRuns = specificRuns, directory = directory)
+		self._make_gyro_files(specificRuns = runs, directory = directory)
 		self._run_jobs()
 	
 	def _load_run_set(self, filename = None):

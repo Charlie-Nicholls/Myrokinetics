@@ -76,7 +76,7 @@ class myro_single(object):
 		if directory:
 			self.directory = directory
 		if filename:
-			self.input_name = filename
+			self.input_file = filename
 		if self.input_file is None:
 			print("ERROR: filename not given")
 			return

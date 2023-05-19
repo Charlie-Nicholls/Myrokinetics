@@ -391,7 +391,7 @@ class myro_read(object):
 	def plot_scan(self, init = [0,0], aky = False):
 		self.plots['scan'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = aky, init = init, gr_type = self._gr_type)
 	
-	def plot_QL(self, init = [0]):
+	def plot_ql(self, init = [0]):
 		if self['QL'] is None:
 			self._calculate_QL()
 		self.plots['QL'] = Plotters['QL'](scan = self.run, init = init)

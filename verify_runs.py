@@ -106,8 +106,8 @@ class verify_scan(object):
 			print(f"Found {len(self.bad_runs['apar'])} Runs Where apar does not -> 0 as n -> +/-inf")
 		if len(self.bad_runs['bpar']) > 0:
 			print(f"Found {len(self.bad_runs['bpar'])} Runs Where bpar does not -> 0 as n -> +/-inf")
-		if len(self.runs_with_errors) > 0:
-			print(f"Total: {len(self.runs_with_errors)} Unique Runs With Errors")
+		#if len(self.runs_with_errors) > 0:
+		#	print(f"Total: {len(self.runs_with_errors)} Unique Runs With Errors")
 		if len(self.runs_with_save_errors) > 0:
 			print(f"Found {len(self.runs_with_save_errors)} Runs With Save Errors")
 	

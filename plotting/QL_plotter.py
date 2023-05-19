@@ -33,7 +33,7 @@ class plot_QL(object):
 		self.open_plot(save = True, filename = None)
 		
 	def open_plot(self, save = False, filename = "Scan"):
-		self.fig, self.ax = subplots()
+		self.fig, self.ax = subplots(figsize=(9,7))
 		self.fig.subplots_adjust(bottom=0.15)   
 		self.fig.suptitle(self.scan['info']['run_name'])
 	
@@ -43,7 +43,7 @@ class plot_QL(object):
 		try:
 			op_init = self.options.get_status()
 		except:
-			op_init = [False,False,False,True,False]
+			op_init = [False,False,True,True,False]
 		chaxes = axes([0.72, 0.01, 0.09, 0.1],frame_on = False)
 		self.options = CheckButtons(chaxes, ["Show ID","Global Axis Limits","Global Colorbar","Show Equillibrium","Show Ideal"], op_init)
 		self.options.on_clicked(self.draw_fig)
@@ -94,6 +94,7 @@ class plot_QL(object):
 		self.ax.set_facecolor('grey')
 		self.ax.set_ylabel("Shear")
 		self.ax.set_xlabel("-\u03B2'")
+		self.ax.set_title("psiN: {psiN}")
 		
 		status = self.options.get_status()
 		
