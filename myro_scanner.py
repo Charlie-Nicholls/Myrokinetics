@@ -943,8 +943,8 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		self._run_jobs
 	
 	def rerun(self, runs = None, nml = None, directory = None):
-		if specificRuns is None:
-			print("ERROR: specificRuns not given")
+		if runs is None:
+			print("ERROR: runs not given")
 			return
 		if nml is None:
 			print("ERROR: nml not given")
