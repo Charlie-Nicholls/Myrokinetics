@@ -274,7 +274,7 @@ class equillibrium(object):
 			nml['gs2_diagnostics_knobs']['write_final_epar'] = False
 		
 		if 'ntheta_geometry' not in nml['theta_grid_eik_knobs'].keys():
-			nml['theta_grid_eik_knobs']['ntheta_geometry'] = 2048
+			nml['theta_grid_eik_knobs']['ntheta_geometry'] = 4096
 
 		if self.inputs['Ideal']:
 			if self.inputs['beta_div'] is None:
