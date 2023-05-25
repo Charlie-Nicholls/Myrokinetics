@@ -154,7 +154,7 @@ class myro_scan(object):
 			for key in self.inputs.keys():
 				in_file.write(f"{key} = {self.inputs[key]}\n")
 	
-	def run_scan(self, gyro = None, ideal = None, directory = None):
+	def run_scan(self, gyro = None, ideal = None, directory = None, group_runs = None):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
@@ -191,7 +191,7 @@ class myro_scan(object):
 		if self['Ideal']:
 			self._make_ideal_files(directory = run_path)
 		if self['Gyro']:
-			self._make_gyro_files(directory = run_path)
+			self._make_gyro_files(directory = run_path, group_runs = group_runs)
 		self._run_jobs()
 		if not self['Viking']:
 			self.save_out(directory = run_path)
@@ -291,10 +291,12 @@ class myro_scan(object):
 		
 		return True
 	
-	def _run_jobs(self):
-		for job in self.jobs:
-			os.system(job)
-		self.jobs = []
+	def _run_jobs(self, n = None):
+		if n is None or n > len(self.jobs):
+			n = len(self.jobs)
+		for i in range(n):
+			os.system(self.jobs[i])
+		self.jobs = self.jobs[n:]
 	
 	def _make_ideal_files(self, directory = None, checkSetup = True):
 		self.inputs['Ideal'] = True
@@ -334,7 +336,7 @@ ideal_ball \"{run_path}/{psiN}.in\"""")
 				jobfile.close()
 				self.jobs.append(f"sbatch \"{run_path}/{psiN}.job\"")
 				
-	def _make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None):
+	def _make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None, group_runs = None):
 		if checkSetup:
 			if not self._check_setup():
 				return
@@ -347,11 +349,12 @@ ideal_ball \"{run_path}/{psiN}.in\"""")
 			runs = check['gyro_incomplete']
 		else:
 			runs = specificRuns
-
-		if len(runs) > 5000:
-			group_runs = True
-		else:
-			group_runs = False
+		
+		if group_runs is None:
+			if len(runs) > 5000:
+				group_runs = True
+			else:
+				group_runs = False
 		
 		for p, psiN in enumerate(self['psiNs']):
 			run_path = os.path.join(directory, str(psiN))
@@ -496,7 +499,7 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 		itt = 0
 		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path, 'itteration': 0}
 	
-	def rerun_cancelled(self, directory = None, checkSetup = True):
+	def rerun_cancelled(self, directory = None, checkSetup = True, group_runs = None):
 		if self.info is None:
 			self._create_run_info()
 		if directory is None:
@@ -508,7 +511,7 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 		for p, i, j, k in cancelled:
 			if os.path.exists(f"{directory}/{self['psiNs'][p]}/{i}_{j}/{i}_{j}_{k}.out.nc"):
 				os.remove(f"{directory}/{self['psiNs'][p]}/{i}_{j}/{i}_{j}_{k}.out.nc")
-		self._make_gyro_files(directory = directory, specificRuns = cancelled)
+		self._make_gyro_files(directory = directory, specificRuns = cancelled, group_runs = group_runs)
 		self._run_jobs()
 		
 	def check_cancelled(self, directory = None, doPrint = True):
@@ -906,7 +909,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines, 'namelist_differences': self.namelist_diffs}
 		savez(f"{self.path}/{filename}", inputs = self.inputs, data = self.dat, run_info = self.info, files = self.file_lines)
 		
-	def rerun_errors(self, save = None, runs = None, directory = None):
+	def rerun_errors(self, save = None, runs = None, directory = None, group_runs = None):
 		if runs is None:
 			if self.dat:
 				scan = {'inputs': self.inputs, 'data': self.dat, 'info': self.info, 'files': self.file_lines}
@@ -939,10 +942,10 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			else:
 				self.namelist_diffs[p][i][j][k]['knobs']['delt'] = self.eqbm._template_lines['knobs']['delt']/10
 		self.info['itteration'] += 1
-		self._make_gyro_files(specificRuns = runs)
+		self._make_gyro_files(specificRuns = runs, group_runs = group_runs)
 		self._run_jobs
 	
-	def rerun(self, runs = None, nml = None, directory = None):
+	def rerun(self, runs = None, nml = None, directory = None, group_runs = None):
 		if runs is None:
 			print("ERROR: runs not given")
 			return
@@ -958,7 +961,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			self.namelist_diffs[p][i][j][k] = nml
 		if self.info:
 			self.info['itteration'] += 1
-		self._make_gyro_files(specificRuns = runs, directory = directory)
+		self._make_gyro_files(specificRuns = runs, directory = directory, group_runs = group_runs)
 		self._run_jobs()
 	
 	def _load_run_set(self, filename = None):
