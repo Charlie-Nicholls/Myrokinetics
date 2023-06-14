@@ -364,6 +364,8 @@ ideal_ball \"{run_path}/{psiN}.in\"""")
 				pass
 			
 			nml = self.eqbm.get_surface_input(psiN = psiN)
+			if not self['Ideal']:
+				nml.write(f"{run_path}/{psiN}.in", force=True)
 			shear = nml['theta_grid_eik_knobs']['s_hat_input']
 			beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
 			beta =  nml['parameters']['beta']
@@ -404,8 +406,14 @@ ideal_ball \"{run_path}/{psiN}.in\"""")
 						os.mkdir(sub_path)
 					except:
 						pass
-					bp = (beta_max - beta_min)*i/(self['n_beta']-1) + beta_min
-					sh = (shat_max - shat_min)*j/(self['n_shat']-1) + shat_min
+					if self['n_beta'] > 1:
+						bp = (beta_max - beta_min)*i/(self['n_beta']-1) + beta_min
+					else:
+						bp = beta_min
+					if self['n_shat'] > 1:
+						sh = (shat_max - shat_min)*j/(self['n_shat']-1) + shat_min
+					else:
+						sh = shat_min
 					if sh < 1e-4:
 						sh = 1e-4
 
@@ -428,7 +436,7 @@ ideal_ball \"{run_path}/{psiN}.in\"""")
 							elif not group_runs:
 								jobfile = open(f"{sub_path}/{fol}_{k}.job",'w')
 								jobfile.write(f"""#!/bin/bash
-#SBATCH --time=8:00:00
+#SBATCH --time=24:00:00
 #SBATCH --job-name={self.info['run_name']}
 #SBATCH --ntasks=1
 #SBATCH --output={sub_path}/{fol}_{k}.slurm
@@ -705,14 +713,14 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				omega = phi = apar = bpar = phi2 = time = theta = None
 		
 		else:
-				gr = mf = grs = mfs = sym = syms = beta_prime_axis = shear_axis = akys = self['n_shat'] = self['n_beta'] = self['aky_values'] = eparN = eparNs = omega = phi = apar = bpar = phi2 = time = theta = None
+				gr = mf = grs = mfs = sym = syms = beta_prime_axis = shear_axis = akys = self.inputs['n_shat'] = self.inputs['n_beta'] = self.inputs['aky_values'] = eparN = eparNs = omega = phi = apar = bpar = phi2 = time = theta = None
 		
 		if self['Ideal']:
 			beta_prime_axis_ideal = full((len(psiNs),self['n_beta_ideal']),None).tolist()
 			shear_axis_ideal = full((len(psiNs),self['n_shat_ideal']),None).tolist()
 			stabilities = full((len(psiNs),self['n_beta_ideal'],self['n_shat_ideal']),None).tolist()
 		else:
-			beta_prime_axis_ideal = shear_axis_ideal = self['n_shat_ideal'] = self['n_beta_ideal'] = stabilities = None
+			beta_prime_axis_ideal = shear_axis_ideal = self.inputs['n_shat_ideal'] = self.inputs['n_beta_ideal'] = stabilities = None
 		
 		for p, psiN in enumerate(psiNs):
 			run_path = os.path.join(directory,str(psiN))
@@ -854,7 +862,10 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				else:
 					beta_max = self['beta_max']
 				for i in range(self['n_beta']):
-					beta_prime_axis[p][i] = abs((beta_max - beta_min)*i/(self['n_beta']-1) + beta_min)
+					if self['n_beta'] > 1:
+						beta_prime_axis[p][i] = abs((beta_max - beta_min)*i/(self['n_beta']-1) + beta_min)
+					else:
+						beta_prime_axis[p][i] = beta_min
 					
 				if self['shat_min'] is None:
 					shat_min = shear/self['shat_div']
@@ -865,7 +876,10 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				else:
 					shat_max = self['shat_max']
 				for i in range(self['n_shat']):
-					sh = (shat_max - shat_min)*i/(self['n_shat']-1) + shat_min
+					if self['n_shat'] > 1:
+						sh = (shat_max - shat_min)*j/(self['n_shat']-1) + shat_min
+					else:
+						sh = shat_min
 					if sh == 0:
 						sh = 1e-4
 					shear_axis[p][i] = sh
