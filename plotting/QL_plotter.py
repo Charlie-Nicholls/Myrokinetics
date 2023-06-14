@@ -1,7 +1,7 @@
 from numpy import transpose, array, amax, amin, isfinite, linspace, where
 from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
-from matplotlib.widgets import Slider, CheckButtons
+from matplotlib.widgets import Slider, CheckButtons, TextBox
 from matplotlib.colors import LinearSegmentedColormap
 
 class plot_QL(object):
@@ -58,7 +58,7 @@ class plot_QL(object):
 			self.slider.on_changed(self.draw_fig)
 		
 		try:
-			ql_init = self.ql_slider.val
+			ql_init = self.ql_init.val
 		except:
 			ql_init = 100
 		ql_axes = axes([0.97, 0.15, 0.01, 0.73])
@@ -74,6 +74,13 @@ class plot_QL(object):
 			ion()
 			show()
 			self.draw_fig()
+	
+	def set_val(self, val):
+		if self.options.get_status()[2]:
+			sliderval = val/(abs(amax(array(self.data['quasilinear'])[isfinite(self.data['quasilinear'])]))/100)
+		else:
+			sliderval = val/(amax(abs(array(z)[isfinite(z)]))/100)
+		self.ql_slider.set_val(sliderval)
 	
 	def draw_fig(self, val = None):
 		if len(self.psiNs) > 1:
@@ -94,7 +101,7 @@ class plot_QL(object):
 		self.ax.set_facecolor('grey')
 		self.ax.set_ylabel("Shear")
 		self.ax.set_xlabel("-\u03B2'")
-		self.ax.set_title("psiN: {psiN}")
+		self.ax.set_title(f"psiN: {psiN}")
 		
 		status = self.options.get_status()
 		

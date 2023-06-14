@@ -9,7 +9,7 @@ GYROKINETIC SCAN ANALYSIS
 
 class myro_read(object):
 
-	def __init__(self, filename = None, directory = "./"):
+	def __init__(self, filename = None, directory = "./", verify = True):
 		if directory == "./" or directory is None:
 			directory = os.getcwd() 
 		self.directory = directory
@@ -18,7 +18,7 @@ class myro_read(object):
 		self.plots = {}
 		opened = self._open_file()
 		self._gr_type = "Normalised"
-		if opened and not self.verify:		
+		if opened and not self.verify and verify:		
 			self._verify_run()
 		self.eqbm = None
 	
@@ -270,20 +270,8 @@ class myro_read(object):
 		if not self['Gyro']:
 			return
 		self.verify = verify_scan(scan = self.run)
-		self.run['data']['growth_rates_all'] = self.verify.new_data['gra']
-		self.run['data']['mode_frequncies_all'] = self.verify.new_data['mfa']
-		self.run['data']['phi2'] = self.verify.scan['data']['phi2']
-		self.run['data']['omega'] = self.verify.scan['data']['omega']
-		self.run['data']['time'] = self.verify.scan['data']['time']
-		self._convert_gr(gr_type = self._gr_type, doPrint = False)
-	
-	def _reset_data(self):
-		self.run['data'] = self.verify.scan['data']
-		self._convert_gr(gr_type = "Normalised", doPrint = False)
-	
-	def _reset_all(self):
 		self.run = self.verify.scan
-		self._convert_gr(gr_type = "Normalised", doPrint = False)
+		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 	
 	def _calculate_QL(self):
 		from .quasilinear import QL
@@ -463,7 +451,7 @@ class myro_read(object):
 		if filename is None:
 			filename = f"{p}_{i}_{j}_{k}.in"
 		psiN = self['psiNs'][p]
-		bp = self['beta_prime_axis'][p][i]
+		bp = -1*abs(self['beta_prime_axis'][p][i])
 		sh = self['shear_axis'][p][j]
 		aky = self['akyv'][k]
 		

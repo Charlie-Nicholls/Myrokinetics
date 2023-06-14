@@ -47,9 +47,13 @@ class plot_scan(object):
 		try:
 			op_init = self.options.get_status()
 		except:
-			op_init = [False,False,False,True,False]
+			op_init = [False,False,False,True,False,False]
+		opts = ["Show Parities","Global Axis Limits","Global Colorbar","Show Equillibrium","Show Ideal"]
+		if not self.aky:
+			op_init.append(False)
+			opts.append("Show aky")
 		chaxes = axes([0.72, 0.01, 0.09, 0.1],frame_on = False)
-		self.options = CheckButtons(chaxes, ["Show Parities","Global Axis Limits","Global Colorbar","Show Equillibrium","Show Ideal"], op_init)
+		self.options = CheckButtons(chaxes, opts, op_init)
 		self.options.on_clicked(self.draw_fig)
 		
 		try:
@@ -277,6 +281,8 @@ class plot_scan(object):
 			for bpid, bp in enumerate(x):
 				for shid, sh in enumerate(y):
 					s = ''
+					if not self.aky:
+						ky_idx = self.inputs['aky_values'].index(self.data['akys'][idx][bpid][shid])
 					if (idx, bpid, shid, ky_idx) in self.verify['phi']:
 						s += 'p,'
 					if (idx, bpid, shid, ky_idx) in self.verify['apar']:

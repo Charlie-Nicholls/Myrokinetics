@@ -70,7 +70,7 @@ class DataFile:
         except KeyError:
             # Not found. Try to find using case-insensitive search
             var = None
-            if self.handle is not none:
+            if self.handle is not None:
                 for n in self.handle.variables.keys():
                     if n.lower() == name.lower():
                         print("WARNING: Reading '"+n+"' instead of '"+name+"'")
@@ -219,7 +219,7 @@ class DataFile:
                 newShape.pop(dimInd)
                 dataT=data.transpose(indOrd)
 
-                fdata=dataT.reshape([product(newShape),2])
+                fdata=dataT.reshape([int(product(newShape)),2])
                 cdata=fdata[:,0]+ci*fdata[:,1]
                 cdata=cdata.reshape(newShape)
                 ret[varName]=cdata.copy()

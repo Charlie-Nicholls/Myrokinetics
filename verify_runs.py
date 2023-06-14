@@ -4,8 +4,7 @@ class verify_scan(object):
 	
 	def __init__(self, scan = None):
 		self.scan = scan
-		self.new_data = {'gra': scan['data']['growth_rates_all'], 'mfa': scan['data']['mode_frequencies_all']}
-		self.bad_runs = {'nstep': set(), 'nan': set(), 'phi': set(), 'apar': set(), 'bpar': set()}
+		self.bad_runs = {'nstep': set(), 'nan': set(), 'phi': set(), 'apar': set(), 'bpar': set(), 'order': set(), 'negative': set()}
 		self.convergence = {'converged': set(), 'converged_fit': set(), 'unconverged_stable': set(), 'unconverged': set(), 'uncalculated': set()}
 		self.nts = full((len(scan['inputs']['psiNs']),scan['inputs']['n_beta'],scan['inputs']['n_shat'],len(scan['inputs']['aky_values'])),None).tolist()
 		self.save_errors = {'omega': set(), 'phi2': set(), 'time': set(), 'phi': set(), 'apar': set(), 'bpar': set()}
@@ -14,9 +13,9 @@ class verify_scan(object):
 	def __getitem__(self, key):
 		key = key.lower()
 		if key in ["gra","gr_a","gr_all","growth_rates_all"]:
-			return self.new_data['gra']
+			return self.scan['data']['growth_rates_all']
 		elif key in ["mfa", "mf_a", "mf_all", "mode_frequencies_all"]:
-			return self.new_data['mfa']
+			return self.scan['data']['mode_frequencies_all']
 		elif key in ["bad_nstep", "badnstep", "nstep"]:
 			return self.bad_runs['nstep']
 		elif key in ["bad_nan", "badnan", "nan"]:
@@ -27,6 +26,10 @@ class verify_scan(object):
 			return self.bad_runs['apar']
 		elif key in ["bad_bpar", "badbpar", "bpar"]:
 			return self.bad_runs['bpar']
+		elif key in ['order']:
+			return self.bad_runs['order']
+		elif key in ['negative', 'neg']:
+			return self.bad_runs['negative']
 		elif key in ["unconv", "unconverged"]:
 			return self.convergence["unconverged"]
 		elif key in ['unconv_low', 'unconverged_low','unconv_stable','unconverged_stable','low_unconv','low_unconverged']:
@@ -38,9 +41,9 @@ class verify_scan(object):
 		elif key in ['uncalculated', 'uncal']:
 			return self.convergence['uncalculated']
 		elif key in ['old_gra', 'gra_old', 'old_growth_rates_all', 'growth_rates_all_old', 'old_gr_a', 'gr_a_old']:
-			return self.scan['growth_rates_all']
+			return self.scan['data']['growth_rates_all']
 		elif key in ['old_mfa', 'mfa_old', 'old_mode_frequencies_all', 'mode_frequencies_all_old', 'old_mf_a', 'mf_a_old']:
-			return self.scan['mode_frequencies_all']
+			return self.scan['data']['mode_frequencies_all']
 		elif key in ['saveerrors','save_errors']:
 			return self.save_errors
 		elif key in ['saveerrors_all','save_errors_all']:
@@ -58,6 +61,8 @@ class verify_scan(object):
 		"bad_phi", "badphi", "phi",
 		"bad_apar", "badapar", "apar",
 		"bad_bpar", "badbpar", "bpar",
+		'order',
+		'negative', 'neg',
 		"unconv", "unconverged",
 		'unconv_low', 'unconverged_low','unconv_stable','unconverged_stable','low_unconv','low_unconverged',
 		'conv_fit', 'converged_fit','conv_f','convf','convfit','converged_fitted','conv_fitted',
@@ -78,21 +83,19 @@ class verify_scan(object):
 		self.check_phi()
 		self.check_apar()
 		self.check_bpar()
-		self.print_verify
+		self.print_verify()
 	
-	@property
 	def print_convergence(self):
 		print(f"{len(self.convergence['unconverged'])} Unconverged Possibly Unstable | {len(self.convergence['unconverged_stable'])} Unconverged Stable | {len(self.convergence['converged'])} Converged | {len(self.convergence['converged_fit'])} Converged Fitted | {len(self.convergence['uncalculated'])} Not Calculable")
 	
 	@property
 	def runs_with_errors(self):
-		return self.convergence['unconverged'] | self.bad_runs['nstep'] | self.bad_runs['nan'] | self.bad_runs['phi'] | self.bad_runs['apar'] | self.bad_runs['apar'] | self.bad_runs['bpar']
+		return self.convergence['unconverged'] | self.bad_runs['nstep'] | self.bad_runs['nan'] | self.bad_runs['phi'] | self.bad_runs['apar'] | self.bad_runs['apar'] | self.bad_runs['bpar'] | self.bad_runs['order']
 	
 	@property
 	def runs_with_save_errors(self):
 		return self.save_errors['omega'] | self.save_errors['phi2'] | self.save_errors['time'] | self.save_errors['phi'] | self.save_errors['apar'] | self.save_errors['bpar']
 	
-	@property
 	def print_verify(self):
 		if len(self.convergence['unconverged']) > 0 or len(self.convergence['unconverged_stable']) > 0:
 			print(f"Found {len(self.convergence['unconverged'])} Unconverged Possibly Unstable Runs and {len(self.convergence['unconverged_stable'])} Unconverged Stable Runs")
@@ -106,11 +109,11 @@ class verify_scan(object):
 			print(f"Found {len(self.bad_runs['apar'])} Runs Where apar does not -> 0 as n -> +/-inf")
 		if len(self.bad_runs['bpar']) > 0:
 			print(f"Found {len(self.bad_runs['bpar'])} Runs Where bpar does not -> 0 as n -> +/-inf")
-		#if len(self.runs_with_errors) > 0:
-		#	print(f"Total: {len(self.runs_with_errors)} Unique Runs With Errors")
+		if len(self.runs_with_errors) > 0:
+			print(f"Total: {len(self.runs_with_errors)} Unique Runs With Errors")
 		if len(self.runs_with_save_errors) > 0:
 			print(f"Found {len(self.runs_with_save_errors)} Runs With Save Errors")
-	
+
 	def check_nan(self):
 		if self.scan['data']['omega'] is None:
 			print("ERROR: No omega data")
@@ -119,7 +122,7 @@ class verify_scan(object):
 		for i in range(sha[0]):
 			for j in range(sha[1]):
 				for k in range(sha[2]):
-					for l in range(sha[3]):
+					for l in range(sha[3]):	
 						if self.scan['data']['omega'][i][j][k][l] is None or self.scan['data']['phi2'][i][j][k][l] is None or self.scan['data']['time'][i][j][k][l] is None:
 							if self.scan['data']['omega'][i][j][k][l] is None:
 								self.save_errors['omega'].add((i,j,k,l))
@@ -127,21 +130,43 @@ class verify_scan(object):
 								self.save_errors['phi2'].add((i,j,k,l))
 							if self.scan['data']['time'][i][j][k][l] is None:
 								self.save_errors['time'].add((i,j,k,l))
-						elif str(self.scan['data']['phi2'][i][j][k][l][-1]) in ['nan','inf','0.0','0']:
-							if str(self.scan['data']['phi2'][i][j][k][l][-1]) == 'nan':
-								self.bad_runs['nan'].add((i,j,k,l))
-							self.scan['data']['phi2'][i][j][k][l] = [x for x in self.scan['data']['phi2'][i][j][k][l] if str(x) not in ['nan','inf','0.0','0']]
-							if len(self.scan['data']['phi2'][i][j][k][l]) == 0:
-								self.scan['data']['phi2'][i][j][k][l] = None
-								self.scan['data']['omega'][i][j][k][l] = None
-								self.scan['data']['time'][i][j][k][l] = None
-								self.new_data['gra'][i][j][k][l] = nan
-								self.new_data['mfa'][i][j][k][l] = nan
-							else:
-								self.scan['data']['omega'][i][j][k][l] = self.scan['data']['omega'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
-								self.scan['data']['time'][i][j][k][l] = self.scan['data']['time'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
-								self.new_data['gra'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
-								self.new_data['mfa'][i][j][k][l] = real(self.scan['data']['omega'][i][j][k][l][-1])
+						else:
+							if str(self.scan['data']['phi2'][i][j][k][l][-1]) in ['nan','inf','0.0','0']:
+								if str(self.scan['data']['phi2'][i][j][k][l][-1]) == 'nan':
+									self.bad_runs['nan'].add((i,j,k,l))
+								self.scan['data']['phi2'][i][j][k][l] = [x for x in self.scan['data']['phi2'][i][j][k][l] if str(x) not in ['nan','inf','0.0','0']]
+								if len(self.scan['data']['phi2'][i][j][k][l]) == 0:
+									self.scan['data']['phi2'][i][j][k][l] = None
+									self.scan['data']['omega'][i][j][k][l] = None
+									self.scan['data']['time'][i][j][k][l] = None
+									self.scan['data']['growth_rates_all'][i][j][k][l] = nan
+									self.scan['data']['mode_frequencies_all'][i][j][k][l] = nan
+								else:
+									self.scan['data']['omega'][i][j][k][l] = self.scan['data']['omega'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
+									self.scan['data']['time'][i][j][k][l] = self.scan['data']['time'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
+									self.scan['data']['growth_rates_all'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
+									self.scan['data']['mode_frequencies_all'][i][j][k][l] = real(self.scan['data']['omega'][i][j][k][l][-1])
+							
+							increasing = [j > i for i,j in zip(self.scan['data']['time'][i][j][k][l],self.scan['data']['time'][i][j][k][l][1:])]
+							while not all(increasing):
+								increasing.insert(0,True)
+								self.scan['data']['time'][i][j][k][l] = [x for idx, x in enumerate(self.scan['data']['time'][i][j][k][l]) if increasing[idx] and increasing[idx+1]]
+								self.scan['data']['phi2'][i][j][k][l] = [x for idx, x in enumerate(self.scan['data']['phi2'][i][j][k][l]) if increasing[idx] and increasing[idx+1]]
+								self.scan['data']['omega'][i][j][k][l] = [x for idx, x in enumerate(self.scan['data']['omega'][i][j][k][l]) if increasing[idx] and increasing[idx+1]]
+								increasing = [j > i for i,j in zip(self.scan['data']['time'][i][j][k][l],self.scan['data']['time'][i][j][k][l][1:])]
+								self.bad_runs['order'].add((i,j,k,l))
+								self.scan['data']['growth_rates_all'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
+								self.scan['data']['mode_frequencies_all'][i][j][k][l] = real(self.scan['data']['omega'][i][j][k][l][-1])
+							
+							positive = [x >= 0 for x in self.scan['data']['phi2'][i][j][k][l]]
+							if not all(positive):
+								self.scan['data']['time'][i][j][k][l] = [y for x,y in enumerate(self.scan['data']['time'][i][j][k][l]) if positive[x] and positive[x+1]]
+								self.scan['data']['phi2'][i][j][k][l] = [y for x,y in enumerate(self.scan['data']['phi2'][i][j][k][l]) if positive[x] and positive[x+1]]
+								self.scan['data']['omega'][i][j][k][l] = [y for x,y in enumerate(self.scan['data']['omega'][i][j][k][l]) if positive[x] and positive[x+1]]
+								self.bad_runs['negative'].add((i,j,k,l))
+								self.scan['data']['growth_rates_all'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
+								self.scan['data']['mode_frequencies_all'][i][j][k][l] = real(self.scan['data']['omega'][i][j][k][l][-1])
+								
 	def check_convergence(self):
 		from scipy.stats import pearsonr
 		if self.scan['data']['omega'] is None:
@@ -154,7 +179,7 @@ class verify_scan(object):
 			print("ERROR: No time data")
 			return
 		
-		def find_gr(nt, time, phi2, gr, mf, gradgr, k):
+		def find_gr(nt, time, phi2, gr, mf, gradgr, k):		
 			fit = polyfit(time[-nt:],log(phi2[-nt:]),1)
 			fgr = fit[0]/2
 			pr = abs(pearsonr(time[-nt:],log(phi2[-nt:]))[0])
@@ -199,8 +224,8 @@ class verify_scan(object):
 								phi2 = array(phi2)[nonzero(phi2)].tolist()
 								omega = omega[:len(phi2)]
 								time = time[:len(phi2)]
-								self.new_data['gra'][i][j][k][l] = imag(omega[-1])
-								self.new_data['mfa'][i][j][k][l] = real(omega[-1])
+								self.scan['data']['growth_rates_all'][i][j][k][l] = imag(omega[-1])
+								self.scan['data']['mode_frequencies_all'][i][j][k][l] = real(omega[-1])
 							
 							if 'nan' in [str(x) for x in phi2] or inf in phi2:
 								self.convergence['uncalculated'].add((i,j,k,l))
@@ -215,12 +240,19 @@ class verify_scan(object):
 									nt = len(phi2)//10 + 10
 									while findingGR:
 										nt = nt - 10
-										new_gr, new_mf, cat = find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr, k = l)
-										
-										if cat not in ['unconverged','unconverged_stable'] or nt < 110:
+										try:
+											new_gr, new_mf, cat = find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr, k = l)
+											if cat not in ['unconverged','unconverged_stable'] or nt < 110:
+												findingGR = False
+												if cat in ['unconverged','unconverged_stable']:
+													nt = len(phi2)//10
+										except Exception as e:
 											findingGR = False
-											if cat in ['unconverged','unconverged_stable']:
-												nt = len(phi2)//10
+											new_gr = nan
+											new_mf = nan
+											cat = 'uncalculated'
+											print(f"ERROR ON {(i,j,k,l)}")
+											print(e)
 								else:
 									
 									nt = 11
@@ -228,14 +260,22 @@ class verify_scan(object):
 										nt = nt - 1
 										if nt > len(phi2):
 											nt = len(phi2)
-										new_gr, new_mf, cat =  find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr, k = l)
-										if cat != 'unconverged' or nt == 2:
+										try:
+											new_gr, new_mf, cat =  find_gr(nt = nt, time = time, phi2 = phi2, gr = gr, mf = mf, gradgr = gradgr, k = l)
+											if cat != 'unconverged' or nt == 2:
+												findingGR = False
+												if cat in ['unconverged','unconverged_stable']:
+													nt = 10
+										except Exception as e:
 											findingGR = False
-											if cat in ['unconverged','unconverged_stable']:
-												nt = 10
+											new_gr = nan
+											new_mf = nan
+											cat = 'uncalculated'
+											print(f"ERROR ON {(i,j,k,l)}")
+											print(e)
 								
-								self.new_data['gra'][i][j][k][l] = new_gr
-								self.new_data['mfa'][i][j][k][l] = new_mf
+								self.scan['data']['growth_rates_all'][i][j][k][l] = new_gr
+								self.scan['data']['mode_frequencies_all'][i][j][k][l] = new_mf
 								self.convergence[cat].add((i,j,k,l))
 								self.nts[i][j][k][l] = nt
 
@@ -272,8 +312,8 @@ class verify_scan(object):
 							self.save_errors['omega'].add((i,j,k,l))
 						elif len(self.scan['data']['omega'][i][j][k][l]) in [lim,lim+1]:
 							self.bad_runs['nstep'].add((i,j,k,l))
-							#self.new_data['gra'][i][j][k][l] = nan
-							#self.new_data['mfa'][i][j][k][l] = nan
+							#self.scan['data']['growth_rates_all'][i][j][k][l] = nan
+							#self.scan['data']['mode_frequencies_all'][i][j][k][l] = nan
 		
 	def check_phi(self):
 		if self.scan['data']['phi'] is None:

@@ -179,6 +179,8 @@ class plot_diag(object):
 			else:
 				phi2 = self.data['phi2'][psi_idx][bp_idx][sh_idx][aky_idx]
 			self.ax.plot(t,phi2,'k')
+			if max(phi2) > 1e267:
+				self.ax.set_ylim(min(phi2)/100, 1e267) #Display error occurs on log scale above 1e267
 			self.ax.set_ylabel("Phi2")
 			self.ax.set_yscale('log')
 			self.ax.set_xlabel(f"Time ({len(t)} steps)")
@@ -300,7 +302,12 @@ def plot_diag_single(data = None, var = 0, fig = None, ax = None, ax2 = None):
 	elif var == 4:
 		def draw_fig(val):
 			ax.cla()
-			ax.plot(t,phi2,'k')	
+			if max(phi2) > 1e267:
+				ax.set_ylim(min(phi2)/100, 1e267) #Display error occurs on log scale above 1e267
+				ax.autoscale(False)
+			else:
+				ax.autoscale(True)
+			ax.plot(t,phi2,'k')
 			ax.set_ylabel("Phi2")
 			ax.set_yscale('log')
 			ax.set_xlabel(f"Time ({len(t)} steps)")

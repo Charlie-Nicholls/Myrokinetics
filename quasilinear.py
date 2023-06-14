@@ -25,7 +25,8 @@ def QL(indexes,data,kys):
 	try:
 		nruns = len(kys)
 		kys = array(kys)
-		grs = array([data['growth_rates_all'][p][i][j][k] for k in range(nruns)])
+		grs = [data['growth_rates_all'][p][i][j][k] for k in range(nruns)]
+		grs = array([x if x > 0 else 0 for x in grs])
 		kp_phis = array([avg_kperp2_f((p,i,j,k), data,'phi',ky) for k, ky in enumerate(kys)])
 		kp_apars = array([avg_kperp2_f((p,i,j,k), data,'apar',ky) for k, ky in enumerate(kys)])
 		kp_bpars = array([avg_kperp2_f((p,i,j,k), data,'bpar',ky) for k, ky in enumerate(kys)])
@@ -83,7 +84,8 @@ def mset_avg_kperp2_f(data,f):
 def mset_QL(mset):
 	nruns = len(mset.runs)
 	kys = array([mset[i]['data']['ky'][0] for i in range(nruns)])
-	grs = array([mset[i]['data'].gr for i in range(nruns)])
+	grs = [mset[i]['data'].gr for i in range(nruns)]
+	grs = array([x if x > 0 else 0 for x in grs])
 	kp_phis = array([mset_avg_kperp2_f(mset[i]['data'],'phi') for i in range(nruns)])
 	kp_apars = array([mset_avg_kperp2_f(mset[i]['data'],'apar') for i in range(nruns)])
 	kp_bpars = array([mset_avg_kperp2_f(mset[i]['data'],'bpar') for i in range(nruns)])
@@ -101,7 +103,8 @@ def QL_nonan(indexes,data,kys):
 	p,i,j = indexes
 	nruns = len(kys)
 	kys = array(kys)
-	grs = array([data['growth_rates_all'][p][i][j][k] for k in range(nruns)])
+	grs = [data['growth_rates_all'][p][i][j][k] for k in range(nruns)]
+	grs = array([x if x > 0 else 0 for x in grs])
 	kp_phis = array([avg_kperp2_f((p,i,j,k), data,'phi',ky) for k, ky in enumerate(kys)])
 	kp_apars = array([avg_kperp2_f((p,i,j,k), data,'apar',ky) for k, ky in enumerate(kys)])
 	kp_bpars = array([avg_kperp2_f((p,i,j,k), data,'bpar',ky) for k, ky in enumerate(kys)])
