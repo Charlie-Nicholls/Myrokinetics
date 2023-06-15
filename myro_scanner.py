@@ -861,11 +861,11 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 					beta_max = beta_prim*self['beta_mul']
 				else:
 					beta_max = self['beta_max']
-				for i in range(self['n_beta']):
+				for n in range(self['n_beta']):
 					if self['n_beta'] > 1:
-						beta_prime_axis[p][i] = abs((beta_max - beta_min)*i/(self['n_beta']-1) + beta_min)
+						beta_prime_axis[p][n] = abs((beta_max - beta_min)*n/(self['n_beta']-1) + beta_min)
 					else:
-						beta_prime_axis[p][i] = beta_min
+						beta_prime_axis[p][n] = beta_min
 					
 				if self['shat_min'] is None:
 					shat_min = shear/self['shat_div']
@@ -875,14 +875,14 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 					shat_max = shear*self['shat_mul']
 				else:
 					shat_max = self['shat_max']
-				for i in range(self['n_shat']):
+				for n in range(self['n_shat']):
 					if self['n_shat'] > 1:
-						sh = (shat_max - shat_min)*j/(self['n_shat']-1) + shat_min
+						sh = (shat_max - shat_min)*n/(self['n_shat']-1) + shat_min
 					else:
 						sh = shat_min
 					if sh == 0:
 						sh = 1e-4
-					shear_axis[p][i] = sh
+					shear_axis[p][n] = sh
 
 			if self['Ideal']:
 				shear = loadtxt(f"{run_path}/{psiN}.ballstab_shat")
