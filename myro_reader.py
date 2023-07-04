@@ -273,7 +273,7 @@ class myro_read(object):
 		self.run = self.verify.scan
 		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 	
-	def _calculate_QL(self):
+	def _calculate_ql(self):
 		from .quasilinear import QL
 		QLs = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
 		for p in range(len(self['psiNs'])):
@@ -373,43 +373,69 @@ class myro_read(object):
 			if doPrint:
 				print("Converted Growth Rates To Unnormalised")
 	
-	def plot_aky(self, init = [0,0]):
-		self.plots['aky'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = True, init = init, gr_type = self._gr_type)
+	def plot_aky(self, init = None, settings = {}):
+		self.plot_scan(init = init, aky = True, settings = settings)
 		
-	def plot_scan(self, init = [0,0], aky = False):
-		self.plots['scan'] = Plotters['Scan'](scan = self.run, verify = self.verify, aky = aky, init = init, gr_type = self._gr_type)
+	def plot_scan(self, init = None, aky = None, settings = {}):
+		if init is not None and type(init) == int:
+			settings['psi_id'] = init
+		elif init is not None:
+			settings['psi_id'] = int(init[0])
+			if len(init) > 1:
+				settings['ky_id'] = int(init[1])
+		if aky is not None:
+			settings['aky'] = aky
+		self.plots['scan'] = Plotters['Scan'](scan = self.run, verify = self.verify, settings = settings)
 	
-	def plot_ql(self, init = [0]):
-		if self['QL'] is None:
-			self._calculate_QL()
-		self.plots['QL'] = Plotters['QL'](scan = self.run, init = init)
+	def plot_ql(self, init = None, settings = {}):
+		if self['ql'] is None:
+			self._calculate_ql()
+		if init is not None:
+			settings['psi_id'] = int(init)
+		if 'title' not in settings:
+			settings['suptitle'] = self['run_name']
+		self.plots['ql'] = Plotters['QL'](scan = self.run, settings = settings)
 	
 	def plot_ideal(self, init = 0):
 		self.plots['ideal'] = Plotters['Ideal'](scan = self.run, init = init)
 	
-	def plot_omega(self, init = [0,0,0,0], aky = True):
-		self.plots['omega'] = Plotters['Diag'](scan = self.run, var = 0, aky = aky, init = init, verify = self.verify)
+	def plot_omega(self, init = None, aky = None, settings = {}):
+		self.plots['omega'] = self._plot_diag(var = 0, init = init, aky = aky, settings = settings)
 	
-	def plot_phi(self, init = [0,0,0,0], aky = True):
-		self.plots['phi'] = Plotters['Diag'](scan = self.run, var = 1, aky = aky, init = init, verify = self.verify)
+	def plot_phi(self, init = None, aky = None, absolute = None, settings = {}):
+		self.plots['phi'] = self._plot_diag(var = 1, init = init, aky = aky, absolute = absolute, settings = settings)
 	
-	def plot_apar(self, init = [0,0,0,0], aky = True):
-		self.plots['apar'] = Plotters['Diag'](scan = self.run, var = 2, aky = aky, init = init, verify = self.verify)
+	def plot_apar(self, init = None, aky = None, absolute = None, settings = {}):
+		self.plots['apar'] = self._plot_diag(var = 2, init = init, aky = aky, absolute = absolute, settings = settings)
 		
-	def plot_bpar(self, init = [0,0,0,0], aky = True):
-		self.plots['bpar'] = Plotters['Diag'](scan = self.run, var = 3, aky = aky, init = init, verify = self.verify)
+	def plot_bpar(self, init = None, aky = None, absolute = None, settings = {}):
+		self.plots['bpar'] = self._plot_diag(var = 3, init = init, aky = aky, absolute = absolute, settings = settings)
 		
-	def plot_phi2(self, init = [0,0,0,0], aky = True):
-		self.plots['phi2'] = Plotters['Diag'](scan = self.run, var = 4, aky = aky, init = init, verify = self.verify)
+	def plot_phi2(self, init = None, aky = None, settings = {}):
+		self.plots['phi2'] = self._plot_diag(var = 4, init = init, aky = aky, settings = settings)
 	
-	def _plot_diag(self, init = [0,0,0,0], aky = True, var = 0):
-		self.plots['diag'] = Plotters['Diag'](scan = self.run, var = var, aky = aky, init = init, verify = self.verify)
+	def _plot_diag(self, init = None, aky = None, var = None, absolute = None, settings = {}):
+		if init is not None:
+			settings['psi_id'] = init[0]
+			settings['bp_id'] = init[1]
+			settings['sh_id'] = init[2]
+			settings['ky_id'] = init[3]
+		if aky is not None:
+			settings['aky'] = aky
+		if var is not None:
+			settings['var'] = var
+		return Plotters['Diag'](scan = self.run, verify = self.verify, settings = settings)
 	
 	def plot_epar(self):
 		Plotters['Epar'](scan = self.run)
 	
-	def plot_theta(self, init = [0,0,0,0], aky = True, var = 0):
-		Plotters['Theta'](scan = self.run, var = var, init = init, aky = aky)
+	def plot_theta(self, init = [0,0,0,0], aky = True, var = 0, n = 3, polar = False):
+		Plotters['Theta'](scan = self.run, var = var, init = init, aky = aky, n = n, polar = polar)
+		
+	def plot_slice(self, init = [0,0], limit = None):
+		if self['ql'] is None:
+			self._calculate_ql()
+		self.plots['slice'] = Plotters['Slice'](scan = self.run, init = init, limit = limit)
 	
 	def plot_eq(self):
 		self.eqbm.plot_eq()
