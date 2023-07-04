@@ -90,7 +90,7 @@ class verify_scan(object):
 	
 	@property
 	def runs_with_errors(self):
-		return self.convergence['unconverged'] | self.bad_runs['nstep'] | self.bad_runs['nan'] | self.bad_runs['phi'] | self.bad_runs['apar'] | self.bad_runs['apar'] | self.bad_runs['bpar'] | self.bad_runs['order']
+		return self.convergence['unconverged'] | self.bad_runs['nstep'] | self.bad_runs['nan'] | self.bad_runs['phi'] | self.bad_runs['apar'] | self.bad_runs['apar'] | self.bad_runs['bpar']
 	
 	@property
 	def runs_with_save_errors(self):
@@ -122,8 +122,9 @@ class verify_scan(object):
 		for i in range(sha[0]):
 			for j in range(sha[1]):
 				for k in range(sha[2]):
-					for l in range(sha[3]):	
-						if self.scan['data']['omega'][i][j][k][l] is None or self.scan['data']['phi2'][i][j][k][l] is None or self.scan['data']['time'][i][j][k][l] is None:
+					for l in range(sha[3]):
+						phi2 = self.scan['data']['phi2'][i][j][k][l]
+						if self.scan['data']['omega'][i][j][k][l] is None or phi2 is None or self.scan['data']['time'][i][j][k][l] is None:
 							if self.scan['data']['omega'][i][j][k][l] is None:
 								self.save_errors['omega'].add((i,j,k,l))
 							if self.scan['data']['phi2'][i][j][k][l] is None:
@@ -131,42 +132,31 @@ class verify_scan(object):
 							if self.scan['data']['time'][i][j][k][l] is None:
 								self.save_errors['time'].add((i,j,k,l))
 						else:
-							if str(self.scan['data']['phi2'][i][j][k][l][-1]) in ['nan','inf','0.0','0']:
-								if str(self.scan['data']['phi2'][i][j][k][l][-1]) == 'nan':
+							if str(phi2[-1]) in ['nan','inf','-inf','0.0','0']:
+								if str(phi2[-1]) == 'nan':
 									self.bad_runs['nan'].add((i,j,k,l))
-								self.scan['data']['phi2'][i][j][k][l] = [x for x in self.scan['data']['phi2'][i][j][k][l] if str(x) not in ['nan','inf','0.0','0']]
-								if len(self.scan['data']['phi2'][i][j][k][l]) == 0:
+								bad_phi2_ids = [idx for idx, x in enumerate(phi2) if str(idx) in ['nan','inf','-inf','0.0','0']]
+								if len(phi2) == len(bad_phi2_ids):
 									self.scan['data']['phi2'][i][j][k][l] = None
 									self.scan['data']['omega'][i][j][k][l] = None
 									self.scan['data']['time'][i][j][k][l] = None
 									self.scan['data']['growth_rates_all'][i][j][k][l] = nan
 									self.scan['data']['mode_frequencies_all'][i][j][k][l] = nan
 								else:
-									self.scan['data']['omega'][i][j][k][l] = self.scan['data']['omega'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
-									self.scan['data']['time'][i][j][k][l] = self.scan['data']['time'][i][j][k][l][:len(self.scan['data']['phi2'][i][j][k][l])]
+									self.scan['data']['phi2'][i][j][k][l] = [x for idx, x in enumerate(phi2) if idx not in bad_phi2_ids]
+									self.scan['data']['omega'][i][j][k][l] = [x for idx, x in enumerate(self.scan['data']['omega'][i][j][k][l]) if idx not in bad_phi2_ids]
+									self.scan['data']['time'][i][j][k][l] = [x for idx, x in enumerate(self.scan['data']['time'][i][j][k][l]) if idx not in bad_phi2_ids]
 									self.scan['data']['growth_rates_all'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
 									self.scan['data']['mode_frequencies_all'][i][j][k][l] = real(self.scan['data']['omega'][i][j][k][l][-1])
 							
-							increasing = [j > i for i,j in zip(self.scan['data']['time'][i][j][k][l],self.scan['data']['time'][i][j][k][l][1:])]
-							while not all(increasing):
-								increasing.insert(0,True)
-								self.scan['data']['time'][i][j][k][l] = [x for idx, x in enumerate(self.scan['data']['time'][i][j][k][l]) if increasing[idx] and increasing[idx+1]]
-								self.scan['data']['phi2'][i][j][k][l] = [x for idx, x in enumerate(self.scan['data']['phi2'][i][j][k][l]) if increasing[idx] and increasing[idx+1]]
-								self.scan['data']['omega'][i][j][k][l] = [x for idx, x in enumerate(self.scan['data']['omega'][i][j][k][l]) if increasing[idx] and increasing[idx+1]]
-								increasing = [j > i for i,j in zip(self.scan['data']['time'][i][j][k][l],self.scan['data']['time'][i][j][k][l][1:])]
-								self.bad_runs['order'].add((i,j,k,l))
-								self.scan['data']['growth_rates_all'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
-								self.scan['data']['mode_frequencies_all'][i][j][k][l] = real(self.scan['data']['omega'][i][j][k][l][-1])
-							
-							positive = [x >= 0 for x in self.scan['data']['phi2'][i][j][k][l]]
-							if not all(positive):
-								self.scan['data']['time'][i][j][k][l] = [y for x,y in enumerate(self.scan['data']['time'][i][j][k][l]) if positive[x] and positive[x+1]]
-								self.scan['data']['phi2'][i][j][k][l] = [y for x,y in enumerate(self.scan['data']['phi2'][i][j][k][l]) if positive[x] and positive[x+1]]
-								self.scan['data']['omega'][i][j][k][l] = [y for x,y in enumerate(self.scan['data']['omega'][i][j][k][l]) if positive[x] and positive[x+1]]
-								self.bad_runs['negative'].add((i,j,k,l))
-								self.scan['data']['growth_rates_all'][i][j][k][l] = imag(self.scan['data']['omega'][i][j][k][l][-1])
-								self.scan['data']['mode_frequencies_all'][i][j][k][l] = real(self.scan['data']['omega'][i][j][k][l][-1])
-								
+							if self.scan['data']['time'][i][j][k][l] is not None:
+								increasing = all([y > x for x,y in zip(self.scan['data']['time'][i][j][k][l],self.scan['data']['time'][i][j][k][l][1:])])
+								if not increasing:
+									self.bad_runs['order'].add((i,j,k,l))
+								positive = all([x >= 0 for x in self.scan['data']['phi2'][i][j][k][l]])
+								if not positive:
+									self.bad_runs['negative'].add((i,j,k,l))
+									
 	def check_convergence(self):
 		from scipy.stats import pearsonr
 		if self.scan['data']['omega'] is None:
@@ -227,7 +217,7 @@ class verify_scan(object):
 								self.scan['data']['growth_rates_all'][i][j][k][l] = imag(omega[-1])
 								self.scan['data']['mode_frequencies_all'][i][j][k][l] = real(omega[-1])
 							
-							if 'nan' in [str(x) for x in phi2] or inf in phi2:
+							if 'nan' in [str(x) for x in phi2] or inf in phi2 or -inf in phi2:
 								self.convergence['uncalculated'].add((i,j,k,l))
 
 							else:
