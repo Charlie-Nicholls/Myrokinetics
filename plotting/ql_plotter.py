@@ -9,6 +9,9 @@ default_settings = {"suptitle": None,
 		"ql_scale": 100,
 		"ql_max": None,
 		"eqbm_style": "title",
+		"contour_type": 0,
+		"x_axis_type": 0,
+		"y_axis_type": 0,
 		"options": [False,False,True,True,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
 		"visible": {"psi_sli": True, "ql_sli": True, "op_box": True, "suptitle": True, "title": True},
@@ -31,11 +34,6 @@ class plot_ql(object):
 			print("Error: No QuasiLinear Data")
 			return
 		
-		self.bpmin = amin(self.data['beta_prime_axis'])
-		self.bpmax = amax(self.data['beta_prime_axis'])
-		self.shmin = amin(self.data['shear_axis'])
-		self.shmax = amax(self.data['shear_axis'])
-		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
 		self._options = ["Show ID","Global Axis Limits","Global Colourbar","Show Equillibrium","Show Ideal"]
 
@@ -51,7 +49,11 @@ class plot_ql(object):
 			if key not in self.settings:
 				self.settings[key] = default_settings[key]
 				self.init_settings[key] = default_settings[key]
-		self.cmap = LinearSegmentedColormap('WhRd', self.settings['cdict'])
+			elif type(self.settings[key]) == dict and key != 'cdict':
+				for skey in self.default_settings:
+					if skey not in self.settings[key]:
+						self.settings[key][skey] = default_settings[key][skey]
+						self.init_settings[key][skey] = default_settings[key][skey]
 		
 		if self['eqbm_style'] not in self._valid_eqbm_styles:
 			print("ERROR: eqbm_style not found, valid styles = {self._valid_eqbm_styles}")
@@ -76,6 +78,10 @@ class plot_ql(object):
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 	
+		self._load_x_axis(self['x_axis_type'])
+		self._load_y_axis(self['y_axis_type'])
+		
+		self.cmap = LinearSegmentedColormap('WhRd', self.settings['cdict'])
 		blank_norm = Normalize(vmin=-1,vmax=1)
 		self.cbar = colorbar(ScalarMappable(norm = blank_norm), ax = self.ax)
 		
@@ -103,7 +109,51 @@ class plot_ql(object):
 			self.set_ql_max(self.init_settings['ql_max'])
 		show()
 	
-	def set_ql_max(self, val):
+	def _load_x_axis(self, axis_type):
+		if axis_type not in [0,'beta_prime',1,'alpha']:
+			print(f"ERROR: axis_type not found, valid types [0,'beta_prime',1,'alpha']")
+			return
+			
+		self.settings['x_axis_type'] = axis_type
+		
+		if axis_type in [1,'alpha']:
+			if not self.data['alpha_axis']:
+				print("ERROR: Alpha not calculated, use calculate_alpha()")
+			else:
+				self.x_axis = self.data['alpha_axis']
+				self.x_axis_ideal = self.data['alpha_axis_ideal']
+				self.x_values = self.data['alpha_values']
+				self._x_axis_label = "\u03B1"
+		else:
+			self.x_axis = self.data['beta_prime_axis']
+			self.x_axis_ideal = self.data['beta_prime_axis_ideal']
+			self.x_values = self.data['beta_prime_values']
+			self._x_axis_label = "-\u03B2'"
+			
+	def set_x_axis_type(self, axis_type):
+		self._load_x_axis(axis_type)
+		self.draw_fig()
+	
+	def _load_y_axis(self, axis_type):
+		if axis_type not in [0,'shear',1,'current']:
+			print(f"ERRORL axis_type not found, valid types [0,'shear',1,'current']")
+			return
+			
+		self.settings['y_axis_type'] = axis_type
+		
+		if axis_type in [1,'current']:
+			print("Not yet implimented")
+		else:
+			self.y_axis = self.data['shear_axis']
+			self.y_axis_ideal = self.data['shear_axis_ideal']
+			self.y_values = self.data['shear_values']
+			self._y_axis_label = "Shear"
+			
+	def set_y_axis_type(self, axis_type):
+		self._load_y_axis(axis_type)
+		self.draw_fig()
+	
+	def set_ql_max(self, val = None):
 		self.settings['ql_max'] = val
 		self.draw_fig()
 	
@@ -152,7 +202,7 @@ class plot_ql(object):
 		
 	def set_suptitle(self, title):
 		self.settings['suptitle'] = title
-		self.fig.suptitle(title)
+		self.fig.suptitle(title,fontsize=self.settings['fontsizes']['suptitle'])
 	
 	def set_eqbm_style(self, eqbm_style):
 		if eqbm_style in self._valid_eqbm_styles:
@@ -160,6 +210,13 @@ class plot_ql(object):
 			self.draw_fig()
 		else:
 			print(f"ERROR: eqbm_style not found, valid styles = {self._valid_eqbm_styles}")
+			
+	def set_contour_type(self, contour_type):
+		if contour_type in [0,1]:
+			self.settings['contour_type'] = contour_type
+			self.draw_fig()
+		else:
+			print(f"ERROR: eqbm_style not found, valid styles = {0,1}")
 	
 	def set_option(self, option, value):
 		if type(option) == str:
@@ -191,13 +248,13 @@ class plot_ql(object):
 	def draw_fig(self, val = None):
 		idx = self.slider.val
 		psiN = self.psiNs[idx]
-		self.settings['psi'] = idx
+		self.settings['psi_id'] = idx
 		
-		x = list(self.data['beta_prime_axis'][idx])
-		y = list(self.data['shear_axis'][idx])
+		x = list(self.x_axis[idx])
+		y = list(self.y_axis[idx])
 		
-		beta_prime = abs(self.data['beta_prime_values'][idx])
-		shear = self.data['shear_values'][idx]
+		x_val = abs(self.x_values[idx])
+		y_val = self.y_values[idx]
 		
 		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"\u03A8\u2099 = {psiN}",visible = False)
 		ideal_line =  None
@@ -205,8 +262,8 @@ class plot_ql(object):
 		
 		self.ax.cla()
 		self.ax.set_facecolor('grey')
-		self.ax.set_ylabel("Shear",fontsize=self['fontsizes']['axis'])
-		self.ax.set_xlabel("-\u03B2'",fontsize=self['fontsizes']['axis'])
+		self.ax.set_ylabel(self._y_axis_label,fontsize=self['fontsizes']['axis'])
+		self.ax.set_xlabel(self._x_axis_label,fontsize=self['fontsizes']['axis'])
 		
 		status = self.options.get_status()
 		self.settings['options'] = status
@@ -228,7 +285,10 @@ class plot_ql(object):
 		norm = Normalize(vmin=0,vmax=qlmax)	
 		self.settings['ql_scale'] = self.ql_slider.val
 		self.cbar.update_normal(ScalarMappable(norm = norm, cmap = self.cmap))
-		self.ax.pcolormesh(x, y, z, cmap = self.cmap, norm=norm)
+		if self['contour_type'] == 1:
+			self.ax.contourf(x,y,z, cmap = self.cmap, norm = norm)
+		else:
+			self.ax.pcolormesh(x, y, z, cmap = self.cmap, norm=norm)
 		
 		if status[0]:
 			dx = x[1] - x[0]
@@ -249,29 +309,29 @@ class plot_ql(object):
 			self.ax.grid(which="minor",color='k')
 		
 		if status[1]:
-			self.ax.set_ylim(self.shmin,self.shmax)
-			self.ax.set_xlim(self.bpmin,self.bpmax)
+			self.ax.set_xlim(amin(self.x_axis),amax(self.x_axis))
+			self.ax.set_ylim(amin(self.y_axis),amax(self.y_axis))
 
 		if status[3]:
-			self.ax.plot(beta_prime,shear,'kx')
+			self.ax.plot(x_val,y_val,'kx')
 			if self['eqbm_style'] in ["point",2,"point numless",4]:
-				self.ax.annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
+				self.ax.annotate("Eqbm",(x_val,y_val),textcoords = "offset points",xytext = (0,7), ha = "center")
 			if self['eqbm_style'] in ["split",1,"point",2]:
-				self.ax.annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
+				self.ax.annotate(f"{x_val:.2f},{y_val:.2f}",(x_val,y_val),textcoords = "offset points",xytext = (0,-13), ha = "center")
 			if self['eqbm_style'] in ["title",0]:
-				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label=f"Equillibrium ({round(beta_prime,2)},{round(shear,2)})",linewidth=0)
+				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label=f"Equillibrium ({x_val:.2f},{y_val:.2f})",linewidth=0)
 			if self['eqbm_style'] in ["split",1,"title numless",3]:
 				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label="Equillibrium",linewidth=0)
 		
 		if status[4]:
 			if self.data['ideal_stabilities'] is not None and self.data['ideal_stabilities'][idx] is not None:
-				self.ax.contourf(self.data['beta_prime_axis_ideal'][idx], self.data['shear_axis_ideal'][idx], self.data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
+				self.ax.contourf(self.x_axis_ideal[idx], self.y_axis_ideal[idx], self.data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
 				ideal_line = Line2D([0,1],[0.5,0.5],color='k',label="Ideal Boundary")
 			else:
 				self.ax.text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=self.ax.transAxes,color='k')
 		
 		handles = [line for line in [psi_line,ideal_line,eqbm_line] if line is not None]
-		self.ax.legend(ncol = 3, handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
+		self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
 		self.ax.legend_.set_visible(self['visible']['title'])
 
 		self.fig.canvas.draw_idle()

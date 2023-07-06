@@ -14,10 +14,13 @@ default_settings = {"suptitle": None,
 		"eqbm_style": "title",
 		"gr_type": "Normalised",
 		"aky": False,
+		"contour_type": 0,
+		"x_axis_type": 0,
+		"y_axis_type": 0,
 		"options": [False,False,True,True,False],
 		"vr_options": [False,False,False,False,False],
-		"fontsizes": {"title": 13, "ch_box": 8, "vr_box": 8, "axis": 17,"suptitle": 20},
-		"visible": {"psi_sli": True, "ky_sli": True, "gr_sli": True, "mf_sli": True, "op_box": True, "vr_box": True, "suptitle": True, "title": True},
+		"fontsizes": {"title": 13, "ch_box": 8, "vr_box": 8, "axis": 17, "suptitle": 20, "legend": 13},
+		"visible": {"psi_sli": True, "ky_sli": True, "gr_sli": True, "mf_sli": True, "op_box": True, "vr_box": True, "suptitle": True, "title": True, "legend": True},
 		"cdict": {'red':  ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.8, 0.8)),
 			'green':  ((0.0, 0.8, 0.8),(0.5, 1, 1),(1.0, 0.0, 0.0)),
 			'blue': ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.0, 0.0))},
@@ -37,11 +40,6 @@ class plot_scan(object):
 			print("Error: No Gyrokinetic Data")
 			return
 		
-		self.bpmin = amin(self.data['beta_prime_axis'])
-		self.bpmax = amax(self.data['beta_prime_axis'])
-		self.shmin = amin(self.data['shear_axis'])
-		self.shmax = amax(self.data['shear_axis'])
-		
 		self.settings = {}
 		self.init_settings = {}
 		for key in settings:
@@ -54,7 +52,11 @@ class plot_scan(object):
 			if key not in self.settings:
 				self.settings[key] = default_settings[key]
 				self.init_settings[key] = default_settings[key]
-		self.cmap = LinearSegmentedColormap('GnRd', self['cdict'])
+			elif type(self.settings[key]) == dict and key != 'cdict':
+				for skey in self.default_settings:
+					if skey not in self.settings[key]:
+						self.settings[key][skey] = default_settings[key][skey]
+						self.init_settings[key][skey] = default_settings[key][skey]
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
 		self._options = ["Show Parities","Global Axis Limits","Global Colorbar","Show Equillibrium","Show Ideal"]
@@ -84,7 +86,11 @@ class plot_scan(object):
 		self.fig.subplots_adjust(bottom=0.15)   
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
-	
+		
+		self._load_x_axis(self['x_axis_type'])
+		self._load_y_axis(self['y_axis_type'])
+		
+		self.cmap = LinearSegmentedColormap('GnRd', self['cdict'])
 		blank_norm = Normalize(vmin=-1,vmax=1)
 		self.cbar_mf = colorbar(ScalarMappable(norm = blank_norm), ax = self.ax[1])
 		self.cbar_gr = colorbar(ScalarMappable(norm = blank_norm), ax = self.ax[0])
@@ -126,7 +132,51 @@ class plot_scan(object):
 		if self['mf_max']:
 			self.set_mf_max(self.init_settings['mf_max'])
 		show()
+	
+	def _load_x_axis(self, axis_type):
+		if axis_type not in [0,'beta_prime',1,'alpha']:
+			print(f"ERROR: axis_type not found, valid types [0,'beta_prime',1,'alpha']")
+			return
+			
+		self.settings['x_axis_type'] = axis_type
 		
+		if axis_type in [1,'alpha']:
+			if not self.data['alpha_axis']:
+				print("ERROR: Alpha not calculated, use calculate_alpha()")
+			else:
+				self.x_axis = self.data['alpha_axis']
+				self.x_axis_ideal = self.data['alpha_axis_ideal']
+				self.x_values = self.data['alpha_values']
+				self._x_axis_label = "\u03B1"
+		else:
+			self.x_axis = self.data['beta_prime_axis']
+			self.x_axis_ideal = self.data['beta_prime_axis_ideal']
+			self.x_values = self.data['beta_prime_values']
+			self._x_axis_label = "-\u03B2'"
+			
+	def set_x_axis_type(self, axis_type):
+		self._load_x_axis(axis_type)
+		self.draw_fig()
+	
+	def _load_y_axis(self, axis_type):
+		if axis_type not in [0,'shear',1,'current']:
+			print(f"ERRORL axis_type not found, valid types [0,'shear',1,'current']")
+			return
+			
+		self.settings['y_axis_type'] = axis_type
+		
+		if axis_type in [1,'current']:
+			print("Not yet implimented")
+		else:
+			self.y_axis = self.data['shear_axis']
+			self.y_axis_ideal = self.data['shear_axis_ideal']
+			self.y_values = self.data['shear_values']
+			self._y_axis_label = "Shear"
+			
+	def set_y_axis_type(self, axis_type):
+		self._load_y_axis(axis_type)
+		self.draw_fig()
+	
 	def set_gr_max(self, val):
 		self.settings['gr_max'] = val
 		self.draw_fig()
@@ -178,6 +228,10 @@ class plot_scan(object):
 	def set_title_fontsize(self, fontsize):
 		self.settings['fontsizes']['title'] = fontsize
 		self.draw_fig()
+	
+	def set_legend_fontsize(self, fontsize):
+		self.settings['fontsizes']['legend'] = fontsize
+		self.draw_fig()
 		
 	def set_suptitle_fontsize(self, fontsize):
 		self.settings['fontsizes']['suptitle'] = fontsize
@@ -193,6 +247,13 @@ class plot_scan(object):
 			self.draw_fig()
 		else:
 			print(f"ERROR: eqbm_style not found, valid styles = {self._valid_eqbm_styles}")
+	
+	def set_contour_type(self, contour_type):
+		if contour_type in [0,1]:
+			self.settings['contour_type'] = contour_type
+			self.draw_fig()
+		else:
+			print(f"ERROR: eqbm_style not found, valid styles = {0,1}")
 	
 	def set_option(self, option, value):
 		if type(option) == str:
@@ -248,11 +309,11 @@ class plot_scan(object):
 		psiN = self.psiNs[idx]
 		self.settings['psi'] = idx
 		
-		x = list(self.data['beta_prime_axis'][idx])
-		y = list(self.data['shear_axis'][idx])
+		x = list(self.x_axis[idx])
+		y = list(self.y_axis[idx])
 		
-		beta_prime = abs(self.data['beta_prime_values'][idx])
-		shear = self.data['shear_values'][idx]
+		x_val = abs(self.x_values[idx])
+		y_val = self.y_values[idx]
 		
 		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"\u03A8\u2099 = {psiN}",visible = False)
 		ky_line = None
@@ -270,13 +331,13 @@ class plot_scan(object):
 		
 		self.ax[0].cla()
 		self.ax[0].set_facecolor('grey')
-		self.ax[0].set_ylabel("Shear")
-		self.ax[0].set_xlabel("-\u03B2'")
+		self.ax[0].set_ylabel(self._y_axis_label,fontsize=self['fontsizes']['axis'])
+		self.ax[0].set_xlabel(self._x_axis_label,fontsize=self['fontsizes']['axis'])
 		self.ax[1].cla()
 		self.ax[1].set_facecolor('grey')
-		self.ax[1].set_ylabel("Shear")
-		self.ax[1].set_xlabel("-\u03B2'")
-		self.ax[1].set_title("Mode Frequency")
+		self.ax[1].set_ylabel(self._y_axis_label,fontsize=self['fontsizes']['axis'])
+		self.ax[1].set_xlabel(self._x_axis_label,fontsize=self['fontsizes']['axis'])
+		self.ax[1].set_title("Mode Frequency",fontsize=self['fontsizes']['title'])
 		
 		status = self.options.get_status()
 		self.settings['options'] = status
@@ -286,14 +347,14 @@ class plot_scan(object):
 		if self['aky']:
 			z_gr = transpose(array(self.data['growth_rates_all'])[idx,:,:,ky_idx]).tolist()
 			z_mf = transpose(array(self.data['mode_frequencies_all'])[idx,:,:,ky_idx]).tolist()
-			self.ax[0].set_title(f"Growth Rate")
+			self.ax[0].set_title(f"Growth Rate",fontsize=self['fontsizes']['title'])
 		else:
 			z_gr = transpose(self.data['growth_rates'][idx]).tolist()
 			z_mf = transpose(self.data['mode_frequencies'][idx]).tolist()
 			if self['gr_type'] == "Normalised":
-				self.ax[0].set_title(f"Growth Rate/ky\u00b2")
+				self.ax[0].set_title(f"Growth Rate/ky\u00b2",fontsize=self['fontsizes']['title'])
 			else:
-				self.ax[0].set_title(f"Growth Rate")
+				self.ax[0].set_title(f"Growth Rate",fontsize=self['fontsizes']['title'])
 		
 		if self['gr_max']:
 			grmax = self.gr_slider.val * self['gr_max']/100
@@ -309,7 +370,10 @@ class plot_scan(object):
 		norm_gr = Normalize(vmin=-grmax,vmax=grmax)
 		self.settings['gr_scale'] = self.gr_slider.val
 		self.cbar_gr.update_normal(ScalarMappable(norm = norm_gr, cmap = self.cmap))
-		self.ax[0].pcolormesh(x, y, z_gr, cmap = self.cmap, norm=norm_gr)
+		if self['contour_type'] == 1:
+			self.ax[0].contourf(x, y, z_gr, cmap = self.cmap, norm=norm_gr)
+		else:
+			self.ax[0].pcolormesh(x, y, z_gr, cmap = self.cmap, norm=norm_gr)
 		
 		if self['mf_max']:
 			mfmax = self.mf_slider.val * self['mf_max']/100
@@ -340,29 +404,29 @@ class plot_scan(object):
 			self.ax[1].plot(array(x)[anti_ids[0]], array(y)[anti_ids[1]], '_', color = 'cyan', label = 'par')
 		
 		if status[1]:
-			self.ax[0].set_ylim(self.shmin,self.shmax)
-			self.ax[0].set_xlim(self.bpmin,self.bpmax)
-			self.ax[1].set_ylim(self.shmin,self.shmax)
-			self.ax[1].set_xlim(self.bpmin,self.bpmax)
+			self.ax[0].set_ylim(amin(self.y_axis),amax(self.y_axis))
+			self.ax[0].set_xlim(amin(self.x_axis),amax(self.x_axis))
+			self.ax[1].set_ylim(amin(self.y_axis),amax(self.y_axis))
+			self.ax[1].set_xlim(amin(self.x_axis),amax(self.x_axis))
 
 		if status[3]:
-			self.ax[0].plot(beta_prime,shear,'kx')
-			self.ax[1].plot(beta_prime,shear,'kx')
+			self.ax[0].plot(x_val,y_val,'kx')
+			self.ax[1].plot(x_val,y_val,'kx')
 			if self['eqbm_style'] in ["point",2,"point numless",4]:
-				self.ax[0].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
-				self.ax[1].annotate("Eqbm",(beta_prime,shear),textcoords = "offset points",xytext = (0,7), ha = "center")
+				self.ax[0].annotate("Eqbm",(x_val,y_val),textcoords = "offset points",xytext = (0,7), ha = "center")
+				self.ax[1].annotate("Eqbm",(x_val,y_val),textcoords = "offset points",xytext = (0,7), ha = "center")
 			if self['eqbm_style'] in ["split",1,"point",2]:
-				self.ax[0].annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
-				self.ax[1].annotate(f"{round(beta_prime,2)},{round(shear,2)}",(beta_prime,shear),textcoords = "offset points",xytext = (0,-13), ha = "center")
+				self.ax[0].annotate(f"{x_val:.2f},{y_val:.2f}",(x_val,y_val),textcoords = "offset points",xytext = (0,-13), ha = "center")
+				self.ax[1].annotate(f"{x_val:.2f},{y_val:.2f}",(x_val,y_val),textcoords = "offset points",xytext = (0,-13), ha = "center")
 			if self['eqbm_style'] in ["title",0]:
-				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label=f"Equillibrium ({round(beta_prime,2)},{round(shear,2)})",linewidth=0)
+				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label=f"Equillibrium ({x_val:.2f},{y_val:.2f})",linewidth=0)
 			if self['eqbm_style'] in ["split",1,"title numless",3]:
 				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label="Equillibrium",linewidth=0)
 		
 		if status[4]:
 			if self.data['ideal_stabilities'] is not None and self.data['ideal_stabilities'][idx] is not None:
-				self.ax[0].contourf(self.data['beta_prime_axis_ideal'][idx], self.data['shear_axis_ideal'][idx], self.data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
-				self.ax[1].contourf(self.data['beta_prime_axis_ideal'][idx], self.data['shear_axis_ideal'][idx], self.data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
+				self.ax[0].contourf(self.x_axis_ideal[idx], self.y_axis_ideal[idx], self.data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
+				self.ax[1].contourf(self.x_axis_ideal[idx], self.y_axis_ideal[idx], self.data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
 				ideal_line = Line2D([0,1],[0.5,0.5],color='k',label="Ideal Boundary")
 			else:
 				self.ax[0].text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=self.ax[0].transAxes,color='k')
@@ -461,7 +525,7 @@ class plot_scan(object):
 			self.ax[1].plot(array(x)[na_x], array(y)[na_y], 'kX')
 		
 		handles = [line for line in [psi_line,ky_line,ideal_line,eqbm_line] if line is not None]
-		self.ax[0].legend(ncol = 4, handles = handles, bbox_to_anchor= (0,1.02),loc = "lower left", fontsize = self['fontsizes']['title'], frameon = False)
-		self.ax[0].legend_.set_visible(self['visible']['title'])
+		self.ax[0].legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0,1.02),loc = "lower left", fontsize = self['fontsizes']['title'], frameon = False)
+		self.ax[0].legend_.set_visible(self['visible']['legend'])
 		
 		self.fig.canvas.draw_idle()

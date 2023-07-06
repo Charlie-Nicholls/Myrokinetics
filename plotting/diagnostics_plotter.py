@@ -39,6 +39,11 @@ class plot_diag(object):
 			if key not in self.settings:
 				self.settings[key] = default_settings[key]
 				self.init_settings[key] = default_settings[key]
+			elif type(self.settings[key]) == dict:
+				for skey in self.default_settings:
+					if skey not in self.settings[key]:
+						self.settings[key][skey] = default_settings[key][skey]
+						self.init_settings[key][skey] = default_settings[key][skey]
 		
 		if self['var'] == "omega":
 			self.settings['var'] = 0
@@ -162,7 +167,7 @@ class plot_diag(object):
 		
 	def set_suptitle(self, title):
 		self.settings['suptitle'] = title
-		self.fig.suptitle(title)
+		self.fig.suptitle(title,fontsize=self.settings['fontsizes']['suptitle'])
 		
 	def draw_fig(self, val = None):
 		self.ax.cla()
