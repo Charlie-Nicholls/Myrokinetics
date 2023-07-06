@@ -13,7 +13,7 @@ default_settings = {"suptitle": None,
 		"absolute": False,
 		"options": [True],
 		"fontsizes": {"legend": 10,"ch_box": 8,"axis": 11,"title": 13,"suptitle": 20, "verify": 8},
-		"visible": {"psi_sli": True, "bp_sli": True, "sh_sli": True, "ky_sli": True, "op_box": True, "subtitle": True, "title": True, "legend": True, "verify": True},
+		"visible": {"psi_sli": True, "bp_sli": True, "sh_sli": True, "ky_sli": True, "op_box": True, "suptitle": True, "title": True, "legend": True, "verify": True},
 }
 
 class plot_diag(object):
