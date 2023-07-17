@@ -174,7 +174,7 @@ class plot_ideal(object):
 		
 	def set_suptitle(self, title):
 		self.settings['suptitle'] = title
-		self.fig.suptitle(title)
+		self.fig.suptitle(title, fontsize = self.settings['fontsizes']['suptitle'])
 	
 	def set_eqbm_style(self, eqbm_style):
 		if eqbm_style in self._valid_eqbm_styles:

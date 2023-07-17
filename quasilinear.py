@@ -21,19 +21,24 @@ def avg_kperp2_f(indexes,data,f,ky):
 	return top/bottom
 
 def QL(indexes,data,kys):
-	p,i,j = indexes
 	try:
+		p,i,j = indexes
+		grs = data['growth_rates_all'][p][i][j]
+		for k, ky in enumerate(kys):
+			if data['phi'][p][i][j][k] is None or data['apar'][p][i][j][k] is None or data['bpar'][p][i][j][k] is None:
+				grs[k] = nan
+		kys = array([ky if str(gr) != 'nan' else nan for ky,gr in zip(kys,grs)])
 		nruns = len(kys)
-		kys = array(kys)
-		grs = [data['growth_rates_all'][p][i][j][k] for k in range(nruns)]
+		if len([ky for ky in kys if str(ky) != 'nan']) == 0:
+			return nan
 		grs = array([x if x > 0 else 0 for x in grs])
-		kp_phis = array([avg_kperp2_f((p,i,j,k), data,'phi',ky) for k, ky in enumerate(kys)])
-		kp_apars = array([avg_kperp2_f((p,i,j,k), data,'apar',ky) for k, ky in enumerate(kys)])
-		kp_bpars = array([avg_kperp2_f((p,i,j,k), data,'bpar',ky) for k, ky in enumerate(kys)])
+		kp_phis = array([avg_kperp2_f((p,i,j,k), data,'phi',ky) if str(ky) != 'nan' else nan for k, ky in enumerate(kys)])
+		kp_apars = array([avg_kperp2_f((p,i,j,k), data,'apar',ky) if str(ky) != 'nan' else nan for k, ky in enumerate(kys)])
+		kp_bpars = array([avg_kperp2_f((p,i,j,k), data,'bpar',ky) if str(ky) != 'nan' else nan for k, ky in enumerate(kys)])
 
-		max_phis = array([max(abs(array(data['phi'][p][i][j][k]))) for k in range(nruns)])
-		max_apars = array([max(abs(array(data['apar'][p][i][j][k]))) for k in range(nruns)])
-		max_bpars = array([max(abs(array(data['bpar'][p][i][j][k]))) for k in range(nruns)])
+		max_phis = array([max(abs(array(data['phi'][p][i][j][k]))) if str(kys[k]) != 'nan' else nan for k in range(nruns)])
+		max_apars = array([max(abs(array(data['apar'][p][i][j][k]))) if str(kys[k]) != 'nan' else nan for k in range(nruns)])
+		max_bpars = array([max(abs(array(data['bpar'][p][i][j][k]))) if str(kys[k]) != 'nan' else nan for k in range(nruns)])
 
 		#Sometimes the values are such that squaring takes it out of python's size limit for floats, we can scale all the values and it will cancel itself out
 		for k in range(nruns):

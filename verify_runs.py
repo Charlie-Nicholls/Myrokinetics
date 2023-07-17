@@ -135,7 +135,7 @@ class verify_scan(object):
 							if str(phi2[-1]) in ['nan','inf','-inf','0.0','0']:
 								if str(phi2[-1]) == 'nan':
 									self.bad_runs['nan'].add((i,j,k,l))
-								bad_phi2_ids = [idx for idx, x in enumerate(phi2) if str(idx) in ['nan','inf','-inf','0.0','0']]
+								bad_phi2_ids = [idx for idx, x in enumerate(phi2) if str(x) in ['nan','inf','-inf','0.0','0']]
 								if len(phi2) == len(bad_phi2_ids):
 									self.scan['data']['phi2'][i][j][k][l] = None
 									self.scan['data']['omega'][i][j][k][l] = None

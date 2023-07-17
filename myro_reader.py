@@ -2,6 +2,7 @@ import os
 from numpy import load, savez, array, nan, full
 from .plotting import Plotters
 from .verify_runs import verify_scan
+from .inputs import inputs
 
 '''
 GYROKINETIC SCAN ANALYSIS
@@ -22,21 +23,18 @@ class myro_read(object):
 		if opened and not self.verify and verify:		
 			self._verify_run()
 		
-	
 	def __getitem__(self, key):
 		if key not in ["Miller", "Ideal", "Gyro", "Viking", "Fixed_delt", "Epar","psiNs","eparN","eparN_all"]:
 			key = key.lower()
 		if key == "inputs":
-			self.inputs()
+			self.print_inputs()
 		elif key in ["info","run_info","run info"]:
-			self.run_info()
+			self.print_info()
 		elif key == "data":
-			self.data()
+			self.print_data()
 			
 		elif key in self.run['data'].keys():
 			return self.run['data'][key]
-		elif key in self.run['inputs'].keys():
-			return self.run['inputs'][key]
 		elif key in self.run['info'].keys():
 			return self.run['info'][key]
 		elif key in self.run['files'].keys():
@@ -50,8 +48,6 @@ class myro_read(object):
 			return self.run['data']['growth_rates_all']
 		elif key in ["mfa","mf_a","mf_all"]:
 			return self.run['data']['mode_frequencies_all']
-		elif key in ["akyv","aky_v",]:
-			return self.run['inputs']['aky_values']
 		elif key in ["namelist_diffs", "nml_diffs", "namelist_diff", "nml_diff", "namelists", "nmls"]:
 			return self.run['files']['namelist_differences']
 		elif key in ["ql", "quasi linear", "quasi_linear"]:
@@ -61,32 +57,22 @@ class myro_read(object):
 			return self.verify[key]
 			
 		else:
-			print(f"{key} Not Found")
+			return self.inputs[key]
+			#inputs also contains logic for if key not found
 			
 	def __len__(self):
 		return len(self['psiNs'])*self['n_beta']*self['n_shat']*len(self['aky_values'])
 	
-	def data(self):
+	def print_data(self):
         	for key, val in self.run['data'].items():
         		print(key)
-	def inputs(self):
-        	for key, val in self.run['inputs'].items():
-        		print(f"{key} = {val}")
+        		
+	def print_inputs(self):
+        	self.inputs.print_inputs()
 
-	def info(self):
+	def print_info(self):
 		for key, val in self.run['info'].items():
         		print(f"{key} = {val}")
-
-	def keys(self):
-		print("Data Keys:")
-		for key in self.run['data'].keys():
-			print(key)
-		print("\nInput Keys:")
-		for key in self.run['inputs'].keys():
-			print(key)
-		print("\nRun Info Keys:")
-		for key in self.run['info'].keys():
-			print(key)
 		
 	def _print_file(self, filetype = ''):
 		if self.run['files'] is None:
@@ -166,21 +152,8 @@ class myro_read(object):
 	def write_kin_file(self, filename = None, directory = None):
 		self._write_file(filetype = 'kin', filename = filename, directory = directory)
 		
-	def write_input_file(self, filename = None, directory = "./"):
-		if directory is None and self.directory is None:
-			directory = "./"
-		elif directory is None:
-			directory = self.directory
-			
-		if filename is None:
-			filename = self['input_file']
-		if "." not in filename:
-			filename = filename + ".in"
-		
-		with open(os.path.join(directory,filename),'w') as in_file:
-			for key in self.run['inputs'].keys():
-				in_file.write(f"{key} = {self.run['inputs'][key]}\n")
-		print(f"Created {filename} at {directory}")
+	def write_input_file(self, filename = None, directory = "./", doPrint = True):
+		self.inputs.write_input_file(filename = filename, directory = directory, doPrint = doPrint)
 		
 	def _open_file(self, filename = None, directory = None):
 		if directory:
@@ -205,23 +178,14 @@ class myro_read(object):
 				return False
 		
 		try:
-			inputs = data_in['inputs'].item()
-			possible_inputs = ['shat_min','shat_max','beta_min','beta_max','shat_div','shat_mul','beta_div','beta_mul','n_shat','n_beta',
-			'n_shat_ideal','n_beta_ideal','psiNs','aky_values','Miller','Ideal','Gyro','Viking','Fixed_delt','Epar']
-			for key in [x for x in possible_inputs if x not in inputs.keys()]:
-				inputs[key] = None
-		except:
-			print("ERROR: could not load Inputs")
-			inputs = None
-		try:
 			info = data_in['run_info'].item()
-		except:
-			print("ERROR: could not load Run Info")
-			info = None
 			possible_info = ['run_name','run_uuid','data_path','input_file','eq_file_name','template_file_name','kin_file_name',
 			'kinetics_type','run_data','_eq_file_path','_kin_file_path','_template_file_path']
 			for key in [x for x in possible_info if x not in info.keys()]:
 				info[key] = None
+		except:
+			print("ERROR: could not load Run Info")
+			info = None
 		try:
 			data = data_in['data'].item()
 			possible_data = ['beta_prime_values','shear_values','beta_prime_axis','shear_axis','beta_prime_axis_ideal','shear_axis_ideal',
@@ -242,18 +206,25 @@ class myro_read(object):
 			print("ERROR: could not load Input Files")
 			files = None
 		try:
+			self.inputs = inputs(input_dict = data_in['inputs'].item())
+			if info:
+				self.inputs.input_file = info['input_file']
+		except:
+			print("ERROR: could not load Inputs")
+			self.inputs = None
+		try:
 			verify = data_in['verify'].item()
 		except:
 			verify = {}
 
-		self.run = {'inputs': inputs, 'info': info, 'data': data, 'files': files}
+		self.run = {'info': info, 'data': data, 'files': files}
 		self.verify = verify
 		return True
 	
 	def _save_file(self, filename = None, directory = "./"):
 		if filename == None:
 			filename = self['run_name']
-		savez(f"{directory}/{filename}", inputs = self.run['inputs'], data = self.run['data'], run_info = self.run['info'], files = self.run['files'], verify = self.verify)
+		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = self.run['data'], run_info = self.run['info'], files = self.run['files'], verify = self.verify)
 		
 	def _remove_akys(self, akys = None, ids = None):
 		if akys is None and ids is None:
@@ -285,20 +256,12 @@ class myro_read(object):
 					QLs[p][i][j] = QL((p,i,j),self.run['data'],self['akyv'])
 		self.run['data']['quasilinear'] = QLs
 		
-	def _convert_gr(self, gr_type = None, doPrint = True):
+	def calculate_gr(self, gr_type = "Normalised", doPrint = True):
 		GR = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
 		MF = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
 		KY = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
 		SYM = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
 		
-		if gr_type is None:
-			if self._gr_type == "Unnormalised":
-				gr_type = "Absolute"
-			elif self._gr_type == "Absolute":
-				gr_type = "Normalised"
-			elif self._gr_type == "Normalised":
-				gr_type = "Unnormalised"
-
 		if gr_type == "Absolute":
 			for psiN in range(len(self['psiNs'])):
 				for i in range(self['n_beta']):
@@ -492,7 +455,7 @@ class myro_read(object):
 			template_file = self['template_file_name']
 			if not os.path.exists(f"{os.path.join(directory,template_file)}"):
 				self.write_template_file(filename = template_file, directory = directory)
-		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.run['inputs'])
+		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.inputs)
 	
 	def write_gs2_input(self, indexes = None, filename = None, eq_file = None, kin_file = None, template_file = None, directory = None):
 		import f90nml

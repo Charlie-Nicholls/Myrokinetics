@@ -206,5 +206,5 @@ class myro_set_read(object):
 			self._get_variables
 		Plotters['Set'](runs = self.runs, var = var, variables = self.variables, init = init, aky_axis = aky_axis)
 	
-	def plot_theta(self, init = None, var = 0):
-		Plotters['Theta_Set'](runs = self.runs, var = var, init = init)
+	def plot_theta(self, init = None, var = 0, n = 3, polar = False):
+		Plotters['Theta_Set'](runs = self.runs, var = var, init = init, n = n, polar = polar)

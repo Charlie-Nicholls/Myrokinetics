@@ -1,8 +1,9 @@
 from numpy import linspace, pi, zeros, real, imag, shape
 from scipy.interpolate import InterpolatedUnivariateSpline
 from matplotlib.pyplot import *
+from matplotlib.widgets import CheckButtons
 
-def plot_theta(run = None, var = 0, fig = None, ax = None):
+def plot_theta(run = None, var = 0, fig = None, ax = None, n = 3, polar = True):
 	if run is None:
 		print("Run Not Given")
 		return
@@ -11,8 +12,10 @@ def plot_theta(run = None, var = 0, fig = None, ax = None):
 		var = "phi"
 	if var == 1:
 		var = "apar"
-	if var not in ["phi","apar"]:
-		print(f"ERROR: variable name/value {var} not supported. supported: phi/0, apar/1")
+	if var == 2:
+		var = "bpar"
+	if var not in ["phi","apar","bpar"]:
+		print(f"ERROR: variable name/value {var} not supported. supported: phi/0, apar/1, bpar/2")
 		return
 
 	b_angle = run['theta']
@@ -22,7 +25,13 @@ def plot_theta(run = None, var = 0, fig = None, ax = None):
 	
 	doShow = False
 	if fig is None or ax is None:
-		fig, ax = subplots(1,2,figsize=(14.6,7))
+		if polar:
+			fig = figure(figsize=(14.6,7))
+			ax1 = subplot(1,2,1)
+			ax2 = subplot(1,2,2, projection = 'polar')
+			ax = [ax1,ax2]
+		else:
+			fig, ax = subplots(1,2,figsize=(14.6,7))
 		doShow = True
 
 	theta = linspace(0, 2*pi, 100)
@@ -41,7 +50,7 @@ def plot_theta(run = None, var = 0, fig = None, ax = None):
 			elif th_p > b_angle[-1]:
 				sampling = False
 			i = i+1
-	n=4
+
 	for i in range(n):
 		ax[1].plot(theta+i*2*pi, rt_fun,'b--')
 		ax[1].plot(theta+i*2*pi, it_fun,'r--')
@@ -54,7 +63,7 @@ def plot_theta(run = None, var = 0, fig = None, ax = None):
 	if doShow:
 		show()
 	
-def plot_theta_scan(scan = None, var = 0, init = [0,0,0,0], aky = True):
+def plot_theta_scan(scan = None, var = 0, init = [0,0,0,0], aky = True, n = 3, polar = False):
 	if scan is None:
 		print("Scan Not Given")
 		return
@@ -63,7 +72,9 @@ def plot_theta_scan(scan = None, var = 0, init = [0,0,0,0], aky = True):
 		var = "phi"
 	if var == 1:
 		var = "apar"
-	if var not in ["phi","apar"]:
+	if var == 2:
+		var = "bpar"
+	if var not in ["phi","apar","bpar"]:
 		print(f"ERROR: variable name/value {var} not supported. supported: phi/0, apar/1")
 		return	
 		
@@ -89,7 +100,7 @@ def plot_theta_scan(scan = None, var = 0, init = [0,0,0,0], aky = True):
 			aky_idx = inputs['aky_values'].index(ky)
 		
 		run = {'theta': data['theta'][psi_idx][bp_idx][sh_idx][aky_idx], var: data[var][psi_idx][bp_idx][sh_idx][aky_idx]}
-		plot_theta(run = run, var = var, fig = fig, ax = ax)
+		plot_theta(run = run, var = var, fig = fig, ax = ax, n = n, polar = polar)
 		fig.canvas.draw_idle()
 	
 	fig, ax = subplots(1,2,figsize=(14.6,7))
@@ -115,12 +126,14 @@ def plot_theta_scan(scan = None, var = 0, init = [0,0,0,0], aky = True):
 	draw_fig(0)
 	show()
 
-def plot_theta_set(runs = None, var = 0, init = None):
+def plot_theta_set(runs = None, var = 0, init = None, n = 3, polar = False):
 	if var == 0:
 		var = "phi"
 	if var == 1:
 		var = "apar"
-	if var not in ["phi","apar"]:
+	if var == 2:
+		var = "bpar"
+	if var not in ["phi","apar","bpar"]:
 		print(f"ERROR: variable name/value {var} not supported. supported: phi/0, apar/1")
 		return
 	
@@ -139,7 +152,7 @@ def plot_theta_set(runs = None, var = 0, init = None):
 			if correct_run:
 				data = run['data'].run
 				break
-		plot_theta(run = data, var = var, fig = fig, ax = ax)
+		plot_theta(run = data, var = var, fig = fig, ax = ax, n = n, polar = polar)
 		ax[0].set_title(f"{[x for x in sliders.keys()]} = {[run[x] for x in sliders.keys()]}")
 		fig.canvas.draw_idle()
 	

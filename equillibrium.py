@@ -1,11 +1,12 @@
 import os
 import f90nml
+from .inputs import inputs
 from .templates import template_dir, gs2_template
 from copy import deepcopy
 
 class equillibrium(object):
 	
-	def __init__(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None, inputs = {}):
+	def __init__(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None, inputs = None):
 		self.eq_name = eq_file
 		self.kin_name = kin_file
 		self.template_name = template_file
@@ -13,23 +14,6 @@ class equillibrium(object):
 		self.path = directory
 		self.eq_data = self.kin_data = self.pyro = self._eq_path = self._kin_path = self._eq_lines = self._kin_lines = self.beta_prime_profile = self.shear_profile = None
 		self.surface_namelists = {}
-		self.inputs = {}
-		self._inputs = {
-		'shat_min': 0,
-		'shat_max': 10,
-		'beta_min': 0.01,
-		'beta_max': 0.7,
-		'shat_div': None,
-		'shat_mul': None,
-		'beta_div': None,
-		'beta_mul': None,
-		'n_shat_ideal': 100,
-		'n_beta_ideal': 100,
-		'Miller': False,
-		'Ideal': True,
-		'Fixed_delt': False,
-		'Epar': False,
-		}
 		if eq_file:
 			self.load_geqdsk()
 		if kin_file:
@@ -151,32 +135,16 @@ class equillibrium(object):
 		
 	def load_inputs(self, inputs):
 		self.surface_namelists = {}
-		for key, val in inputs.items():
-			if key in self._inputs.keys():
-				self.inputs[key] = val
+		if type(inputs) == str:
+			self.inputs = inputs(input_file = inputs, directory = self.path)
+		elif type(inputs) == dict:
+			self.inputs = inputs(input_dict = inputs, directory = self.path)
+		elif type(inputs) == inputs:
+			self.inputs = inputs
 	
 	def edit_inputs(self, key = None, val = None):
 		self.surface_namelists = {}
-		if key is not None and key not in self._inputs.keys():
-			print(f"ERROR: {key} is not a valid key. Valid keys: {self.inputs.keys()}")
-			return
-		elif key is not None and val is not None:
-			self.inputs[key] = val
-			return
-		elif key is not None:
-			keys = [key]
-		else:
-			keys = self._inputs.keys()
-		for key in keys:
-			if key in self.inputs.keys():
-				if self.inputs[key] is None:
-					val = input(f"Input value for {key} (Current value: None): ")
-				else:
-					val = input(f"Input value for {key} (Current value: {self.inputs[key]}): ")
-			else:
-				val = input(f"Input value for {key} (Current value: None): ")
-			if val != "":
-				self.inputs[key] = eval(val)
+		self.inputs.edit_inputs(key=key,val=val)
 
 	def AmmendPEQDSK(self):
 		if self.eq_data is None and self.eq_name is None:
@@ -316,13 +284,14 @@ class equillibrium(object):
 		
 		return deepcopy(self.surface_namelists[psiN])
 				
-	def get_gyro_input(self, psiN, bp, sh, aky, namelist_diff = {}):
+	def get_gyro_input(self, psiN, bp, sh, aky, t0 = 0, namelist_diff = {}):
 		nml = self.get_surface_input(psiN)
 
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
 		nml['theta_grid_eik_knobs']['s_hat_input'] = sh
 		nml['theta_grid_eik_knobs']['beta_prime_input'] = -1*abs(bp)
 		nml['kt_grids_single_parameters']['aky'] = aky
+		nml['kt_grids_single_parameters']['theta0'] = t0
 	
 		bp_cal = self.cal_bp(nml)
 
@@ -381,4 +350,23 @@ class equillibrium(object):
 		ax[1].set_xlabel("psiN")
 		ax[0].set_ylabel("beta_prime")
 		ax[1].set_ylabel("shear")
+		show()
+	
+	def plot_kin(self):
+		from matplotlib.pyplot import subplots, show
+
+		fig, ax = subplots(3,1)
+		psiNs = self.kin_data['psinorm']
+		ne = self.kin_data['ne']
+		te = self.kin_data['te']
+		
+		ax[2].plot(psiNs, ne, 'r')
+		ax[1].plot(psiNs, te, 'r')
+		ax[0].plot(psiNs, ne*te, 'r')
+		ax[2].set_xlabel("psiN")
+		ax[1].set_xlabel("psiN")
+		ax[0].set_xlabel("psiN")
+		ax[2].set_ylabel("Density ($10^{20}m^{-3}$)")
+		ax[1].set_ylabel("Temeperature (keV)")
+		ax[0].set_ylabel("Pressure ($10^{20}keV m^{-3}$)")
 		show()

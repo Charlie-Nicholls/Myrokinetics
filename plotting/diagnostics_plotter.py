@@ -293,19 +293,20 @@ class plot_diag(object):
 			self.ax.set_yscale('log')
 			self.ax.set_xlabel(f"Time ({len(t)} steps)",fontsize=self['fontsizes']['axis'])
 			
-			if self.options.get_status()[0] and self.verify is not None:
+			if self.options.get_status()[0] and self.verify is not None :
 				nt = self.verify.nts[psi_idx][bp_idx][sh_idx][aky_idx]
-				fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
-				fitgr = fit[0]/2
-				pr = pearsonr(t[-nt:],log(phi2[-nt:]))
-				gradgr = log(phi2[-1]/phi2[0])/(t[-1]-t[0])/2
-				omega = self.data['omega'][psi_idx][bp_idx][sh_idx][aky_idx]
-				
-				self.ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fitgr:+.2e}\nR = {pr[0]:.4f}")
-				self.ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {gradgr:+.2e}")
-				self.ax.text(0.01,0.99,f"GR: {self.data['growth_rates_all'][psi_idx][bp_idx][sh_idx][aky_idx]:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
-				self.ax.set_xlabel(f"Time ({len(t)} steps) | nt = {nt}")
-				self.ax.legend(loc=1,fontsize=self['fontsizes']['legend'])
+				if nt is not None:
+					fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
+					fitgr = fit[0]/2
+					pr = pearsonr(t[-nt:],log(phi2[-nt:]))
+					gradgr = log(phi2[-1]/phi2[0])/(t[-1]-t[0])/2
+					omega = self.data['omega'][psi_idx][bp_idx][sh_idx][aky_idx]
+					
+					self.ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fitgr:+.2e}\nR = {pr[0]:.4f}")
+					self.ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {gradgr:+.2e}")
+					self.ax.text(0.01,0.99,f"GR: {self.data['growth_rates_all'][psi_idx][bp_idx][sh_idx][aky_idx]:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
+					self.ax.set_xlabel(f"Time ({len(t)} steps) | nt = {nt}")
+					self.ax.legend(loc=1,fontsize=self['fontsizes']['legend'])
 		
 		if self.verify is not None and self['visible']['verify']:
 			bad = []
@@ -315,6 +316,10 @@ class plot_diag(object):
 				bad.append('nan')
 			if (psi_idx,bp_idx,sh_idx,aky_idx) in self.verify['unconv']:
 				bad.append('unconverged')
+			if (psi_idx,bp_idx,sh_idx,aky_idx) in self.verify['negative']:
+				bad.append('negative')
+			if (psi_idx,bp_idx,sh_idx,aky_idx) in self.verify['order']:
+				bad.append('order')
 			if self['var'] == 1 and (psi_idx,bp_idx,sh_idx,aky_idx) in self.verify['phi']:
 				bad.append('phi')
 			if self['var'] == 2 and (psi_idx,bp_idx,sh_idx,aky_idx) in self.verify['apar']:
