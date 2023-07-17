@@ -265,4 +265,4 @@ class inputs(object):
 				for sub_key in dic[key]:
 					print(f"\t{sub_key} = {self.inputs[key][sub_key]}")
 			else:
-				print(f"\t{key} = {self.inputs[key]")
+				print(f"\t{key} = {self.inputs[key]}")
