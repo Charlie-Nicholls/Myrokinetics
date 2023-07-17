@@ -263,6 +263,6 @@ class inputs(object):
 			if type(dic[key]) == dict:
 				print(f"{key}:")
 				for sub_key in dic[key]:
-					print(f"\t{sub_key} = {self.inputs[key][sub_key]")
+					print(f"\t{sub_key} = {self.inputs[key][sub_key]}")
 			else:
 				print(f"\t{key} = {self.inputs[key]")
