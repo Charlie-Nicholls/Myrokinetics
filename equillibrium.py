@@ -1,6 +1,6 @@
 import os
 import f90nml
-from .inputs import inputs
+from .inputs import scan_inputs
 from .templates import template_dir, gs2_template
 from copy import deepcopy
 
@@ -139,7 +139,7 @@ class equillibrium(object):
 			self.inputs = inputs(input_file = inputs, directory = self.path)
 		elif type(inputs) == dict:
 			self.inputs = inputs(input_dict = inputs, directory = self.path)
-		elif type(inputs) == inputs:
+		elif type(inputs) == scan_inputs:
 			self.inputs = inputs
 	
 	def edit_inputs(self, key = None, val = None):
@@ -183,29 +183,6 @@ class equillibrium(object):
 			return deepcopy(self.surface_namelists[psiN])
 		if self.pyro is None:
 			self.load_pyro()
-		if self.inputs.keys() != self._inputs.keys():
-			idiff = [x for x in self._inputs.keys() if x not in self.inputs.keys()]
-			if 'beta_min' not in idiff and 'beta_div' in idiff:
-				idiff.remove('beta_div')
-			if 'beta_max' not in idiff and 'beta_mul' in idiff:
-				idiff.remove('beta_mul')
-			if 'shear_min' not in idiff and 'shear_div' in idiff:
-				idiff.remove('shear_div')
-			if 'shear_max' not in idiff and 'shear_mul' in idiff:
-				idiff.remove('shear_mul')
-			if 'beta_min' in idiff and 'beta_div' not in idiff:
-				idiff.remove('beta_min')
-			if 'beta_max' in idiff and 'beta_mul' not in idiff:
-				idiff.remove('beta_max')
-			if 'shear_min' in idiff and 'shear_div' not in idiff:
-				idiff.remove('shear_min')
-			if 'shear_max' in idiff and 'shear_mul' not in idiff:
-				idiff.remove('shear_max')
-			
-			if idiff:
-				print("Warning: {idiff} input keys missing, using default")
-				for key in idiff:
-					self.inputs[key] = self._inputs[key]
 
 		self.pyro.load_local(psi_n=psiN)
 		self.pyro.update_gk_code()
@@ -245,35 +222,10 @@ class equillibrium(object):
 			nml['theta_grid_eik_knobs']['ntheta_geometry'] = 4096
 
 		if self.inputs['Ideal']:
-			if self.inputs['beta_div'] is None:
-				beta_div = abs(beta_prim/self.inputs['beta_min'])
-			elif self.inputs['beta_min'] is None:
-				beta_div = self.inputs['beta_div']
-			else:
-				beta_div = min(self.inputs['beta_div'],beta_prim/self.inputs['beta_min'])
+			beta_div = abs(beta_prim/self.inputs['beta_min'])
+			beta_mul = abs(self.inputs['beta_max']/beta_prim)
 				
-			if self.inputs['beta_mul'] is None:
-				beta_mul = abs(self.inputs['beta_max']/beta_prim)
-			elif self.inputs['beta_max'] is None:
-				beta_mul = self.inputs['beta_mul']
-			else:
-				beta_mul = min(self.inputs['beta_mul'],self.inputs['beta_max']/beta_prim)
-				
-			if self.inputs['shat_min'] is None:
-				shat_min = shear/self.inputs['shat_div']
-			elif self.inputs['shat_div'] is None:
-				shat_min = self.inputs['shat_min']
-			else:
-				shat_min = max(self.inputs['shat_min'],shear/self.inputs['shat_div'])
-				
-			if self.inputs['shat_max'] is None:
-				shat_max = self.inputs['shat_mul']*shear
-			elif self.inputs['shat_mul'] is None:
-				shat_max = self.inputs['shat_max']
-			else:
-				shat_max = min(self.inputs['shat_max'],self.inputs['shat_mul']*shear)
-				
-			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': shat_min, 'shat_max': shat_max, 'beta_mul': beta_mul, 'beta_div': beta_div}
+			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': self.inputs['shat_min'], 'shat_max': self.inputs['shat_max'], 'beta_mul': beta_mul, 'beta_div': beta_div}
 		try:
 			if nml['kt_grids_knobs']['grid_option'] in ['single','default']:
 				nml['knobs']['wstar_units'] = False
@@ -286,16 +238,16 @@ class equillibrium(object):
 				
 	def get_gyro_input(self, psiN, bp, sh, aky, t0 = 0, namelist_diff = {}):
 		nml = self.get_surface_input(psiN)
-
+		
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
 		nml['theta_grid_eik_knobs']['s_hat_input'] = sh
-		nml['theta_grid_eik_knobs']['beta_prime_input'] = -1*abs(bp)
+		nml['theta_grid_eik_knobs']['beta_prime_input'] = 1*abs(bp)
 		nml['kt_grids_single_parameters']['aky'] = aky
 		nml['kt_grids_single_parameters']['theta0'] = t0
 	
 		bp_cal = self.cal_bp(nml)
 
-		mul = bp/bp_cal
+		mul = -1*abs(bp)/bp_cal
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 			nml[spec]['tprim'] = nml[spec]['tprim']*mul
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul

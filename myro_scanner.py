@@ -3,7 +3,7 @@ from numpy import full, real, imag, nan, amax, array, isfinite, loadtxt, transpo
 from .ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
 from .templates import modules, save_modules
-from .inputs import inputs
+from .inputs import scan_inputs
 import f90nml
 
 '''
@@ -15,13 +15,12 @@ class myro_scan(object):
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
-		self.inputs = inputs(input_file = input_file, directory = directory)
-		self.input_name = self.inputs.input_file
+		self.inputs = scan_inputs(input_file = input_file, directory = directory)
 		self.template_name = template_file
 		if run_name:
 			self.run_name = run_name
 		elif input_file:
-			self.run_name = self.input_name.split(".")[0]
+			self.run_name = input_file.split("/")[-1].split(".")[0]
 		self.namelist_diffs = None
 		self._template_path = self.info = self.dat = self.file_lines = self.verify = self.namelist_diffs = None
 		self.jobs = []
@@ -35,7 +34,7 @@ class myro_scan(object):
         		return self.inputs[key]
 
 	def print_inputs(self):
-        	self.inputs.print_inputs
+        	self.inputs.print_inputs()
         	
 	def keys(self):
 		return self.inputs.keys()
@@ -53,7 +52,7 @@ class myro_scan(object):
 		self.eqbm.load_pyro(template_file = template_file, directory = directory)
 		
 	def load_inputs(self, input_file = None, directory = None):
-		self.inputs = inputs(input_file = input_file, directory = directory)
+		self.inputs = scan_inputs(input_file = input_file, directory = directory)
 		self.eqbm.load_inputs(self.inputs)
 			
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
@@ -129,7 +128,7 @@ class myro_scan(object):
 		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{self.info['data_path']}/{self.eqbm.eq_name}\"")
 		if not self.inputs.input_name:
 			self.inputs.input_name = f"{self.run_name}.in"
-		self.write_scan_input(filename = self.inputs.input_name, directory = self.info['data_path'])
+		self.write_scan_input(filename = self.inputs.input_name, directory = self.info['data_path'],doPrint=False)
 
 		return True
 	
@@ -232,10 +231,10 @@ ideal_ball \"{p_path}/{psiN}.in\"""")
 								if os.path.exists(f"{k_path}/{i}_{j}_{k}.slurm"):
 									os.rename(f"{k_path}/{i}_{j}_{k}.slurm",f"{k_path}/{i}_{j}_{k}_old.slurm")
 								
-								subnml = self.eqbm.get_gyro_input(psiN = psiN, bp = bp, sh = sh, aky = aky, t0 = t0, namelist_diff = self.namelist_diffs[p][i][j][k])
+								subnml = self.eqbm.get_gyro_input(psiN = psiN, bp = bp, sh = sh, aky = aky, t0 = t0, namelist_diff = self.namelist_diffs[p][i][j][k][t])
 								subnml.write(f"{k_path}/{i}_{j}_{k}_{t}.in", force=True)
 								
-								if self['System'] in ['viking','archer']:
+								if self['System'] == 'plasma':
 									self.jobs.append(f"mpirun -np 8 gs2 \"{k_path}/{i}_{j}_{k}_{t}.in\"")
 								elif not group_runs:
 									jobfile = open(f"{k_path}/{i}_{j}_{k}_{t}.job",'w')
@@ -277,15 +276,15 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 
 which gs2
 gs2 --build-config""")
-						for k in group_kys:
-							jobfile.write(f"""
+							for k in group_kys:
+								jobfile.write(f"""
 echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
 echo \"Input: {k_path}/{i}_{j}_{k}_{t}.in\"
 gs2 \"{k_path}/{i}_{j}_{k}_{t}.in\"
 echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
-						jobfile.close()
-						self.jobs.append(f"sbatch \"{k_path}/{i}_{j}_{k}.job\"")
-
+							jobfile.close()
+							self.jobs.append(f"sbatch \"{k_path}/{i}_{j}_{k}.job\"")
+	
 	def _create_run_info(self):
 		try:
 			import uuid
@@ -331,13 +330,14 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 		finished_gyro = set()
 		if gyro:
 			for p, psiN in enumerate(self['psiNs']):
-				for i in range(self['n_beta']):
-					for j in range(self['n_shat']):
-						for k, aky in enumerate(self['aky_values']):
-							if os.path.exists(f"{directory}/{psiN}/{i}_{j}/{i}_{j}_{k}.out.nc"):
-								finished_gyro.add((p,i,j,k))
-							else:
-								unfinished_gyro.add((p,i,j,k))
+				for b in range(self['n_beta']):
+					for s in range(self['n_shat']):
+						for k in range(self['n_aky']):
+							for t in range(self['n_theta0']):
+								if os.path.exists(f"{directory}/{psiN}/{b}/{s}/{k}/{b}_{s}_{k}_{t}.out.nc"):
+									finished_gyro.add((p,b,s,k,t))
+								else:
+									unfinished_gyro.add((p,b,s,k,t))
 
 		unfinished_ideal = set()
 		finished_ideal = set()
@@ -463,7 +463,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			shear_axis_ideal = full((self['n_psiN'],self['n_shat_ideal']),None).tolist()
 			stabilities = full((self['n_psiN'],self['n_beta_ideal'],self['n_shat_ideal']),None).tolist()
 		else:
-			beta_prime_axis_ideal = shear_axis_ideal = self.inputs['n_shat_ideal'] = self.inputs['n_beta_ideal'] = stabilities = None
+			beta_prime_axis_ideal = shear_axis_ideal = stabilities = None#self.inputs['n_shat_ideal'] = self.inputs['n_beta_ideal'] = 
 		
 		for p, psiN in enumerate(psiNs):
 			run_path = os.path.join(directory,str(psiN))
@@ -474,19 +474,19 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			beta_prime_values[p] = beta_prim
 			
 			if self['Gyro']:
-				for i, bp in self['betas']:
-					for j, sh in self['shats']:
+				for i, bp in enumerate(self['betas']):
+					for j, sh in enumerate(self['shats']):
 						for k, ky in enumerate(self['akys']):
 							for t, t0 in enumerate(self['theta0s']):
 								try:
 									if self['Epar'] and not QuickSave:
-										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob'])
+										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob'])
 									elif self['Epar']:
-										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}.out.nc",only=['omega','phi','bpar'])
+										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc",only=['omega','phi','bpar'])
 									elif not QuickSave:
-										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}.out.nc",only=['omega','phi','apar','bpar','phi2','t','theta', 'gds2', 'jacob'])
+										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc",only=['omega','phi','apar','bpar','phi2','t','theta', 'gds2', 'jacob'])
 									else:
-										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}.out.nc",only=['omega','phi'])	
+										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc",only=['omega','phi'])	
 									
 									om = data['omega'][-1,0,0]
 									if type(om) != complex:

@@ -30,10 +30,10 @@ possible_keys = {'psiN': {'min': ['psi_min','min_psi','psin_min','min_psin'],
 		'Epar': ['epar','write_epar'],
 		}
 
-class inputs(object):
+class scan_inputs(object):
 	def __init__(self, input_file = None, directory = "./", input_dict = None):
 		self._create_empty_inputs()
-		self.input_file = input_file
+		self.input_name = input_file
 		self._valid_systems = ['plasma','viking','archer']
 		if directory == "./":
 			directory = os.getcwd()
@@ -58,9 +58,9 @@ class inputs(object):
 		if key in self.inputs.keys():
 			return key, None
 		if key in ['psi','psin']:
-			return self.inputs['psiN']
+			return 'psiN', None
 		if key == 'ky':
-			return self.inputs['aky']
+			return 'aky', None
 			
 		for pkey in possible_keys:	
 			if type(possible_keys[pkey]) == dict:
@@ -75,8 +75,13 @@ class inputs(object):
 		return None, None
 	
 	def print_inputs(self):
-        	for key, val in self.inputs.items():
-        		print(f"{key} = {val}")
+		for key in self.inputs:
+			if type(self.inputs[key]) == dict:
+				print(f"{key}:")
+				for sub_key in self.inputs[key]:
+					print(f"\t{sub_key} = {self.inputs[key][sub_key]}")
+			else:
+				print(f"{key} = {self.inputs[key]}")
         	
 	def keys(self):
 		return self.inputs.keys()
@@ -156,6 +161,14 @@ class inputs(object):
 				if all([x is None for x in self[key].values()]):
 					print(f"ERROR: all {key} values are None")
 					valid = False
+				elif self[key]['values'] is None and (self[key]['num'] == 1 or (self[key]['min'] == self[key]['max'] != None)):
+					if self[key]['min']:
+						self[key]['values'] = [self[key]['min']]
+					elif self[key]['max']:
+						self[key]['values'] = [self[key]['max']]
+					else:
+						print(f"ERROR: too many {key} values are None")
+						valid = False
 				elif self[key]['values'] is None and any([self[key]['min'] is None,self[key]['max'] is None,self[key]['num'] is None]):
 					print(f"ERROR: too many {key} values are None")
 					valid = False
@@ -169,7 +182,7 @@ class inputs(object):
 							vals.append((self[key]['max'] - self[key]['min'])*i/(self[key]['num']-1) + self[key]['min'])
 						self.inputs[key]['values'] = vals
 					if key == 'beta':
-						self.inputs[key]['values'] = [abs(x) for x in vals]
+						self.inputs[key]['values'] = [abs(x) for x in self.inputs[key]['values']]
 						
 					self.inputs[key]['values'].sort()
 					self.inputs[key]['min'] = min(self[key]['values'])
@@ -195,16 +208,16 @@ class inputs(object):
 		return valid
 			
 	def load_inputs(self, filename = None, directory = "./"):
-		if self.input_file is None and filename is None:
+		if self.input_name is None and filename is None:
 			filename = input("Input File Name: ")
 			if "." not in filename:
 				filename = filename + ".in"
-		elif self.input_file is None:
+		elif self.input_name is None:
 			if "." not in filename:
 				filename = filename + ".in"
-			self.input_file = filename
+			self.input_name = filename
 
-		with open(os.path.join(self.path,self.input_file)) as in_file:
+		with open(os.path.join(self.path,self.input_name)) as in_file:
 			lines = in_file.readlines()
 			for line in lines:
 				key = line.split(" = ")[0].strip("\t\n ")
@@ -241,14 +254,14 @@ class inputs(object):
 		elif directory is None:
 			directory = self.path
 			
-		if self.input_file is None and filename is None:
+		if self.input_name is None and filename is None:
 			filename = input("Input File Name: ")
-		elif self.input_file is None:
-			self.input_file = filename
-		if "." not in self.input_file:
-			self.input_file = self.input_file + ".in"
+		elif self.input_name is None:
+			self.input_name = filename
+		if "." not in self.input_name:
+			self.input_name = self.input_name + ".in"
 		
-		with open(os.path.join(directory,self.input_file),'w') as in_file:
+		with open(os.path.join(directory,self.input_name),'w') as in_file:
 			for key in self.inputs.keys():
 				if type(self.inputs[key]) == dict:
 					for skey in self.inputs[key]:
@@ -257,12 +270,3 @@ class inputs(object):
 					in_file.write(f"{key} = {self.inputs[key]}\n")
 		if doPrint:
 			print(f"Created {filename} at {directory}")
-	
-	def print_inputs(self):
-		for key in self.inputs:
-			if type(dic[key]) == dict:
-				print(f"{key}:")
-				for sub_key in dic[key]:
-					print(f"\t{sub_key} = {self.inputs[key][sub_key]}")
-			else:
-				print(f"\t{key} = {self.inputs[key]}")
