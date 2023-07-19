@@ -27,13 +27,16 @@ default_settings = {"suptitle": None,
 }
 
 class plot_scan(object):
-	def __init__(self, scan = None, verify = None, settings = {}):
-		if scan is None:
-			print("ERROR: no scan dictionary given")
+	def __init__(self, data = None, inputs = None, verify = None, settings = {}):
+		if data is None:
+			print("ERROR: data not given")
 			return
-		self.scan = scan
-		self.data = scan['data']
-		self.inputs = scan['inputs']
+		if inputs is None:
+			print("ERROR: input not given")
+			return
+			
+		self.data = data
+		self.inputs = inputs
 		self.psiNs = self.inputs['psiNs']
 		self.verify = verify
 		if self.data['growth_rates'] is None:

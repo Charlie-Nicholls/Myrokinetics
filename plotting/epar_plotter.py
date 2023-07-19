@@ -3,12 +3,15 @@ from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
 
-def plot_epar(scan = None):
-	if scan is None:
-		print("ERROR: no scan dictionary given")
+def plot_epar(data = None, inputs = None):
+	if data is None:
+		print("ERROR: no data dictionary given")
 		return
-	data = scan['data']
-	psiNs = scan['inputs']['psiNs']
+	if inputs is None:
+		print("ERROR: inputs not given")
+		return
+	data = data
+	psiNs = inputs['psiNs']
 	if data['eparN'] is None:
 		print("Error: No eparN data")
 		return

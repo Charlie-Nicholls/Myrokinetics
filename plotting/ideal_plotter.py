@@ -16,14 +16,17 @@ default_settings = {"suptitle": None,
 }
 
 class plot_ideal(object):
-	def __init__(self, scan = None, settings = {}):
-		if scan is None:
-			print("ERROR: no scan dictionary given")
+	def __init__(self, data = None, inputs = None, settings = {}):
+		if data is None:
+			print("ERROR: data not given")
+			return
+		if inputs is None:
+			print("ERROR: input not given")
 			return
 			
-		self.scan = scan
-		self.data = scan['data']
-		self.psiNs = scan['inputs']['psiNs']
+		self.data = data
+		self.inputs = inputs
+		self.psiNs = self.inputs['psiNs']
 		if self.data['ideal_stabilities'] is None:
 			print("Error: No ideal_ball data")
 		

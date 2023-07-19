@@ -63,10 +63,15 @@ def plot_theta(run = None, var = 0, fig = None, ax = None, n = 3, polar = True):
 	if doShow:
 		show()
 	
-def plot_theta_scan(scan = None, var = 0, init = [0,0,0,0], aky = True, n = 3, polar = False):
-	if scan is None:
-		print("Scan Not Given")
+def plot_theta_scan(data = None, inputs = None, var = 0, init = [0,0,0,0], aky = True, n = 3, polar = False):
+	if data is None:
+		print("ERROR: data not given")
 		return
+	if inputs is None:
+		print("ERROR: input not given")
+		return
+			
+	psiNs = inputs['psiNs']
 	
 	if var == 0:
 		var = "phi"
@@ -77,10 +82,6 @@ def plot_theta_scan(scan = None, var = 0, init = [0,0,0,0], aky = True, n = 3, p
 	if var not in ["phi","apar","bpar"]:
 		print(f"ERROR: variable name/value {var} not supported. supported: phi/0, apar/1")
 		return	
-		
-	data = scan['data']
-	inputs = scan['inputs']
-	psiNs = inputs['psiNs']
 	
 	def draw_fig(val):
 		ax[0].cla()

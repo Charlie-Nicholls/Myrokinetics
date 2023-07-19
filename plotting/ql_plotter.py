@@ -3,6 +3,7 @@ from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons, TextBox
 from matplotlib.colors import LinearSegmentedColormap
+from scipy.interpolate import RegularGridInterpolator
 
 default_settings = {"suptitle": None,
 		"psi_id": 0,
@@ -12,7 +13,7 @@ default_settings = {"suptitle": None,
 		"contour_type": 0,
 		"x_axis_type": 0,
 		"y_axis_type": 0,
-		"options": [False,False,True,True,False],
+		"options": [False,False,True,True,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
 		"visible": {"psi_sli": True, "ql_sli": True, "op_box": True, "suptitle": True, "title": True},
 		"cdict": {"red": ((0.0, 1, 1),(1.0, 0.8, 0.8)),
@@ -21,13 +22,16 @@ default_settings = {"suptitle": None,
 }
 
 class plot_ql(object):
-	def __init__(self, scan = None, settings = {}):
-		if scan is None:
-			print("ERROR: no scan dictionary given")
+	def __init__(self, data = None, inputs = None, settings = {}):
+		if data is None:
+			print("ERROR: data not given")
 			return
-		self.scan = scan
-		self.data = scan['data']
-		self.inputs = scan['inputs']
+		if inputs is None:
+			print("ERROR: input not given")
+			return
+			
+		self.data = data
+		self.inputs = inputs
 		self.psiNs = self.inputs['psiNs']
 		
 		if self.data['quasilinear'] is None:
@@ -35,7 +39,7 @@ class plot_ql(object):
 			return
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
-		self._options = ["Show ID","Global Axis Limits","Global Colourbar","Show Equillibrium","Show Ideal"]
+		self._options = ["Show ID","Global Axis Limits","Global Colourbar","Show Equillibrium","Show Ideal","Draw EQBM Contour"]
 
 		self.settings = {}
 		self.init_settings = {}
@@ -289,7 +293,12 @@ class plot_ql(object):
 			self.ax.contourf(x,y,z, cmap = self.cmap, norm = norm)
 		else:
 			self.ax.pcolormesh(x, y, z, cmap = self.cmap, norm=norm)
-		
+			
+		if status[5]:
+			grid = RegularGridInterpolator((array(x),array(y)),transpose(z))
+			eqbm_ql = grid((x_val,y_val))
+			self.ax.contourf(x, y, z, [eqbm_ql-eqbm_ql/100,eqbm_ql+eqbm_ql/100], colors = ('b'))
+			
 		if status[0]:
 			dx = x[1] - x[0]
 			dy = y[1] - y[0]
@@ -314,12 +323,15 @@ class plot_ql(object):
 
 		if status[3]:
 			self.ax.plot(x_val,y_val,'kx')
+			eqbm_pos = f"{x_val:.2f},{y_val:.2f}"
+			if status[5]:
+				eqbm_pos += f",{eqbm_ql:.2f}"
 			if self['eqbm_style'] in ["point",2,"point numless",4]:
 				self.ax.annotate("Eqbm",(x_val,y_val),textcoords = "offset points",xytext = (0,7), ha = "center")
 			if self['eqbm_style'] in ["split",1,"point",2]:
-				self.ax.annotate(f"{x_val:.2f},{y_val:.2f}",(x_val,y_val),textcoords = "offset points",xytext = (0,-13), ha = "center")
+				self.ax.annotate(eqbm_pos,(x_val,y_val),textcoords = "offset points",xytext = (0,-13), ha = "center")
 			if self['eqbm_style'] in ["title",0]:
-				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label=f"Equillibrium ({x_val:.2f},{y_val:.2f})",linewidth=0)
+				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label=f"Equillibrium ({eqbm_pos})",linewidth=0)
 			if self['eqbm_style'] in ["split",1,"title numless",3]:
 				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label="Equillibrium",linewidth=0)
 		

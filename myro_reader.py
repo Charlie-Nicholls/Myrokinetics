@@ -2,7 +2,7 @@ import os
 from numpy import load, savez, array, nan, full
 from .plotting import Plotters
 from .verify_runs import verify_scan
-from .inputs import inputs
+from .inputs import scan_inputs
 
 '''
 GYROKINETIC SCAN ANALYSIS
@@ -206,7 +206,7 @@ class myro_read(object):
 			print("ERROR: could not load Input Files")
 			files = None
 		try:
-			self.inputs = inputs(input_dict = data_in['inputs'].item())
+			self.inputs = scan_inputs(input_dict = data_in['inputs'].item())
 			if info:
 				self.inputs.input_file = info['input_file']
 		except:
@@ -369,7 +369,7 @@ class myro_read(object):
 			settings['aky'] = aky
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Scan"
-		self.plots['scan'] = Plotters['Scan'](scan = self.run, verify = self.verify, settings = settings)
+		self.plots['scan'] = Plotters['Scan'](data = self.run['data'], inputs = self.inputs, verify = self.verify, settings = settings)
 	
 	def plot_ql(self, init = None, settings = {}):
 		if self['ql'] is None:
@@ -378,14 +378,14 @@ class myro_read(object):
 			settings['psi_id'] = int(init)
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} QuasiLinear"
-		self.plots['ql'] = Plotters['QL'](scan = self.run, settings = settings)
+		self.plots['ql'] = Plotters['QL'](data = self.run['data'], inputs = self.inputs, settings = settings)
 	
 	def plot_ideal(self, init = 0, settings = {}):
 		if init is not None:
 			settings['psi_id'] = int(init)
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Ideal Ballooning"
-		self.plots['ideal'] = Plotters['Ideal'](scan = self.run, settings = settings)
+		self.plots['ideal'] = Plotters['Ideal'](data = self.run['data'], inputs = self.inputs, settings = settings)
 	
 	def plot_omega(self, init = None, aky = None, settings = {}):
 		self.plots['omega'] = self._plot_diag(var = 'omega', init = init, aky = aky, settings = settings)
@@ -414,13 +414,13 @@ class myro_read(object):
 			settings['var'] = var
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
-		return Plotters['Diag'](scan = self.run, verify = self.verify, settings = settings)
+		return Plotters['Diag'](data = self.run['data'], inputs = self.inputs, info = self.run['info'], verify = self.verify, settings = settings)
 	
 	def plot_epar(self):
-		Plotters['Epar'](scan = self.run)
+		Plotters['Epar'](data = self.run['data'], inputs = self.inputs)
 	
 	def plot_theta(self, init = [0,0,0,0], aky = True, var = 0, n = 3, polar = False):
-		Plotters['Theta'](scan = self.run, var = var, init = init, aky = aky, n = n, polar = polar)
+		Plotters['Theta'](data = self.run['data'], inputs = self.inputs, var = var, init = init, aky = aky, n = n, polar = polar)
 		
 	def plot_slice(self, init = [0,0], limit = None, settings = {}):
 		if self['ql'] is None:
@@ -430,7 +430,7 @@ class myro_read(object):
 			settings['sh_id'] = init[1]
 		if limit is not None:
 			settings['limit'] = limit
-		self.plots['slice'] = Plotters['Slice'](scan = self.run, settings = settings)
+		self.plots['slice'] = Plotters['Slice'](data = self.run['data'], inputs = self.inputs, settings = settings)
 	
 	def plot_eq(self):
 		if not self.eqbm:

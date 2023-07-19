@@ -101,18 +101,24 @@ class scan_inputs(object):
 		'Epar': False,
 		}
 	
-	def edit_inputs(self, key = None, val = None):
-		if key and not val:
+	def edit_inputs(self, key = None, val = 'None'):
+		if key and val == 'None':
 			print(f"ERROR: please enter val for {key}")
 			return
+		if key in ['beta_div','beta_mul','shat_div','shat_mul'] and val is None:
+			return
 		elif key:
+			if key.lower() == 'viking':
+				key = 'system'
+				if val == True:
+					val = 'viking'
+				elif val == False:
+					val = 'plasma'
 			pkey, skey = self.find_key(key)
 			if skey:
 				self.inputs[pkey][skey] = val
 			elif pkey:
 				self.inputs[pkey] = val
-			else:
-				print(f"ERROR: {key} not found")
 			return
 				
 		for key in self.inputs:
