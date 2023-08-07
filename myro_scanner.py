@@ -1,5 +1,5 @@
 import os
-from numpy import full, real, imag, nan, amax, array, isfinite, loadtxt, transpose, savez
+from numpy import full, real, imag, array, loadtxt, transpose, savez
 from .ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
 from .templates import modules, save_modules
@@ -153,7 +153,6 @@ class myro_scan(object):
 			p_path = os.path.join(directory, str(psiN))
 			if not os.path.exists(p_path):
 				os.mkdir(p_path)
-			file_name = os.path.join(p_path, f"{psiN}.in")
 			nml = self.eqbm.get_surface_input(psiN = psiN)
 			nml.write(f"{p_path}/{psiN}.in", force=True)
 			if self['System'] in ['viking','archer']:
@@ -202,9 +201,6 @@ ideal_ball \"{p_path}/{psiN}.in\"""")
 			
 			nml = self.eqbm.get_surface_input(psiN = psiN)
 			nml.write(f"{p_path}/{psiN}.in", force=True)
-			shear = nml['theta_grid_eik_knobs']['s_hat_input']
-			beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
-			beta =  nml['parameters']['beta']
 			
 			for i, bp in enumerate(self['betas']):
 				b_path = os.path.join(p_path, str(i))
@@ -432,7 +428,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		if self['Gyro']:
 			#beta_prime_axis = full((self['n_psiN'],self['n_beta']),None).tolist()
 			#shear_axis = full((self['n_psiN'],self['n_shat']),None).tolist()
-			akys = full((self['n_psiN'],self['n_beta'],self['n_shat']),None).tolist()
+			#akys = full((self['n_psiN'],self['n_beta'],self['n_shat']),None).tolist()
 			grs = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
 			mfs = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
 			syms = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
@@ -454,10 +450,10 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				gds2 = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
 			else:
 				omega = phi = apar = bpar = phi2 = time = theta = jacob = gds2 = None
-		
+                #beta_prime_axis = shear_axis = akys = None
 		else:
-				grs = mfs = syms = beta_prime_axis = shear_axis = akys = self.inputs['n_shat'] = self.inputs['n_beta'] = self.inputs['aky_values'] = eparNs = omega = phi = apar = bpar = phi2 = time = theta = jacob = gds2 = None
-		
+				grs = mfs = syms = self.inputs['n_shat'] = self.inputs['n_beta'] = self.inputs['aky_values'] = eparNs = omega = phi = apar = bpar = phi2 = time = theta = jacob = gds2 = None
+                
 		if self['Ideal']:
 			beta_prime_axis_ideal = full((self['n_psiN'],self['n_beta_ideal']),None).tolist()
 			shear_axis_ideal = full((self['n_psiN'],self['n_shat_ideal']),None).tolist()
@@ -551,7 +547,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 											epar = array(epar)
 											epar_norm = max(abs(epar))/max(abs(bpar))
 											
-											epars[p][i][j][k][t] = epar_norm
+											eparNs[p][i][j][k][t] = epar_norm
 										except:
 											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: epar")
 									
@@ -561,7 +557,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 									mfs[p][i][j][k][t] = None
 									syms[p][i][j][k][t] = None
 									if self['Epar']:
-										epars[p][i][j][k][t] = None
+										eparNs[p][i][j][k][t] = None
 
 			if self['Ideal']:
 				shear = loadtxt(f"{run_path}/{psiN}.ballstab_shat")

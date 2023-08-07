@@ -1,0 +1,42 @@
+&knobs
+    gyro = .true.
+    ideal = .true.
+    miller = .false.
+    system = 'viking'
+    fixed_delt = .false.
+    epar = .false.
+    num_shear_ideal = 100
+    num_beta_ideal = 100
+/
+
+&dimension_1
+    type = 'psiN'
+    values = ,
+    min = ,
+    max = ,
+    num = ,
+/
+
+&dimension_2
+    type = 'beta_prime'
+    values = ,
+    min = ,
+    max = ,
+    num = ,
+/
+
+&dimension_3
+    type = 'shear'
+    values = ,
+    min = ,
+    max = ,
+    num = ,
+/
+
+&dimension_4
+    type = 'ky'
+    values = ,
+    min = ,
+    max = ,
+    num = ,
+/
