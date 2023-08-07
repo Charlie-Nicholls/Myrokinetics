@@ -9,6 +9,12 @@
     num_beta_ideal = 100
 /
 
+&single_parameters
+    theta0 = 0
+    nperiod = 4
+    ntheta = 32
+/
+
 &dimension_1
     type = 'psiN'
     values = ,

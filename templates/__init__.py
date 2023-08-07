@@ -1,10 +1,13 @@
 from pathlib import Path
 from .dimensions import dimensions_list
 
-Dimensions = {}
-for dim in dimensions_list:	
+Dimensions = {'_list': [], '_full_list': []}
+for dim in dimensions_list:
+	Dimensions['_list'].append(dim.name)
 	for dim_name in dim.name_keys:
+		dim_name = dim_name.lower()
 		Dimensions[dim_name] = dim
+		Dimensions['_full_list'].append(dim_name)
 
 template_dir = Path(__file__).parent
 template_dir.resolve()

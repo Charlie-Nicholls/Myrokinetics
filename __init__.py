@@ -9,6 +9,6 @@ from .ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
 from .peqdsk_interpolate import peqdsk_interpolator as interp_peq
 from .geqdsk_interpolate import geqdsk_interpolator as interp_geq
-from .templates import Dimensions
+from .inputs import scan_inputs
 
-__all__ = ["myro", "myro_scan", "myro_single","myro_set","myro_set_scan","readp","readg","readnc","equillibrium","interp_peq","interp_geq","Dimensions"]
+__all__ = ["myro", "myro_scan", "myro_single","myro_set","myro_set_scan","readp","readg","readnc","equillibrium","interp_peq","interp_geq","scan_inputs"]

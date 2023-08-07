@@ -22,7 +22,7 @@ class psiN(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
 
-	name_keys = ['psiN','psi']
+	name_keys = ['psin','psi','psi_norm']
 	axis_label = '$\u03C8_{N}$'
 
 	def sub_validate(self, values):
