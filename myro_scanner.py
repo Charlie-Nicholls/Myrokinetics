@@ -148,13 +148,10 @@ class myro_scan(object):
 		if specificRuns:
 			runs = specificRuns
 		else:
-			'''
 			check = self.check_complete(directory = directory, doPrint = False, gyro = False, ideal = True)
 			if check['ideal_complete']:
 				print(f"{len(check['ideal_complete'])} Existing Ideal Runs Detected")
 			runs = check['ideal_incomplete']
-			'''
-			runs = self.dimensions['psin'].values
 			
 		for psiN in runs:
 			sub_dir = f"{directory}/ideal/psin = {psiN:.2g}"
@@ -207,13 +204,10 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		if directory is None:
 			directory = self.info['data_path']
 		if not specificRuns:
-			'''
 			check = self.check_complete(directory = directory, doPrint = False, gyro = True, ideal = False)
 			if check['gyro_complete']:
 				print(f"{len(check['gyro_complete'])} Existing Gyro Runs Detected")
 			runs = check['gyro_incomplete']
-			'''
-			runs = self.get_all_runs()
 		else:
 			runs = specificRuns
 		
@@ -292,27 +286,24 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 			print("ERROR: ideal must be boolean")
 			return
 		
-		unfinished_gyro = set()
-		finished_gyro = set()
+		unfinished_gyro = []
+		finished_gyro = []
 		if gyro:
-			for p, psiN in enumerate(self['psiNs']):
-				for b in range(self['n_beta']):
-					for s in range(self['n_shat']):
-						for k in range(self['n_aky']):
-							for t in range(self['n_theta0']):
-								if os.path.exists(f"{directory}/{psiN}/{b}/{s}/{k}/{b}_{s}_{k}_{t}.out.nc"):
-									finished_gyro.add((p,b,s,k,t))
-								else:
-									unfinished_gyro.add((p,b,s,k,t))
-
-		unfinished_ideal = set()
-		finished_ideal = set()
-		if ideal:
-			for p, psiN in enumerate(self['psiNs']):
-				if os.path.exists(f"{directory}/{psiN}/{psiN}.ballstab_2d"):
-					finished_ideal.add(psiN)
+			for run in self.get_all_runs():
+				sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.2g}" for name in self.inputs.dim_order])
+				if os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
+					finished_gyro.append(run)
 				else:
-					unfinished_ideal.add(psiN)
+					unfinished_gyro.append(run)
+
+		unfinished_ideal = []
+		finished_ideal = []
+		if ideal:
+			for psiN in self.dimensions['psin'].values:
+				if os.path.exists(f"{directory}/ideal/psin = {psiN}/itteration_0.ballstab_2d"):
+					finished_ideal.append(psiN)
+				else:
+					unfinished_ideal.append(psiN)
 		
 		if doPrint:
 			print(f"Gyro Runs Complete: {len(finished_gyro)} | Incomplete : {len(unfinished_gyro)}")
