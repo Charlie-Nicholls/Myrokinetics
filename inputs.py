@@ -17,7 +17,7 @@ possible_keys = {'knobs': {
 	'num_beta_ideal': ['num_beta_ideal','n_beta_ideal','beta_ideal_num','beta_ideal_n','ideal_beta_n','idea_beta_num','num_beta_prime_ideal','n_beta_prime_ideal','beta_prime_ideal_num','beta_prime_ideal_n','ideal_beta_prime_n','ideal_beta_prime_num'],
 	}}
 
-valid_systems = ['plasma','viking','archer']
+valid_systems = ['ypi_server','viking','archer2']
 
 defaults = {'knobs': {
 	'gyro': True,
@@ -105,7 +105,7 @@ class scan_inputs(object):
 					print(f"ERROR: {skey} is not a valid {key} input")
 					del(self.inputs[key][skey])
 		for key in self.inputs['single_parameters']:
-			from .templates import Dimensions as dim_lookup
+			from .templates import dim_lookup
 			if key not in dim_lookup:
 				print(f"ERROR: {key} is not a valid parameter, valid parameters: {dim_lookup['_list']}")
 				del(self.inputs['single_parameters'][key])
@@ -178,7 +178,7 @@ class scan_inputs(object):
 
 	
 	def load_dimensions(self):
-		from .templates import Dimensions as dim_lookup
+		from .templates import dim_lookup
 		dimensions = {}
 		single_parameters = {}
 		dim_order = []

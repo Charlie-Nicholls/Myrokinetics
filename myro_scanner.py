@@ -2,7 +2,7 @@ import os
 from numpy import full, real, imag, array, loadtxt, transpose, savez
 from .ncdf2dict import ncdf2dict as readnc
 from .equillibrium import equillibrium
-from .templates import modules, save_modules
+from .templates import system_modules
 from .inputs import scan_inputs
 import f90nml
 import glob
@@ -78,9 +78,9 @@ class myro_scan(object):
 		
 		if not self._check_setup(ideal = ideal, gyro = gyro):
 			return
-		if self['Ideal']:
+		if self['ideal']:
 			self._make_ideal_files(directory = run_path)
-		if self['Gyro']:
+		if self['gyro']:
 			self._make_gyro_files(directory = run_path, group_runs = group_runs)
 		self._run_jobs()
 	
@@ -89,16 +89,16 @@ class myro_scan(object):
 			return False
 		
 		if gyro is None:
-			gyro = self['Gyro']
+			gyro = self['gyro']
 		elif type(gyro) == bool:	
-			self.inputs['Gyro'] = gyro
+			self.inputs['gyro'] = gyro
 		else:
 			print("ERROR: gyro must be boolean")
 			return False
 		if ideal is None:
-			ideal = self['Ideal']
+			ideal = self['ideal']
 		elif type(ideal) == bool:
-			self.inputs['Ideal'] = ideal
+			self.inputs['ideal'] = ideal
 		else:
 			print("ERROR: ideal must be boolean")
 			return False
@@ -165,9 +165,10 @@ class myro_scan(object):
 			
 			nml = self.eqbm.get_surface_input(psiN = psiN)
 			nml.write(f"{sub_dir}/{filename}.in", force=True)
-			if self['System'] == 'plasma':
+			if self['system'] == 'ypi_server':
 				self.jobs.append(f"ideal_ball \"{sub_dir}/{filename}.in\"")
 			else:
+				compile_modules = system_modules[self['system']]['compile']
 				jobfile = open(f"{sub_dir}/{filename}.job",'w')
 				jobfile.write(f"""#!/bin/bash
 #SBATCH --time=05:00:00
@@ -175,7 +176,7 @@ class myro_scan(object):
 #SBATCH --ntasks=1
 #SBATCH --output={sub_dir}/{filename}.slurm
 
-{modules}
+{compile_modules}
 
 which gs2
 gs2 --build-config
@@ -223,9 +224,10 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			subnml = self.eqbm.get_gyro_input(run = run)
 			subnml.write(f"{sub_dir}/{filename}.in", force=True)
 						
-			if self['System'] == 'plasma':
+			if self['system'] == 'ypi_server':
 				self.jobs.append(f"mpirun -np 8 gs2 \"{sub_dir}/{filename}.in\"")
 			else:
+				compile_modules = system_modules[self['system']]['compile']
 				jobfile = open(f"{sub_dir}/{filename}.job",'w')
 				jobfile.write(f"""#!/bin/bash
 #SBATCH --time=24:00:00
@@ -233,7 +235,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 #SBATCH --ntasks=1
 #SBATCH --output={sub_dir}/{filename}.slurm
 
-{modules}
+{compile_modules}
 
 which gs2
 gs2 --build-config
@@ -276,12 +278,12 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 			directory = self.info['data_path']
 			
 		if gyro is None:
-			gyro = self['Gyro']
+			gyro = self['gyro']
 		elif type(gyro) != bool:	
 			print("ERROR: gyro must be boolean")
 			return
 		if ideal is None:
-			ideal = self['Ideal']
+			ideal = self['ideal']
 		elif type(ideal) != bool:
 			print("ERROR: ideal must be boolean")
 			return
@@ -345,11 +347,11 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 		if directory is None:
 			directory = self.info['data_path']
 		
-		if not self['Gyro'] and not self['Ideal']:
+		if not self['gyro'] and not self['ideal']:
 			print("Error: Both Gyro and Ideal are False")
 			return
 		
-		if self['System'] in ['viking','archer'] and not SlurmSave:
+		if self['system'] in ['viking','archer2'] and not SlurmSave:
 			os.chdir(f"{directory}")
 			self._save_for_save(filename = "save_info", directory = directory)
 			job = open(f"save_out.job",'w')
@@ -386,7 +388,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		beta_prime_values = full((self['n_psiN']),None)
 		shear_values = full((self['n_psiN']),None)
 		
-		if self['Gyro']:
+		if self['gyro']:
 			#beta_prime_axis = full((self['n_psiN'],self['n_beta']),None).tolist()
 			#shear_axis = full((self['n_psiN'],self['n_shat']),None).tolist()
 			#akys = full((self['n_psiN'],self['n_beta'],self['n_shat']),None).tolist()
@@ -415,7 +417,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		else:
 				grs = mfs = syms = self.inputs['n_shat'] = self.inputs['n_beta'] = self.inputs['aky_values'] = eparNs = omega = phi = apar = bpar = phi2 = time = theta = jacob = gds2 = None
                 
-		if self['Ideal']:
+		if self['ideal']:
 			beta_prime_axis_ideal = full((self['n_psiN'],self['n_beta_ideal']),None).tolist()
 			shear_axis_ideal = full((self['n_psiN'],self['n_shat_ideal']),None).tolist()
 			stabilities = full((self['n_psiN'],self['n_beta_ideal'],self['n_shat_ideal']),None).tolist()
@@ -430,7 +432,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			shear_values[p] = shear
 			beta_prime_values[p] = beta_prim
 			
-			if self['Gyro']:
+			if self['gyro']:
 				for i, bp in enumerate(self['betas']):
 					for j, sh in enumerate(self['shats']):
 						for k, ky in enumerate(self['akys']):
@@ -520,7 +522,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 									if self['Epar']:
 										eparNs[p][i][j][k][t] = None
 
-			if self['Ideal']:
+			if self['ideal']:
 				shear = loadtxt(f"{run_path}/{psiN}.ballstab_shat")
 				bp = loadtxt(f"{run_path}/{psiN}.ballstab_bp")
 				stab = loadtxt(f"{run_path}/{psiN}.ballstab_2d")
@@ -559,7 +561,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			self._create_run_info()		
 		if directory is None:
 			directory = self.info['data_path']
-		if not self['Gyro']:
+		if not self['gyro']:
 			print("Only Used For Gyro Runs")
 			return
 		
