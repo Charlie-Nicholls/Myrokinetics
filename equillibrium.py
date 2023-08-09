@@ -216,7 +216,10 @@ class equillibrium(object):
 			nml['theta_grid_eik_knobs']['ntheta_geometry'] = 4096
 
 		if self.inputs['Ideal']:
-			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': self.inputs['shat_min'], 'shat_max': self.inputs['shat_max'], 'beta_min': self.inputs['beta_prime_min'], 'beta_max': self.inputs['beta_prime_max']}
+			beta_mul = self.inputs['beta_prime_max']/beta_prim
+			beta_div = beta_prim/self.inputs['beta_prime_min']
+
+			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': self.inputs['shat_min'], 'shat_max': self.inputs['shat_max'], 'beta_div': beta_div, 'beta_mul': beta_mul}
 		try:
 			if nml['kt_grids_knobs']['grid_option'] in ['single','default']:
 				nml['knobs']['wstar_units'] = False

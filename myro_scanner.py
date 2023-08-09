@@ -144,7 +144,7 @@ class myro_scan(object):
 			if not self._check_setup():
 				return
 		if directory is None:
-			directory = f"{self.info['data_path']}/ideal"
+			directory = self.info['data_path']
 		if specificRuns:
 			runs = specificRuns
 		else:
@@ -157,7 +157,7 @@ class myro_scan(object):
 			runs = self.dimensions['psin'].values
 			
 		for psiN in runs:
-			sub_dir = f"{directory}/psin = {psiN:.2g}/"
+			sub_dir = f"{directory}/ideal/psin = {psiN:.2g}"
 			os.makedirs(sub_dir,exist_ok=True)
 			
 			existing_inputs = [] 
@@ -167,8 +167,8 @@ class myro_scan(object):
 			filename = f"itteration_{itt}"
 			
 			nml = self.eqbm.get_surface_input(psiN = psiN)
-			nml.write(f"{sub_dir}/{psiN}.in", force=True)
-			if self['System'] in ['viking','archer']:
+			nml.write(f"{sub_dir}/{filename}.in", force=True)
+			if self['System'] == 'plasma':
 				self.jobs.append(f"ideal_ball \"{sub_dir}/{filename}.in\"")
 			else:
 				jobfile = open(f"{sub_dir}/{filename}.job",'w')
