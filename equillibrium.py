@@ -137,14 +137,8 @@ class equillibrium(object):
 		self.surface_namelists = {}
 		if type(inputs) == str:
 			self.inputs = inputs(input_file = inputs, directory = self.path)
-		elif type(inputs) == dict:
-			self.inputs = inputs(input_dict = inputs, directory = self.path)
 		elif type(inputs) == scan_inputs:
 			self.inputs = inputs
-	
-	def edit_inputs(self, key = None, val = None):
-		self.surface_namelists = {}
-		self.inputs.edit_inputs(key=key,val=val)
 
 	def AmmendPEQDSK(self):
 		if self.eq_data is None and self.eq_name is None:
@@ -192,7 +186,7 @@ class equillibrium(object):
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
 		beta =  nml['parameters']['beta']
 		
-		bp_cal = self.cal_bp(nml)
+		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
 
 		mul = beta_prim/bp_cal
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
@@ -222,7 +216,7 @@ class equillibrium(object):
 			nml['theta_grid_eik_knobs']['ntheta_geometry'] = 4096
 
 		if self.inputs['Ideal']:
-			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': self.inputs['shat_min'], 'shat_max': self.inputs['shat_max'], 'beta_min': self.inputs['beta_min'], 'beta_max': self.inputs['beta_max']}
+			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': self.inputs['shat_min'], 'shat_max': self.inputs['shat_max'], 'beta_min': self.inputs['beta_prime_min'], 'beta_max': self.inputs['beta_prime_max']}
 		try:
 			if nml['kt_grids_knobs']['grid_option'] in ['single','default']:
 				nml['knobs']['wstar_units'] = False
@@ -233,37 +227,37 @@ class equillibrium(object):
 		
 		return deepcopy(self.surface_namelists[psiN])
 				
-	def get_gyro_input(self, psiN, bp, sh, aky, t0 = 0, namelist_diff = {}):
+	def get_gyro_input(self, indexes = None, run = None, namelist_diff = {}):
+		if run is None and indexes is None:
+			print("ERROR: Either indexes or run must be given")
+			return None
+		
+		if run is None:
+			for i, idx in enumerate(indexes):
+				dim_name = self.inputs.scan_order[i]
+				run[dim_name] = self.inputs.dimensions[dim_name][idx]
+		
+		if 'psin' in run:	
+			psiN = run['psin']
+		elif 'psin' in self.inputs.single_parameters:
+			psiN = self.inputs.single_parameters['psin'].values[0]
+		else:
+			print("ERROR: psiN not defined")
+			return None
+			
 		nml = self.get_surface_input(psiN)
 		
-		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
-		nml['theta_grid_eik_knobs']['s_hat_input'] = sh
-		nml['theta_grid_eik_knobs']['beta_prime_input'] = 1*abs(bp)
-		nml['kt_grids_single_parameters']['aky'] = aky
-		nml['kt_grids_single_parameters']['theta0'] = t0
-	
-		bp_cal = self.cal_bp(nml)
-
-		mul = -1*abs(bp)/bp_cal
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			nml[spec]['tprim'] = nml[spec]['tprim']*mul
-			nml[spec]['fprim'] = nml[spec]['fprim']*mul
-					
-		if self.inputs['Fixed_delt'] is False:
-			delt = 0.04/aky
-			if delt > 0.01:
-				delt = 0.01
-			nml['knobs']['delt'] = delt
-		
+		for dim_name, dim in self.inputs.dimensions.items():
+			nml = dim.edit_nml(nml=nml,val=run[dim_name])
+			
+		for dim_name, dim in self.inputs.single_parameters.items():
+			nml = dim.single_edit_nml(nml)
+			
 		for key in namelist_diff.keys():
 			for skey in namelist_diff[key].keys():
 				nml[key][skey] = namelist_diff[key][skey]
 			
 		return nml
-	
-	def cal_bp(self, nml):
-		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
-		return bp_cal
 		
 	def make_profiles(self):
 		from scipy.interpolate import InterpolatedUnivariateSpline

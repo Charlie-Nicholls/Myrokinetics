@@ -37,7 +37,7 @@ class scan_inputs(object):
 			directory = os.getcwd()
 		self.path = directory
 		
-		self.inputs = self.dimensions = self.scan_lookup = None
+		self.inputs = self.dimensions = self.dim_order = None
 		
 		if input_file is not None:
 			self.load_inputs()
@@ -60,6 +60,8 @@ class scan_inputs(object):
 						return defaults[pkey][skey]
 		
 		if self.dimensions:
+			if key in ['order','dim_oder','dimension_order','dimensions_order']:
+				return self.dim_order
 			for dim in self.dimensions:
 				for skey in self.dimensions[dim].possible_keys:
 					if key in self.dimensions[dim].possible_keys[skey]:
@@ -69,6 +71,8 @@ class scan_inputs(object):
 		return None
 		
 	def print_inputs(self):
+		if inputs is None:
+			return
 		for key in self.inputs:
 			print(f"{key}:")
 			for sub_key in self.inputs[key]:
@@ -76,7 +80,15 @@ class scan_inputs(object):
 
 	def keys(self):
 		return self.inputs.keys()
-
+	
+	@property
+	def shape(self):
+		if not self.dimensions:
+			return []
+		sh = [None] * len(self.dimensions)
+		for dim_id, dim_type in enumerate(self.dim_order):
+			sh[dim_id] = self.dimensions[dim_type].len
+	
 	def load_input_dict(self, dic):
 		for key in dic:
 			if key not in self.inputs.keys():
@@ -141,6 +153,12 @@ class scan_inputs(object):
 			elif self['num_beta_ideal'] is None:
 				print("ERROR: num_beta_ideal is None")
 				valid = False
+			if 'beta_prime' not in self.dimensions:
+				print("ERROR: beta_prime dimension must be given for ideal scan")
+				valid = False
+			if 'shear' not in self.dimensions:
+				print("ERROR: shear dimension must be given for ideal scan")
+				valid = False
 
 		return valid
 
@@ -162,7 +180,8 @@ class scan_inputs(object):
 	def load_dimensions(self):
 		from .templates import Dimensions as dim_lookup
 		dimensions = {}
-		scan_lookup = {}
+		single_parameters = {}
+		dim_order = []
 		for key in [x for x in self.inputs.keys() if 'dimension_' in x]:
 			dim_type = self.inputs[key]['type']
 			dim_type = dim_type.lower()
@@ -173,32 +192,33 @@ class scan_inputs(object):
 				if dim.name in dimensions:
 					print(f"ERROR: {dim_type} defined multiple times")
 				else:
-					dimensions[dim.name] = dim
-					if dim.len > 1:
-						dim_id = max(scan_lookup,default=-1) + 1
-						scan_lookup[dim_id] = dim.name
-					
+					if dim.len == 1:
+						single_parameters[dim.name] = dim
+					else:
+						dimensions[dim.name] = dim
 					
 		if 'single_parameters' in self.inputs.keys():
 			for dim_type in self.inputs['single_parameters']:
 				if dim_type not in dim_lookup['_full_list']:
 					print(f"ERROR: {dim_type} not a valid parameter. Must be a dimension, valid = {dim_lookup['_list']}")
 				elif dim_type in dimensions:
-					print(f"ERROR: {dim_type} defined multiple times. Most likely as single parameter and dimension")
+					print(f"ERROR: {dim_type} defined multiple times. As single parameter and dimension")
+				elif dim_type in single_parameters:
+					print(f"ERROR: {dim_type} defined multiple times.")
 				else:
 					dim = dim_lookup[dim_type](values=self.inputs['single_parameters'][dim_type])
-					dimensions[dim.name] = dim
+					single_parameters[dim.name] = dim
 		
 		for key in [x for x in self.inputs if 'dimension_' in x]:
 			del self.inputs[key]
 		self.inputs['single_parameters'] = {}
 		
-		for dim_type in dimensions:
-			if dimensions[dim_type].len == 1:
-				self.inputs['single_parameters'][dimensions[dim_type].name] = dimensions[dim_type].values[0]
+		for dim_type in single_parameters:
+			self.inputs['single_parameters'][dim_type] = single_parameters[dim_type].values[0]
 				
-		for dim_id in scan_lookup:
-			dim = dimensions[scan_lookup[dim_id]]
+		for dim in dimensions.values():
+			dim_order.append(dim.name)
+			dim_id = dim_order.index(dim.name)
 			self.inputs[f"dimension_{dim_id+1}"] = {}
 			self.inputs[f"dimension_{dim_id+1}"]['type'] = dim.name
 			self.inputs[f"dimension_{dim_id+1}"]['values'] = dim.values
@@ -207,7 +227,8 @@ class scan_inputs(object):
 			self.inputs[f"dimension_{dim_id+1}"]['num'] = dim.len
 		
 		self.dimensions = dimensions
-		self.scan_lookup = scan_lookup
+		self.single_parameters = single_parameters
+		self.dim_order = dim_order
 
 	def write_scan_input(self, filename = None, directory = "./", doPrint = False):
 		if directory is None and self.directory is None:
@@ -222,7 +243,7 @@ class scan_inputs(object):
 		if "." not in self.input_name:
 			self.input_name = self.input_name + ".in"
 
-		self.inputs.write(f"{directory}/{filename}")
+		self.inputs.write(f"{directory}/{filename}",force=True)
 		
 		if doPrint:
 			print(f"Created {filename} at {directory}")
@@ -242,7 +263,7 @@ class scan_inputs(object):
 			self.input_name = self.input_name + ".in"
 		
 		default_in = f90nml.load(f"{template_dir}/{inputs_template}")
-		default_in.write(f"{directory}/{filename}")
+		default_in.write(f"{directory}/{filename}",force=True)
 		
 		if doPrint:
 			print(f"Created {filename} at {directory}")
@@ -256,7 +277,7 @@ class dimension(object):
 
 	def __getitem__(self, key):
 		if type(key) == int:
-			return self.values[val]
+			return self.values[key]
 		key = key.lower()
 		if key in ['min']:
 			return self.min

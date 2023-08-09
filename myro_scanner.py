@@ -5,6 +5,7 @@ from .equillibrium import equillibrium
 from .templates import modules, save_modules
 from .inputs import scan_inputs
 import f90nml
+import glob
 
 '''
 GYROKINETIC SCAN PERFORMER
@@ -15,16 +16,15 @@ class myro_scan(object):
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
-		self.inputs = scan_inputs(input_file = input_file, directory = directory)
 		self.template_name = template_file
+		self._template_path = self.info = self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
+		self.jobs = []
 		if run_name:
 			self.run_name = run_name
 		elif input_file:
 			self.run_name = input_file.split("/")[-1].split(".")[0]
-		self.namelist_diffs = None
-		self._template_path = self.info = self.dat = self.file_lines = self.verify = self.namelist_diffs = None
-		self.jobs = []
-		self._valid_systems = ['plasma','viking','archer']
+		
+		self.load_inputs(input_file = input_file, directory = directory)
 		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.inputs)
 	
 	def __getitem__(self, key):
@@ -39,9 +39,6 @@ class myro_scan(object):
 	def keys(self):
 		return self.inputs.keys()
 	
-	def edit_inputs(self, key = None, val = None):
-		self.inputs.edit_inputs(key = None, val = None)
-	
 	def load_geqdsk(self, eq_file, directory = None):
 		self.eqbm.load_geqdsk(eq_file = eq_file, directory = directory)
 	
@@ -52,8 +49,14 @@ class myro_scan(object):
 		self.eqbm.load_pyro(template_file = template_file, directory = directory)
 		
 	def load_inputs(self, input_file = None, directory = None):
+		if input_file is None:
+			self.inputs = None
+			return
 		self.inputs = scan_inputs(input_file = input_file, directory = directory)
-		self.eqbm.load_inputs(self.inputs)
+		self.dimensions = self.inputs.dimensions
+		self.single_parameters = self.inputs.single_parameters
+		if self.eqbm:
+			self.eqbm.load_inputs(self.inputs)
 			
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
 		self.inputs.write_scan_input(filename = filename, directory = directory, doPrint = doPrint)
@@ -82,7 +85,7 @@ class myro_scan(object):
 		self._run_jobs()
 	
 	def _check_setup(self, ideal = None, gyro = None):
-		if not self.inputs.validate_inputs():
+		if not self.inputs.check_scan():
 			return False
 		
 		if gyro is None:
@@ -102,10 +105,7 @@ class myro_scan(object):
 			
 		if self.info is None:
 			self._create_run_info()
-			
-		if not self.inputs.validate_inputs():
-			return False
-			
+
 		if not self.eqbm.eq_name or not self.eqbm.kin_name:
 			if not self.eqbm.eq_name:
 				print("ERROR: No eq_file loaded")
@@ -114,7 +114,7 @@ class myro_scan(object):
 			return False
 		
 		if gyro and self.namelist_diffs is None:
-			self.namelist_diffs = self.namelist_diffs = [[[[[{} for _ in range(self['n_theta0'])] for _ in range(self['n_aky'])] for _ in range(self['n_shat'])] for _ in range(self['n_beta'])] for _ in range(self['n_psiN'])]
+			self.namelist_diffs = full(self.inputs.shape,{})
 		
 		if not os.path.exists(self.info['data_path']):
 			os.mkdir(self.info['data_path'])
@@ -139,40 +139,66 @@ class myro_scan(object):
 			os.system(self.jobs[i])
 		self.jobs = self.jobs[n:]
 	
-	def _make_ideal_files(self, directory = None, checkSetup = True):
-		self.inputs['Ideal'] = True
+	def _make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
 		if checkSetup:
 			if not self._check_setup():
 				return
 		if directory is None:
-			directory = self.info['data_path']
-		check = self.check_complete(directory = directory, doPrint = False, gyro = False, ideal = True)
-		if check['ideal_complete']:
-			print(f"{len(check['ideal_complete'])} Existing Ideal Runs Detected")
-		for psiN in check['ideal_incomplete']:
-			p_path = os.path.join(directory, str(psiN))
-			if not os.path.exists(p_path):
-				os.mkdir(p_path)
+			directory = f"{self.info['data_path']}/ideal"
+		if specificRuns:
+			runs = specificRuns
+		else:
+			'''
+			check = self.check_complete(directory = directory, doPrint = False, gyro = False, ideal = True)
+			if check['ideal_complete']:
+				print(f"{len(check['ideal_complete'])} Existing Ideal Runs Detected")
+			runs = check['ideal_incomplete']
+			'''
+			runs = self.dimensions['psin'].values
+			
+		for psiN in runs:
+			sub_dir = f"{directory}/psin = {psiN:.2g}/"
+			os.makedirs(sub_dir,exist_ok=True)
+			
+			existing_inputs = [] 
+			for f in glob.glob(r'itteration_*.in'):
+				existing_inputs.append([x for x in f if x.isdigit()])
+			itt = max([eval("".join(x)) for x in existing_inputs],default=-1) + 1
+			filename = f"itteration_{itt}"
+			
 			nml = self.eqbm.get_surface_input(psiN = psiN)
-			nml.write(f"{p_path}/{psiN}.in", force=True)
+			nml.write(f"{sub_dir}/{psiN}.in", force=True)
 			if self['System'] in ['viking','archer']:
-				self.jobs.append(f"ideal_ball \"{p_path}/{psiN}.in\"")
+				self.jobs.append(f"ideal_ball \"{sub_dir}/{filename}.in\"")
 			else:
-				jobfile = open(f"{p_path}/{psiN}.job",'w')
+				jobfile = open(f"{sub_dir}/{filename}.job",'w')
 				jobfile.write(f"""#!/bin/bash
 #SBATCH --time=05:00:00
 #SBATCH --job-name={self.info['run_name']}
 #SBATCH --ntasks=1
-#SBATCH --output={p_path}/{psiN}.slurm
+#SBATCH --output={sub_dir}/{filename}.slurm
 
 {modules}
 
 which gs2
 gs2 --build-config
 
-ideal_ball \"{p_path}/{psiN}.in\"""")
+ideal_ball \"{sub_dir}/{filename}.in\"""")
 				jobfile.close()
-				self.jobs.append(f"sbatch \"{p_path}/{psiN}.job\"")
+				self.jobs.append(f"sbatch \"{sub_dir}/{filename}.job\"")
+	
+	def get_all_runs(self):
+		def loop(n,variables={},runs=[]):
+			dim = self.dimensions[self.inputs.dim_order[len(self.dimensions)-n]]
+			for val in dim.values:
+				variables[dim.name] = val
+				if n>1:
+					loop(n=n-1,variables=variables)
+				else:
+					runs.append(variables.copy())
+			if n == len(self.dimensions):
+				return runs
+		return loop(n=len(self.dimensions))
 				
 	def _make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None, group_runs = None):
 		if checkSetup:
@@ -181,64 +207,37 @@ ideal_ball \"{p_path}/{psiN}.in\"""")
 		if directory is None:
 			directory = self.info['data_path']
 		if not specificRuns:
+			'''
 			check = self.check_complete(directory = directory, doPrint = False, gyro = True, ideal = False)
 			if check['gyro_complete']:
 				print(f"{len(check['gyro_complete'])} Existing Gyro Runs Detected")
 			runs = check['gyro_incomplete']
+			'''
+			runs = self.get_all_runs()
 		else:
 			runs = specificRuns
 		
-		if group_runs is None:
-			if len(runs) > 5000:
-				group_runs = True
-			else:
-				group_runs = False
-		
-		for p, psiN in enumerate(self['psiNs']):
-			p_path = os.path.join(directory, str(psiN))
-			if not os.path.exists(p_path):
-				os.mkdir(p_path)
+		for run in runs:
+			sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.2g}" for name in self.inputs.dim_order])
+			os.makedirs(sub_dir,exist_ok=True)
+			existing_inputs = [] 
+			for f in glob.glob(r'itteration_*.in'):
+				existing_inputs.append([x for x in f if x.isdigit()])
+			itt = max([eval("".join(x)) for x in existing_inputs],default=-1) + 1
+			filename = f"itteration_{itt}"
 			
-			nml = self.eqbm.get_surface_input(psiN = psiN)
-			nml.write(f"{p_path}/{psiN}.in", force=True)
-			
-			for i, bp in enumerate(self['betas']):
-				b_path = os.path.join(p_path, str(i))
-				if not os.path.exists(b_path):
-					os.mkdir(b_path)
-				
-				for j, sh in enumerate(self['shats']):
-					group_kys = []
-					s_path = os.path.join(b_path,str(j))
-					if not os.path.exists(s_path):
-						os.mkdir(s_path)
-
-					for k, aky in enumerate(self['aky_values']):
-						k_path = os.path.join(s_path, str(k))
-						if not os.path.exists(k_path):
-							os.mkdir(k_path)
+			subnml = self.eqbm.get_gyro_input(run = run)
+			subnml.write(f"{sub_dir}/{filename}.in", force=True)
 						
-						for t, t0, in enumerate(self['theta0_values']):
-							if (p,i,j,k,t) in runs:
-								if os.path.exists(f"{k_path}/{i}_{j}_{k}_{t}.out.nc"):
-									os.remove(f"{k_path}/{i}_{j}_{k}_{t}.out.nc")
-								if os.path.exists(f"{k_path}/{i}_{j}_{k}_{t}.slurm"):
-									os.remove(f"{k_path}/{i}_{j}_{k}_{t}.slurm")
-								if os.path.exists(f"{k_path}/{i}_{j}_{k}.slurm"):
-									os.rename(f"{k_path}/{i}_{j}_{k}.slurm",f"{k_path}/{i}_{j}_{k}_old.slurm")
-								
-								subnml = self.eqbm.get_gyro_input(psiN = psiN, bp = bp, sh = sh, aky = aky, t0 = t0, namelist_diff = self.namelist_diffs[p][i][j][k][t])
-								subnml.write(f"{k_path}/{i}_{j}_{k}_{t}.in", force=True)
-								
-								if self['System'] == 'plasma':
-									self.jobs.append(f"mpirun -np 8 gs2 \"{k_path}/{i}_{j}_{k}_{t}.in\"")
-								elif not group_runs:
-									jobfile = open(f"{k_path}/{i}_{j}_{k}_{t}.job",'w')
-									jobfile.write(f"""#!/bin/bash
+			if self['System'] == 'plasma':
+				self.jobs.append(f"mpirun -np 8 gs2 \"{sub_dir}/{filename}.in\"")
+			else:
+				jobfile = open(f"{sub_dir}/{filename}.job",'w')
+				jobfile.write(f"""#!/bin/bash
 #SBATCH --time=24:00:00
 #SBATCH --job-name={self.info['run_name']}
 #SBATCH --ntasks=1
-#SBATCH --output={k_path}/{i}_{j}_{k}_{t}.slurm
+#SBATCH --output={sub_dir}/{filename}.slurm
 
 {modules}
 
@@ -246,40 +245,11 @@ which gs2
 gs2 --build-config
 
 echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
-echo \"Input: {k_path}/{i}_{j}_{k}_{t}.in\"
-gs2 \"{k_path}/{i}_{j}_{k}_{t}.in\"
+echo \"Input: {sub_dir}/{filename}.in\"
+gs2 \"{sub_dir}/{filename}.in\"
 echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
-									jobfile.close()
-									self.jobs.append(f"sbatch \"{k_path}/{i}_{j}_{k}_{t}.job\"")
-								else:
-									group_kys.append(k)
-								
-							else:
-								pass
-				
-						if self['System'] in ['viking','archer'] and group_runs and group_kys:
-							hours = 2*self['n_aky']
-							if hours > 36:
-								hours = 36
-							jobfile = open(f"{k_path}/{i}_{j}_{k}_{t}.job",'w')
-							jobfile.write(f"""#!/bin/bash
-#SBATCH --time={hours}:00:00
-#SBATCH --job-name={self.info['run_name']}
-#SBATCH --ntasks=1
-#SBATCH --output={k_path}/{i}_{j}_{k}.slurm
-
-{modules}
-
-which gs2
-gs2 --build-config""")
-							for k in group_kys:
-								jobfile.write(f"""
-echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
-echo \"Input: {k_path}/{i}_{j}_{k}_{t}.in\"
-gs2 \"{k_path}/{i}_{j}_{k}_{t}.in\"
-echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
-							jobfile.close()
-							self.jobs.append(f"sbatch \"{k_path}/{i}_{j}_{k}.job\"")
+				jobfile.close()
+				self.jobs.append(f"sbatch \"{sub_dir}/{filename}.job\"")
 	
 	def _create_run_info(self):
 		try:
