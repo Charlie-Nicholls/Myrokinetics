@@ -384,178 +384,113 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		if not self._check_setup():
 			return
 			
-		psiNs = self['psiNs']
-		beta_prime_values = full((self['n_psiN']),None)
-		shear_values = full((self['n_psiN']),None)
+		
+		beta_prime_values = {}
+		shear_values = {}
+		
+		for psiN in self.dimensions['psin'].values:
+			nml = self.eqbm.get_surface_input(psiN)
+			shear_values[psiN] = nml['theta_grid_eik_knobs']['s_hat_input']
+			beta_prime_values[psiN] = nml['theta_grid_eik_knobs']['beta_prime_input']
 		
 		if self['gyro']:
-			#beta_prime_axis = full((self['n_psiN'],self['n_beta']),None).tolist()
-			#shear_axis = full((self['n_psiN'],self['n_shat']),None).tolist()
-			#akys = full((self['n_psiN'],self['n_beta'],self['n_shat']),None).tolist()
-			grs = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-			mfs = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-			syms = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-			
-			if self['Epar']:
-				eparNs = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-			else:
-				eparNs = None
-			
+			gyro_data = {}
+			only = set({'omega'})
+			if self['epar']:
+				only.add('bpar')
 			if not QuickSave:
-				omega = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-				phi = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-				apar = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-				bpar = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-				phi2 = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-				time = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-				theta = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-				jacob = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-				gds2 = full((self['n_psiN'],self['n_beta'],self['n_shat'],self['n_aky'],self['n_theta0']),None).tolist()
-			else:
-				omega = phi = apar = bpar = phi2 = time = theta = jacob = gds2 = None
-                #beta_prime_axis = shear_axis = akys = None
-		else:
-				grs = mfs = syms = self.inputs['n_shat'] = self.inputs['n_beta'] = self.inputs['aky_values'] = eparNs = omega = phi = apar = bpar = phi2 = time = theta = jacob = gds2 = None
-                
-		if self['ideal']:
-			beta_prime_axis_ideal = full((self['n_psiN'],self['n_beta_ideal']),None).tolist()
-			shear_axis_ideal = full((self['n_psiN'],self['n_shat_ideal']),None).tolist()
-			stabilities = full((self['n_psiN'],self['n_beta_ideal'],self['n_shat_ideal']),None).tolist()
-		else:
-			beta_prime_axis_ideal = shear_axis_ideal = stabilities = None#self.inputs['n_shat_ideal'] = self.inputs['n_beta_ideal'] = 
-		
-		for p, psiN in enumerate(psiNs):
-			run_path = os.path.join(directory,str(psiN))
-			nml = f90nml.read(f"{run_path}/{psiN}.in")
-			shear = nml['theta_grid_eik_knobs']['s_hat_input']
-			beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
-			shear_values[p] = shear
-			beta_prime_values[p] = beta_prim
+				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob'})
+			all_keys = ['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob']
 			
-			if self['gyro']:
-				for i, bp in enumerate(self['betas']):
-					for j, sh in enumerate(self['shats']):
-						for k, ky in enumerate(self['akys']):
-							for t, t0 in enumerate(self['theta0s']):
-								try:
-									if self['Epar'] and not QuickSave:
-										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc",only=['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob'])
-									elif self['Epar']:
-										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc",only=['omega','phi','bpar'])
-									elif not QuickSave:
-										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc",only=['omega','phi','apar','bpar','phi2','t','theta', 'gds2', 'jacob'])
-									else:
-										data = readnc(f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc",only=['omega','phi'])	
-									
-									om = data['omega'][-1,0,0]
-									if type(om) != complex:
-										om = data['omega'][-2,0,0]
-									grs[p][i][j][k][t] = imag(om)
-									mfs[p][i][j][k][t] = real(om)
-									
-									symsum = sum(abs(data['phi'][0,0,:] + data['phi'][0,0,::-1]))/sum(abs(data['phi'][0,0,:]))
-									if  symsum > 1.9:
-										syms[p][i][j][k][t] = 1
-									elif symsum < 1:
-										syms[p][i][j][k][t] = -1
-									else:
-										syms[p][i][j][k][t] = 0
-									
-									if not QuickSave:
-										try:
-											omega[p][i][j][k] = data['omega'][:,0,0].tolist()
-										except: 
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: omega")
-										try:
-											phi[p][i][j][k] = data['phi'][0,0,:].tolist()
-										except: 
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: phi")
-										try:
-											apar[p][i][j][k] = data['apar'][0,0,:].tolist()
-										except: 
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: apar")
-										try:
-											bpar[p][i][j][k] = data['bpar'][0,0,:].tolist()
-										except: 
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: bpar")
-										try:
-											phi2[p][i][j][k] = data['phi2'].tolist()
-										except: 
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: phi2")
-										try:
-											time[p][i][j][k] = data['t'].tolist()
-										except: 
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: time")
-										try:
-											theta[p][i][j][k] = data['theta'].tolist()
-										except: 
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: theta")
-										try:
-											jacob[p][i][j][k] = data['jacob'].tolist()
-										except: 
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: jacob")
-										try:
-											gds2[p][i][j][k] = data['gds2'].tolist()
-										except: 
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: gds2")
-									
-									if self['Epar']:
-										epar_path = f"{run_path}/{i}/{j}/{k}/{i}_{j}_{k}.epar"
-										try:
-											bpar = data['bpar'][0,0,:]
-											epar_data = loadtxt(epar_path)
-											epar = []
-											for l in range(len(epar_data[:,3])):
-												epar.append(complex(epar_data[l,3],epar_data[l,4]))
-											epar = array(epar)
-											epar_norm = max(abs(epar))/max(abs(bpar))
-											
-											eparNs[p][i][j][k][t] = epar_norm
-										except:
-											print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}: epar")
-									
-								except Exception as e:
-									print(f"Save Error {psiN}/{i}/{j}/{k}/{i}_{j}_{k}_{t}: {e}")
-									grs[p][i][j][k][t] = None
-									mfs[p][i][j][k][t] = None
-									syms[p][i][j][k][t] = None
-									if self['Epar']:
-										eparNs[p][i][j][k][t] = None
-
-			if self['ideal']:
-				shear = loadtxt(f"{run_path}/{psiN}.ballstab_shat")
-				bp = loadtxt(f"{run_path}/{psiN}.ballstab_bp")
-				stab = loadtxt(f"{run_path}/{psiN}.ballstab_2d")
+			run_keys = {}
+			for dim in self.dimensions.values():
+				run_keys[dim.name] = {}
+				for val in dim.values:
+					run_keys[dim.name][val] = set()
 				
-				bp = [abs(x) for x in bp]
-				beta_prime_axis_ideal[p] = bp
-				shear_axis_ideal[p] = shear
-				stabilities[p] = transpose(stab)
+			runs = self.get_all_runs()
+			for run in runs:
+				sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.2g}" for name in self.inputs.dim_order])
+				try:
+					existing_inputs = [] 
+					for f in glob.glob(r'itteration_*.in'):
+						existing_inputs.append([x for x in f if x.isdigit()])
+					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
+					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
+					
+					run_key = run_data['attributes']['id']
+					for key in run:
+						run_keys[key][run[key]].add(run_key)
+					
+					gyro_data[run_key] = {}
+					for key in all_keys:
+						gyro_data[run_key][key] = None
+						
+					for key in only:
+						try:
+							key_data = run_data[key]
+							
+							if key == 'omega':
+								om = key_data[-1,0,0]
+								if type(om) != complex:
+									om = key_data[-2,0,0]
+								gyro_data[run_key]['growth_rate'] = imag(om)
+								gyro_data[run_key]['mode_frequency'] = real(om)
+								gyro_data[run_key]['omega'] = key_data[:,0,0].tolist()
+							elif key in ['phi','apar','bpar']:
+								gyro_data[run_key][key] = key_data[0,0,:].tolist()
+								if key == 'phi':
+									symsum = sum(abs(key_data[0,0,:] + key_data[0,0,::-1]))/sum(abs(key_data[0,0,:]))
+									if  symsum > 1.9:
+										gyro_data[run_key]['partity'] = 1
+									elif symsum < 1:
+										gyro_data[run_key]['partity'] = -1
+									else:
+										gyro_data[run_key]['partity'] = 0
+							elif key in ['phi2','t','theta', 'gds2', 'jacob']:
+								gyro_data[run_key][key] = key_data.tolist()
+							elif key in ['epar']:
+								epar_path = f"{sub_dir}/itteration_{itt}.epar"
+						
+								bpar = key_data['bpar'][0,0,:]
+								epar_data = loadtxt(epar_path)
+								epar = []
+								for l in range(len(epar_data[:,3])):
+									epar.append(complex(epar_data[l,3],epar_data[l,4]))
+								epar = array(epar)
+								epar_norm = max(abs(epar))/max(abs(bpar))
+								
+								gyro_data[run_key]['epar_norm'] = epar_norm
+						except:
+							print(f"Save Error in {sub_dir}/itteration_{itt}: {key}")
+				except Exception as e:
+					print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
+		else:
+			gyro_data = None
+
+		if self['ideal']:
+			ideal_data = {}
+			for psiN in self.dimensions['psin'].values:
+				ideal_data[psiN] = {}
+				sub_dir = f"{directory}/ideal/psin = {psiN:.2g}"
+				existing_inputs = [] 
+				for f in glob.glob(r'itteration_*.in'):
+					existing_inputs.append([x for x in f if x.isdigit()])
+				itt = max([eval("".join(x)) for x in existing_inputs],default=-1) + 1
+				
+				shear = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_shat")
+				bp = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_bp")
+				stab = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_2d")
+				
+				ideal_data[psiN]['beta_prime'] = [abs(x) for x in bp]
+				ideal_data[psiN]['shear'] = shear
+				ideal_data[psiN]['stabilities'] = transpose(stab)
+		else:
+			ideal_data = None
 			
-		self.dat = {'beta_prime_values':beta_prime_values,
-		'shear_values': shear_values,
-		'beta_prime_axis': [self['betas']]*self['n_psi'],
-		'shear_axis': [self['shears']]*self['n_psi'],
-		'beta_prime_axis_ideal': beta_prime_axis_ideal,
-		'shear_axis_ideal': shear_axis_ideal,
-		'growth_rates_all': grs,
-		'mode_frequencies_all': mfs,
-		'parities_all': syms,
-		'ideal_stabilities': stabilities,
-		'eparN_all': eparNs,
-		'omega': omega,
-		'phi': phi,
-		'apar': apar,
-		'bpar': bpar,
-		'phi2': phi2,
-		'time': time,
-		'theta': theta,
-		'jacob': jacob,
-		'gds2': gds2
-		}
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines, 'namelist_differences': self.namelist_diffs}
-		savez(f"{self.path}/{filename}", inputs = self.inputs, data = self.dat, run_info = self.info, files = self.file_lines)
-	
+		savez(f"{self.path}/{filename}", inputs = self.inputs, data = gyro_data, ideal_data = ideal_data, run_keys = run_keys, run_info = self.info, files = self.file_lines)
+	'''
 	def check_cancelled(self, directory = None, doPrint = True):
 		if self.info is None:
 			self._create_run_info()		
@@ -629,6 +564,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			self.info['itteration'] += 1
 		self._make_gyro_files(specificRuns = runs, directory = directory, group_runs = group_runs)
 		self._run_jobs()
+	'''
 	
 	def load_run_set(self, filename = None):
 		if filename is None:

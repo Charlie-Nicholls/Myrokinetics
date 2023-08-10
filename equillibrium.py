@@ -206,10 +206,12 @@ class equillibrium(object):
 			nml['theta_grid_eik_knobs']['efit_eq'] =  True
 			nml['theta_grid_eik_knobs']['iflux'] = 1
 			nml['theta_grid_eik_knobs']['local_eq'] = False
-			
+		
 		if self.inputs['Epar']:
+			nml['gs2_diagnostics_knobs']['write_ascii'] = True
 			nml['gs2_diagnostics_knobs']['write_final_epar'] = True
 		else:
+			nml['gs2_diagnostics_knobs']['write_ascii'] = False
 			nml['gs2_diagnostics_knobs']['write_final_epar'] = False
 		
 		if 'ntheta_geometry' not in nml['theta_grid_eik_knobs'].keys():
