@@ -87,9 +87,11 @@ class scan_inputs(object):
 			return []
 		sh = [None] * len(self.dimensions)
 		for dim_id, dim_type in enumerate(self.dim_order):
-			sh[dim_id] = self.dimensions[dim_type].len
+			sh[dim_id] = len(self.dimensions[dim_type])
 	
 	def load_input_dict(self, dic):
+		if not self.inputs:
+			self.inputs = f90nml.Namelist()
 		for key in dic:
 			if key not in self.inputs.keys():
 				self.inputs[key] = {}
@@ -175,7 +177,6 @@ class scan_inputs(object):
 		self.inputs = f90nml.read(f"{directory}/{self.input_name}")
 		self.check_inputs()
 		self.load_dimensions()
-
 	
 	def load_dimensions(self):
 		from .templates import dim_lookup
@@ -192,7 +193,7 @@ class scan_inputs(object):
 				if dim.name in dimensions:
 					print(f"ERROR: {dim_type} defined multiple times")
 				else:
-					if dim.len == 1:
+					if len(dim) == 1:
 						single_parameters[dim.name] = dim
 					else:
 						dimensions[dim.name] = dim
@@ -224,7 +225,7 @@ class scan_inputs(object):
 			self.inputs[f"dimension_{dim_id+1}"]['values'] = dim.values
 			self.inputs[f"dimension_{dim_id+1}"]['min'] = dim.min
 			self.inputs[f"dimension_{dim_id+1}"]['max'] = dim.max
-			self.inputs[f"dimension_{dim_id+1}"]['num'] = dim.len
+			self.inputs[f"dimension_{dim_id+1}"]['num'] = len(dim)
 		
 		self.dimensions = dimensions
 		self.single_parameters = single_parameters
@@ -284,7 +285,7 @@ class dimension(object):
 		if key in ['max']:
 			return self.max
 		if key in ['num','n','len']:
-			return self.len
+			return len(self)
 		print(f"{key} not found")
 		return None
 		
@@ -296,7 +297,7 @@ class dimension(object):
 		return nml
 		
 	def single_edit_nml(self, nml):
-		if self.len != 1:
+		if len(self) != 1:
 			print("ERROR: single_edit_nml can only be used if dimension length is 1")
 			return None
 		return self.edit_nml(nml = nml, val = self.values[0])
@@ -319,13 +320,12 @@ class dimension(object):
 	@property
 	def max(self):
 		return max(self.values)
-
-	@property
-	def len(self):
-		return len(self.values)
-	
+		
 	@property
 	def num(self):
+		return len(self.values)
+		
+	def __len__(self):
 		return len(self.values)
 		
 	@property

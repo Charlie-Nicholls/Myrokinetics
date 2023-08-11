@@ -20,8 +20,11 @@ class myro_read(object):
 		opened = self._open_file()
 		self._gr_type = "Normalised"
 		self.eqbm = None
-		if opened and not self.verify and verify:		
-			self._verify_run()
+		#if opened and not self.verify and verify:		
+		#	self._verify_run()
+	
+	#def __call__(self, key, ids):
+		
 		
 	def __getitem__(self, key):
 		if key not in ["Miller", "Ideal", "Gyro", "Viking", "Fixed_delt", "Epar","psiNs","eparN","eparN_all"]:
@@ -61,11 +64,34 @@ class myro_read(object):
 			#inputs also contains logic for if key not found
 			
 	def __len__(self):
-		return len(self['psiNs'])*self['n_beta']*self['n_shat']*len(self['aky_values'])
+		tot = 1
+		for dim in self.dimensions.values():
+			tot *= len(dim)
+		return tot
 	
-	def print_data(self):
-        	for key, val in self.run['data'].items():
-        		print(key)
+	def get_run_id(self, run):
+		run_id = self.get_run_list(run)
+		if len(run_id) == 1:
+			return run_id[0]
+		elif len(run_id) > 1:
+			print("ERROR: multiple runs found")
+			return run_id
+		else:
+			print("ERROR: run not found")
+			return None
+	
+	def get_run_list(self, run):
+		idlist = []
+		for key, val in run.items():
+			idlist.append(self.data['run_keys'][key][val])
+		run_id = list(set.intersection(*map(set, idlist)))
+		if len(run_id) == 1:
+			return run_id
+		elif len(run_id) > 1:
+			return run_id
+		else:
+			print("ERROR: run not found")
+			return None
         		
 	def print_inputs(self):
         	self.inputs.print_inputs()
@@ -163,7 +189,7 @@ class myro_read(object):
 		if self.filename is None:
 			print("ERROR: filename not given")
 			return
-		data_in = {}
+
 		if self.filename[-4:] == ".npz":
 			try:
 				data_in = load(os.path.join(self.directory,self.filename), allow_pickle=True)
@@ -178,67 +204,55 @@ class myro_read(object):
 				return False
 		
 		try:
-			info = data_in['run_info'].item()
+			self.info = data_in['run_info'].item()
 			possible_info = ['run_name','run_uuid','data_path','input_file','eq_file_name','template_file_name','kin_file_name',
 			'kinetics_type','run_data','_eq_file_path','_kin_file_path','_template_file_path']
-			for key in [x for x in possible_info if x not in info.keys()]:
-				info[key] = None
+			for key in [x for x in possible_info if x not in self.info.keys()]:
+				self.info[key] = None
 		except:
 			print("ERROR: could not load Run Info")
-			info = None
+			self.info = None
 		try:
-			data = data_in['data'].item()
-			possible_data = ['beta_prime_values','shear_values','beta_prime_axis','shear_axis','beta_prime_axis_ideal','shear_axis_ideal',
-			'growth_rates','mode_frequencies','growth_rates_all','mode_frequencies_all','parities',
-			'parities_all','ideal_stabilities','eparN','eparN_all','akys','omega','phi','apar',
-			'bpar','phi2','time','theta','quasilinear','alpha_axis','alpha_axis_ideal','alpha_values']
-			for key in [x for x in possible_data if x not in data.keys()]:
-				data[key] = None
+			self.gyro_data = data_in['gyro_data'].item()
+		except:
+			print("ERROR: could not load Gyro Data")
+			self.gyro_data = None
+		try:
+			self.data = data_in['data'].item()
+			possible_data = ['ideal_data','equillibrium','run_keys','quasilinear','max_growth_rate']
+			for key in [x for x in possible_info if x not in self.data.keys()]:
+				self.data[key] = None
 		except:
 			print("ERROR: could not load Data")
-			data = None
+			self.data = None
 		try:
-			files = data_in['files'].item()
+			self.files = data_in['files'].item()
 			possible_files = ['eq_file','kin_file','template_file','namelist_differences']
-			for key in [x for x in possible_files if x not in files.keys()]:
-				files[key] = None
+			for key in [x for x in possible_files if x not in self.files.keys()]:
+				self.files[key] = None
 		except:
 			print("ERROR: could not load Input Files")
-			files = None
+			self.files = None
 		try:
 			self.inputs = scan_inputs(input_dict = data_in['inputs'].item())
-			if info:
-				self.inputs.input_file = info['input_file']
+			self.dimensions = self.inputs.dimensions
+			if self.info:
+				self.inputs.input_file = self.info['input_file']
 		except:
 			print("ERROR: could not load Inputs")
 			self.inputs = None
+			self.dimensions = None
 		try:
-			verify = data_in['verify'].item()
+			self.verify = data_in['verify'].item()
 		except:
-			verify = {}
+			self.verify = {}
 
-		self.run = {'info': info, 'data': data, 'files': files}
-		self.verify = verify
 		return True
 	
 	def _save_file(self, filename = None, directory = "./"):
 		if filename == None:
 			filename = self['run_name']
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = self.run['data'], run_info = self.run['info'], files = self.run['files'], verify = self.verify)
-		
-	def _remove_akys(self, akys = None, ids = None):
-		if akys is None and ids is None:
-			print("ERROR: akys or ids must be given")
-			return
-		if akys:
-			ids = []
-			for aky in akys:
-				ids.append(self['aky_values'].index(aky))
-		grs = array(self['growth_rates_all'])
-		for idx in ids:
-			grs[:,:,:,idx] = nan
-		self.run['data']['growth_rates_all'] = grs.tolist()
-		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 		
 	def _verify_run(self):
 		if not self['Gyro']:
@@ -247,14 +261,42 @@ class myro_read(object):
 		self.run = self.verify.scan
 		self._convert_gr(gr_type = self._gr_type, doPrint = False)
 	
+	def get_all_runs(self, excludeDimensions = []):
+		dim_order = [x for x in self.inputs.dim_order if x not in excludeDimensions]
+		def loop(n,variables={},runs=[]):
+			dim = self.dimensions[dim_order[len(dim_order)-n]]
+			for val in dim.values:
+				variables[dim.name] = val
+				if n>1:
+					loop(n=n-1,variables=variables)
+				else:
+					runs.append(variables.copy())
+			if n == len(dim_order):
+				return runs
+		return loop(n=len(dim_order))
+	
 	def calculate_ql(self):
 		from .quasilinear import QL
-		QLs = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()
-		for p in range(len(self['psiNs'])):
-			for i in range(self['n_beta']):
-				for j in range(self['n_shat']):
-					QLs[p][i][j] = QL((p,i,j),self.run['data'],self['akyv'])
-		self.run['data']['quasilinear'] = QLs
+		from uuid import uuid4
+		if 'ky' not in self.dimensions:
+			print("ERROR: Requires ky dimension")
+			return
+		qls = {}
+		ql_keys = {}
+		for dim in [x for x in self.dimensions.values() if x.name not in ['ky','theta0']]:
+			ql_keys[dim.name] = {}
+			for val in dim.values:
+				ql_keys[dim.name][val] = []
+				
+		for runs in self.get_all_runs(excludeDimensions = ['ky','theta0']):
+			run_ids = self.get_run_list(runs)
+			ql_key = str(uuid4())
+			for dim_name, val in [(x, y) for x, y in self.gyro_data[run_ids[0]].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
+				ql_keys[dim_name][val].append(ql_key)
+			qls[ql_key] = QL(run_ids,self.gyro_data)
+			
+		self.data['quasilinear'] = qls
+		self.data['_ql_keys'] = ql_keys
 		
 	def calculate_gr(self, gr_type = "Normalised", doPrint = True):
 		GR = full((len(self['psiNs']),self['n_beta'],self['n_shat']),None).tolist()

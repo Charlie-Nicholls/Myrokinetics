@@ -249,8 +249,8 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 	
 	def _create_run_info(self):
 		try:
-			import uuid
-			ID = uuid.uuid4()
+			from uuid import uuid4
+			ID = str(uuid4())
 		except:
 			print("ERROR: unable to import uuid module, setting ID to None")
 			ID = None
@@ -269,7 +269,7 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
 			date = None
-		self.info = {'run_name': self.run_name, 'run_uuid': str(ID), 'data_path': run_path, 'input_file': self.inputs.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path, 'itteration': 0}
+		self.info = {'run_name': self.run_name, 'run_uuid': ID, 'data_path': run_path, 'input_file': self.inputs.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path, 'itteration': 0}
 	
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
 		if self.info is None:
@@ -385,13 +385,12 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			return
 			
 		
-		beta_prime_values = {}
-		shear_values = {}
-		
+		equillibrium = {}
 		for psiN in self.dimensions['psin'].values:
+			equillibrium[psiN] = {}
 			nml = self.eqbm.get_surface_input(psiN)
-			shear_values[psiN] = nml['theta_grid_eik_knobs']['s_hat_input']
-			beta_prime_values[psiN] = nml['theta_grid_eik_knobs']['beta_prime_input']
+			equillibrium[psiN]['shear'] = nml['theta_grid_eik_knobs']['s_hat_input']
+			equillibrium[psiN]['beta_prime'] = nml['theta_grid_eik_knobs']['beta_prime_input']
 		
 		if self['gyro']:
 			gyro_data = {}
@@ -422,7 +421,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 					for key in run:
 						run_keys[key][run[key]].add(run_key)
 					
-					gyro_data[run_key] = {}
+					gyro_data[run_key] = run
 					for key in all_keys:
 						gyro_data[run_key][key] = None
 						
@@ -487,9 +486,14 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				ideal_data[psiN]['stabilities'] = transpose(stab)
 		else:
 			ideal_data = None
-			
+		
+		data = {'ideal_data': ideal_data,
+			'equillibrium': equillibrium,
+			'run_keys': run_keys,
+			}
+		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines, 'namelist_differences': self.namelist_diffs}
-		savez(f"{self.path}/{filename}", inputs = self.inputs, data = gyro_data, ideal_data = ideal_data, run_keys = run_keys, run_info = self.info, files = self.file_lines)
+		savez(f"{self.path}/{filename}", inputs = self.inputs.inputs, gyro_data = gyro_data, data = data, run_info = self.info, files = self.file_lines)
 	'''
 	def check_cancelled(self, directory = None, doPrint = True):
 		if self.info is None:

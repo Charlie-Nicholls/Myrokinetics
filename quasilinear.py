@@ -1,13 +1,13 @@
-from numpy import array, trapz, nan, log10, floor
+from numpy import array, trapz, nan, log10, floor, append
 
-def avg_kperp2_f(indexes,data,f,ky):
-	p,i,j,k = indexes
+def avg_kperp2_f(run,f):
+	ky = run['ky']
 	ky2 = ky**2
-	gds2 = array(data['gds2'][p][i][j][k])
-	J = array(data['jacob'][p][i][j][k])
-	theta = array(data['theta'][p][i][j][k])
+	gds2 = array(run['gds2'])
+	J = array(run['jacob'])
+	theta = array(run['theta'])
 	
-	df = abs(array(data[f][p][i][j][k]))
+	df = abs(array(run[f]))
 	#Sometimes the magnitude of df is such that squaring the value takes it out of python's size limit for floats, but since we're integrating df2 on top&bottom we can just scale it and this change cancels itself out
 	df = df/10**floor(log10(max(df)))
 	df2 = df**2
@@ -20,129 +20,78 @@ def avg_kperp2_f(indexes,data,f,ky):
 	
 	return top/bottom
 
-def QL(indexes,data,kys):
-	try:
-		p,i,j = indexes
-		grs = data['growth_rates_all'][p][i][j]
-		for k, ky in enumerate(kys):
-			if data['phi'][p][i][j][k] is None or data['apar'][p][i][j][k] is None or data['bpar'][p][i][j][k] is None:
-				grs[k] = nan
-		kys = array([ky if str(gr) != 'nan' else nan for ky,gr in zip(kys,grs)])
-		nruns = len(kys)
-		if len([ky for ky in kys if str(ky) != 'nan']) == 0:
-			return nan
-		grs = array([x if x > 0 else 0 for x in grs])
-		kp_phis = array([avg_kperp2_f((p,i,j,k), data,'phi',ky) if str(ky) != 'nan' else nan for k, ky in enumerate(kys)])
-		kp_apars = array([avg_kperp2_f((p,i,j,k), data,'apar',ky) if str(ky) != 'nan' else nan for k, ky in enumerate(kys)])
-		kp_bpars = array([avg_kperp2_f((p,i,j,k), data,'bpar',ky) if str(ky) != 'nan' else nan for k, ky in enumerate(kys)])
-
-		max_phis = array([max(abs(array(data['phi'][p][i][j][k]))) if str(kys[k]) != 'nan' else nan for k in range(nruns)])
-		max_apars = array([max(abs(array(data['apar'][p][i][j][k]))) if str(kys[k]) != 'nan' else nan for k in range(nruns)])
-		max_bpars = array([max(abs(array(data['bpar'][p][i][j][k]))) if str(kys[k]) != 'nan' else nan for k in range(nruns)])
-
-		#Sometimes the values are such that squaring takes it out of python's size limit for floats, we can scale all the values and it will cancel itself out
-		for k in range(nruns):
-			scale = floor(log10(max_phis[k]))
-			max_phis[k] = max_phis[k]/10**scale
-			max_apars[k] = max_apars[k]/10**scale
-			max_bpars[k] = max_bpars[k]/10**scale
-
-		max_phis2 = max_phis**2
-		max_apars2 = max_apars**2
-		max_bpars2 = max_bpars**2
-
-		err = set()
-		for k in range(nruns):
-			if 'nan' in [str(max_phis2[k]),str(max_apars2[k]),str(max_bpars2[k]),str(kp_phis[k]),str(kp_apars[k]),str(kp_bpars[k]),str(grs[k])]:
-				err.add(k)
-		max_phis2 = array([max_phis2[k] for k in range(nruns) if k not in err])
-		max_apars2 = array([max_apars2[k] for k in range(nruns) if k not in err])
-		max_bpars2 = array([max_bpars2[k] for k in range(nruns) if k not in err])
-		kp_phis = array([kp_phis[k] for k in range(nruns) if k not in err])
-		kp_apars = array([kp_apars[k] for k in range(nruns) if k not in err])
-		kp_bpars = array([kp_bpars[k] for k in range(nruns) if k not in err])
-		grs = array([grs[k] for k in range(nruns) if k not in err])
-		kys = array([kys[k] for k in range(nruns) if k not in err])
-
-		intergrand = grs*(1/kp_phis + max_apars2/(max_phis2*kp_apars) + max_bpars2/(max_phis2*kp_bpars))
-		QL = trapz(intergrand,kys)
-
-		return QL
-	except:
-		return nan
-
-def mset_avg_kperp2_f(data,f):
-	ky2 = data['ky']**2
-	gds2 = data['gds2']
-	J = data['jacob']
-	df2 = abs(data[f])**2
-	theta = data['theta']
+def QL(run_ids,gyro_data):
+	#try:
+	errors = []
+	for run_id in run_ids:
+		run = gyro_data[run_id]
+		if run['phi'] is None or run['apar'] is None or run['bpar'] is None or str(run['growth_rate']) in ['None','nan','inf','-inf'] or str(run['ky']) in ['None','nan','inf','-inf']:
+			errors.append(run_id)
+	run_ids = [x for x in run_ids if x not in errors]
 	
-	top_grand = ky2*gds2*J*df2
-	bottom_grand = df2*J
-	
-	top = trapz(top_grand,theta)
-	bottom = trapz(bottom_grand,theta)
-	
-	return top/bottom
-	
-def mset_QL(mset):
-	nruns = len(mset.runs)
-	kys = array([mset[i]['data']['ky'][0] for i in range(nruns)])
-	grs = [mset[i]['data'].gr for i in range(nruns)]
-	grs = array([x if x > 0 else 0 for x in grs])
-	kp_phis = array([mset_avg_kperp2_f(mset[i]['data'],'phi') for i in range(nruns)])
-	kp_apars = array([mset_avg_kperp2_f(mset[i]['data'],'apar') for i in range(nruns)])
-	kp_bpars = array([mset_avg_kperp2_f(mset[i]['data'],'bpar') for i in range(nruns)])
-	max_phis = array([max(abs(mset[i]['data']['phi'])**2) for i in range(nruns)])
-	max_apars = array([max(abs(mset[i]['data']['apar'])**2) for i in range(nruns)])
-	max_bpars = array([max(abs(mset[i]['data']['bpar'])**2) for i in range(nruns)])
-	
-	intergrand = grs*(1/kp_phis + max_apars/(max_phis*kp_apars) + max_bpars/(max_phis*kp_bpars))
-	QL = trapz(intergrand,kys)
-	
-	return QL
+	kys = []
+	lookup = {}
+	for run_id in run_ids:
+		ky = gyro_data[run_id]['ky']
+		kys.append(ky)
+		lookup[ky] = run_id
+	kys.sort()
 
+	grs = []
+	for ky in kys:
+		run_id = lookup[ky]
+		grs.append(gyro_data[run_id]['growth_rate'] if gyro_data[run_id]['growth_rate'] > 0 else 0)
+	
+	kp_phis = array(())
+	kp_apars = array(())
+	kp_bpars = array(())
+	max_phis = array(())
+	max_apars = array(())
+	max_bpars = array(())
+	for ky in kys:
+		run_id = lookup[ky]
+		run = gyro_data[run_id]
+		kp_phis = append(kp_phis,avg_kperp2_f(run, 'phi'))
+		kp_apars = append(kp_apars,avg_kperp2_f(run, 'apar'))
+		kp_bpars = append(kp_bpars,avg_kperp2_f(run, 'bpar'))
 
-def QL_nonan(indexes,data,kys):
-	p,i,j = indexes
-	nruns = len(kys)
-	kys = array(kys)
-	grs = [data['growth_rates_all'][p][i][j][k] for k in range(nruns)]
-	grs = array([x if x > 0 else 0 for x in grs])
-	kp_phis = array([avg_kperp2_f((p,i,j,k), data,'phi',ky) for k, ky in enumerate(kys)])
-	kp_apars = array([avg_kperp2_f((p,i,j,k), data,'apar',ky) for k, ky in enumerate(kys)])
-	kp_bpars = array([avg_kperp2_f((p,i,j,k), data,'bpar',ky) for k, ky in enumerate(kys)])
-
-	max_phis = array([max(abs(array(data['phi'][p][i][j][k]))) for k in range(nruns)])
-	max_apars = array([max(abs(array(data['apar'][p][i][j][k]))) for k in range(nruns)])
-	max_bpars = array([max(abs(array(data['bpar'][p][i][j][k]))) for k in range(nruns)])
+		max_phis = append(max_phis,max(abs(array(run['phi']))))
+		max_apars = append(max_apars,max(abs(array(run['apar']))))
+		max_bpars = append(max_bpars,max(abs(array(run['bpar']))))
 
 	#Sometimes the values are such that squaring takes it out of python's size limit for floats, we can scale all the values and it will cancel itself out
-	for k in range(nruns):
-		scale = floor(log10(max_phis[k]))
-		max_phis[k] = max_phis[k]/10**scale
-		max_apars[k] = max_apars[k]/10**scale
-		max_bpars[k] = max_bpars[k]/10**scale
+	
+	nruns = len(kys)
+	for i in range(nruns):
+		scale = floor(log10(max_phis[i]))
+		max_phis[i] = max_phis[i]/10**scale
+		max_apars[i] = max_apars[i]/10**scale
+		max_bpars[i] = max_bpars[i]/10**scale
 
 	max_phis2 = max_phis**2
 	max_apars2 = max_apars**2
 	max_bpars2 = max_bpars**2
 
-	err = set()
-	for k in range(nruns):
-		if 'nan' in [str(max_phis2[k]),str(max_apars2[k]),str(max_bpars2[k]),str(kp_phis[k]),str(kp_apars[k]),str(kp_bpars[k]),str(grs[k])]:
-			err.add(k)
-	max_phis2 = array([max_phis2[k] for k in range(nruns) if k not in err])
-	max_apars2 = array([max_apars2[k] for k in range(nruns) if k not in err])
-	max_bpars2 = array([max_bpars2[k] for k in range(nruns) if k not in err])
-	kp_phis = array([kp_phis[k] for k in range(nruns) if k not in err])
-	kp_apars = array([kp_apars[k] for k in range(nruns) if k not in err])
-	kp_bpars = array([kp_bpars[k] for k in range(nruns) if k not in err])
-	grs = array([grs[k] for k in range(nruns) if k not in err])
-	kys = array([kys[k] for k in range(nruns) if k not in err])
+	err = []
+	for i in range(nruns):
+		if 'nan' in [str(max_phis2[i]),str(max_apars2[i]),str(max_bpars2[i]),str(kp_phis[i]),str(kp_apars[i]),str(kp_bpars[i]),str(grs[i])]:
+			err.append(i)
+	if len(err) == nruns:
+		return nan
+			
+	max_phis2 = array([max_phis2[i] for i in range(nruns) if i not in err])
+	max_apars2 = array([max_apars2[i] for i in range(nruns) if i not in err])
+	max_bpars2 = array([max_bpars2[i] for i in range(nruns) if i not in err])
+	kp_phis = array([kp_phis[i] for i in range(nruns) if i not in err])
+	kp_apars = array([kp_apars[i] for i in range(nruns) if i not in err])
+	kp_bpars = array([kp_bpars[i] for i in range(nruns) if i not in err])
+	grs = array([grs[i] for i in range(nruns) if i not in err])
+	kys = array([kys[i] for i in range(nruns) if i not in err])
 
 	intergrand = grs*(1/kp_phis + max_apars2/(max_phis2*kp_apars) + max_bpars2/(max_phis2*kp_bpars))
+	
 	QL = trapz(intergrand,kys)
-
+	print(intergrand,kys,QL)
 	return QL
+	#except:
+		#return nan
