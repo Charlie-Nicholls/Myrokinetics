@@ -91,7 +91,6 @@ def QL(run_ids,gyro_data):
 		intergrand = grs*(1/kp_phis + max_apars2/(max_phis2*kp_apars) + max_bpars2/(max_phis2*kp_bpars))
 		
 		QL = trapz(intergrand,kys)
-		print(intergrand,kys,QL)
 		return QL
 	except:
 		return nan
