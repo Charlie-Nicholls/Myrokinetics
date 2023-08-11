@@ -489,7 +489,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		
 		data = {'ideal_data': ideal_data,
 			'equillibrium': equillibrium,
-			'run_keys': run_keys,
+			'_run_keys': run_keys,
 			}
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines, 'namelist_differences': self.namelist_diffs}

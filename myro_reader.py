@@ -23,38 +23,62 @@ class myro_read(object):
 		#if opened and not self.verify and verify:		
 		#	self._verify_run()
 	
-	#def __call__(self, key, ids):
+	def __call__(self, key, *indexes):
+		if type(indexes[0]) == int:
+			ids = list(indexes)
+		else:
+			ids = list(indexes[0])
+	
+		key.lower()
+		if key in ['gr','growth','gamma']:
+			key = 'growth_rate'
+		if key in ['mf','mode','frequency']:
+			key = 'mode_frequency'
+		if key in ['time']:
+			key = 't'
 		
+		if key in ['growth_rate','mode_frequency','omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','epar_norm']:
+			if len(ids) != len(self.dimensions):
+				print(f"ERROR: ids must be length {len(self.dimensions)}")
+				return None
+			run = {}
+			for idx, i in enumerate(ids):
+				run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]
+			run_id = self.get_run_id(run)
+			return self.gyro_data[run_id][key]
+		
+		if key in ['ql','quasilinear']:
+			if not self.data['quasilinear']:
+				print("ERROR: quasilinear not calculated")
+				return None
+			
+			dim_order = [x for x in self.inputs.dim_order if x not in ['ky','theta0']]
+			if len(ids) != len(dim_order):
+				print(f"ERROR: ids must be length {len(dim_order)}")
+			run = {}
+			for idx, i in enumerate(ids):
+				run[dim_order[idx]] = self.dimensions[dim_order[idx]].values[i]
+			run_id = self.get_run_id(run, keys = '_ql_keys')
+			return self.data['quasilinear'][run_id]
+			
 		
 	def __getitem__(self, key):
-		if key not in ["Miller", "Ideal", "Gyro", "Viking", "Fixed_delt", "Epar","psiNs","eparN","eparN_all"]:
-			key = key.lower()
+		key = key.lower()
 		if key == "inputs":
-			self.print_inputs()
-		elif key in ["info","run_info","run info"]:
+			return self.inputs.inputs
 			self.print_info()
-		elif key == "data":
-			self.print_data()
 			
-		elif key in self.run['data'].keys():
-			return self.run['data'][key]
-		elif key in self.run['info'].keys():
-			return self.run['info'][key]
-		elif key in self.run['files'].keys():
-			return self.run['files'][key]
+		elif key in self.data.keys():
+			return self.data[key]
+		elif key in self.info.keys():
+			return self.info[key]
+		elif key in self.files.keys():
+			return self.files[key]
 		
-		elif key in ["gr","growth"]:
-			return self.run['data']['growth_rates']
-		elif key in ["mf","mode"]:
-			return self.run['data']['mode_frequencies']
-		elif key in ["gra","gr_a","gr_all"]:
-			return self.run['data']['growth_rates_all']
-		elif key in ["mfa","mf_a","mf_all"]:
-			return self.run['data']['mode_frequencies_all']
 		elif key in ["namelist_diffs", "nml_diffs", "namelist_diff", "nml_diff", "namelists", "nmls"]:
-			return self.run['files']['namelist_differences']
+			return self.files['namelist_differences']
 		elif key in ["ql", "quasi linear", "quasi_linear"]:
-			return self.run['data']['quasilinear']
+			return self.data['quasilinear']
 			
 		elif key in self.verify._all_keys():
 			return self.verify[key]
@@ -69,8 +93,8 @@ class myro_read(object):
 			tot *= len(dim)
 		return tot
 	
-	def get_run_id(self, run):
-		run_id = self.get_run_list(run)
+	def get_run_id(self, run, keys = '_run_keys'):
+		run_id = self.get_run_list(run, keys = keys)
 		if len(run_id) == 1:
 			return run_id[0]
 		elif len(run_id) > 1:
@@ -80,14 +104,12 @@ class myro_read(object):
 			print("ERROR: run not found")
 			return None
 	
-	def get_run_list(self, run):
+	def get_run_list(self, run, keys = '_run_keys'):
 		idlist = []
 		for key, val in run.items():
-			idlist.append(self.data['run_keys'][key][val])
+			idlist.append(self.data[keys][key][val])
 		run_id = list(set.intersection(*map(set, idlist)))
-		if len(run_id) == 1:
-			return run_id
-		elif len(run_id) > 1:
+		if len(run_id) > 0:
 			return run_id
 		else:
 			print("ERROR: run not found")
@@ -219,8 +241,8 @@ class myro_read(object):
 			self.gyro_data = None
 		try:
 			self.data = data_in['data'].item()
-			possible_data = ['ideal_data','equillibrium','run_keys','quasilinear','max_growth_rate']
-			for key in [x for x in possible_info if x not in self.data.keys()]:
+			possible_data = ['ideal_data','equillibrium','_run_keys','quasilinear','max_growth_rate']
+			for key in [x for x in possible_data if x not in self.data.keys()]:
 				self.data[key] = None
 		except:
 			print("ERROR: could not load Data")
@@ -249,10 +271,10 @@ class myro_read(object):
 
 		return True
 	
-	def _save_file(self, filename = None, directory = "./"):
+	def save_file(self, filename = None, directory = "./"):
 		if filename == None:
 			filename = self['run_name']
-		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = self.run['data'], run_info = self.run['info'], files = self.run['files'], verify = self.verify)
+		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, gyro_data = self.gyro_data, run_info = self.info, files = selfiles, verify = self.verify)
 		
 	def _verify_run(self):
 		if not self['Gyro']:
