@@ -490,9 +490,10 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		data = {'ideal_data': ideal_data,
 			'equillibrium': equillibrium,
 			'_run_keys': run_keys,
+			'namelist_differences': self.namelist_diffs
 			}
 		
-		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines, 'namelist_differences': self.namelist_diffs}
+		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{self.path}/{filename}", inputs = self.inputs.inputs, gyro_data = gyro_data, data = data, run_info = self.info, files = self.file_lines)
 	'''
 	def check_cancelled(self, directory = None, doPrint = True):

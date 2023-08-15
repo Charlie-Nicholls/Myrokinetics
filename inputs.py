@@ -88,6 +88,7 @@ class scan_inputs(object):
 		sh = [None] * len(self.dimensions)
 		for dim_id, dim_type in enumerate(self.dim_order):
 			sh[dim_id] = len(self.dimensions[dim_type])
+		return sh
 	
 	def load_input_dict(self, dic):
 		if not self.inputs:

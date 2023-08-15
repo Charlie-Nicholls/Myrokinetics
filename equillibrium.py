@@ -232,15 +232,18 @@ class equillibrium(object):
 		
 		return deepcopy(self.surface_namelists[psiN])
 				
-	def get_gyro_input(self, indexes = None, run = None, namelist_diff = {}):
+	def get_gyro_input(self, run = None, indexes = None, namelist_diff = {}):
 		if run is None and indexes is None:
 			print("ERROR: Either indexes or run must be given")
 			return None
 		
 		if run is None:
-			for i, idx in enumerate(indexes):
-				dim_name = self.inputs.scan_order[i]
-				run[dim_name] = self.inputs.dimensions[dim_name][idx]
+			if len(indexes) != len(self.inputs.dimensions):
+				print(f"ERROR: indexes must be of length {len(self.dimensions)}, {[self.inputs.dim_order]}")
+				return None
+			run = {}
+			for i, dim in zip(indexes,self.inputs.dimensions.values()):
+				run[dim.name] = dim.values[i]
 		
 		if 'psin' in run:	
 			psiN = run['psin']
