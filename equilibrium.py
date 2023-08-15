@@ -4,7 +4,7 @@ from .inputs import scan_inputs
 from .templates import template_dir, gs2_template
 from copy import deepcopy
 
-class equillibrium(object):
+class equilibrium(object):
 	
 	def __init__(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None, inputs = None):
 		self.eq_name = eq_file
@@ -99,7 +99,7 @@ class equillibrium(object):
 		from pathlib import Path
 		if self.eq_name is None or self.kin_name is None:
 			if self.eq_name is None:
-				print("ERROR: No equillibrium loaded")
+				print("ERROR: No equilibrium loaded")
 			if self.kin_name is None:
 				print("ERROR: No kinetics file loaded")
 			return

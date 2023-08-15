@@ -1,4 +1,4 @@
-from numpy import transpose, array, amax, amin, isfinite, linspace, where
+from numpy import transpose, array, amax, amin, isfinite, linspace, where, full, nan
 from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons, TextBox
@@ -11,8 +11,8 @@ default_settings = {"suptitle": None,
 		"ql_max": None,
 		"eqbm_style": "title",
 		"contour_type": 0,
-		"x_axis_type": 0,
-		"y_axis_type": 0,
+		"x_axis_type": 'beta_prime',
+		"y_axis_type": 'shear',
 		"options": [False,False,True,True,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
 		"visible": {"psi_sli": True, "ql_sli": True, "op_box": True, "suptitle": True, "title": True},
@@ -22,19 +22,16 @@ default_settings = {"suptitle": None,
 }
 
 class plot_ql(object):
-	def __init__(self, data = None, inputs = None, settings = {}):
-		if data is None:
-			print("ERROR: data not given")
-			return
-		if inputs is None:
-			print("ERROR: input not given")
-			return
+	def __init__(self, reader, settings = {}):
 			
-		self.data = data
-		self.inputs = inputs
-		self.psiNs = self.inputs['psiNs']
+		self.reader = reader
+		self.inputs = reader.inputs
+		if 'psin' in self.reader.dimensions:
+			self.psiNs = self.reader.dimensions['psin'].values
+		else:
+			self.psiNs = [self.reader.single_parameters['psin'].values
 		
-		if self.data['quasilinear'] is None:
+		if self.reader['quasilinear'] is None:
 			print("Error: No QuasiLinear Data")
 			return
 		
@@ -85,6 +82,8 @@ class plot_ql(object):
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
 		
+		self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type']]]
+		
 		self.cmap = LinearSegmentedColormap('WhRd', self.settings['cdict'])
 		blank_norm = Normalize(vmin=-1,vmax=1)
 		self.cbar = colorbar(ScalarMappable(norm = blank_norm), ax = self.ax)
@@ -114,13 +113,13 @@ class plot_ql(object):
 		show()
 	
 	def _load_x_axis(self, axis_type):
-		if axis_type not in [0,'beta_prime',1,'alpha']:
-			print(f"ERROR: axis_type not found, valid types [0,'beta_prime',1,'alpha']")
+		if axis_type not in ['beta_prime','alpha']:
+			print(f"ERROR: axis_type not found, valid types ['beta_prime','alpha']")
 			return
 			
 		self.settings['x_axis_type'] = axis_type
 		
-		if axis_type in [1,'alpha']:
+		if axis_type in ['alpha']:
 			if not self.data['alpha_axis']:
 				print("ERROR: Alpha not calculated, use calculate_alpha()")
 			else:
@@ -129,9 +128,7 @@ class plot_ql(object):
 				self.x_values = self.data['alpha_values']
 				self._x_axis_label = "\u03B1"
 		else:
-			self.x_axis = self.data['beta_prime_axis']
-			self.x_axis_ideal = self.data['beta_prime_axis_ideal']
-			self.x_values = self.data['beta_prime_values']
+			self.x_axis = self.reader.dimensions['beta_prime'].values
 			self._x_axis_label = "-\u03B2'"
 			
 	def set_x_axis_type(self, axis_type):
@@ -139,18 +136,16 @@ class plot_ql(object):
 		self.draw_fig()
 	
 	def _load_y_axis(self, axis_type):
-		if axis_type not in [0,'shear',1,'current']:
-			print(f"ERRORL axis_type not found, valid types [0,'shear',1,'current']")
+		if axis_type not in ['shear','current']:
+			print(f"ERRORL axis_type not found, valid types ['shear','current']")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
 		
-		if axis_type in [1,'current']:
+		if axis_type in ['current']:
 			print("Not yet implimented")
 		else:
-			self.y_axis = self.data['shear_axis']
-			self.y_axis_ideal = self.data['shear_axis_ideal']
-			self.y_values = self.data['shear_values']
+			self.y_axis = self.reader.dimensions['shear'].values
 			self._y_axis_label = "Shear"
 			
 	def set_y_axis_type(self, axis_type):
@@ -254,11 +249,11 @@ class plot_ql(object):
 		psiN = self.psiNs[idx]
 		self.settings['psi_id'] = idx
 		
-		x = list(self.x_axis[idx])
-		y = list(self.y_axis[idx])
+		x = list(self.x_axis)
+		y = list(self.y_axis)
 		
-		x_val = abs(self.x_values[idx])
-		y_val = self.y_values[idx]
+		x_val = abs(self.reader.data['equilibrium'][psiN]['beta_prime'])
+		y_val = self.reader.data['equilibrium'][psiN]['shear']
 		
 		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"\u03A8\u2099 = {psiN}",visible = False)
 		ideal_line =  None
@@ -272,12 +267,17 @@ class plot_ql(object):
 		status = self.options.get_status()
 		self.settings['options'] = status
 		
-		z = transpose(self.data['quasilinear'][idx]).tolist()
+		z = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
+		for x_id, x_value in enumerate(self.x_axis):
+			for y_id, y_value in enumerate(self.y_axis):
+				run = {'psin': psiN, self['x_axis_type']: x_value, self['y_axis_type']: y_value}
+				run_id = self.reader.get_run_id(run = run, keys = '_quasilinear_keys')
+				z[x_id][y_id] = self.reader.data['quasilinear'][run_id]
 		
 		if self['ql_max']:
 			qlmax = self.ql_slider.val * self['ql_max']/100
-		elif status[2]:
-			qlmax = self.ql_slider.val * abs(amax(array(self.data['quasilinear'])[isfinite(self.data['quasilinear'])]))/100
+		#elif status[2]:
+			#qlmax = self.ql_slider.val * abs(amax(array(self.data['quasilinear'])[isfinite(self.data['quasilinear'])]))/100
 		else:
 			try:
 				qlmax = self.ql_slider.val * amax(abs(array(z)[isfinite(z)]))/100
@@ -292,7 +292,7 @@ class plot_ql(object):
 		if self['contour_type'] == 1:
 			self.ax.contourf(x,y,z, cmap = self.cmap, norm = norm)
 		else:
-			self.ax.pcolormesh(x, y, z, cmap = self.cmap, norm=norm)
+			self.ax.pcolormesh(x, y, transpose(z), cmap = self.cmap, norm=norm)
 			
 		if status[5]:
 			grid = RegularGridInterpolator((array(x),array(y)),transpose(z))
@@ -336,8 +336,8 @@ class plot_ql(object):
 				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label="Equillibrium",linewidth=0)
 		
 		if status[4]:
-			if self.data['ideal_stabilities'] is not None and self.data['ideal_stabilities'][idx] is not None:
-				self.ax.contourf(self.x_axis_ideal[idx], self.y_axis_ideal[idx], self.data['ideal_stabilities'][idx], [0.01,0.99], colors = ('k'))
+			if self.reader.data['ideal_data'] is not None and self.reader.data['ideal_data'][psiN] is not None:
+				self.ax.contourf(self.reader.data['ideal_data'][psiN]['beta_prime'], self.reader.data['ideal_data'][psiN]['shear'], self.reader.data['ideal_data'][psiN]['stabilities'], [0.01,0.99], colors = ('k'))
 				ideal_line = Line2D([0,1],[0.5,0.5],color='k',label="Ideal Boundary")
 			else:
 				self.ax.text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=self.ax.transAxes,color='k')

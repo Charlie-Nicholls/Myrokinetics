@@ -264,7 +264,7 @@ class myro_read(object):
 			self.gyro_data = None
 		try:
 			self.data = data_in['data'].item()
-			possible_data = ['ideal_data','equillibrium','_run_keys','quasilinear','max_growth_rate']
+			possible_data = ['ideal_data','equilibrium','_run_keys','quasilinear']
 			for key in [x for x in possible_data if x not in self.data.keys()]:
 				self.data[key] = None
 		except:
@@ -297,7 +297,7 @@ class myro_read(object):
 	def save_file(self, filename = None, directory = "./"):
 		if filename == None:
 			filename = self['run_name']
-		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, gyro_data = self.gyro_data, run_info = self.info, files = selfiles, verify = self.verify)
+		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, gyro_data = self.gyro_data, data = self.data, run_info = self.info, files = self.files, verify = self.verify)
 		
 	def _verify_run(self):
 		if not self['Gyro']:
@@ -385,7 +385,7 @@ class myro_read(object):
 	'''
 	def calculate_alpha(self):
 		if not self.eqbm:
-			self.load_equillibrium()
+			self.load_equilibrium()
 		from scipy.interpolate import InterpolatedUnivariateSpline
 		qspline = InterpolatedUnivariateSpline(self.eqbm.eq_data['psiN'],self.eqbm.eq_data['qpsi'])
 		alpha_axis = []
@@ -423,7 +423,7 @@ class myro_read(object):
 			settings['psi_id'] = int(init)
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} QuasiLinear"
-		self.plots['ql'] = Plotters['QL'](data = self.run['data'], inputs = self.inputs, settings = settings)
+		self.plots['ql'] = Plotters['QL'](reader = self, settings = settings)
 	
 	def plot_ideal(self, init = 0, settings = {}):
 		if init is not None:
@@ -479,11 +479,11 @@ class myro_read(object):
 	
 	def plot_eq(self):
 		if not self.eqbm:
-			self.load_equillibrium()
+			self.load_equilibrium()
 		self.eqbm.plot_eq()
 	
-	def load_equillibrium(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None):
-		from .equillibrium import equillibrium
+	def load_equilibrium(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None):
+		from .equilibrium import equilibrium
 		if directory is None:
 			directory = self.directory
 		if eq_file is None:
@@ -501,7 +501,7 @@ class myro_read(object):
 			if template_file:
 				if not os.path.exists(f"{os.path.join(directory,template_file)}"):
 					self.write_template_file(filename = template_file, directory = directory)
-		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.inputs)
+		self.eqbm = self.equilibrium = equilibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.inputs)
 	
 	def write_gs2_input(self, run = None, indexes = None, filename = None, eq_file = None, kin_file = None, template_file = None, directory = None):
 		if directory is None and self.directory is None:
@@ -513,7 +513,7 @@ class myro_read(object):
 			filename = f"itteration_{self.info['itteration']}.in"
 			
 		if self.eqbm is None:
-			self.load_equillibrium(eq_file = eq_file, kin_file = kin_file, directory = directory)
+			self.load_equilibrium(eq_file = eq_file, kin_file = kin_file, directory = directory)
 	
 		#namelist_diff = self['namelist_diffs'][p][i][j][k]
 		nml = self.eqbm.get_gyro_input(run = run, indexes = indexes)

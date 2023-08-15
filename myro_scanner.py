@@ -1,7 +1,7 @@
 import os
 from numpy import full, real, imag, array, loadtxt, transpose, savez
 from .ncdf2dict import ncdf2dict as readnc
-from .equillibrium import equillibrium
+from .equilibrium import equilibrium
 from .templates import system_modules
 from .inputs import scan_inputs
 import f90nml
@@ -25,7 +25,7 @@ class myro_scan(object):
 			self.run_name = input_file.split("/")[-1].split(".")[0]
 		
 		self.load_inputs(input_file = input_file, directory = directory)
-		self.eqbm = self.equillibrium = equillibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.inputs)
+		self.eqbm = self.equilibrium = equilibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.inputs)
 	
 	def __getitem__(self, key):
 		if key == "inputs":
@@ -385,12 +385,12 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			return
 			
 		
-		equillibrium = {}
+		equilibrium = {}
 		for psiN in self.dimensions['psin'].values:
-			equillibrium[psiN] = {}
+			equilibrium[psiN] = {}
 			nml = self.eqbm.get_surface_input(psiN)
-			equillibrium[psiN]['shear'] = nml['theta_grid_eik_knobs']['s_hat_input']
-			equillibrium[psiN]['beta_prime'] = nml['theta_grid_eik_knobs']['beta_prime_input']
+			equilibrium[psiN]['shear'] = nml['theta_grid_eik_knobs']['s_hat_input']
+			equilibrium[psiN]['beta_prime'] = nml['theta_grid_eik_knobs']['beta_prime_input']
 		
 		if self['gyro']:
 			gyro_data = {}
@@ -470,25 +470,31 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		if self['ideal']:
 			ideal_data = {}
 			for psiN in self.dimensions['psin'].values:
-				ideal_data[psiN] = {}
-				sub_dir = f"{directory}/ideal/psin = {psiN:.2g}"
-				existing_inputs = [] 
-				for f in glob.glob(r'itteration_*.in'):
-					existing_inputs.append([x for x in f if x.isdigit()])
-				itt = max([eval("".join(x)) for x in existing_inputs],default=-1) + 1
-				
-				shear = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_shat")
-				bp = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_bp")
-				stab = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_2d")
-				
-				ideal_data[psiN]['beta_prime'] = [abs(x) for x in bp]
-				ideal_data[psiN]['shear'] = shear
-				ideal_data[psiN]['stabilities'] = transpose(stab)
+				try:
+					ideal_data[psiN] = {}
+					sub_dir = f"{directory}/ideal/psin = {psiN:.2g}"
+					existing_inputs = [] 
+					for f in glob.glob(r'itteration_*.in'):
+						existing_inputs.append([x for x in f if x.isdigit()])
+					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
+
+					shear = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_shat")
+					bp = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_bp")
+					stab = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_2d")
+					
+					ideal_data[psiN]['beta_prime'] = [abs(x) for x in bp]
+					ideal_data[psiN]['shear'] = shear
+					ideal_data[psiN]['stabilities'] = transpose(stab)
+				except:
+					ideal_data[psiN]['beta_prime'] = None
+					ideal_data[psiN]['shear'] = None
+					ideal_data[psiN]['stabilities'] = None
+					print(f"Save Error for ideal psiN = {psiN}")
 		else:
 			ideal_data = None
 		
 		data = {'ideal_data': ideal_data,
-			'equillibrium': equillibrium,
+			'equilibrium': equilibrium,
 			'_run_keys': run_keys,
 			'namelist_differences': self.namelist_diffs
 			}
