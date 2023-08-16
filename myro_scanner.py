@@ -395,8 +395,6 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		if self['gyro']:
 			gyro_data = {}
 			only = set({'omega'})
-			if self['epar']:
-				only.add('bpar')
 			if not QuickSave:
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob'})
 			all_keys = ['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob']
@@ -457,9 +455,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 								for l in range(len(epar_data[:,3])):
 									epar.append(complex(epar_data[l,3],epar_data[l,4]))
 								epar = array(epar)
-								epar_norm = max(abs(epar))/max(abs(bpar))
-								
-								gyro_data[run_key]['epar_norm'] = epar_norm
+								gyro_data[run_key]['epar'] = epar
 						except:
 							print(f"Save Error in {sub_dir}/itteration_{itt}: {key}")
 				except Exception as e:

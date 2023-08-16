@@ -13,6 +13,7 @@ default_settings = {"suptitle": None,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
 		"slider_1": {"dimension_type": None, "id": 0},
+		"run": {},
 		"options": [False,False,True,True,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
 		"visible": {"slider_1": True, "ql_sli": True, "op_box": True, "suptitle": True, "title": True},
@@ -87,6 +88,10 @@ class plot_ql(object):
 		for sli, key in enumerate(empty_sliders):
 			if len(unused_dims) > sli:
 				self.settings[key]['dimension_type'] = unused_dims[sli]
+				used_dims.append(unused_dims[sli])
+				
+		for dim in [x for x in self.dims if x not in self.settings['run']]:
+			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
 		
 		if self['visible']['slider_1'] == True:	
 			self.fig.subplots_adjust(bottom=0.15)
@@ -102,7 +107,7 @@ class plot_ql(object):
 		self.options.on_clicked(self.draw_fig)
 		self.set_options_fontsize(self['fontsizes']['ch_box'])
 		
-		self._slider_axes = {'slider_1': axes([0.15, 0.01, 0.5, 0.03],visible=self['visible']['slider_1'])
+		self._slider_axes = {'slider_1': axes([0.15, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
 		}
 		self.sliders = {}
 		for key in self._slider_axes.keys():
@@ -120,7 +125,7 @@ class plot_ql(object):
 			self.set_ql_max(self.init_settings['ql_max'])
 		show()
 	
-	def load_slider(self, slider_num, dimension_type, visible = True):
+	def set_slider(self, slider_num, dimension_type, visible = True):
 		if dimension_type not in self.dims:
 			print(f"ERROR: invalid dimension type, valid: {self.dims}")
 			return
@@ -130,6 +135,7 @@ class plot_ql(object):
 		dim = self.reader.dimensions[dimension_type]
 		self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = 0, valstep = 1)
 		self.set_visible(key,val=visible)
+		self.draw_fig()
 		
 	def _load_x_axis(self, axis_type):
 		if axis_type not in ['beta_prime','alpha']:
@@ -268,16 +274,13 @@ class plot_ql(object):
 		self.draw_fig()
 
 	def draw_fig(self, val = None):
-		values = {}
 		for key, sli in self.sliders.items():
 			dim = self[key]['dimension_type']
-			values[dim] = self.reader.dimensions[dim].values[sli.val]
+			self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
 			self.settings[key]['id'] = sli.val
-		for dim in [x for x in self.dims if x not in values]:
-			values[dim] = self.reader.dimensions[dim].values[0]
 		
-		if 'psin' in values:
-			psiN = values['psin']
+		if 'psin' in self['run']:
+			psiN = self['run']['psin']
 		else:
 			psiN = self.reader.single_parameters.values[0]
 				
@@ -302,7 +305,7 @@ class plot_ql(object):
 		z = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
 		for x_id, x_value in enumerate(self.x_axis):
 			for y_id, y_value in enumerate(self.y_axis):
-				run = values.copy()
+				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
 				run_id = self.reader.get_run_id(run = run, keys = '_quasilinear_keys')

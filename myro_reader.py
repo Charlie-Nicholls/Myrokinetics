@@ -290,7 +290,7 @@ class myro_read(object):
 		try:
 			self.verify = data_in['verify'].item()
 		except:
-			self.verify = {}
+			self.verify = None
 
 		return True
 	
@@ -432,37 +432,38 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} Ideal Ballooning"
 		self.plots['ideal'] = Plotters['Ideal'](data = self.run['data'], inputs = self.inputs, settings = settings)
 	
-	def plot_omega(self, init = None, aky = None, settings = {}):
-		self.plots['omega'] = self._plot_diag(var = 'omega', init = init, aky = aky, settings = settings)
+	def plot_omega(self, init = None, settings = {}):
+		self.plots['omega'] = self._plot_diag(var = 'omega', init = init, settings = settings)
 	
-	def plot_phi(self, init = None, aky = None, absolute = None, settings = {}):
-		self.plots['phi'] = self._plot_diag(var = 'phi', init = init, aky = aky, absolute = absolute, settings = settings)
+	def plot_phi(self, init = None, absolute = None, settings = {}):
+		self.plots['phi'] = self._plot_diag(var = 'phi', init = init, absolute = absolute, settings = settings)
 	
-	def plot_apar(self, init = None, aky = None, absolute = None, settings = {}):
-		self.plots['apar'] = self._plot_diag(var = 'apar', init = init, aky = aky, absolute = absolute, settings = settings)
+	def plot_apar(self, init = None, absolute = None, settings = {}):
+		self.plots['apar'] = self._plot_diag(var = 'apar', init = init, absolute = absolute, settings = settings)
 		
-	def plot_bpar(self, init = None, aky = None, absolute = None, settings = {}):
-		self.plots['bpar'] = self._plot_diag(var = 'bpar', init = init, aky = aky, absolute = absolute, settings = settings)
+	def plot_bpar(self, init = None, absolute = None, settings = {}):
+		self.plots['bpar'] = self._plot_diag(var = 'bpar', init = init, absolute = absolute, settings = settings)
 		
-	def plot_phi2(self, init = None, aky = None, settings = {}):
-		self.plots['phi2'] = self._plot_diag(var = 'phi2', init = init, aky = aky, settings = settings)
+	def plot_bpar(self, init = None, absolute = None, settings = {}):
+		self.plots['epar'] = self._plot_diag(var = 'epar', init = init, absolute = absolute, settings = settings)
+		
+	def plot_phi2(self, init = None, settings = {}):
+		self.plots['phi2'] = self._plot_diag(var = 'phi2', init = init, settings = settings)
 	
-	def _plot_diag(self, init = None, aky = None, var = None, absolute = None, settings = {}):
+	def _plot_diag(self, init = None, var = None, absolute = None, settings = {}):
 		if init is not None:
-			settings['psi_id'] = init[0]
-			settings['bp_id'] = init[1]
-			settings['sh_id'] = init[2]
-			settings['ky_id'] = init[3]
-		if aky is not None:
-			settings['aky'] = aky
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					settings[f"slider_{i+1}"]['id'] = ini
+					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if var is not None:
 			settings['var'] = var
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
-		return Plotters['Diag'](data = self.run['data'], inputs = self.inputs, info = self.run['info'], verify = self.verify, settings = settings)
+		return Plotters['Diag'](reader = self, verify = self.verify, settings = settings)
 	
-	def plot_epar(self):
-		Plotters['Epar'](data = self.run['data'], inputs = self.inputs)
+	#def plot_epar_scan(self):
+		#Plotters['Epar'](data = self.run['data'], inputs = self.inputs)
 	
 	def plot_theta(self, init = [0,0,0,0], aky = True, var = 0, n = 3, polar = False):
 		Plotters['Theta'](data = self.run['data'], inputs = self.inputs, var = var, init = init, aky = aky, n = n, polar = polar)

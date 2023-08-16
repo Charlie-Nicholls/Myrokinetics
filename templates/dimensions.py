@@ -23,7 +23,7 @@ class psiN(dimension):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
 
 	name_keys = ['psin','psi','psi_norm']
-	axis_label = '$\u03C8_{N}$'
+	axis_label = r'$\psi_{N}$'
 
 	def sub_validate(self, values):
 		if any([x <= 0 or x > 1 for x in values]):
@@ -39,7 +39,7 @@ class beta_prime(dimension):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
 
 	name_keys = ['beta_prime','betap','bp','beta_p','b_p']
-	axis_label = '\u03B2\''
+	axis_label = r'$\beta^{\prime}$'
 
 	def sub_validate(self, values):
 		values = [abs(x) for x in values]
@@ -63,7 +63,7 @@ class shear(dimension):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
 
 	name_keys = ['shear','shat','s_hat','sh']
-	axis_label = '$\hat{s}$'
+	axis_label = r'$\hat{s}$'
 
 	def sub_validate(self, values):
 		if any([x<1e-4 for x in values]):
@@ -80,7 +80,7 @@ class ky(dimension):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
 
 	name_keys = ['ky','aky','ky_rho0']
-	axis_label = '$k_{y}\rho_{0}$'
+	axis_label = r'$k_{y}\rho_{0}$'
 
 	def sub_validate(self, values):
 		if any([x <= 0 for x in values]):
@@ -97,7 +97,7 @@ class theta0(dimension):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
 
 	name_keys = ['theta0','theta','t0']
-	axis_label = '$\theta_{0}$'
+	axis_label = r'$\theta_{0}$'
 
 	def sub_validate(self, values):
 		from numpy import pi
