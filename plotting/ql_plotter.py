@@ -6,16 +6,16 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import RegularGridInterpolator
 
 default_settings = {"suptitle": None,
-		"psi_id": 0,
 		"ql_scale": 100,
 		"ql_max": None,
 		"eqbm_style": "title",
 		"contour_type": 0,
-		"x_axis_type": 'beta_prime',
-		"y_axis_type": 'shear',
+		"x_axis_type": "beta_prime",
+		"y_axis_type": "shear",
+		"slider_1": {"dimension_type": None, "id": 0},
 		"options": [False,False,True,True,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
-		"visible": {"psi_sli": True, "ql_sli": True, "op_box": True, "suptitle": True, "title": True},
+		"visible": {"slider_1": True, "ql_sli": True, "op_box": True, "suptitle": True, "title": True},
 		"cdict": {"red": ((0.0, 1, 1),(1.0, 0.8, 0.8)),
 			"green": ((0.0, 1, 1),(1.0, 0.0, 0.0)),
 			"blue": ((0.0, 1, 1),(1.0, 0.0, 0.0))},
@@ -26,10 +26,6 @@ class plot_ql(object):
 			
 		self.reader = reader
 		self.inputs = reader.inputs
-		if 'psin' in self.reader.dimensions:
-			self.psiNs = self.reader.dimensions['psin'].values
-		else:
-			self.psiNs = [self.reader.single_parameters['psin'].values
 		
 		if self.reader['quasilinear'] is None:
 			print("Error: No QuasiLinear Data")
@@ -82,7 +78,20 @@ class plot_ql(object):
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
 		
-		self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type']]]
+		self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type'],'ky','theta0']]
+		
+		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
+		unused_dims = [x for x in self.dims if x not in used_dims]
+		slider_keys = [x for x in self.settings if 'slider_' in x]
+		empty_sliders = [x for x in slider_keys if self.settings[x]['dimension_type'] is None]
+		for sli, key in enumerate(empty_sliders):
+			if len(unused_dims) > sli:
+				self.settings[key]['dimension_type'] = unused_dims[sli]
+		
+		if self['visible']['slider_1'] == True:	
+			self.fig.subplots_adjust(bottom=0.15)
+		elif self['visible']['slider_1'] == False:
+			self.fig.subplots_adjust(bottom=0.11)
 		
 		self.cmap = LinearSegmentedColormap('WhRd', self.settings['cdict'])
 		blank_norm = Normalize(vmin=-1,vmax=1)
@@ -93,18 +102,17 @@ class plot_ql(object):
 		self.options.on_clicked(self.draw_fig)
 		self.set_options_fontsize(self['fontsizes']['ch_box'])
 		
-		self.psi_axes = axes([0.15, 0.01, 0.5, 0.03],visible=self['visible']['psi_sli'])
-		self.slider = Slider(self.psi_axes, '\u03A8\u2099 index:', 0, len(self.psiNs)-1, valinit = self['psi_id'], valstep = 1)
-		if self['visible']['psi_sli']:
-			self.fig.subplots_adjust(bottom=0.15)
-		self.slider.on_changed(self.draw_fig)
+		self._slider_axes = {'slider_1': axes([0.15, 0.01, 0.5, 0.03],visible=self['visible']['slider_1'])
+		}
+		self.sliders = {}
+		for key in self._slider_axes.keys():
+			dim = self.reader.dimensions[self.settings[key]['dimension_type']]
+			self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = self[key]['id'], valstep = 1)
+			self.sliders[key].on_changed(self.draw_fig)
 		
 		self.ql_axes = axes([0.9, 0.13, 0.01, 0.73],visible=self['visible']['ql_sli'])
 		self.ql_slider = Slider(self.ql_axes, 'Scale', 0, 100, valinit = self['ql_scale'], valstep = 1, orientation = 'vertical')
 		self.ql_slider.on_changed(self.draw_fig)
-		
-		if len(self.psiNs) == 1:
-			self.set_visible(key = 'psi_sli', val = False)
 		
 		ion()
 		self.draw_fig()
@@ -112,6 +120,17 @@ class plot_ql(object):
 			self.set_ql_max(self.init_settings['ql_max'])
 		show()
 	
+	def load_slider(self, slider_num, dimension_type, visible = True):
+		if dimension_type not in self.dims:
+			print(f"ERROR: invalid dimension type, valid: {self.dims}")
+			return
+		key = f"slider_{slider_num}"
+		self.settings[key]['dimension_type'] = dimension_type
+		self.settings[key]['id'] = 0
+		dim = self.reader.dimensions[dimension_type]
+		self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = 0, valstep = 1)
+		self.set_visible(key,val=visible)
+		
 	def _load_x_axis(self, axis_type):
 		if axis_type not in ['beta_prime','alpha']:
 			print(f"ERROR: axis_type not found, valid types ['beta_prime','alpha']")
@@ -158,19 +177,21 @@ class plot_ql(object):
 	
 	def set_visible(self, key, val = None):
 		if key not in self['visible']:
-			print(f"ERROR: key not found, valid keys {self.settings.keys()}")
+			print(f"ERROR: key not found, valid keys {self.settings['visible'].keys()}")
 			return
 		if val not in [True,False]:
 			val = not self['visible'][key]
 		
 		self.settings['visible'][key] = val
 		
-		if key == 'psi_sli' and val is True:
-			self.fig.subplots_adjust(bottom=0.15)
-			self.psi_axes.set_visible(self['visible']['psi_sli'])
-		elif key == 'psi_sli' and val is False:
-			self.fig.subplots_adjust(bottom=0.11)
-			self.psi_axes.set_visible(self['visible']['psi_sli'])
+		if 'slider_' in key:
+			self._slider_axes[key].set_visible(self['visible'][key])
+			
+			if self['visible']['slider_1'] == True:	
+				self.fig.subplots_adjust(bottom=0.15)
+			elif self['visible']['slider_1'] == False:
+				self.fig.subplots_adjust(bottom=0.11)
+				
 		elif key == 'ql_sli':
 			self.ql_axes.set_visible(self['visible']['ql_sli'])
 		elif key == 'op_box':
@@ -179,6 +200,8 @@ class plot_ql(object):
 			self.fig._suptitle.set_visible(self['visible']['suptitle'])
 		elif key == 'title':
 			self.ax.legend_.set_visible(self['visible']['title'])
+		
+		
 			
 	def set_options_fontsize(self, fontsize):
 		self.settings['fontsizes']['cbox'] = fontsize
@@ -245,12 +268,21 @@ class plot_ql(object):
 		self.draw_fig()
 
 	def draw_fig(self, val = None):
-		idx = self.slider.val
-		psiN = self.psiNs[idx]
-		self.settings['psi_id'] = idx
+		values = {}
+		for key, sli in self.sliders.items():
+			dim = self[key]['dimension_type']
+			values[dim] = self.reader.dimensions[dim].values[sli.val]
+			self.settings[key]['id'] = sli.val
+		for dim in [x for x in self.dims if x not in values]:
+			values[dim] = self.reader.dimensions[dim].values[0]
 		
-		x = list(self.x_axis)
-		y = list(self.y_axis)
+		if 'psin' in values:
+			psiN = values['psin']
+		else:
+			psiN = self.reader.single_parameters.values[0]
+				
+		x_axis = list(self.x_axis)
+		y_axis = list(self.y_axis)
 		
 		x_val = abs(self.reader.data['equilibrium'][psiN]['beta_prime'])
 		y_val = self.reader.data['equilibrium'][psiN]['shear']
@@ -270,7 +302,9 @@ class plot_ql(object):
 		z = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
 		for x_id, x_value in enumerate(self.x_axis):
 			for y_id, y_value in enumerate(self.y_axis):
-				run = {'psin': psiN, self['x_axis_type']: x_value, self['y_axis_type']: y_value}
+				run = values.copy()
+				run[self['x_axis_type']] = x_value
+				run[self['y_axis_type']] = y_value
 				run_id = self.reader.get_run_id(run = run, keys = '_quasilinear_keys')
 				z[x_id][y_id] = self.reader.data['quasilinear'][run_id]
 		
@@ -290,28 +324,28 @@ class plot_ql(object):
 		self.settings['ql_scale'] = self.ql_slider.val
 		self.cbar.update_normal(ScalarMappable(norm = norm, cmap = self.cmap))
 		if self['contour_type'] == 1:
-			self.ax.contourf(x,y,z, cmap = self.cmap, norm = norm)
+			self.ax.contourf(x_axis,y_axis,z, cmap = self.cmap, norm = norm)
 		else:
-			self.ax.pcolormesh(x, y, transpose(z), cmap = self.cmap, norm=norm)
+			self.ax.pcolormesh(x_axis, y_axis, transpose(z), cmap = self.cmap, norm=norm)
 			
 		if status[5]:
-			grid = RegularGridInterpolator((array(x),array(y)),transpose(z))
+			grid = RegularGridInterpolator((array(x_axis),array(y_axis)),transpose(z))
 			eqbm_ql = grid((x_val,y_val))
-			self.ax.contourf(x, y, z, [eqbm_ql-eqbm_ql/100,eqbm_ql+eqbm_ql/100], colors = ('b'))
+			self.ax.contourf(x_axis, y_axis, z, [eqbm_ql-eqbm_ql/100,eqbm_ql+eqbm_ql/100], colors = ('b'))
 			
 		if status[0]:
-			dx = x[1] - x[0]
-			dy = y[1] - y[0]
-			self.ax.set_xticks(array(x)-dx/2, minor=True)
-			self.ax.set_yticks(array(y)-dy/2, minor=True)
+			dx = x_axis[1] - x_axis[0]
+			dy = y_axis[1] - y_axis[0]
+			self.ax.set_xticks(array(x_axis)-dx/2, minor=True)
+			self.ax.set_yticks(array(y_axis)-dy/2, minor=True)
 			
-			self.ax.set_xticks(array(x), minor=False)
-			self.ax.set_yticks(array(y), minor=False)
+			self.ax.set_xticks(array(x_axis), minor=False)
+			self.ax.set_yticks(array(y_axis), minor=False)
 			
 			self.ax.set_xticklabels([])
 			self.ax.set_yticklabels([])
-			xlabels = [str(i) for i in range(len(x))]
-			ylabels = [str(i) for i in range(len(y))]
+			xlabels = [str(i) for i in range(len(x_axis))]
+			ylabels = [str(i) for i in range(len(y_axis))]
 			self.ax.set_xticklabels(xlabels,minor=False)
 			self.ax.set_yticklabels(ylabels,minor=False)
 			
