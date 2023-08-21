@@ -16,12 +16,11 @@ class myro_read(object):
 		self.directory = directory
 		self.filename = filename
 		self.run = {}
-		self.plots = {}
 		opened = self._open_file()
 		self._gr_type = "Normalised"
 		self.eqbm = None
-		#if opened and not self.verify and verify:		
-		#	self._verify_run()
+		if opened and not self.verify and verify:		
+			self._verify_run()
 	
 	def __call__(self, key, *indexes):
 		if type(indexes[0]) == int:
@@ -302,9 +301,9 @@ class myro_read(object):
 	def _verify_run(self):
 		if not self['Gyro']:
 			return
-		self.verify = verify_scan(scan = self.run)
-		self.run = self.verify.scan
-		self._convert_gr(gr_type = self._gr_type, doPrint = False)
+		self.verify = verify_scan(reader = self)
+		self.gyro_data = self.verify.scan
+		self.calculate_gr()
 	
 	def get_all_runs(self, excludeDimensions = []):
 		dim_order = [x for x in self.inputs.dim_order if x not in excludeDimensions]
@@ -404,7 +403,6 @@ class myro_read(object):
 		self.plot_scan(init = init, aky = True, settings = settings)
 		
 	def plot_scan(self, init = None, aky = None, settings = {}):
-		del(self.plots['scan'])
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -415,10 +413,9 @@ class myro_read(object):
 			settings['aky'] = aky
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Scan"
-		self.plots['scan'] = Plotters['Scan'](reader = self, settings = settings)
+		return Plotters['Scan'](reader = self, settings = settings)
 	
 	def plot_ql(self, init = None, settings = {}):
-		del(self.plots['ql'])
 		if self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
@@ -428,41 +425,34 @@ class myro_read(object):
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} QuasiLinear"
-		self.plots['ql'] = Plotters['QL'](reader = self, settings = settings)
+		return Plotters['QL'](reader = self, settings = settings)
 	
 	def plot_ideal(self, init = None, settings = {}):
-		del(self.plots['ideal'])
 		if init is not None:
 			init = int(init)
 			settings[f"slider_1"]['id'] = init
 			settings[f"slider_1"]['dimension_type'] = 'psin'
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Ideal Ballooning"
-		self.plots['ideal'] = Plotters['Ideal'](reader = self, settings = settings)
+		return Plotters['Ideal'](reader = self, settings = settings)
 	
 	def plot_omega(self, init = None, settings = {}):
-		del(self.plots['omega'])
-		self.plots['omega'] = self._plot_diag(var = 'omega', init = init, settings = settings)
+		return self._plot_diag(var = 'omega', init = init, settings = settings)
 	
 	def plot_phi(self, init = None, absolute = None, settings = {}):
-		del(self.plots['phi'])
-		self.plots['phi'] = self._plot_diag(var = 'phi', init = init, absolute = absolute, settings = settings)
+		return self._plot_diag(var = 'phi', init = init, absolute = absolute, settings = settings)
 	
 	def plot_apar(self, init = None, absolute = None, settings = {}):
-		del(self.plots['apar'])
-		self.plots['apar'] = self._plot_diag(var = 'apar', init = init, absolute = absolute, settings = settings)
+		return self._plot_diag(var = 'apar', init = init, absolute = absolute, settings = settings)
 		
 	def plot_bpar(self, init = None, absolute = None, settings = {}):
-		del(self.plots['bpar'])
-		self.plots['bpar'] = self._plot_diag(var = 'bpar', init = init, absolute = absolute, settings = settings)
+		return self._plot_diag(var = 'bpar', init = init, absolute = absolute, settings = settings)
 		
 	def plot_epar(self, init = None, absolute = None, settings = {}):
-		del(self.plots['epar'])
-		self.plots['epar'] = self._plot_diag(var = 'epar', init = init, absolute = absolute, settings = settings)
+		return self._plot_diag(var = 'epar', init = init, absolute = absolute, settings = settings)
 		
 	def plot_phi2(self, init = None, settings = {}):
-		del(self.plots['phi2'])
-		self.plots['phi2'] = self._plot_diag(var = 'phi2', init = init, settings = settings)
+		return self._plot_diag(var = 'phi2', init = init, settings = settings)
 	
 	def _plot_diag(self, init = None, var = None, absolute = None, settings = {}):
 		if init is not None:
@@ -490,7 +480,7 @@ class myro_read(object):
 			settings['sh_id'] = init[1]
 		if limit is not None:
 			settings['limit'] = limit
-		self.plots['slice'] = Plotters['Slice'](data = self.run['data'], inputs = self.inputs, settings = settings)
+		return Plotters['Slice'](data = self.run['data'], inputs = self.inputs, settings = settings)
 	
 	def plot_eq(self):
 		if not self.eqbm:

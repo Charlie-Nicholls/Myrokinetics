@@ -3,6 +3,7 @@ from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
 from matplotlib.colors import LinearSegmentedColormap
+from copy import deepcopy
 
 default_settings = {"suptitle": None,
 		"eqbm_style": "title",
@@ -31,24 +32,24 @@ class plot_scan(object):
 		if self.reader.gyro_data is None:
 			print("Error: No Gyrokinetic Data")
 			return
-		
 		self.settings = {}
 		self.init_settings = {}
+		defaults = deepcopy(default_settings)
 		for key in settings:
-			if key not in default_settings:
+			if key not in defaults:
 				print(f"ERROR: {key} not found")
 			else:
 				self.settings[key] = settings[key]
 				self.init_settings[key] = settings[key]
-		for key in default_settings:
+		for key in defaults:
 			if key not in self.settings:
-				self.settings[key] = default_settings[key]
-				self.init_settings[key] = default_settings[key]
+				self.settings[key] = defaults[key]
+				self.init_settings[key] = defaults[key]
 			elif type(self.settings[key]) == dict and key != 'cdict':
-				for skey in self.default_settings:
+				for skey in self.defaults:
 					if skey not in self.settings[key]:
-						self.settings[key][skey] = default_settings[key][skey]
-						self.init_settings[key][skey] = default_settings[key][skey]
+						self.settings[key][skey] = defaults[key][skey]
+						self.init_settings[key][skey] = defaults[key][skey]
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
 		self._options = ["Show Parities","Normalised Growth Rate","Global Colorbar","Show Equillibrium","Show Ideal"]
@@ -57,7 +58,6 @@ class plot_scan(object):
 		if self['eqbm_style'] not in self._valid_eqbm_styles:
 			print("ERROR: eqbm_style not found, valid styles = {self._valid_eqbm_styles}")
 			self.settings['eqbm_style'] = "title"
-		
 		self.open_plot()
 	
 	def __getitem__(self, key):

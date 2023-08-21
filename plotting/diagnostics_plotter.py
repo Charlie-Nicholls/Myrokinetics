@@ -23,21 +23,22 @@ class plot_diag(object):
 		
 		self.settings = {}
 		self.init_settings = {}
+		defaults = deepcopy(default_settings)
 		for key in settings:
-			if key not in default_settings:
+			if key not in defaults:
 				print(f"ERROR: {key} not found")
 			else:
 				self.settings[key] = settings[key]
 				self.init_settings[key] = settings[key]
-		for key in default_settings:
+		for key in defaults:
 			if key not in self.settings:
-				self.settings[key] = default_settings[key]
-				self.init_settings[key] = default_settings[key]
-			elif type(self.settings[key]) == dict:
-				for skey in self.default_settings:
+				self.settings[key] = defaults[key]
+				self.init_settings[key] = defaults[key]
+			elif type(self.settings[key]) == dict and key != 'cdict':
+				for skey in self.defaults:
 					if skey not in self.settings[key]:
-						self.settings[key][skey] = default_settings[key][skey]
-						self.init_settings[key][skey] = default_settings[key][skey]
+						self.settings[key][skey] = defaults[key][skey]
+						self.init_settings[key][skey] = defaults[key][skey]
 		
 		if self['var'] == 0:
 			self.settings['var'] = "omega"
@@ -268,8 +269,11 @@ class plot_diag(object):
 			self.ax.set_yscale('log')
 			self.ax.set_xlabel(f"Time ({len(t)} steps)",fontsize=self['fontsizes']['axis'])
 			
-			if self.options.get_status()[0] and self.verify is not None :
-				nt = None#self.verify.nts[run_id]
+			if self.options.get_status()[0] and self.verify is not None:
+				if run_id in self.verify.nts:
+					nt = self.verify.nts[run_id]
+				else:
+					nt = None
 				if nt is not None:
 					fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
 					fitgr = fit[0]/2

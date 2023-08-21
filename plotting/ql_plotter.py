@@ -33,21 +33,22 @@ class plot_ql(object):
 
 		self.settings = {}
 		self.init_settings = {}
+		defaults = deepcopy(default_settings)
 		for key in settings:
-			if key not in default_settings:
+			if key not in defaults:
 				print(f"ERROR: {key} not found")
 			else:
 				self.settings[key] = settings[key]
 				self.init_settings[key] = settings[key]
-		for key in default_settings:
+		for key in defaults:
 			if key not in self.settings:
-				self.settings[key] = default_settings[key]
-				self.init_settings[key] = default_settings[key]
+				self.settings[key] = defaults[key]
+				self.init_settings[key] = defaults[key]
 			elif type(self.settings[key]) == dict and key != 'cdict':
-				for skey in self.default_settings:
+				for skey in self.defaults:
 					if skey not in self.settings[key]:
-						self.settings[key][skey] = default_settings[key][skey]
-						self.init_settings[key][skey] = default_settings[key][skey]
+						self.settings[key][skey] = defaults[key][skey]
+						self.init_settings[key][skey] = defaults[key][skey]
 		
 		if self['eqbm_style'] not in self._valid_eqbm_styles:
 			print("ERROR: eqbm_style not found, valid styles = {self._valid_eqbm_styles}")
