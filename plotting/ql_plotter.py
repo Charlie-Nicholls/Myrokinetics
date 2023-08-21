@@ -22,11 +22,8 @@ default_settings = {"suptitle": None,
 }
 
 class plot_ql(object):
-	def __init__(self, reader, settings = {}):
-			
+	def __init__(self, reader, settings = {}):	
 		self.reader = reader
-		self.inputs = reader.inputs
-		
 		if self.reader['quasilinear'] is None:
 			print("Error: No QuasiLinear Data")
 			return
@@ -191,7 +188,6 @@ class plot_ql(object):
 		
 		if 'slider_' in key:
 			self._slider_axes[key].set_visible(self['visible'][key])
-			
 			if self['visible']['slider_1'] == True:	
 				self.fig.subplots_adjust(bottom=0.15)
 			elif self['visible']['slider_1'] == False:
@@ -205,8 +201,6 @@ class plot_ql(object):
 			self.fig._suptitle.set_visible(self['visible']['suptitle'])
 		elif key == 'title':
 			self.ax.legend_.set_visible(self['visible']['title'])
-		
-		
 			
 	def set_options_fontsize(self, fontsize):
 		self.settings['fontsizes']['cbox'] = fontsize
@@ -273,11 +267,14 @@ class plot_ql(object):
 		self.draw_fig()
 
 	def draw_fig(self, val = None):
+		handles = []
 		for key in [x for x in self.sliders.keys() if x != 'ql_slider']:
 			sli = self.sliders[key]
 			dim = self[key]['dimension_type']
-			self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-			self.settings[key]['id'] = sli.val
+			if dim is not None:
+				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
+				self.settings[key]['id'] = sli.val
+				handles.append(Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions[dim].axis_label} = {self.settings['run'][dim]}",visible = False))
 		
 		if 'psin' in self['run']:
 			psiN = self['run']['psin']
@@ -289,10 +286,6 @@ class plot_ql(object):
 		
 		x_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
 		y_val = self.reader.data['equilibrium'][psiN][self['y_axis_type']]
-		
-		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions['psin'].axis_label} = {psiN}",visible = False)
-		ideal_line =  None
-		eqbm_line = None
 		
 		self.ax.cla()
 		self.ax.set_facecolor('grey')
@@ -368,18 +361,18 @@ class plot_ql(object):
 			if self['eqbm_style'] in ["split",1,"point",2]:
 				self.ax.annotate(eqbm_pos,(x_val,y_val),textcoords = "offset points",xytext = (0,-13), ha = "center")
 			if self['eqbm_style'] in ["title",0]:
-				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label=f"Equillibrium ({eqbm_pos})",linewidth=0)
+				handles.append(Line2D([0.5],[0.5],marker='x',color='k',label=f"Equillibrium ({eqbm_pos})",linewidth=0))
 			if self['eqbm_style'] in ["split",1,"title numless",3]:
-				eqbm_line = Line2D([0.5],[0.5],marker='x',color='k',label="Equillibrium",linewidth=0)
+				handles.append(Line2D([0.5],[0.5],marker='x',color='k',label="Equillibrium",linewidth=0))
 		
 		if status[4]:
 			if self.reader.data['ideal_data'] is not None and self.reader.data['ideal_data'][psiN] is not None:
-				self.ax.contourf(self.reader.data['ideal_data'][psiN]['beta_prime'], self.reader.data['ideal_data'][psiN]['shear'], self.reader.data['ideal_data'][psiN]['stabilities'], [0.01,0.99], colors = ('k'))
-				ideal_line = Line2D([0,1],[0.5,0.5],color='k',label="Ideal Boundary")
+				idata = self.reader.data['ideal_data'][psiN]
+				self.ax.contourf(idata[self['x_axis_type']], idata[self['y_axis_type']], idata['stabilities'], [0.01,0.99], colors = ('k'))
+				handles.append(Line2D([0,1],[0.5,0.5],color='k',label="Ideal Boundary"))
 			else:
 				self.ax.text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=self.ax.transAxes,color='k')
 		
-		handles = [line for line in [psi_line,ideal_line,eqbm_line] if line is not None]
 		self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
 		self.ax.legend_.set_visible(self['visible']['title'])
 

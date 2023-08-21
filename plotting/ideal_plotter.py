@@ -19,8 +19,6 @@ default_settings = {"suptitle": None,
 class plot_ideal(object):
 	def __init__(self, reader, settings = {}):
 		self.reader = reader
-		self.inputs = reader.inputs
-			
 		if self.reader.data['ideal_data'] is None:
 			print("Error: No ideal_ball data")
 		
@@ -59,7 +57,7 @@ class plot_ideal(object):
 		
 	def save_plot(self, filename = None):
 		if filename is None:
-			filename = f"QL_{self['psi_id']}"
+			filename = f"QL_{self['slider_1']['id']}"
 		self.fig.savefig(filename)
 	
 	def open_plot(self, save = False, filename = None):
@@ -223,8 +221,9 @@ class plot_ideal(object):
 	def draw_fig(self, val = None):
 		for key, sli in self.sliders.items():
 			dim = self[key]['dimension_type']
-			self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-			self.settings[key]['id'] = sli.val
+			if dim is not None:
+				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
+				self.settings[key]['id'] = sli.val
 		
 		if 'psin' in self['run']:
 			psiN = self['run']['psin']

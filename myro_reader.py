@@ -404,19 +404,21 @@ class myro_read(object):
 		self.plot_scan(init = init, aky = True, settings = settings)
 		
 	def plot_scan(self, init = None, aky = None, settings = {}):
-		if init is not None and type(init) == int:
-			settings['psi_id'] = init
-		elif init is not None:
-			settings['psi_id'] = int(init[0])
-			if len(init) > 1:
-				settings['ky_id'] = int(init[1])
+		del(self.plots['scan'])
+		if init is not None:
+			init = list(init)
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					settings[f"slider_{i+1}"]['id'] = ini
+					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if aky is not None:
 			settings['aky'] = aky
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Scan"
-		self.plots['scan'] = Plotters['Scan'](data = self.run['data'], inputs = self.inputs, verify = self.verify, settings = settings)
+		self.plots['scan'] = Plotters['Scan'](reader = self, settings = settings)
 	
 	def plot_ql(self, init = None, settings = {}):
+		del(self.plots['ql'])
 		if self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
@@ -429,6 +431,7 @@ class myro_read(object):
 		self.plots['ql'] = Plotters['QL'](reader = self, settings = settings)
 	
 	def plot_ideal(self, init = None, settings = {}):
+		del(self.plots['ideal'])
 		if init is not None:
 			init = int(init)
 			settings[f"slider_1"]['id'] = init
@@ -438,21 +441,27 @@ class myro_read(object):
 		self.plots['ideal'] = Plotters['Ideal'](reader = self, settings = settings)
 	
 	def plot_omega(self, init = None, settings = {}):
+		del(self.plots['omega'])
 		self.plots['omega'] = self._plot_diag(var = 'omega', init = init, settings = settings)
 	
 	def plot_phi(self, init = None, absolute = None, settings = {}):
+		del(self.plots['phi'])
 		self.plots['phi'] = self._plot_diag(var = 'phi', init = init, absolute = absolute, settings = settings)
 	
 	def plot_apar(self, init = None, absolute = None, settings = {}):
+		del(self.plots['apar'])
 		self.plots['apar'] = self._plot_diag(var = 'apar', init = init, absolute = absolute, settings = settings)
 		
 	def plot_bpar(self, init = None, absolute = None, settings = {}):
+		del(self.plots['bpar'])
 		self.plots['bpar'] = self._plot_diag(var = 'bpar', init = init, absolute = absolute, settings = settings)
 		
-	def plot_bpar(self, init = None, absolute = None, settings = {}):
+	def plot_epar(self, init = None, absolute = None, settings = {}):
+		del(self.plots['epar'])
 		self.plots['epar'] = self._plot_diag(var = 'epar', init = init, absolute = absolute, settings = settings)
 		
 	def plot_phi2(self, init = None, settings = {}):
+		del(self.plots['phi2'])
 		self.plots['phi2'] = self._plot_diag(var = 'phi2', init = init, settings = settings)
 	
 	def _plot_diag(self, init = None, var = None, absolute = None, settings = {}):
@@ -465,7 +474,7 @@ class myro_read(object):
 			settings['var'] = var
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
-		return Plotters['Diag'](reader = self, verify = self.verify, settings = settings)
+		return Plotters['Diag'](reader = self, settings = settings)
 	
 	#def plot_epar_scan(self):
 		#Plotters['Epar'](data = self.run['data'], inputs = self.inputs)

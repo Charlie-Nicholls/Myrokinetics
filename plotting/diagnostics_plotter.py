@@ -17,10 +17,9 @@ default_settings = {"suptitle": None,
 }
 
 class plot_diag(object):
-	def __init__(self, reader, verify = None, settings = {}):
-			
+	def __init__(self, reader, settings = {}):
 		self.reader = reader
-		self.verify = verify
+		self.verify = reader.verify
 		
 		self.settings = {}
 		self.init_settings = {}
@@ -200,8 +199,9 @@ class plot_diag(object):
 		self.ax.cla()
 		for key, sli in self.sliders.items():
 			dim = self[key]['dimension_type']
-			self['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-			self.settings[key]['id'] = sli.val		
+			if dim is not None:
+				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
+				self.settings[key]['id'] = sli.val		
 		
 		run_id = self.reader.get_run_id(run=self['run'])
 		data = self.reader.gyro_data[run_id]
