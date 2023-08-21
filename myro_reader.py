@@ -420,17 +420,22 @@ class myro_read(object):
 		if self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
-			settings['psi_id'] = int(init)
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					settings[f"slider_{i+1}"]['id'] = ini
+					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} QuasiLinear"
 		self.plots['ql'] = Plotters['QL'](reader = self, settings = settings)
 	
-	def plot_ideal(self, init = 0, settings = {}):
+	def plot_ideal(self, init = None, settings = {}):
 		if init is not None:
-			settings['psi_id'] = int(init)
+			init = int(init)
+			settings[f"slider_1"]['id'] = init
+			settings[f"slider_1"]['dimension_type'] = 'psin'
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Ideal Ballooning"
-		self.plots['ideal'] = Plotters['Ideal'](data = self.run['data'], inputs = self.inputs, settings = settings)
+		self.plots['ideal'] = Plotters['Ideal'](reader = self, settings = settings)
 	
 	def plot_omega(self, init = None, settings = {}):
 		self.plots['omega'] = self._plot_diag(var = 'omega', init = init, settings = settings)

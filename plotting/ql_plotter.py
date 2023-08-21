@@ -6,17 +6,16 @@ from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import RegularGridInterpolator
 
 default_settings = {"suptitle": None,
-		"ql_scale": 100,
-		"ql_max": None,
 		"eqbm_style": "title",
 		"contour_type": 0,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
 		"slider_1": {"dimension_type": None, "id": 0},
+		"ql_slider": {"scale": 100, "max": None},
 		"run": {},
 		"options": [False,False,True,True,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
-		"visible": {"slider_1": True, "ql_sli": True, "op_box": True, "suptitle": True, "title": True},
+		"visible": {"slider_1": True, "ql_slider": True, "op_box": True, "suptitle": True, "title": True},
 		"cdict": {"red": ((0.0, 1, 1),(1.0, 0.8, 0.8)),
 			"green": ((0.0, 1, 1),(1.0, 0.0, 0.0)),
 			"blue": ((0.0, 1, 1),(1.0, 0.0, 0.0))},
@@ -67,12 +66,11 @@ class plot_ql(object):
 		
 	def save_plot(self, filename = None):
 		if filename is None:
-			filename = f"QL_{self['psi_id']}"
+			filename = f"QL_{self['slider_1']['id']}"
 		self.fig.savefig(filename)
 		
 	def open_plot(self):
 		self.fig, self.ax = subplots(figsize=(9,7))
-		self.fig.subplots_adjust(bottom=0.15)
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 	
@@ -89,15 +87,13 @@ class plot_ql(object):
 			if len(unused_dims) > sli:
 				self.settings[key]['dimension_type'] = unused_dims[sli]
 				used_dims.append(unused_dims[sli])
-				
+			else:
+				self.settings[key]['dimension_type'] = None
+				self.settings['visible'][key] = False
+			
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
-		
-		if self['visible']['slider_1'] == True:	
-			self.fig.subplots_adjust(bottom=0.15)
-		elif self['visible']['slider_1'] == False:
-			self.fig.subplots_adjust(bottom=0.11)
-		
+
 		self.cmap = LinearSegmentedColormap('WhRd', self.settings['cdict'])
 		blank_norm = Normalize(vmin=-1,vmax=1)
 		self.cbar = colorbar(ScalarMappable(norm = blank_norm), ax = self.ax)
@@ -110,19 +106,24 @@ class plot_ql(object):
 		self._slider_axes = {'slider_1': axes([0.15, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
 		}
 		self.sliders = {}
-		for key in self._slider_axes.keys():
+		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
 			dim = self.reader.dimensions[self.settings[key]['dimension_type']]
 			self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = self[key]['id'], valstep = 1)
 			self.sliders[key].on_changed(self.draw_fig)
 		
-		self.ql_axes = axes([0.9, 0.13, 0.01, 0.73],visible=self['visible']['ql_sli'])
-		self.ql_slider = Slider(self.ql_axes, 'Scale', 0, 100, valinit = self['ql_scale'], valstep = 1, orientation = 'vertical')
-		self.ql_slider.on_changed(self.draw_fig)
+		self.ql_axes = axes([0.9, 0.13, 0.01, 0.73],visible=self['visible']['ql_slider'])
+		self.sliders['ql_slider'] = Slider(self.ql_axes, 'Scale', 0, 100, valinit = self['ql_slider']['scale'], valstep = 1, orientation = 'vertical')
+		self.sliders['ql_slider'].on_changed(self.draw_fig)
+			
+		if self['visible']['slider_1'] == True:	
+			self.fig.subplots_adjust(bottom=0.15)
+		elif self['visible']['slider_1'] == False:
+			self.fig.subplots_adjust(bottom=0.11)
 		
 		ion()
 		self.draw_fig()
-		if self['ql_max']:
-			self.set_ql_max(self.init_settings['ql_max'])
+		if self['ql_slider']['max']:
+			self.set_ql_max(self.settings['ql_slider']['max'])
 		show()
 	
 	def set_slider(self, slider_num, dimension_type, visible = True):
@@ -148,13 +149,11 @@ class plot_ql(object):
 			if not self.data['alpha_axis']:
 				print("ERROR: Alpha not calculated, use calculate_alpha()")
 			else:
-				self.x_axis = self.data['alpha_axis']
-				self.x_axis_ideal = self.data['alpha_axis_ideal']
-				self.x_values = self.data['alpha_values']
-				self._x_axis_label = "\u03B1"
+				#self.x_axis = self.data['alpha_axis'] needs updating
+				self._x_axis_label = r'$\alpha$'
 		else:
 			self.x_axis = self.reader.dimensions['beta_prime'].values
-			self._x_axis_label = "-\u03B2'"
+			self._x_axis_label = r'$\beta^{\prime}$'
 			
 	def set_x_axis_type(self, axis_type):
 		self._load_x_axis(axis_type)
@@ -162,7 +161,7 @@ class plot_ql(object):
 	
 	def _load_y_axis(self, axis_type):
 		if axis_type not in ['shear','current']:
-			print(f"ERRORL axis_type not found, valid types ['shear','current']")
+			print(f"ERROR: axis_type not found, valid types ['shear','current']")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -171,14 +170,14 @@ class plot_ql(object):
 			print("Not yet implimented")
 		else:
 			self.y_axis = self.reader.dimensions['shear'].values
-			self._y_axis_label = "Shear"
+			self._y_axis_label = r'$\hat{s}$'
 			
 	def set_y_axis_type(self, axis_type):
 		self._load_y_axis(axis_type)
 		self.draw_fig()
 	
 	def set_ql_max(self, val = None):
-		self.settings['ql_max'] = val
+		self.settings['ql_slider']['max'] = val
 		self.draw_fig()
 	
 	def set_visible(self, key, val = None):
@@ -198,8 +197,8 @@ class plot_ql(object):
 			elif self['visible']['slider_1'] == False:
 				self.fig.subplots_adjust(bottom=0.11)
 				
-		elif key == 'ql_sli':
-			self.ql_axes.set_visible(self['visible']['ql_sli'])
+		elif key == 'ql_slider':
+			self.ql_axes.set_visible(self['visible']['ql_slider'])
 		elif key == 'op_box':
 			self.ch_axes.set_visible(self['visible']['op_box'])
 		elif key == 'suptitle':
@@ -274,7 +273,8 @@ class plot_ql(object):
 		self.draw_fig()
 
 	def draw_fig(self, val = None):
-		for key, sli in self.sliders.items():
+		for key in [x for x in self.sliders.keys() if x != 'ql_slider']:
+			sli = self.sliders[key]
 			dim = self[key]['dimension_type']
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
 			self.settings[key]['id'] = sli.val
@@ -287,10 +287,10 @@ class plot_ql(object):
 		x_axis = list(self.x_axis)
 		y_axis = list(self.y_axis)
 		
-		x_val = abs(self.reader.data['equilibrium'][psiN]['beta_prime'])
-		y_val = self.reader.data['equilibrium'][psiN]['shear']
+		x_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
+		y_val = self.reader.data['equilibrium'][psiN][self['y_axis_type']]
 		
-		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"\u03A8\u2099 = {psiN}",visible = False)
+		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions['psin'].axis_label} = {psiN}",visible = False)
 		ideal_line =  None
 		eqbm_line = None
 		
@@ -311,20 +311,20 @@ class plot_ql(object):
 				run_id = self.reader.get_run_id(run = run, keys = '_quasilinear_keys')
 				z[x_id][y_id] = self.reader.data['quasilinear'][run_id]
 		
-		if self['ql_max']:
-			qlmax = self.ql_slider.val * self['ql_max']/100
+		if self['ql_slider']['max']:
+			qlmax = self.sliders['ql_slider'].val * self['ql_slider']['max']/100
 		#elif status[2]:
-			#qlmax = self.ql_slider.val * abs(amax(array(self.data['quasilinear'])[isfinite(self.data['quasilinear'])]))/100
+			#qlmax = self.sliders['ql_slider'].val * abs(amax(array(self.data['quasilinear'])[isfinite(self.data['quasilinear'])]))/100
 		else:
 			try:
-				qlmax = self.ql_slider.val * amax(abs(array(z)[isfinite(z)]))/100
+				qlmax = self.sliders['ql_slider'].val * amax(abs(array(z)[isfinite(z)]))/100
 				if qlmax < 10e-10:
 					qlmax = 10e-10
 			except:
 				qlmax = 1
 		
 		norm = Normalize(vmin=0,vmax=qlmax)	
-		self.settings['ql_scale'] = self.ql_slider.val
+		self.settings['ql_slider']['scale'] = self.sliders['ql_slider'].val
 		self.cbar.update_normal(ScalarMappable(norm = norm, cmap = self.cmap))
 		if self['contour_type'] == 1:
 			self.ax.contourf(x_axis,y_axis,z, cmap = self.cmap, norm = norm)

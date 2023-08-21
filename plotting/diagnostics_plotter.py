@@ -16,12 +16,6 @@ default_settings = {"suptitle": None,
 		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "op_box": True, "suptitle": True, "title": True, "legend": True, "verify": True},
 }
 
-slider_axes = {'slider_1': [0.25, 0.01, 0.5, 0.03],
-		'slider_2': [0.25, 0.05, 0.5, 0.03],
-		'slider_3': [0.92, 0.2, 0.03, 0.5],
-		'slider_4': [0.96, 0.2, 0.03, 0.5],
-		}
-
 class plot_diag(object):
 	def __init__(self, reader, verify = None, settings = {}):
 			
@@ -73,7 +67,7 @@ class plot_diag(object):
 	
 	def save_plot(self, filename = None):
 		if filename is None:
-			filename = f"{self['var']}_{self['psi_id']}_{self['bp_id']}_{self['sh_id']}_{self['ky_id']}"
+			filename = f"{self['var']}_{self['slider_1']['id']}_{self['slider_2']['id']}_{self['slider_3']['id']}_{self['slider_4']['id']}"
 		self.fig.savefig(filename)
 	
 	def open_plot(self):
@@ -103,14 +97,20 @@ class plot_diag(object):
 			if len(unused_dims) > sli:
 				self.settings[key]['dimension_type'] = unused_dims[sli]
 				used_dims.append(unused_dims[sli])
+			else:
+				self.settings[key]['dimension_type'] = None
+				self.settings['visible'][key] = False
 				
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
 		
-		self._slider_axes = {}
+		self._slider_axes = {'slider_1': axes([0.25, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
+		'slider_2': axes([0.25, 0.05, 0.5, 0.03],visible=self['visible']['slider_2']),
+		'slider_3': axes([0.92, 0.2, 0.03, 0.5],visible=self['visible']['slider_3']),
+		'slider_4': axes([0.96, 0.2, 0.03, 0.5],visible=self['visible']['slider_4']),
+		}
 		self.sliders = {}
-		for key in slider_axes.keys():
-			self._slider_axes[key] = axes(slider_axes[key])
+		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
 			dim = self.reader.dimensions[self.settings[key]['dimension_type']]
 			if key in ['slider_1','slider_2']:
 				orient = 'horizontal'
