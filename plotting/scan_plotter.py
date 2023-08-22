@@ -1,4 +1,4 @@
-from numpy import transpose, array, amax, amin, isfinite, linspace, where, full, nan
+from numpy import transpose, array, amax, amin, isfinite, linspace, where, full, nan, diff
 from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
@@ -141,6 +141,23 @@ class plot_scan(object):
 			self.fig.subplots_adjust(bottom=0.13)
 		else:
 			self.fig.subplots_adjust(bottom=0.15)
+
+		norm_grs = []
+		abs_grs = []
+		mfs = []
+		for run in self.reader.gyro_data.values():
+			if str(run['growth_rate']) not in ['-inf','inf','nan']:
+				abs_grs.append(run['growth_rate'])
+				if 'ky' in run:
+					norm_grs.append(run['growth_rate']/run['ky']**2)
+				elif 'ky' in self.reader.single_parameters:
+					norm_grs.append(run['growth_rate']/self.reader.single_parameters['ky'].values[0]**2)
+			if str(run['mode_frequency']) not in ['-inf','inf','nan']:
+				mfs.append(run['mode_frequency'])
+				
+		self._norm_gr_max = max(norm_grs,default=1)
+		self._abs_gr_max = max(abs_grs)
+		self._mf_max = max(mfs,default=1)
 		
 		ion()
 		self.draw_fig()
@@ -337,6 +354,11 @@ class plot_scan(object):
 		
 		x_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
 		y_val = self.reader.data['equilibrium'][psiN][self['y_axis_type']]
+		
+		status = self.options.get_status()
+		self.settings['options'] = status
+		vr_status = self.vroptions.get_status()
+		self.settings['vr_options'] = vr_status
 			
 		self.ax[0].cla()
 		self.ax[0].set_facecolor('grey')
@@ -347,25 +369,31 @@ class plot_scan(object):
 		self.ax[1].set_ylabel(self._y_axis_label,fontsize=self['fontsizes']['axis'])
 		self.ax[1].set_xlabel(self._x_axis_label,fontsize=self['fontsizes']['axis'])
 		self.ax[1].set_title("Mode Frequency",fontsize=self['fontsizes']['title'])
-		self.ax[0].set_ylim(amin(self.y_axis),amax(self.y_axis))
-		self.ax[0].set_xlim(amin(self.x_axis),amax(self.x_axis))
-		self.ax[1].set_ylim(amin(self.y_axis),amax(self.y_axis))
-		self.ax[1].set_xlim(amin(self.x_axis),amax(self.x_axis))
 		
-		status = self.options.get_status()
-		self.settings['options'] = status
-		vr_status = self.vroptions.get_status()
-		self.settings['vr_options'] = vr_status
+		#self.ax[0].set_ylim(amin(self.y_axis),amax(self.y_axis))
+		#self.ax[0].set_xlim(amin(self.x_axis),amax(self.x_axis))
+		#self.ax[1].set_ylim(amin(self.y_axis),amax(self.y_axis))
+		#self.ax[1].set_xlim(amin(self.x_axis),amax(self.x_axis))
+		
+		
 		
 		z_gr = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
 		z_mf = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
-		if self['aky']:
-			for x_id, x_value in enumerate(self.x_axis):
-				for y_id, y_value in enumerate(self.y_axis):
-					run = self['run'].copy()
-					run[self['x_axis_type']] = x_value
-					run[self['y_axis_type']] = y_value
-					run_id = self.reader.get_run_id(run = run, keys = '_run_keys')
+		run_ids = []
+		for x_id, x_value in enumerate(self.x_axis):
+			for y_id, y_value in enumerate(self.y_axis):
+				run = self['run'].copy()
+				run[self['x_axis_type']] = x_value
+				run[self['y_axis_type']] = y_value
+				if self['aky']:
+					key = '_run_keys'
+				elif status[1]:
+					key = '_norm_gr_keys'
+				else:
+					key = '_abs_gr_keys'
+				run_id = self.reader.get_run_id(run = run, keys = key)
+				if run_id is not None:
+					run_ids.append(run_id)
 					gr = self.reader.gyro_data[run_id]['growth_rate']
 					z_mf[x_id][y_id] = self.reader.gyro_data[run_id]['mode_frequency']
 					if status[1]:
@@ -375,26 +403,6 @@ class plot_scan(object):
 							ky = self.reader.single_parameters['ky'].values[0]
 						z_gr[x_id][y_id] = gr/ky**2
 					else:
-						z_gr[x_id][y_id] = gr
-		else:
-			for x_id, x_value in enumerate(self.x_axis):
-				for y_id, y_value in enumerate(self.y_axis):
-					run = self['run'].copy()
-					run[self['x_axis_type']] = x_value
-					run[self['y_axis_type']] = y_value
-					
-					if status[1]:
-						run_id = self.reader.get_run_id(run = run, keys = '_norm_gr_keys')
-						gr = self.reader.gyro_data[run_id]['growth_rate']
-						z_mf[x_id][y_id] = self.reader.gyro_data[run_id]['mode_frequency']
-						if 'ky' in self.reader.gyro_data[run_id]:
-							ky = self.reader.gyro_data[run_id]['ky']
-						else:
-							ky = self.reader.single_parameters['ky'].values[0]
-						z_gr[x_id][y_id] = gr/ky**2
-					else:
-						run_id = self.reader.get_run_id(run = run, keys = '_abs_gr_keys')
-						gr = self.reader.gyro_data[run_id]['growth_rate']
 						z_gr[x_id][y_id] = gr
 		z_gr = transpose(z_gr)
 		z_mf = transpose(z_mf)
@@ -406,8 +414,11 @@ class plot_scan(object):
 		
 		if self['gr_slider']['max']:
 			grmax = self.sliders['gr_slider'].val * self['gr_slider']['max']/100
-		#elif status[2]:
-			#grmax = self.sliders['gr_slider'].val * abs(amax(array(self.data['growth_rates'])[isfinite(self.data['growth_rates'])]))/100
+		elif status[2]:
+			if status[1]:
+				grmax = self.sliders['gr_slider'].val * self._norm_gr_max/100
+			else:
+				grmax = self.sliders['gr_slider'].val * self._abs_gr_max/100
 		else:
 			try:
 				grmax = self.sliders['gr_slider'].val * amax(abs(array(z_gr)[isfinite(z_gr)]))/100
@@ -425,8 +436,8 @@ class plot_scan(object):
 		
 		if self['mf_slider']['max']:
 			mfmax = self.sliders['mf_slider'].val * self['mf_slider']['max']/100
-		#elif status[2]:
-			#mfmax = self.sliders['mf_slider'].val * abs(amax(array(self.data['mode_frequencies'])[isfinite(self.data['mode_frequencies'])]))/100
+		elif status[2]:
+			mfmax = self.sliders['mf_slider'].val * self._mf_max/100
 		else:
 			try:
 				mfmax = self.sliders['mf_slider'].val * amax(abs(array(z_mf)[isfinite(z_mf)]))/100
@@ -440,16 +451,23 @@ class plot_scan(object):
 		self.ax[1].pcolormesh(x_axis, y_axis, z_mf, norm = norm_mf)
 		
 		if status[0]:
-			if self['aky']:
-				parities = array(self.data['parities_all'])[idx,:,:,ky_idx]
-			else:
-				parities = array(self.data['parities'][idx])
-			sym_ids = where(parities == 1)
-			anti_ids = where(parities == -1)
-			self.ax[0].plot(array(x_axis)[sym_ids[0]], array(y_axis)[sym_ids[1]], '+', color = 'purple', label = 'par')
-			self.ax[1].plot(array(x_axis)[sym_ids[0]], array(y_axis)[sym_ids[1]], '+', color = 'purple', label = 'par')
-			self.ax[0].plot(array(x_axis)[anti_ids[0]], array(y_axis)[anti_ids[1]], '_', color = 'cyan', label = 'par')
-			self.ax[1].plot(array(x_axis)[anti_ids[0]], array(y_axis)[anti_ids[1]], '_', color = 'cyan', label = 'par')
+			sym_x = []
+			sym_y = []
+			ant_x = []
+			ant_y = []
+			for run_id in run_ids:
+				run = self.reader.gyro_data[run_id]
+				if 'parity' in run:
+					if run['parity'] == 1:
+						sym_x.append(run[self['x_axis_type']])
+						sym_y.append(run[self['y_axis_type']])
+					elif run['parity'] == -1:
+						ant_x.append(run[self['x_axis_type']])
+						ant_y.append(run[self['y_axis_type']])
+			self.ax[0].plot(sym_x, sym_y, '+', color = 'purple', label = 'par')
+			self.ax[1].plot(sym_x, sym_y, '+', color = 'purple', label = 'par')
+			self.ax[0].plot(ant_x, ant_y, '_', color = 'cyan', label = 'par')
+			self.ax[1].plot(ant_x, ant_y, '_', color = 'cyan', label = 'par')
 		
 		if status[3]:
 			self.ax[0].plot(x_val,y_val,'kx')
@@ -475,17 +493,17 @@ class plot_scan(object):
 				self.ax.text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=self.ax.transAxes,color='k')
 		
 		if vr_status[0]:
-			dx = x_axis[1] - x_axis[0]
-			dy = y_axis[1] - y_axis[0]
-			self.ax[0].set_xticks(array(x_axis)-dx/2, minor=True)
-			self.ax[1].set_xticks(array(x_axis)-dx/2, minor=True)
-			self.ax[0].set_yticks(array(y_axis)-dy/2, minor=True)
-			self.ax[1].set_yticks(array(y_axis)-dy/2, minor=True)
+			xticks = [x+dx/2 for dx,x in zip(diff(x_axis),x_axis)]
+			yticks = [y+dy/2 for dy,y in zip(diff(y_axis),y_axis)]
+			self.ax[0].set_xticks(xticks, minor=True)
+			self.ax[1].set_xticks(xticks, minor=True)
+			self.ax[0].set_yticks(yticks, minor=True)
+			self.ax[1].set_yticks(yticks, minor=True)
 			
-			self.ax[0].set_xticks(array(x_axis), minor=False)
-			self.ax[1].set_xticks(array(x_axis), minor=False)
-			self.ax[0].set_yticks(array(y_axis), minor=False)
-			self.ax[1].set_yticks(array(y_axis), minor=False)
+			self.ax[0].set_xticks(x_axis, minor=False)
+			self.ax[1].set_xticks(x_axis, minor=False)
+			self.ax[0].set_yticks(y_axis, minor=False)
+			self.ax[1].set_yticks(y_axis, minor=False)
 			
 			self.ax[0].set_xticklabels([])
 			self.ax[1].set_xticklabels([])
@@ -501,71 +519,51 @@ class plot_scan(object):
 			self.ax[0].grid(which="minor",color='k')
 			self.ax[1].grid(which="minor",color='k')
 			
-		if vr_status[1]:
-			if self['aky']:
-				un_x = [i for p,i,j,k in self.verify['unconverged'] if p == idx and k == ky_idx]
-				un_y = [j for p,i,j,k in self.verify['unconverged'] if p == idx and k == ky_idx]
-				uns_x = [i for p,i,j,k in self.verify['unconverged_stable'] if p == idx and k == ky_idx]
-				uns_y = [j for p,i,j,k in self.verify['unconverged_stable'] if p == idx and k == ky_idx]
-				co_x = [i for p,i,j,k in self.verify['converged'] if p == idx and k == ky_idx]
-				co_y = [j for p,i,j,k in self.verify['converged'] if p == idx and k == ky_idx]
-				cof_x = [i for p,i,j,k in self.verify['converged_fit'] if p == idx and k == ky_idx]
-				cof_y = [j for p,i,j,k in self.verify['converged_fit'] if p == idx and k == ky_idx]
-			else:
-				un_x = [i for p,i,j,k in self.verify['unconverged'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-				un_y = [j for p,i,j,k in self.verify['unconverged'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-				uns_x = [i for p,i,j,k in self.verify['unconverged_stable'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-				uns_y = [j for p,i,j,k in self.verify['unconverged_stable'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-				co_x = [i for p,i,j,k in self.verify['converged'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-				co_y = [j for p,i,j,k in self.verify['converged'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-				cof_x = [i for p,i,j,k in self.verify['converged_fit'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-				cof_y = [j for p,i,j,k in self.verify['converged_fit'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
+		if vr_status[1] and self.verify is not None:
+			un_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged']]
+			un_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged']]
+			uns_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged_stable']]
+			uns_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged_stable']]
+			co_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['converged']]
+			co_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['converged']]
+			cof_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['converged_fit']]
+			cof_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['converged_fit']]
 			
-			self.ax[0].plot(array(x_axis)[un_x], array(y_axis)[un_y], 'c^', label = 'U')
-			self.ax[1].plot(array(x_axis)[un_x], array(y_axis)[un_y], 'c^', label = 'U')
-			self.ax[0].plot(array(x_axis)[uns_x], array(y_axis)[uns_y], 'bv', label = 'Us')
-			self.ax[1].plot(array(x_axis)[uns_x], array(y_axis)[uns_y], 'bv', label = 'Us')
-			self.ax[0].plot(array(x_axis)[co_x], array(y_axis)[co_y], 'k>', label = 'C')
-			self.ax[1].plot(array(x_axis)[co_x], array(y_axis)[co_y], 'k>', label = 'C')
-			self.ax[0].plot(array(x_axis)[cof_x], array(y_axis)[cof_y], 'm<', label = 'Cf')
-			self.ax[1].plot(array(x_axis)[cof_x], array(y_axis)[cof_y], 'm<', label = 'Cf')
+			self.ax[0].plot(un_x, un_y, 'c^', label = 'U')
+			self.ax[1].plot(un_x, un_y, 'c^', label = 'U')
+			self.ax[0].plot(uns_x, uns_y, 'bv', label = 'Us')
+			self.ax[1].plot(uns_x, uns_y, 'bv', label = 'Us')
+			self.ax[0].plot(co_x, co_y, 'k>', label = 'C')
+			self.ax[1].plot(co_x, co_y, 'k>', label = 'C')
+			self.ax[0].plot(cof_x, cof_y, 'm<', label = 'Cf')
+			self.ax[1].plot(cof_x, cof_y, 'm<', label = 'Cf')
 			self.ax[0].legend(loc = 'center', bbox_to_anchor=(0.5,1.1), ncol = 4)
 		
 		if vr_status[2]:
-			if self['aky']:
-				ns_x = [i for p,i,j,k in self.verify['nstep'] if p == idx and k == ky_idx]
-				ns_y = [j for p,i,j,k in self.verify['nstep'] if p == idx and k == ky_idx]
-			else:
-				ns_x = [i for p,i,j,k in self.verify['nstep'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-				ns_y = [j for p,i,j,k in self.verify['nstep'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-			self.ax[0].plot(array(x_axis)[ns_x], array(y_axis)[ns_y], 'kX')
-			self.ax[1].plot(array(x_axis)[ns_x], array(y_axis)[ns_y], 'kX')
+			ns_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['nstep']]
+			ns_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['nstep']]
+
+			self.ax[0].plot(ns_x, ns_y, 'kX')
+			self.ax[1].plot(ns_x, ns_y, 'kX')
 		
 		if vr_status[3]:
-			for bpid, bp in enumerate(x_axis):
-				for shid, sh in enumerate(y_axis):
-					s = ''
-					if not self['aky']:
-						ky_idx = self.inputs['aky_values'].index(self.data['akys'][idx][bpid][shid])
-					if (idx, bpid, shid, ky_idx) in self.verify['phi']:
-						s += 'p,'
-					if (idx, bpid, shid, ky_idx) in self.verify['apar']:
-						s += 'a,'
-					if (idx, bpid, shid, ky_idx) in self.verify['bpar']:
-						s += 'b,'
-					if s != '':
-						self.ax[0].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
-						self.ax[1].text(bp, sh, s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
+			for run_id in run_ids:
+				s = ''
+				if run_id in self.verify['phi']:
+					s += 'p,'
+				if run_id in self.verify['apar']:
+					s += 'a,'
+				if run_id in self.verify['bpar']:
+					s += 'b,'
+				if s != '':
+					self.ax[0].text(self.reader.gyro_data[run_id][self['x_axis_type']], self.reader.gyro_data[run_id][self['y_axis_type']], s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
+					self.ax[1].text(self.reader.gyro_data[run_id][self['x_axis_type']], self.reader.gyro_data[run_id][self['y_axis_type']], s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
 		
 		if vr_status[4]:
-			if self['aky']:
-				na_x = [i for p,i,j,k in self.verify['nan'] if p == idx and k == ky_idx]
-				na_y = [j for p,i,j,k in self.verify['nan'] if p == idx and k == ky_idx]
-			else:
-				na_x = [i for p,i,j,k in self.verify['nan'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-				na_y = [j for p,i,j,k in self.verify['nan'] if p == idx and k == self.inputs['aky_values'].index(self.data['akys'][p][i][j])]
-			self.ax[0].plot(array(x_axis)[na_x], array(y_axis)[na_y], 'kX')
-			self.ax[1].plot(array(x_axis)[na_x], array(y_axis)[na_y], 'kX')
+			na_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['nan']]
+			na_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['nan']]
+			self.ax[0].plot(na_x, na_y, 'kX')
+			self.ax[1].plot(na_x, na_y, 'kX')
 		
 		self.ax[0].legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0,1.02),loc = "lower left", fontsize = self['fontsizes']['title'], frameon = False)
 		self.ax[0].legend_.set_visible(self['visible']['legend'])

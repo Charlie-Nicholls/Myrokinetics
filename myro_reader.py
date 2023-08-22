@@ -123,7 +123,6 @@ class myro_read(object):
 			print("ERROR: multiple runs found")
 			return run_id
 		else:
-			print("ERROR: run not found")
 			return None
 	
 	def get_run_list(self, run, keys = '_run_keys'):

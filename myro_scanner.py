@@ -439,11 +439,11 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 								if key == 'phi':
 									symsum = sum(abs(key_data[0,0,:] + key_data[0,0,::-1]))/sum(abs(key_data[0,0,:]))
 									if  symsum > 1.9:
-										gyro_data[run_key]['partity'] = 1
+										gyro_data[run_key]['parity'] = 1
 									elif symsum < 1:
-										gyro_data[run_key]['partity'] = -1
+										gyro_data[run_key]['parity'] = -1
 									else:
-										gyro_data[run_key]['partity'] = 0
+										gyro_data[run_key]['parity'] = 0
 							elif key in ['phi2','t','theta', 'gds2', 'jacob']:
 								gyro_data[run_key][key] = key_data.tolist()
 							elif key in ['epar']:
