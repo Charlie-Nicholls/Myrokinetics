@@ -2,6 +2,7 @@ from numpy import real, imag, log, polyfit, array, exp
 from matplotlib.pyplot import *
 from matplotlib.widgets import Slider, CheckButtons, TextBox
 from scipy.stats import pearsonr
+from copy import deepcopy
 
 default_settings = {"suptitle": None,
 		"var": 'omega',

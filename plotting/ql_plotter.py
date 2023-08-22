@@ -1,9 +1,10 @@
-from numpy import transpose, array, amax, amin, isfinite, linspace, where, full, nan
+from numpy import transpose, array, amax, amin, isfinite, linspace, where, full, nan, diff
 from matplotlib.pyplot import *
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons, TextBox
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import RegularGridInterpolator
+from copy import deepcopy
 
 default_settings = {"suptitle": None,
 		"eqbm_style": "title",
@@ -117,6 +118,9 @@ class plot_ql(object):
 			self.fig.subplots_adjust(bottom=0.15)
 		elif self['visible']['slider_1'] == False:
 			self.fig.subplots_adjust(bottom=0.11)
+			
+		qls = [x for x in self.reader.data['quasilinear'].values() if str(x) not in ['-inf','inf','nan']]
+		self._ql_max = max(qls,default=1)
 		
 		ion()
 		self.draw_fig()
@@ -304,11 +308,13 @@ class plot_ql(object):
 				run[self['y_axis_type']] = y_value
 				run_id = self.reader.get_run_id(run = run, keys = '_quasilinear_keys')
 				z[x_id][y_id] = self.reader.data['quasilinear'][run_id]
+		z = transpose(z)
+		self.z = z
 		
 		if self['ql_slider']['max']:
 			qlmax = self.sliders['ql_slider'].val * self['ql_slider']['max']/100
-		#elif status[2]:
-			#qlmax = self.sliders['ql_slider'].val * abs(amax(array(self.data['quasilinear'])[isfinite(self.data['quasilinear'])]))/100
+		elif status[2]:
+			qlmax = self.sliders['ql_slider'].val * self._ql_max/100
 		else:
 			try:
 				qlmax = self.sliders['ql_slider'].val * amax(abs(array(z)[isfinite(z)]))/100
@@ -323,21 +329,24 @@ class plot_ql(object):
 		if self['contour_type'] == 1:
 			self.ax.contourf(x_axis,y_axis,z, cmap = self.cmap, norm = norm)
 		else:
-			self.ax.pcolormesh(x_axis, y_axis, transpose(z), cmap = self.cmap, norm=norm)
+			self.ax.pcolormesh(x_axis, y_axis, z, cmap = self.cmap, norm=norm)
 			
 		if status[5]:
-			grid = RegularGridInterpolator((array(x_axis),array(y_axis)),transpose(z))
-			eqbm_ql = grid((x_val,y_val))
-			self.ax.contourf(x_axis, y_axis, z, [eqbm_ql-eqbm_ql/100,eqbm_ql+eqbm_ql/100], colors = ('b'))
+			grid = RegularGridInterpolator([x_axis,y_axis],transpose(z))
+			if min(x_axis) > x_val or max(x_axis) < x_val or min(y_axis) > y_val or max(y_axis) < y_val:
+				print("ERRROR: eqbm point outside scan range")
+			else:
+				eqbm_ql = grid((x_val,y_val))
+				self.ax.contourf(x_axis, y_axis, z, [eqbm_ql-eqbm_ql/100,eqbm_ql+eqbm_ql/100], colors = ('b'))
 			
 		if status[0]:
-			dx = x_axis[1] - x_axis[0]
-			dy = y_axis[1] - y_axis[0]
-			self.ax.set_xticks(array(x_axis)-dx/2, minor=True)
-			self.ax.set_yticks(array(y_axis)-dy/2, minor=True)
+			xticks = [x+dx/2 for dx,x in zip(diff(x_axis),x_axis)]
+			yticks = [y+dy/2 for dy,y in zip(diff(y_axis),y_axis)]
+			self.ax.set_xticks(xticks, minor=True)
+			self.ax.set_yticks(yticks, minor=True)
 			
-			self.ax.set_xticks(array(x_axis), minor=False)
-			self.ax.set_yticks(array(y_axis), minor=False)
+			self.ax.set_xticks(x_axis, minor=False)
+			self.ax.set_yticks(y_axis, minor=False)
 			
 			self.ax.set_xticklabels([])
 			self.ax.set_yticklabels([])

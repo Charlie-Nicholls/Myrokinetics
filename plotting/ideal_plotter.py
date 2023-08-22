@@ -3,6 +3,7 @@ from matplotlib.pyplot import *
 import matplotlib.patches as pt
 from matplotlib.widgets import Slider, CheckButtons
 from time import sleep
+from copy import deepcopy
 
 default_settings = {"suptitle": None,
 		"eqbm_style": "split",
