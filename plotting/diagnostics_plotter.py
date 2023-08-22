@@ -35,8 +35,8 @@ class plot_diag(object):
 			if key not in self.settings:
 				self.settings[key] = defaults[key]
 				self.init_settings[key] = defaults[key]
-			elif type(self.settings[key]) == dict and key != 'cdict':
-				for skey in self.defaults:
+			elif type(self.settings[key]) == dict:
+				for skey in defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
 						self.init_settings[key][skey] = defaults[key][skey]

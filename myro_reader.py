@@ -406,6 +406,8 @@ class myro_read(object):
 			init = list(init)
 			for i, ini in enumerate(init):
 				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
 					settings[f"slider_{i+1}"]['id'] = ini
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if aky is not None:
@@ -418,8 +420,11 @@ class myro_read(object):
 		if self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
+			init = list(init)
 			for i, ini in enumerate(init):
 				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
 					settings[f"slider_{i+1}"]['id'] = ini
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if 'title' not in settings:
@@ -428,9 +433,13 @@ class myro_read(object):
 	
 	def plot_ideal(self, init = None, settings = {}):
 		if init is not None:
-			init = int(init)
-			settings[f"slider_1"]['id'] = init
-			settings[f"slider_1"]['dimension_type'] = 'psin'
+			init = list(init)
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
+					settings[f"slider_{i+1}"]['id'] = ini
+					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Ideal Ballooning"
 		return Plotters['Ideal'](reader = self, settings = settings)
@@ -455,8 +464,11 @@ class myro_read(object):
 	
 	def _plot_diag(self, init = None, var = None, absolute = None, settings = {}):
 		if init is not None:
+			init = list(init)
 			for i, ini in enumerate(init):
 				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
 					settings[f"slider_{i+1}"]['id'] = ini
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if var is not None:
@@ -471,15 +483,23 @@ class myro_read(object):
 	def plot_theta(self, init = [0,0,0,0], aky = True, var = 0, n = 3, polar = False):
 		Plotters['Theta'](data = self.run['data'], inputs = self.inputs, var = var, init = init, aky = aky, n = n, polar = polar)
 		
-	def plot_slice(self, init = [0,0], limit = None, settings = {}):
+	def plot_slice(self, slice_dim = None, y_dim = None, init = None, limit = None, settings = {}):
 		if self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
-			settings['psi_id'] = init[0]
-			settings['sh_id'] = init[1]
+			init = list(init)
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
+					settings[f"slider_{i+1}"]['id'] = ini
+		if slice_dim:
+			settings['x_axis_type'] = slice_dim
+		if y_dim:
+			settings['y_axis_type'] = y_dim
 		if limit is not None:
 			settings['limit'] = limit
-		return Plotters['Slice'](data = self.run['data'], inputs = self.inputs, settings = settings)
+		return Plotters['Slice'](reader= self, settings = settings)
 	
 	def plot_eq(self):
 		if not self.eqbm:

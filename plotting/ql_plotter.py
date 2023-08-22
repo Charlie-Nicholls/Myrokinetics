@@ -46,7 +46,7 @@ class plot_ql(object):
 				self.settings[key] = defaults[key]
 				self.init_settings[key] = defaults[key]
 			elif type(self.settings[key]) == dict and key != 'cdict':
-				for skey in self.defaults:
+				for skey in defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
 						self.init_settings[key][skey] = defaults[key][skey]
@@ -309,7 +309,7 @@ class plot_ql(object):
 				run_id = self.reader.get_run_id(run = run, keys = '_quasilinear_keys')
 				z[x_id][y_id] = self.reader.data['quasilinear'][run_id]
 		z = transpose(z)
-		self.z = z
+		self.z_axis = z
 		
 		if self['ql_slider']['max']:
 			qlmax = self.sliders['ql_slider'].val * self['ql_slider']['max']/100

@@ -36,11 +36,11 @@ class plot_ideal(object):
 				self.settings[key] = settings[key]
 				self.init_settings[key] = settings[key]
 		for key in defaults:
-			if key not in self.settings:
+			if key not in settings:
 				self.settings[key] = defaults[key]
 				self.init_settings[key] = defaults[key]
-			elif type(self.settings[key]) == dict and key != 'cdict':
-				for skey in self.defaults:
+			elif type(self.settings[key]) == dict:
+				for skey in self.defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
 						self.init_settings[key][skey] = defaults[key][skey]
@@ -147,7 +147,7 @@ class plot_ideal(object):
 	
 	def set_visible(self, key, val = None):
 		if key not in self['visible']:
-			print(f"ERROR: key not found, valid keys {self.settings.keys()}")
+			print(f"ERROR: key not found, valid keys {self.settings['visible'].keys()}")
 			return
 		if val not in [True,False]:
 			val = not self['visible'][key]

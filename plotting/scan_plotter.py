@@ -46,7 +46,7 @@ class plot_scan(object):
 				self.settings[key] = defaults[key]
 				self.init_settings[key] = defaults[key]
 			elif type(self.settings[key]) == dict and key != 'cdict':
-				for skey in self.defaults:
+				for skey in defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
 						self.init_settings[key][skey] = defaults[key][skey]
@@ -216,7 +216,7 @@ class plot_scan(object):
 	
 	def set_visible(self, key, val = None):
 		if key not in self['visible']:
-			print(f"ERROR: key not found, valid keys {self.settings.keys()}")
+			print(f"ERROR: key not found, valid keys {self.settings['visible'].keys()}")
 			return
 		if val not in [True,False]:
 			val = not self['visible'][key]
@@ -225,7 +225,6 @@ class plot_scan(object):
 		
 		if 'slider_' in key:
 			self._slider_axes[key].set_visible(self['visible'][key])
-				
 		elif key == 'op_box':
 			self.ch_axes.set_visible(self['visible']['op_box'])
 		elif key == 'vr_box':
@@ -234,6 +233,7 @@ class plot_scan(object):
 			self.fig._suptitle.set_visible(self['visible']['suptitle'])
 		elif key == 'title':
 			self.ax.legend_.set_visible(self['visible']['title'])
+			
 		if not self['visible']['slider_1'] and not self['visible']['slider_2'] and not self['visible']['vr_box']:
 			self.fig.subplots_adjust(bottom=0.11)
 		elif not self['visible']['slider_2'] and not self['visible']['vr_box']: 
