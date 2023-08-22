@@ -48,7 +48,7 @@ class plot_slice(object):
 		
 	def save_plot(self, filename = None):
 		if filename is None:
-			filename = f"Slice_{self['psi_id']}_{self['sh_id']}"
+			filename = f"Slice_{self['slider_1']['id']}_{self['slider_2']['id']}"
 		self.fig.savefig(filename)
 		
 	def open_plot(self, save = False, filename = None):

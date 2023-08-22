@@ -67,10 +67,8 @@ class plot_scan(object):
 			print(f"ERROR: {key} not found")
 	
 	def save_plot(self, filename = None):
-		if filename is None and self['aky']:
-			filename = f"Scan_{self['psi_id']}_{self['ky_id']}"
-		elif filename is None:
-			filename = f"Scan_{self['psi_id']}"
+		if filename is None:
+			filename = f"Scan_{self['slider_1']['id']}_{self['slider_2']['id']}"
 		self.fig.savefig(filename)
 		
 	def open_plot(self):

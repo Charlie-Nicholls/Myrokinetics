@@ -1,181 +1,229 @@
-from numpy import linspace, pi, zeros, real, imag, shape
+from numpy import linspace, pi, zeros, real, imag
 from scipy.interpolate import InterpolatedUnivariateSpline
 from matplotlib.pyplot import *
-from matplotlib.widgets import CheckButtons
+from copy import deepcopy
 
-def plot_theta(run = None, var = 0, fig = None, ax = None, n = 3, polar = True):
-	if run is None:
-		print("Run Not Given")
-		return
+default_settings = {"suptitle": None,
+		"var": 'phi',
+		"periods": 3,
+		"polar": True,
+		"slider_1": {"dimension_type": None, "id": 0},
+		"slider_2": {"dimension_type": None, "id": 0},
+		"slider_3": {"dimension_type": None, "id": 0},
+		"slider_4": {"dimension_type": None, "id": 0},
+		"run": {},
+		"fontsizes": {"axis": 11,"title": 13,"suptitle": 20},
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "suptitle": True, "title": True},
+}
 
-	if var == 0:
-		var = "phi"
-	if var == 1:
-		var = "apar"
-	if var == 2:
-		var = "bpar"
-	if var not in ["phi","apar","bpar"]:
-		print(f"ERROR: variable name/value {var} not supported. supported: phi/0, apar/1, bpar/2")
-		return
-
-	b_angle = run['theta']
-	e_fun = run[var]
-	if len(shape(e_fun)) == 3:
-		e_fun = e_fun[0,0,:]
-	
-	doShow = False
-	if fig is None or ax is None:
-		if polar:
-			fig = figure(figsize=(14.6,7))
-			ax1 = subplot(1,2,1)
-			ax2 = subplot(1,2,2, projection = 'polar')
-			ax = [ax1,ax2]
-		else:
-			fig, ax = subplots(1,2,figsize=(14.6,7))
-		doShow = True
-
-	theta = linspace(0, 2*pi, 100)
-	rt_fun = zeros((len(theta)))
-	it_fun = zeros((len(theta)))
-	re_fun = InterpolatedUnivariateSpline(b_angle,real(e_fun))
-	ie_fun = InterpolatedUnivariateSpline(b_angle,imag(e_fun))
-	for t, th in enumerate(theta):
-		sampling = True
-		i = 0
-		while sampling:
-			th_p = b_angle[0] + th + 2*pi*i
-			if b_angle[0] <= th_p <= b_angle[-1]:
-				rt_fun[t] += re_fun(th_p)
-				it_fun[t] += ie_fun(th_p)
-			elif th_p > b_angle[-1]:
-				sampling = False
-			i = i+1
-
-	for i in range(n):
-		ax[1].plot(theta+i*2*pi, rt_fun,'b--')
-		ax[1].plot(theta+i*2*pi, it_fun,'r--')
-	ax[0].plot(b_angle, real(e_fun),'b--')
-	ax[0].plot(b_angle, imag(e_fun),'r--')
-	ax[0].set_xlabel("Ballooning Angle")
-	ax[1].set_xlabel("Theta")
-	ax[0].set_ylabel(var)
-	ax[1].set_ylabel(var)
-	if doShow:
-		show()
-	
-def plot_theta_scan(data = None, inputs = None, var = 0, init = [0,0,0,0], aky = True, n = 3, polar = False):
-	if data is None:
-		print("ERROR: data not given")
-		return
-	if inputs is None:
-		print("ERROR: input not given")
-		return
+class plot_theta(object):
+	def __init__(self, reader, settings = {}):
+		self.reader = reader
+		
+		self.settings = {}
+		self.init_settings = {}
+		defaults = deepcopy(default_settings)
+		for key in settings:
+			if key not in defaults:
+				print(f"ERROR: {key} not found")
+			else:
+				self.settings[key] = settings[key]
+				self.init_settings[key] = settings[key]
+		for key in defaults:
+			if key not in self.settings:
+				self.settings[key] = defaults[key]
+				self.init_settings[key] = defaults[key]
+			elif type(self.settings[key]) == dict:
+				for skey in defaults[key]:
+					if skey not in self.settings[key]:
+						self.settings[key][skey] = defaults[key][skey]
+						self.init_settings[key][skey] = defaults[key][skey]
+				
+		if self['var'] == 0:
+			self.settings['var'] = "phi"
+		if self['var'] == 1:
+			self.settings['var'] = "apar"
+		if self['var'] == 2:
+			self.settings['var'] = "bpar"
+		if self['var'] == 3:
+			self.settings['var'] = "epar"
+		if self['var'] not in ['omega','phi','apar','bpar','epar','phi2']:
+			print(f"ERROR: variable name/value {self['var']} not supported. supported: phi/0, apar/1, bpar/2, epar/3")
+			return
 			
-	psiNs = inputs['psiNs']
+		self.open_plot()
 	
-	if var == 0:
-		var = "phi"
-	if var == 1:
-		var = "apar"
-	if var == 2:
-		var = "bpar"
-	if var not in ["phi","apar","bpar"]:
-		print(f"ERROR: variable name/value {var} not supported. supported: phi/0, apar/1")
-		return	
-	
-	def draw_fig(val):
-		ax[0].cla()
-		ax[1].cla()
-		psi_idx = psi_slider.val
-		bp_idx = bp_slider.val
-		sh_idx = sh_slider.val
-		psiN = psiNs[psi_idx]
-		
-		bp = data['beta_prime_axis'][psi_idx][bp_idx]
-		sh = data['shear_axis'][psi_idx][sh_idx]
-		if aky:
-			aky_idx = ky_slider.val
-			ky = inputs['aky_values'][aky_idx]
+	def __getitem__(self, key):
+		if key in self.settings:
+			return self.settings[key]
 		else:
-			ky = data['akys'][psi_idx][bp_idx][sh_idx]
-			aky_idx = inputs['aky_values'].index(ky)
+			print(f"ERROR: {key} not found")
+	
+	def save_plot(self, filename = None):
+		if filename is None:
+			filename = f"Theta_{self['var']}_{self['slider_1']['id']}_{self['slider_2']}_{self['slider_3']['id']}_{self['slider_4']['id']}"
+		self.fig.savefig(filename)
+	
+	def open_plot(self):
+		if self['polar']:
+			self.fig = figure(figsize=(14.6,7))
+			self.fig.add_subplot(121)
+			self.fig.add_subplot(122,polar=True)
+			self.ax = self.fig.get_axes()
+		else:
+			self.fig, self.ax = subplots(1,2,figsize=(14.6,7))
 		
-		run = {'theta': data['theta'][psi_idx][bp_idx][sh_idx][aky_idx], var: data[var][psi_idx][bp_idx][sh_idx][aky_idx]}
-		plot_theta(run = run, var = var, fig = fig, ax = ax, n = n, polar = polar)
-		fig.canvas.draw_idle()
-	
-	fig, ax = subplots(1,2,figsize=(14.6,7))
-	subplots_adjust(bottom=0.15)
+		if self['suptitle']:
+			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
+		
+		if self['suptitle']:
+			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 
-	psiaxes = axes([0.25, 0.01, 0.5, 0.03])
-	bpaxes = axes([0.25, 0.05, 0.5, 0.03])
-	shaxes = axes([0.02, 0.25, 0.021, 0.5])
-
-	psi_slider = Slider(psiaxes, 'psiN index:', 0, len(psiNs)-1, valinit = init[0], valstep = 1)
-	psi_slider.on_changed(draw_fig)
+		self.dims = self.reader.inputs.dim_order
+		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
+		unused_dims = [x for x in self.dims if x not in used_dims]
+		slider_keys = [x for x in self.settings if 'slider_' in x]
+		empty_sliders = [x for x in slider_keys if self.settings[x]['dimension_type'] is None]
+		for sli, key in enumerate(empty_sliders):
+			if len(unused_dims) > sli:
+				self.settings[key]['dimension_type'] = unused_dims[sli]
+				used_dims.append(unused_dims[sli])
+			else:
+				self.settings[key]['dimension_type'] = None
+				self.settings['visible'][key] = False
+				
+		for dim in [x for x in self.dims if x not in self.settings['run']]:
+			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
+		
+		self._slider_axes = {'slider_1': axes([0.25, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
+		'slider_2': axes([0.25, 0.05, 0.5, 0.03],visible=self['visible']['slider_2']),
+		'slider_3': axes([0.92, 0.2, 0.03, 0.5],visible=self['visible']['slider_3']),
+		'slider_4': axes([0.96, 0.2, 0.03, 0.5],visible=self['visible']['slider_4']),
+		}
+		self.sliders = {}
+		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
+			dim = self.reader.dimensions[self.settings[key]['dimension_type']]
+			if key in ['slider_1','slider_2']:
+				orient = 'horizontal'
+			elif key in ['slider_3','slider_4']:
+				orient = 'vertical'
+			self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index", 0, len(dim)-1, valinit = self[key]['id'], valstep = 1, orientation = orient)
+			self.sliders[key].on_changed(self.draw_fig)
+			self.set_visible(key,val=self['visible'][key])
+			if orient == 'vertical':
+				self.sliders[key].label.set_rotation(90)
+		
+		ion()
+		show()
+		self.draw_fig()
 	
-	bp_slider = Slider(bpaxes, "-\u03B2' index:", 0, len(data['beta_prime_axis'][0])-1, valinit = init[1], valstep = 1)
-	bp_slider.on_changed(draw_fig)
+	def set_slider(self, slider_num, dimension_type, visible = True):
+		if dimension_type not in self.dims:
+			print(f"ERROR: invalid dimension type, valid: {self.dims}")
+			return
+		key = f"slider_{slider_num}"
+		self.settings[key]['dimension_type'] = dimension_type
+		self.settings[key]['id'] = 0
+		dim = self.reader.dimensions[dimension_type]
+		self.sliders[key].ax.remove()
+		self._slider_axes[key] = axes(slider_axes[key])
+		if key in ['slider_1','slider_2']:
+			orient = 'horizontal'
+		elif key in ['slider_3','slider_4']:
+			orient = 'vertical'
+		self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index", 0, len(dim)-1, valinit = 0, valstep = 1, orientation = orient)
+		self.sliders[key].on_changed(self.draw_fig)
+		if orient == 'vertical':
+			self.sliders[key].label.set_rotation(90)
+		self.set_visible(key,val=visible)
+		self.draw_fig()
 	
-	sh_slider = Slider(shaxes, 'shear\nindex:', 0, len(data['shear_axis'][0])-1, valinit = init[2], valstep = 1,orientation = 'vertical')
-	sh_slider.on_changed(draw_fig)
+	def set_visible(self, key, val = None):
+		if key not in self['visible']:
+			print(f"ERROR: key not found, valid keys: {self.settings['visible'].keys()}")
+			return
+		if val not in [True,False]:
+			val = not self['visible'][key]
+		
+		self.settings['visible'][key] = val
+		
+		if 'slider_' in key:
+			self._slider_axes[key].set_visible(self['visible'][key])
+			
+			if self['visible']['slider_1'] == False and self['visible']['slider_2'] == False:
+				self.fig.subplots_adjust(bottom=0.11)
+			elif self['visible']['slider_2'] == False: 
+				self.fig.subplots_adjust(bottom=0.13)
+			else:
+				self.fig.subplots_adjust(bottom=0.15)
+		elif key == 'suptitle':
+			self.fig._suptitle.set_visible(self['visible']['suptitle'])
+		elif key == 'title':
+			self.ax.legend_.set_visible(self['visible']['title'])
 	
-	if aky:
-		kyaxes = axes([0.93, 0.25, 0.021, 0.5])
-		ky_slider = Slider(kyaxes, 'ky index:', 0, len(inputs['aky_values'])-1, valinit = init[3], valstep = 1,orientation = 'vertical')
-		ky_slider.on_changed(draw_fig)
-	draw_fig(0)
-	show()
-
-def plot_theta_set(runs = None, var = 0, init = None, n = 3, polar = False):
-	if var == 0:
-		var = "phi"
-	if var == 1:
-		var = "apar"
-	if var == 2:
-		var = "bpar"
-	if var not in ["phi","apar","bpar"]:
-		print(f"ERROR: variable name/value {var} not supported. supported: phi/0, apar/1")
-		return
+	def set_options_fontsize(self, fontsize):
+		self.settings['fontsizes']['ch_box'] = fontsize
+		for text in self.options.labels:
+			text.set_fontsize(fontsize)
 	
-	if runs is None:
-		print("Runs Not Given")
-		return
-
-	def draw_fig(val):
-		ax[0].cla()
-		ax[1].cla()
-		for run in runs.values():
-			correct_run = True
-			for key in sliders.keys():
-				if run[key] != sliders[key]['vals'][sliders[key]['slider'].val]:
-					correct_run = False
-			if correct_run:
-				data = run['data'].run
-				break
-		plot_theta(run = data, var = var, fig = fig, ax = ax, n = n, polar = polar)
-		ax[0].set_title(f"{[x for x in sliders.keys()]} = {[run[x] for x in sliders.keys()]}")
-		fig.canvas.draw_idle()
+	def set_axis_fontsize(self, fontsize):
+		self.settings['fontsizes']['axis'] = fontsize
+		self.ax.xaxis.label.set_fontsize(fontsize)
+		self.ax.yaxis.label.set_fontsize(fontsize)
+		self.fig.canvas.draw_idle()
+		
+	def set_title_fontsize(self, fontsize):
+		self.settings['fontsizes']['title'] = fontsize
+		self.draw_fig()
+		
+	def set_suptitle_fontsize(self, fontsize):
+		self.settings['fontsizes']['suptitle'] = fontsize
+		self.fig._suptitle.set_fontsize(fontsize)
+		
+	def set_suptitle(self, title):
+		self.settings['suptitle'] = title
+		self.fig.suptitle(title,fontsize=self.settings['fontsizes']['suptitle'])
 	
-	fig, ax = subplots(1,2,figsize=(14.6,7))
-	subplots_adjust(bottom=0.15)
-	
-	sliders = {}
-	for i, key in enumerate([x for x in runs[0].keys() if x != 'data']):
-		sliders[key] = {}
-		vals = set()
-		for run in runs.values():
-			vals.add(run[key])
-		sliders[key]['vals'] = list(vals)
-		sliders[key]['vals'].sort()
-		ypos = 0.01 + 0.02*i
-		slaxes = axes([0.25, ypos, 0.5, 0.03])
-		try:
-			ini = init[i]
-		except:
-			ini = 0
-		sliders[key]['slider'] = Slider(slaxes, f'{key} index:', 0, len(sliders[key]['vals'])-1, valinit = ini, valstep = 1)
-		sliders[key]['slider'].on_changed(draw_fig)
-
-	draw_fig(init)
-	show()
+	def draw_fig(self, val = None):
+		self.ax[0].cla()
+		self.ax[1].cla()
+		for key, sli in self.sliders.items():
+			dim = self[key]['dimension_type']
+			if dim is not None:
+				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
+				self.settings[key]['id'] = sli.val
+		
+		run_id = self.reader.get_run_id(run=self['run'])
+		data = self.reader.gyro_data[run_id]
+		
+		theta = linspace(0, 2*pi, 100)
+		rt_fun = zeros((len(theta)))
+		it_fun = zeros((len(theta)))
+		re_fun = InterpolatedUnivariateSpline(data['theta'],real(data[self['var']]))
+		ie_fun = InterpolatedUnivariateSpline(data['theta'],imag(data[self['var']]))
+		for t, th in enumerate(theta):
+			sampling = True
+			i = 0
+			while sampling:
+				th_p = data['theta'][0] + th + 2*pi*i
+				if data['theta'][0] <= th_p <= data['theta'][-1]:
+					rt_fun[t] += re_fun(th_p)
+					it_fun[t] += ie_fun(th_p)
+				elif th_p > data['theta'][-1]:
+					sampling = False
+				i = i+1
+		
+		if self['polar']:
+			self.ax[1].plot(theta, rt_fun,'b--')
+			self.ax[1].plot(theta, it_fun,'r--')
+		else:
+			for i in range(self['periods']):
+				self.ax[1].plot(theta+i*2*pi, rt_fun,'b--')
+				self.ax[1].plot(theta+i*2*pi, it_fun,'r--')
+			self.ax[1].set_xlabel("Theta")
+			self.ax[1].set_ylabel(self['var'])
+		self.ax[0].plot(data['theta'], real(data[self['var']]),'b--')
+		self.ax[0].plot(data['theta'], imag(data[self['var']]),'r--')
+		self.ax[0].set_xlabel("Ballooning Angle")
+		self.ax[0].set_ylabel(self['var'])
+		self.fig.canvas.draw_idle()

@@ -85,7 +85,6 @@ class plot_diag(object):
 			self.options = CheckButtons(chaxes, ["Show Fit"],self['options'])
 			self.options.on_clicked(self.draw_fig)
 		
-		self.fig.subplots_adjust(bottom=0.15)
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 
@@ -164,6 +163,8 @@ class plot_diag(object):
 				self.fig.subplots_adjust(bottom=0.11)
 			elif self['visible']['slider_2'] == False: 
 				self.fig.subplots_adjust(bottom=0.13)
+			else:
+				self.fig.subplots_adjust(bottom=0.15)
 			
 		elif key == 'op_box':
 			self.ch_axes.set_visible(self['visible']['op_box'])

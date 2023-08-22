@@ -480,8 +480,24 @@ class myro_read(object):
 	#def plot_epar_scan(self):
 		#Plotters['Epar'](data = self.run['data'], inputs = self.inputs)
 	
-	def plot_theta(self, init = [0,0,0,0], aky = True, var = 0, n = 3, polar = False):
-		Plotters['Theta'](data = self.run['data'], inputs = self.inputs, var = var, init = init, aky = aky, n = n, polar = polar)
+	def plot_theta(self, init = None, var = None, periods = None, polar = None, settings = {}):
+		if init is not None:
+			init = list(init)
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
+					settings[f"slider_{i+1}"]['id'] = ini
+					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
+		if var is not None:
+			settings['var'] = var
+		if periods is not None:
+			settings['periods'] = periods
+		if polar is not None:
+			settings['polar'] = polar
+		if 'title' not in settings:
+			settings['suptitle'] = f"{self['run_name']} {var}"
+		return Plotters['Theta'](reader = self, settings = settings)
 		
 	def plot_slice(self, slice_dim = None, y_dim = None, init = None, limit = None, settings = {}):
 		if self['ql'] is None:
