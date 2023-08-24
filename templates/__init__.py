@@ -1,6 +1,6 @@
 from pathlib import Path
 from .dimensions import dimensions_list
-from .modules import system_modules
+from .systems import systems
 
 dim_lookup = {'_list': [], '_full_list': []}
 for dim in dimensions_list:
@@ -18,4 +18,4 @@ gs2_template = "template.gs2"
 
 inputs_template = "default_input.in"
 
-__all__ = ['dim_lookup','template_dir','gs2_template','system_modules','inputs_template']
+__all__ = ['dim_lookup','template_dir','gs2_template','systems','inputs_template']

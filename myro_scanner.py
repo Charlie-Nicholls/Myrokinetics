@@ -2,7 +2,7 @@ import os
 from numpy import full, real, imag, array, loadtxt, transpose, savez
 from .ncdf2dict import ncdf2dict as readnc
 from .equilibrium import equilibrium
-from .templates import system_modules
+from .templates import systems
 from .inputs import scan_inputs
 import f90nml
 import glob
@@ -166,7 +166,7 @@ class myro_scan(object):
 			if self['system'] == 'ypi_server':
 				self.jobs.append(f"ideal_ball \"{sub_dir}/{filename}.in\"")
 			else:
-				compile_modules = system_modules[self['system']]['compile']
+				compile_modules = systems[self['system']]['compile']
 				jobfile = open(f"{sub_dir}/{filename}.job",'w')
 				jobfile.write(f"""#!/bin/bash
 #SBATCH --time=05:00:00
@@ -225,13 +225,12 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			if self['system'] == 'ypi_server':
 				self.jobs.append(f"mpirun -np 8 gs2 \"{sub_dir}/{filename}.in\"")
 			else:
-				compile_modules = system_modules[self['system']]['compile']
+				compile_modules = systems[self['system']]['compile']
+				sbatch = "#!/bin/bash"
+				for key, val in systems[self['system']]['sbatch']:
+					sbatch = sbatch + f"\n#SBATCH --{key}={val}"
 				jobfile = open(f"{sub_dir}/{filename}.job",'w')
-				jobfile.write(f"""#!/bin/bash
-#SBATCH --time=24:00:00
-#SBATCH --job-name={self.info['run_name']}
-#SBATCH --ntasks=1
-#SBATCH --output={sub_dir}/{filename}.slurm
+				jobfile.write(f"""{sbatch}
 
 {compile_modules}
 

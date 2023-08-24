@@ -1,7 +1,7 @@
 import os
 import f90nml
 from copy import deepcopy
-from .templates import dim_lookup, template_dir, gs2_template, inputs_template
+from .templates import dim_lookup, template_dir, gs2_template, inputs_template, systems
 
 possible_inputs = {
 	'files': ['eq_name','eq_path','kin_name','kin_path','kin_type','template_name','template_path'],
@@ -52,19 +52,6 @@ default_inputs = {'files': {
 	'num_shear_ideal': None,
 	'num_beta_ideal': None,
 	},
-	'sbatch': {
-	'time':
-	'job-name':
-	'ntasks':
-	'output':
-	'nodes':
-	'ntasks-per-node':
-	'cpus-per-task':
-	'account':
-	'partition':
-	'qos':
-	'distribution':
-	'hint':
 	}
 
 class scan_inputs(object):
@@ -163,6 +150,17 @@ class scan_inputs(object):
 				else:
 					self.inputs['files'][f'{key}_path'] = self.path
 		
+		if self['inputs']['knobs']['system'] in ['archer2','viking']:
+			sbatch = copy(systems[self['inputs']['knobs']['system']]['sbatch'])
+			if 'sbatch' not in self.inputs:
+				self.inputs['sbatch'] = {}
+			for skey in sbatch:
+				if skey not in self.inputs['sbatch']:
+					if skey in ['job-name','output']:
+						self.inputs['sbatch'][skey] = self.input_name.split('/')[-1].split('.')[0]
+					else:
+						self.inputs['sbatch'][skey] = sbatch[skey]
+					
 		for key in self.inputs['single_parameters']:
 			if key not in dim_lookup:
 				print(f"ERROR: {key} is not a valid parameter, valid parameters: {dim_lookup['_list']}")
@@ -316,6 +314,8 @@ class scan_inputs(object):
 			filename = filename + ".in"
 		
 		default_in = f90nml.read(f"{template_dir}/{inputs_template}")
+		if default_in['knobs']['system'] in systems and 'sbatch' in systems[default_in['knobs']['system']]:
+			default_in['sbatch'] = systems[default_in['knobs']['system']]['sbatch']
 		default_in.write(f"{directory}/{filename}",force=True)
 		
 		if doPrint:
