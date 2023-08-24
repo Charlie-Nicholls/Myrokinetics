@@ -1,12 +1,25 @@
 import os
 import f90nml
+from copy import deepcopy
+from .templates import dim_lookup, template_dir, gs2_template, inputs_template
 
 possible_inputs = {
+	'files': ['eq_name','eq_path','kin_name','kin_path','kin_type','template_name','template_path'],
 	'knobs': ['gyro','ideal','miller','system','fixed_delt','epar','num_shear_ideal','num_beta_ideal'],
 	'dimension_n': ['type','values','min','max','num'],
 	}
 
-possible_keys = {'knobs': {
+possible_keys = {
+	'files': {
+	'eq_name': ['eq_name','eq','equilibrium','eq_file'],
+	'eq_path': ['eq_path','eq_dir','equilibrium_path','equilibrium_dir','eq_directory'],
+	'kin_name': ['kin_name','kin','kinetic','kin_file'],
+	'kin_path': ['kin_path','kin_dir','kinetic_path','kinetic_dir','kin_directory'],
+	'kin_type': ['kin_type','kinetics_type'],
+	'template_name': ['template_name','template','gk_file','template_file'],
+	'template_path': ['template_path','template_dir','template_directory'],
+	},
+	'knobs': {
 	'miller': ['miller','mill'],
 	'ideal': ['ideal'],
 	'gyro': ['gyro'],
@@ -15,11 +28,21 @@ possible_keys = {'knobs': {
 	'epar': ['epar','write_epar'],
 	'num_shear_ideal': ['num_shat_ideal','n_shat_ideal','shat_ideal_num','shat_ideal_n','ideal_shat_n','idea_shat_num','num_shear_ideal','n_shear_ideal','shear_ideal_num','shear_ideal_n','ideal_shear_n','idea_shear_num'],
 	'num_beta_ideal': ['num_beta_ideal','n_beta_ideal','beta_ideal_num','beta_ideal_n','ideal_beta_n','idea_beta_num','num_beta_prime_ideal','n_beta_prime_ideal','beta_prime_ideal_num','beta_prime_ideal_n','ideal_beta_prime_n','ideal_beta_prime_num'],
-	}}
+	},
+	}
 
 valid_systems = ['ypi_server','viking','archer2']
 
-defaults = {'knobs': {
+default_inputs = {'files': {
+	'eq_name': None,
+	'eq_path': None,
+	'kin_name': None,
+	'kin_path': None,
+	'kin_type': 'PEQDSK',
+	'template_name': None,
+	'template_path': None,
+	},
+	'knobs': {
 	'gyro': True,
 	'ideal': True,
 	'miller': False,
@@ -28,17 +51,30 @@ defaults = {'knobs': {
 	'epar': False,
 	'num_shear_ideal': None,
 	'num_beta_ideal': None,
-	}}
+	},
+	'sbatch': {
+	'time':
+	'job-name':
+	'ntasks':
+	'output':
+	'nodes':
+	'ntasks-per-node':
+	'cpus-per-task':
+	'account':
+	'partition':
+	'qos':
+	'distribution':
+	'hint':
+	}
 
 class scan_inputs(object):
 	def __init__(self, input_file = None, directory = "./", input_dict = None):
-		self.input_name = input_file
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
+		self.input_name = input_file
 		
 		self.inputs = self.dimensions = self.dim_order = None
-		
 		if input_file is not None:
 			self.load_inputs()
 		if input_dict is not None:
@@ -54,10 +90,8 @@ class scan_inputs(object):
 			for skey in possible_keys[pkey]:
 				if key in possible_keys[pkey][skey]:
 					for sskey in possible_keys[pkey][skey]:
-						if sskey in self.inputs[pkey]:	
+						if sskey in self.inputs[pkey]:
 							return self.inputs[pkey][sskey]
-					if pkey in defaults:
-						return defaults[pkey][skey]
 		
 		if self.dimensions:
 			if key in ['order','dim_oder','dimension_order','dimensions_order']:
@@ -71,7 +105,7 @@ class scan_inputs(object):
 		return None
 		
 	def print_inputs(self):
-		if inputs is None:
+		if self.inputs is None:
 			return
 		for key in self.inputs:
 			print(f"{key}:")
@@ -102,13 +136,34 @@ class scan_inputs(object):
 		self.load_dimensions()
 
 	def check_inputs(self):
-		for key in ['knobs']:
+		defaults = deepcopy(default_inputs)
+		for key in defaults:
+			if key not in self.inputs:
+				self.inputs[key] = {}
+			for skey in defaults[key]:
+				if skey not in self.inputs[key]:
+					self.inputs[key][skey] = defaults[key][skey]
+		for key in ['knobs','files']:
 			for skey in self.inputs[key]:
 				if skey not in possible_inputs[key]:
 					print(f"ERROR: {skey} is not a valid {key} input")
 					del(self.inputs[key][skey])
+
+		if not self.inputs['files']['template_name']:
+			self.inputs['files']['template_name'] = gs2_template
+			self.inputs['files']['template_path'] = template_dir
+		for key in ['eq','kin']:
+			if not self.inputs['files'][f'{key}_name']:
+				print(f"ERROR: No {key} file given")
+			elif not self.inputs['files'][f'{key}_path']:
+				if '/' in self.inputs['files'][f'{key}_name']:
+					full = self.inputs['files'][f'{key}_name']
+					self.inputs['files'][f'{key}_name'] = full.split('/')[-1]
+					self.inputs['files'][f'{key}_path'] = full[:-len(self.inputs['files'][f'{key}_name'])]
+				else:
+					self.inputs['files'][f'{key}_path'] = self.path
+		
 		for key in self.inputs['single_parameters']:
-			from .templates import dim_lookup
 			if key not in dim_lookup:
 				print(f"ERROR: {key} is not a valid parameter, valid parameters: {dim_lookup['_list']}")
 				del(self.inputs['single_parameters'][key])
@@ -180,7 +235,6 @@ class scan_inputs(object):
 		self.load_dimensions()
 	
 	def load_dimensions(self):
-		from .templates import dim_lookup
 		dimensions = {}
 		single_parameters = {}
 		dim_order = []
@@ -232,7 +286,7 @@ class scan_inputs(object):
 		self.single_parameters = single_parameters
 		self.dim_order = dim_order
 
-	def write_scan_input(self, filename = None, directory = "./", doPrint = False):
+	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
 		if directory is None and self.directory is None:
 			directory = "./"
 		elif directory is None:
@@ -250,117 +304,19 @@ class scan_inputs(object):
 		if doPrint:
 			print(f"Created {filename} at {directory}")
 			
-	def write_default_input(self, filename = None, directory = "./", doPrint = False):
-		from .templates import template_dir, inputs_template
+	def write_default_input(self, filename = None, directory = "./", doPrint = True):
 		if directory is None and self.directory is None:
 			directory = "./"
 		elif directory is None:
 			directory = self.path
 
-		if self.input_name is None and filename is None:
+		if filename is None:
 			filename = "default_input.in"
-		elif self.input_name is None:
-			self.input_name = filename
-		if "." not in self.input_name:
-			self.input_name = self.input_name + ".in"
+		if "." not in filename:
+			filename = filename + ".in"
 		
-		default_in = f90nml.load(f"{template_dir}/{inputs_template}")
+		default_in = f90nml.read(f"{template_dir}/{inputs_template}")
 		default_in.write(f"{directory}/{filename}",force=True)
 		
 		if doPrint:
 			print(f"Created {filename} at {directory}")
-
-class dimension(object):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		self.values = values
-		self.edit_dimension(values = values, mini = mini, maxi = maxi, num = num)
-
-	name_keys = []
-
-	def __getitem__(self, key):
-		if type(key) == int:
-			return self.values[key]
-		key = key.lower()
-		if key in ['min']:
-			return self.min
-		if key in ['max']:
-			return self.max
-		if key in ['num','n','len']:
-			return len(self)
-		print(f"{key} not found")
-		return None
-		
-
-	def sub_validate(self, values):
-		return values
-
-	def edit_nml(self, nml, val):
-		return nml
-		
-	def single_edit_nml(self, nml):
-		if len(self) != 1:
-			print("ERROR: single_edit_nml can only be used if dimension length is 1")
-			return None
-		return self.edit_nml(nml = nml, val = self.values[0])
-	
-	@property
-	def possible_keys(self):
-		keys = {'min': [],'max': [],'num': [],'values': []}
-		for name in self.name_keys:
-			name = name.lower()
-			keys['min'].extend([f'{name}_min',f'min_{name}'])
-			keys['max'].extend([f'{name}_max',f'max_{name}'])
-			keys['num'].extend([f'{name}_num',f'num_{name}',f'n_{name}',f'{name}_n',f'{name}_number',f'number_{name}',f'len_{name}',f'psi_{name}'])
-			keys['values'].extend([f'{name}s',f'{name}_values',f'values_{name}',f'{name}_v',f'{name}_vals'])
-		return keys
-
-	@property
-	def min(self):
-		return min(self.values)
-
-	@property
-	def max(self):
-		return max(self.values)
-		
-	@property
-	def num(self):
-		return len(self.values)
-		
-	def __len__(self):
-		return len(self.values)
-		
-	@property
-	def name(self):
-		return self.name_keys[0].lower()
-
-
-	def edit_dimension(self, values = None, mini = None, maxi = None, num = None):
-		if all([x is None for x in [values, mini, maxi, num]]):
-			print(f"ERROR: all {self.name} values are None")
-			return
-		elif values is None and (num == 1 or (mini == maxi != None)):
-			if mini:
-				values = [mini]
-				maxi = mini
-			elif maxi:
-				values = [maxi]
-				maxi = mini
-			else:
-				print(f"ERROR: too many {self.name} values are None")
-				return
-		elif values is None and any([mini is None, maxi is None, num is None]):
-			print(f"ERROR: too many {self.name} values are None")
-			return
-		else:
-			if type(values) in [int,float]:
-				self.values = [values]
-
-			if values is None:
-				vals = []
-				for i in range(num):
-					vals.append((maxi - mini)*i/(num-1) + mini)
-				self.values = vals
-				
-		if self.values is not None:
-			self.values.sort()
-			self.values = self.sub_validate(self.values)

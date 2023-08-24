@@ -140,7 +140,7 @@ class myro_read(object):
         	self.inputs.print_inputs()
 
 	def print_info(self):
-		for key, val in self.run['info'].items():
+		for key, val in self.info.items():
         		print(f"{key} = {val}")
 		
 	def _print_file(self, filetype = ''):
@@ -175,23 +175,22 @@ class myro_read(object):
 	def kin_file(self):
 		self._print_file(filetype = 'kin')
 		
-	def _write_file(self, filetype = '', filename = None, directory = None):
+	def _write_file(self, filetype, filename = None, directory = None):
 		if self.files is None:
 			print("ERROR: No files found")
 			return
+		if directory is None:
+			directory = self.directory
 		filetype = filetype.lower()
-		if filetype == '':
-			print("ERROR: filetype not given")
-			return
 		if filetype in ['template_file', 'template', 'gk_template']:
 			lines = self['template_file']
-			name = self['template_file_name']
+			name = self.inputs['template_name']
 		elif filetype in ['eq','eq_file','geqdsk','geqdsk_file']:
 			lines = self['eq_file']
-			name = self['eq_file_name']
+			name = self.inputs['eq_name']
 		elif filetype in ['kin','kin_file','kinetics','kinetics_file','peqdsk','peqdsk_file']:
 			lines = self['kin_file']
-			name = self['kin_file_name']
+			name = self.inputs['kin_name']
 		else:
 			print(f"ERROR: File Type {filetype} Not Found")
 			return
@@ -249,7 +248,7 @@ class myro_read(object):
 		try:
 			self.info = data_in['run_info'].item()
 			possible_info = ['run_name','run_uuid','data_path','input_file','eq_file_name','template_file_name','kin_file_name',
-			'kinetics_type','run_data','_eq_file_path','_kin_file_path','_template_file_path']
+			'kinetics_type','run_data']
 			for key in [x for x in possible_info if x not in self.info.keys()]:
 				self.info[key] = None
 		except:
@@ -280,7 +279,7 @@ class myro_read(object):
 			self.inputs = scan_inputs(input_dict = data_in['inputs'].item())
 			self.dimensions = self.inputs.dimensions
 			if self.info:
-				self.inputs.input_file = self.info['input_file']
+				self.inputs.input_name = self.info['input_file']
 		except:
 			print("ERROR: could not load Inputs")
 			self.inputs = None
@@ -522,28 +521,20 @@ class myro_read(object):
 			self.load_equilibrium()
 		self.eqbm.plot_eq()
 	
-	def load_equilibrium(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None):
+	def load_equilibrium(self, directory = None):
 		from .equilibrium import equilibrium
 		if directory is None:
 			directory = self.directory
-		if eq_file is None:
-			eq_file = self['eq_file_name']
-			if not os.path.exists(f"{os.path.join(directory,eq_file)}"):
-				self.write_eq_file(filename = eq_file, directory = directory)
-		if kin_file is None:
-			kin_file = self['kin_file_name']
-			if not os.path.exists(f"{os.path.join(directory,kin_file)}"):
-				self.write_kin_file(filename = kin_file, directory = directory)
-		if kinetics_type is None:
-			kinetics_type = self['kinetics_type']
-		if template_file is None:
-			template_file = self['template_file_name']
-			if template_file:
-				if not os.path.exists(f"{os.path.join(directory,template_file)}"):
-					self.write_template_file(filename = template_file, directory = directory)
-		self.eqbm = self.equilibrium = equilibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.inputs)
+		if not os.path.exists(f"{os.path.join(directory,self.inputs['eq_name'])}"):
+			self.write_eq_file(directory = directory)
+		if not os.path.exists(f"{os.path.join(directory,self.inputs['kin_name'])}"):
+			self.write_kin_file(directory = directory)
+		if not os.path.exists(f"{os.path.join(directory,self.inputs['template_name'])}"):
+			self.write_template_file(directory = directory)
+			
+		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
 	
-	def write_gs2_input(self, run = None, indexes = None, filename = None, eq_file = None, kin_file = None, template_file = None, directory = None):
+	def write_gs2_input(self, indexes = None, run = None, filename = None, directory = None):
 		if directory is None and self.directory is None:
 			directory = "./"
 		elif directory is None:
@@ -553,8 +544,8 @@ class myro_read(object):
 			filename = f"itteration_{self.info['itteration']}.in"
 			
 		if self.eqbm is None:
-			self.load_equilibrium(eq_file = eq_file, kin_file = kin_file, directory = directory)
-	
+			self.load_equilibrium(directory = directory)
+		
 		#namelist_diff = self['namelist_diffs'][p][i][j][k]
 		nml = self.eqbm.get_gyro_input(run = run, indexes = indexes)
 		

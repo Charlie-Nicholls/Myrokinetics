@@ -1,3 +1,13 @@
+&files
+    eq_name = ''
+    eq_path = ''
+    kin_name = ''
+    kin_path = ''
+    kin_type = 'PEQDSK'
+    template_name = ''
+    template_path = ''
+/
+
 &knobs
     gyro = .true.
     ideal = .true.

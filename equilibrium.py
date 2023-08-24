@@ -5,72 +5,69 @@ from .templates import template_dir, gs2_template
 from copy import deepcopy
 
 class equilibrium(object):
-	
-	def __init__(self, eq_file = None, kin_file = None, kinetics_type = None, template_file = None, directory = None, inputs = None):
-		self.eq_name = eq_file
-		self.kin_name = kin_file
-		self.template_name = template_file
-		self.kinetics_type = kinetics_type
+	def __init__(self, inputs, directory = None):
+		if directory == "./":
+			directory = os.getcwd()
 		self.path = directory
-		self.eq_data = self.kin_data = self.pyro = self._eq_path = self._kin_path = self._eq_lines = self._kin_lines = self.beta_prime_profile = self.shear_profile = None
+		self.load_inputs(inputs)
+		self.eq_data = self.kin_data = self.pyro = self._eq_lines = self._kin_lines = self.beta_prime_profile = self.shear_profile = None
 		self.surface_namelists = {}
-		if eq_file:
+		if self.inputs['eq_file']:
 			self.load_geqdsk()
-		if kin_file:
+		if self.inputs['kin_file']:
 			self.load_kinetics()
-		if inputs:
-			self.load_inputs(inputs)
 
 	def load_geqdsk(self, eq_file = None, directory = None):
 		from .geqdsk_reader import geqdsk
-		
-		if self.eq_name is None and eq_file is None:
+		if not self.inputs['eq_name'] and eq_file is None:
 			print("ERROR: No GEQDSK file given")
 			return
-		elif eq_file is None:
-			eq_file = self.eq_name
-		self.eq_name = eq_file
+		elif eq_file is not None:
+			self.inputs['eq_name'] = template_file
+			self.inputs.check_inputs()
 		
-		if directory is None and self.path is None:
-			directory = "./"
-		elif directory is None:
-			directory = self.path
-		if directory == "./":
-			directory = os.getcwd()
-		self._eq_path = directory
+		if directory is not None:
+			self.inputs['eq_path'] = directory
+		elif self.inputs['eq_path'] is None and self.path is None:
+			self.inputs['eq_path'] = os.getcwd()
+		elif self.inputs['eq_path'] is None:
+			self.inputs['eq_path'] = self.path
+		if self.inputs['eq_path'] == "./":
+			self.inputs['eq_path'] = os.getcwd()
 
 		if self.surface_namelists:
 			self.surface_namelists = {}
 		if self.pyro:
 			self.pyro = None
 		
-		with open(os.path.join(directory,self.eq_name)) as efile:
+		with open(os.path.join(self.inputs['eq_path'],self.inputs['eq_name'])) as efile:
 			self._eq_lines = efile.readlines()
 			
-		self.eq_data = geqdsk(filename = self.eq_name, directory = directory)
+		self.eq_data = geqdsk(filename = self.inputs['eq_name'], directory = self.inputs['eq_path'])
 	
 	def load_kinetics(self, kin_file = None, kinetics_type = None, directory = None):
-		if directory is None and self.path is None:
-			directory = "./"
-		elif directory is None:
-			directory = self.path
-		if directory == "./":
-			directory = os.getcwd()
-		self._kin_path = directory
-		
-		if self.kin_name is None and kin_file is None:
+		if self.inputs['kin_name'] is None and kin_file is None:
 			print("ERROR: No Kinetics file given")
 			return
-		elif kin_file is None:
-			kin_file = self.kin_name
-		self.kin_name = kin_file
+		elif kin_file is not None:
+			self.inputs['kin_name'] = template_file
+			self.inputs.check_inputs()
+		
+		if directory is not None:
+			self.inputs['kin_path'] = directory
+		elif self.inputs['kin_path'] is None and self.path is None:
+			self.inputs['kin_path'] = os.getcwd()
+		elif self.inputs['kin_path'] is None:
+			self.inputs['kin_path'] = self.path
+		if self.inputs['kin_path'] == "./":
+			self.inputs['kin_path'] = os.getcwd()
 		
 		if self.surface_namelists:
 			self.surface_namelists = {}
 		if self.pyro:
 			self.pyro = None
 		
-		with open(os.path.join(directory,self.kin_name)) as kfile:
+		with open(os.path.join(self.inputs['kin_path'],self.inputs['kin_name'])) as kfile:
 			self._kin_lines = kfile.readlines()
 			
 		if kinetics_type is not None:
@@ -81,56 +78,55 @@ class equilibrium(object):
 		
 		if self.kinetics_type.upper() == "SCENE":
 			import xarray as xr
-			self.kin_data = xr.open_dataset(os.path.join(self._kin_path,self.kin_name))
-		elif self.kinetics_type.upper() == "PEQDSK":
+			self.kin_data = xr.open_dataset(os.path.join(self.inputs['kin_path'],self.inputs['kin_name']))
+		elif self.kinetics_type.upper() in ["PEQDSK","PFILE"]:
 			from .peqdsk_reader import peqdsk
-			self.kin_data = peqdsk(filename = self.kin_name, directory = directory)
-			if 'rhonorm' not in self.kin_data.keys():
-				self.AmmendPEQDSK()
-				self.kin_data = peqdsk(self.kin_name, directory)
-				if 'rhonorm' not in self.kin_data.keys():
-					print("ERROR: Could not load rho data from PEQDSK file")
-					return			
+			self.kin_data = peqdsk(filename = self.inputs['kin_name'], directory = self.inputs['kin_path'])
 		else:
-			print(f"ERROR: Kinetics type {self.kinetics_type} not recognised. Currently supported: SCENE, PEQDSK")
+			print(f"ERROR: Kinetics type {self.kinetics_type} not recognised. Currently supported: SCENE, PEQDSK/pFile")
 	
 	def load_pyro(self, template_file = None, directory = None):
 		from pyrokinetics import Pyro
 		from pathlib import Path
-		if self.eq_name is None or self.kin_name is None:
-			if self.eq_name is None:
+		if self.inputs['eq_name'] is None or self.inputs['kin_name'] is None:
+			if self.inputs['eq_name'] is None:
 				print("ERROR: No equilibrium loaded")
-			if self.kin_name is None:
+			if self.inputs['kin_name'] is None:
 				print("ERROR: No kinetics file loaded")
 			return
 		
 		if self.surface_namelists:
 			self.surface_namelists = {}
 
-		eq_file = Path(self._eq_path) / self.eq_name
-		kin_file = Path(self._kin_path) / self.kin_name
+		eq_file = Path(self.inputs['eq_path']) / self.inputs['eq_name']
+		kin_file = Path(self.inputs['kin_path']) / self.inputs['kin_name']
 		
 		if template_file is not None:
-				self.template_name = template_file
-		if self.template_name is None:
-			self.template_name = gs2_template
-			directory = template_dir
-		if directory is None and self.path is None:
-			directory = os.getcwd()
-		elif directory is None:
-			directory = self.path
-		if directory == "./":
-			directory = os.getcwd()
-		self._template_path = directory
+			self.inputs['template_name'] = template_file
+			self.inputs.check_inputs()
+		elif self.inputs['template_name'] is None:
+			self.inputs['template_name'] = gs2_template
+			self.inputs['template_path'] = template_dir
 		
-		self._template_lines = f90nml.read(os.path.join(directory,self.template_name))
+		if directory is not None:
+			self.inputs['template_path'] = directory
+		elif self.inputs['template_path'] is None and self.path is None:
+			self.inputs['template_path'] = os.getcwd()
+		elif self.inputs['template_path'] is None:
+			self.inputs['template_path'] = self.path
+		if self.inputs['template_path'] == "./":
+			self.inputs['template_path'] = os.getcwd()
+		
+		self._template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
 
+		kin_type = 'pFile' if self.kinetics_type.upper() == 'PEQDSK' else self.kinetics_type.upper()
 		self.pyro = Pyro(
-			eq_file = eq_file,
+			eq_file = Path(self.inputs['eq_path']) / self.inputs['eq_name'],
 		 	eq_type = "GEQDSK",
-		 	kinetics_file = kin_file,
-		 	kinetics_type = self.kinetics_type,
-		 	gk_file = Path(directory) / self.template_name)
+		 	kinetics_file = Path(self.inputs['kin_path']) / self.inputs['kin_name'],
+		 	kinetics_type = kin_type,
+		 	gk_file = Path(self.inputs['template_path']) / self.inputs['template_name'],
+		 	)
 		self.pyro.gk_code = "GS2"
 		
 	def load_inputs(self, inputs):
@@ -139,14 +135,16 @@ class equilibrium(object):
 			self.inputs = inputs(input_file = inputs, directory = self.path)
 		elif type(inputs) == scan_inputs:
 			self.inputs = inputs
+		else:
+			print("ERROR: inputs must be of type string or scan_inputs")
 
-	def AmmendPEQDSK(self):
-		if self.eq_data is None and self.eq_name is None:
+	def AmendPEQDSK(self):
+		if self.eq_data is None and self.inputs['eq_name'] is None:
 			print("ERROR: No GEQDSK file provided")
 			return
 		elif self.eq_data is None:
 			self.load_geqdsk()
-		if self.kin_data is None and self.kin_name is None:
+		if self.kin_data is None and self.inputs['kin_name'] is None:
 			print("ERROR: No Kinetics file provided")
 			return
 		elif self.kin_data is None:
@@ -165,7 +163,7 @@ class equilibrium(object):
 				rho.append((max(fs['R']) - min(fs['R']))/2)
 		rhonorm = rho/max(rho)
 		
-		f = open(self.kin_name,'a')
+		f = open(self.inputs['kin_name'],'a')
 		f.write(f"{len(rho)+1} psinorm rho rhonorm")
 		f.write("\n 0.0000000   0.0000000   0.0000000")
 		for i in range(len(rho)):
@@ -202,7 +200,7 @@ class equilibrium(object):
 			nml['theta_grid_eik_knobs']['iflux'] = 0
 			nml['theta_grid_eik_knobs']['local_eq'] = True
 		else:
-			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self._eq_path,self.eq_name)
+			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.inputs['eq_path'],self.inputs['eq_name'])
 			nml['theta_grid_eik_knobs']['efit_eq'] =  True
 			nml['theta_grid_eik_knobs']['iflux'] = 1
 			nml['theta_grid_eik_knobs']['local_eq'] = False

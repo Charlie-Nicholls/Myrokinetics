@@ -267,7 +267,7 @@ class plot_diag(object):
 			self.ax.plot(t,phi2,'k')
 			if max(phi2) > 1e267:
 				self.ax.set_ylim(min(phi2)/100, 1e267) #Display error occurs on log scale above 1e267
-			self.ax.set_ylabel("Phi2",fontsize=self['fontsizes']['axis'])
+			self.ax.set_ylabel("$\phi^{2}$",fontsize=self['fontsizes']['axis'])
 			self.ax.set_yscale('log')
 			self.ax.set_xlabel(f"Time ({len(t)} steps)",fontsize=self['fontsizes']['axis'])
 			

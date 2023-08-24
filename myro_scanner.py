@@ -12,12 +12,11 @@ GYROKINETIC SCAN PERFORMER
 '''
 
 class myro_scan(object):
-	def __init__(self, input_file = None, eq_file = None, kin_file = None, template_file = None, kinetics_type = "PEQDSK", directory = "./", run_name = None):
+	def __init__(self, input_file = None, directory = "./", run_name = None):
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
-		self.template_name = template_file
-		self._template_path = self.info = self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
+		self.info = self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
 		self.jobs = []
 		if run_name:
 			self.run_name = run_name
@@ -25,7 +24,7 @@ class myro_scan(object):
 			self.run_name = input_file.split("/")[-1].split(".")[0]
 		
 		self.load_inputs(input_file = input_file, directory = directory)
-		self.eqbm = self.equilibrium = equilibrium(eq_file = eq_file, kin_file = kin_file, kinetics_type = kinetics_type, template_file = template_file, directory = directory, inputs = self.inputs)
+		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
 	
 	def __getitem__(self, key):
 		if key == "inputs":
@@ -106,10 +105,10 @@ class myro_scan(object):
 		if self.info is None:
 			self._create_run_info()
 
-		if not self.eqbm.eq_name or not self.eqbm.kin_name:
-			if not self.eqbm.eq_name:
+		if not self.inputs['eq_name'] or not self.inputs['kin_name']:
+			if not self.inputs['eq_name']:
 				print("ERROR: No eq_file loaded")
-			if not self.eqbm.kin_name:
+			if not self.inputs['kin_name']:
 				print("ERROR: No kin_file loaded")
 			return False
 		
@@ -122,10 +121,9 @@ class myro_scan(object):
 		if not self.eqbm.pyro:
 			self.eqbm.load_pyro()
 
-		if self.template_name is not None:
-			os.system(f"cp \"{self.eqbm._template_path}/{self.template_name}\" \"{self.info['data_path']}/{self.template_name}\"")
-		os.system(f"cp \"{self.eqbm._kin_path}/{self.eqbm.kin_name}\" \"{self.info['data_path']}/{self.eqbm.kin_name}\"")
-		os.system(f"cp \"{self.eqbm._eq_path}/{self.eqbm.eq_name}\" \"{self.info['data_path']}/{self.eqbm.eq_name}\"")
+		os.system(f"cp \"{self.eqbm._template_path}/{self.inputs['template_name']}\" \"{self.info['data_path']}/{self.inputs['template_name']}\"")
+		os.system(f"cp \"{self.inputs['kin_path']}/{self.inputs['kin_name']}\" \"{self.info['data_path']}/{self.inputs['kin_name']}\"")
+		os.system(f"cp \"{self.inputs['eq_path']}/{self.inputs['eq_name']}\" \"{self.info['data_path']}/{self.inputs['eq_name']}\"")
 		if not self.inputs.input_name:
 			self.inputs.input_name = f"{self.run_name}.in"
 		self.write_scan_input(filename = self.inputs.input_name, directory = self.info['data_path'],doPrint=False)
@@ -269,7 +267,7 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
 			date = None
-		self.info = {'run_name': self.run_name, 'run_uuid': ID, 'data_path': run_path, 'input_file': self.inputs.input_name, 'eq_file_name': self.eqbm.eq_name, 'template_file_name': self.template_name, 'kin_file_name': self.eqbm.kin_name, 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, '_eq_file_path': self.eqbm._eq_path, '_kin_file_path': self.eqbm._kin_path, '_template_file_path': self._template_path, 'itteration': 0}
+		self.info = {'run_name': self.run_name, 'run_uuid': ID, 'data_path': run_path, 'input_file': self.inputs.input_name, 'eq_file_name': self.inputs['eq_name'], 'kin_file_name': self.inputs['kin_name'], 'template_file_name': self.inputs['template_name'], 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, 'itteration': 0}
 	
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
 		if self.info is None:
@@ -372,7 +370,7 @@ from numpy import load
 with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 	nd = obj['name_diffs']
 	info = obj['info'].item()
-	run = myro_scan(eq_file = \"{self.eqbm.eq_name}\", kin_file = \"{self.eqbm.kin_name}\", input_file = \"{self.inputs.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.template_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")
+	run = myro_scan(eq_file = \"{self.inputs['eq_name']}\", kin_file = \"{self.inputs['kin_name']}\", input_file = \"{self.inputs.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.inputs['template_name']}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")
 	run.info = info
 	run.namelist_diffs = nd
 	run.save_out(filename = \"{filename}\", directory = \"{directory}\",SlurmSave = True,QuickSave = {QuickSave})""")

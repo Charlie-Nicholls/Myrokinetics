@@ -1,4 +1,4 @@
-from ..inputs import dimension
+from ..dimension import dimension
 
 '''
 TEMPLATE DIMENSION SUBCLASS | Rememeber to add any new dimensions to dimensions_list
