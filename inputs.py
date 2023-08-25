@@ -1,6 +1,6 @@
 import os
 import f90nml
-from copy import deepcopy
+from copy import deepcopy, copy
 from .templates import dim_lookup, template_dir, gs2_template, inputs_template, systems
 
 possible_inputs = {
