@@ -249,7 +249,7 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 			elif self['system'] == 'archer2':
 				input_files.append(f"{sub_dir}/{filename}.in")
 		if self['system'] == 'archer2':
-			pyth = open(f"{directory}/node_{n}.py",'w')
+			pyth = open(f"{directory}/gyro.py",'w')
 			pyth.write(f"""import os
 from joblib import Parallel, delayed
 
@@ -261,7 +261,7 @@ os.system(f"srun --nodes=1 --ntasks={systems[self['system']]['sbatch']['ntasks-p
 Parallel(n_jobs={systems[self['system']]['sbatch']['nodes']})(delayed(start_run)(i) for i in range(len(input_files)))""")
 			pyth.close()
 		
-			jobfile = open(f"{directory}/gyro_runs.job",'w')
+			jobfile = open(f"{directory}/gyro.job",'w')
 			jobfile.write(f"""{sbatch}
 
 {compile_modules}
@@ -270,11 +270,11 @@ which gs2
 gs2 --build-config
 
 module load cray-python
-python {directory}/gyro_runs.job &
+python {directory}/gyro.py &
 
 wait""")
 			jobfile.close()
-			self.jobs.append(f"sbatch \"{directory}/gyro_runs.job\"")
+			self.jobs.append(f"sbatch \"{directory}/gyro.job\"")
 	
 	def _create_run_info(self):
 		try:
