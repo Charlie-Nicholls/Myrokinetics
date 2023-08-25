@@ -184,6 +184,8 @@ class equilibrium(object):
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
 		beta =  nml['parameters']['beta']
 		
+		nml['theta_grid_parameters']['qinp'] = abs(nml['theta_grid_parameters']['qinp'])
+		
 		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
 
 		mul = beta_prim/bp_cal
