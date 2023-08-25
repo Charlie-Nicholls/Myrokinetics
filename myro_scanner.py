@@ -210,6 +210,13 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		else:
 			runs = specificRuns
 		
+		if self['system'] in ['viking','archer2']:
+			compile_modules = systems[self['system']]['compile']
+			sbatch = "#!/bin/bash"
+				for key, val in systems[self['system']]['sbatch']:
+					sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+			input_files = []
+			
 		for run in runs:
 			sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.2g}" for name in self.inputs.dim_order])
 			os.makedirs(sub_dir,exist_ok=True)
@@ -224,11 +231,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 						
 			if self['system'] == 'ypi_server':
 				self.jobs.append(f"mpirun -np 8 gs2 \"{sub_dir}/{filename}.in\"")
-			else:
-				compile_modules = systems[self['system']]['compile']
-				sbatch = "#!/bin/bash"
-				for key, val in systems[self['system']]['sbatch']:
-					sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+			elif self['system'] == 'viking':
 				jobfile = open(f"{sub_dir}/{filename}.job",'w')
 				jobfile.write(f"""{sbatch}
 
@@ -243,6 +246,35 @@ gs2 \"{sub_dir}/{filename}.in\"
 echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 				jobfile.close()
 				self.jobs.append(f"sbatch \"{sub_dir}/{filename}.job\"")
+			elif self['system'] == 'archer2':
+				input_files.append(f"{sub_dir}/{filename}.in")
+		if self['system'] == 'archer2':
+			pyth = open(f"{directory}/node_{n}.py",'w')
+			pyth.write(f"""import os
+from joblib import Parallel, delayed
+
+input_files = {input_files}
+
+def start_run(i):
+os.system(f"srun --nodes=1 --ntasks={systems[self['system']]['sbatch']['ntasks-per-node']} --mem=1500 mpirun -np {systems[self['system']]['sbatch']['ntasks-per-node']} gs2 \"{sub_dir}/{filename}.in\"")
+			
+Parallel(n_jobs={systems[self['system']]['sbatch']['nodes']})(delayed(start_run)(i) for i in range(len(input_files)))""")
+			pyth.close()
+		
+			jobfile = open(f"{directory}/gyro_runs.job",'w')
+			jobfile.write(f"""{sbatch}
+
+{compile_modules}
+
+which gs2
+gs2 --build-config
+
+module load cray-python
+python {directory}/gyro_runs.job &
+
+wait""")
+			jobfile.close()
+			self.jobs.append(f"sbatch \"{directory}/gyro_runs.job\"")
 	
 	def _create_run_info(self):
 		try:
