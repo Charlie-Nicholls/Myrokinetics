@@ -71,19 +71,19 @@ class equilibrium(object):
 			self._kin_lines = kfile.readlines()
 			
 		if kinetics_type is not None:
-			self.kinetics_type = kinetics_type
-		if self.kinetics_type is None:
+			self.inputs['kinetics_type'] = kinetics_type
+		if self.inputs['kinetics_type'] is None:
 			print("Warning: kinetics_type Not Given, trying PEQDSK")
-			self.kinetics_type = "PEQDSK"
+			self.inputs['kinetics_type'] = "PEQDSK"
 		
-		if self.kinetics_type.upper() == "SCENE":
+		if self.inputs['kinetics_type'].upper() == "SCENE":
 			import xarray as xr
 			self.kin_data = xr.open_dataset(os.path.join(self.inputs['kin_path'],self.inputs['kin_name']))
-		elif self.kinetics_type.upper() in ["PEQDSK","PFILE"]:
+		elif self.inputs['kinetics_type'].upper() in ["PEQDSK","PFILE"]:
 			from .peqdsk_reader import peqdsk
 			self.kin_data = peqdsk(filename = self.inputs['kin_name'], directory = self.inputs['kin_path'])
 		else:
-			print(f"ERROR: Kinetics type {self.kinetics_type} not recognised. Currently supported: SCENE, PEQDSK/pFile")
+			print(f"ERROR: Kinetics type {self.inputs['kinetics_type']} not recognised. Currently supported: SCENE, PEQDSK/pFile")
 	
 	def load_pyro(self, template_file = None, directory = None):
 		from pyrokinetics import Pyro
@@ -119,7 +119,7 @@ class equilibrium(object):
 		
 		self._template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
 
-		kin_type = 'pFile' if self.kinetics_type.upper() == 'PEQDSK' else self.kinetics_type.upper()
+		kin_type = 'pFile' if self.inputs['kinetics_type'].upper() == 'PEQDSK' else self.inputs['kinetics_type'].upper()
 		self.pyro = Pyro(
 			eq_file = Path(self.inputs['eq_path']) / self.inputs['eq_name'],
 		 	eq_type = "GEQDSK",
