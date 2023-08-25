@@ -298,7 +298,7 @@ wait""")
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
 			date = None
-		self.info = {'run_name': self.run_name, 'run_uuid': ID, 'data_path': run_path, 'input_file': self.inputs.input_name, 'eq_file_name': self.inputs['eq_name'], 'kin_file_name': self.inputs['kin_name'], 'template_file_name': self.inputs['template_name'], 'kinetics_type': self.eqbm.kinetics_type, 'run_data': date, 'itteration': 0}
+		self.info = {'run_name': self.run_name, 'run_uuid': ID, 'data_path': run_path, 'input_file': self.inputs.input_name, 'eq_file_name': self.inputs['eq_name'], 'kin_file_name': self.inputs['kin_name'], 'template_file_name': self.inputs['template_name'], 'kinetics_type': self.inputs['kinetics_type'], 'run_data': date, 'itteration': 0}
 	
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
 		if self.info is None:
@@ -401,7 +401,7 @@ from numpy import load
 with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 	nd = obj['name_diffs']
 	info = obj['info'].item()
-	run = myro_scan(eq_file = \"{self.inputs['eq_name']}\", kin_file = \"{self.inputs['kin_name']}\", input_file = \"{self.inputs.input_name}\", kinetics_type = \"{self.eqbm.kinetics_type}\", template_file = \"{self.inputs['template_name']}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")
+	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")
 	run.info = info
 	run.namelist_diffs = nd
 	run.save_out(filename = \"{filename}\", directory = \"{directory}\",SlurmSave = True,QuickSave = {QuickSave})""")
