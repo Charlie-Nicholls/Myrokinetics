@@ -121,7 +121,7 @@ class myro_scan(object):
 		if not self.eqbm.pyro:
 			self.eqbm.load_pyro()
 
-		os.system(f"cp \"{self.eqbm._template_path}/{self.inputs['template_name']}\" \"{self.info['data_path']}/{self.inputs['template_name']}\"")
+		os.system(f"cp \"{self.inputs['template_path']}/{self.inputs['template_name']}\" \"{self.info['data_path']}/{self.inputs['template_name']}\"")
 		os.system(f"cp \"{self.inputs['kin_path']}/{self.inputs['kin_name']}\" \"{self.info['data_path']}/{self.inputs['kin_name']}\"")
 		os.system(f"cp \"{self.inputs['eq_path']}/{self.inputs['eq_name']}\" \"{self.info['data_path']}/{self.inputs['eq_name']}\"")
 		if not self.inputs.input_name:
