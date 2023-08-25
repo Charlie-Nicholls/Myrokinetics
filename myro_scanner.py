@@ -213,8 +213,8 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		if self['system'] in ['viking','archer2']:
 			compile_modules = systems[self['system']]['compile']
 			sbatch = "#!/bin/bash"
-				for key, val in systems[self['system']]['sbatch']:
-					sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+			for key, val in systems[self['system']]['sbatch']:
+				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
 			input_files = []
 			
 		for run in runs:
