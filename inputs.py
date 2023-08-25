@@ -151,7 +151,7 @@ class scan_inputs(object):
 					self.inputs['files'][f'{key}_path'] = self.path
 		
 		if self['knobs']['system'] in ['archer2','viking']:
-			sbatch = copy(systems[self['inputs']['knobs']['system']]['sbatch'])
+			sbatch = copy(systems[self['knobs']['system']]['sbatch'])
 			if 'sbatch' not in self.inputs:
 				self.inputs['sbatch'] = {}
 			for skey in sbatch:
