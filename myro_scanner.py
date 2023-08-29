@@ -269,7 +269,6 @@ Parallel(n_jobs={systems[self['system']]['sbatch']['nodes']})(delayed(start_run)
 which gs2
 gs2 --build-config
 
-module load cray-python
 python {directory}/gyro.py &
 
 wait""")

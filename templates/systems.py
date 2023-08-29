@@ -23,11 +23,12 @@ sbatch_viking = {
 	}
 
 complile_archer2 = """module load PrgEnv-gnu
-module load cray-hdf5 cray-netcdf cray-fftw
+module load cray-hdf5 cray-netcdf cray-fftw cray-python
 export GK_SYSTEM=archer2
 export MAKEFLAGS=-IMakefiles
 ulimit -s unlimited
-export PATH=${PATH}:/work/e281/e281/cnicholls/gs2/bin"""
+export PATH=${PATH}:/work/e281/e281/cnicholls/gs2/bin
+source ./pythenv/bin/activate"""
 
 save_archer2 = ""
 
