@@ -220,8 +220,8 @@ class myro_read(object):
 	def write_kin_file(self, filename = None, directory = None):
 		self._write_file(filetype = 'kin', filename = filename, directory = directory)
 		
-	def write_input_file(self, filename = None, directory = "./", doPrint = True):
-		self.inputs.write_input_file(filename = filename, directory = directory, doPrint = doPrint)
+	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
+		self.inputs.write_scan_input(filename = filename, directory = directory, doPrint = doPrint)
 		
 	def _open_file(self, filename = None, directory = None):
 		if directory:

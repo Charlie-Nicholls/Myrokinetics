@@ -255,10 +255,10 @@ from joblib import Parallel, delayed
 
 input_files = {input_files}
 
-def start_run(i):
-os.system(f"srun --nodes=1 --ntasks={systems[self['system']]['sbatch']['ntasks-per-node']} --mem=1500 mpirun -np {systems[self['system']]['sbatch']['ntasks-per-node']} gs2 \"{sub_dir}/{filename}.in\"")
-			
-Parallel(n_jobs={systems[self['system']]['sbatch']['nodes']})(delayed(start_run)(i) for i in range(len(input_files)))""")
+def start_run(run):
+	os.system(f"srun --nodes=1 --ntasks={systems[self['system']]['sbatch']['ntasks-per-node']} --mem=1500 mpirun -np {systems[self['system']]['sbatch']['ntasks-per-node']} gs2 \"\{run\}\")
+
+Parallel(n_jobs={systems[self['system']]['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 			pyth.close()
 		
 			jobfile = open(f"{directory}/gyro.job",'w')
