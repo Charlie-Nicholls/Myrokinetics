@@ -23,17 +23,17 @@ class equilibrium(object):
 			print("ERROR: No GEQDSK file given")
 			return
 		elif eq_file is not None:
-			self.inputs['eq_name'] = template_file
+			self.inputs.inputs['files']['eq_name'] = template_file
 			self.inputs.check_inputs()
 		
 		if directory is not None:
-			self.inputs['eq_path'] = directory
+			self.inputs.inputs['files']['eq_path'] = directory
 		elif self.inputs['eq_path'] is None and self.path is None:
-			self.inputs['eq_path'] = os.getcwd()
+			self.inputs.inputs['files']['eq_path'] = os.getcwd()
 		elif self.inputs['eq_path'] is None:
-			self.inputs['eq_path'] = self.path
+			self.inputs.inputs['files']['eq_path'] = self.path
 		if self.inputs['eq_path'] == "./":
-			self.inputs['eq_path'] = os.getcwd()
+			self.inputs.inputs['files']['eq_path'] = os.getcwd()
 
 		if self.surface_namelists:
 			self.surface_namelists = {}
@@ -50,17 +50,17 @@ class equilibrium(object):
 			print("ERROR: No Kinetics file given")
 			return
 		elif kin_file is not None:
-			self.inputs['kin_name'] = template_file
+			self.inputs.inputs['files']['kin_name'] = template_file
 			self.inputs.check_inputs()
 		
 		if directory is not None:
-			self.inputs['kin_path'] = directory
+			self.inputs.inputs['files']['kin_path'] = directory
 		elif self.inputs['kin_path'] is None and self.path is None:
-			self.inputs['kin_path'] = os.getcwd()
+			self.inputs.inputs['files']['kin_path'] = os.getcwd()
 		elif self.inputs['kin_path'] is None:
-			self.inputs['kin_path'] = self.path
+			self.inputs.inputs['files']['kin_path'] = self.path
 		if self.inputs['kin_path'] == "./":
-			self.inputs['kin_path'] = os.getcwd()
+			self.inputs.inputs['files']['kin_path'] = os.getcwd()
 		
 		if self.surface_namelists:
 			self.surface_namelists = {}
@@ -102,20 +102,20 @@ class equilibrium(object):
 		kin_file = Path(self.inputs['kin_path']) / self.inputs['kin_name']
 		
 		if template_file is not None:
-			self.inputs['template_name'] = template_file
+			self.inputs.inputs['files']['template_name'] = template_file
 			self.inputs.check_inputs()
 		elif self.inputs['template_name'] is None:
-			self.inputs['template_name'] = gs2_template
-			self.inputs['template_path'] = template_dir
+			self.inputs.inputs['files']['template_name'] = gs2_template
+			self.inputs.inputs['files']['template_path'] = template_dir
 		
 		if directory is not None:
-			self.inputs['template_path'] = directory
+			self.inputs.inputs['files']['template_path'] = directory
 		elif self.inputs['template_path'] is None and self.path is None:
-			self.inputs['template_path'] = os.getcwd()
+			self.inputs.inputs['files']['template_path'] = os.getcwd()
 		elif self.inputs['template_path'] is None:
-			self.inputs['template_path'] = self.path
+			self.inputs.inputs['files']['template_path'] = self.path
 		if self.inputs['template_path'] == "./":
-			self.inputs['template_path'] = os.getcwd()
+			self.inputs.inputs['files']['template_path'] = os.getcwd()
 		
 		self._template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
 
