@@ -26,7 +26,8 @@ complile_archer2 = """module load PrgEnv-gnu
 module load cray-hdf5 cray-netcdf cray-fftw
 export GK_SYSTEM=archer2
 export MAKEFLAGS=-IMakefiles
-ulimit -s unlimited"""
+ulimit -s unlimited
+export PATH=${PATH}:/work/e281/e281/cnicholls/gs2/bin"""
 
 save_archer2 = ""
 
