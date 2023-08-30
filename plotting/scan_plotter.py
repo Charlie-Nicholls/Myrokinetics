@@ -29,7 +29,8 @@ class plot_scan(object):
 	def __init__(self, reader = None, settings = {}):
 		self.reader = reader
 		self.verify = reader.verify
-		if self.reader.gyro_data is None:
+		self.data = reader.data['gyro']
+		if self.data is None:
 			print("Error: No Gyrokinetic Data")
 			return
 		self.settings = {}
@@ -143,7 +144,7 @@ class plot_scan(object):
 		norm_grs = []
 		abs_grs = []
 		mfs = []
-		for run in self.reader.gyro_data.values():
+		for run in self.data.values():
 			if str(run['growth_rate']) not in ['-inf','inf','nan']:
 				abs_grs.append(run['growth_rate'])
 				if 'ky' in run:
@@ -392,11 +393,11 @@ class plot_scan(object):
 				run_id = self.reader.get_run_id(run = run, keys = key)
 				if run_id is not None:
 					run_ids.append(run_id)
-					gr = self.reader.gyro_data[run_id]['growth_rate']
-					z_mf[x_id][y_id] = self.reader.gyro_data[run_id]['mode_frequency']
+					gr = self.data[run_id]['growth_rate']
+					z_mf[x_id][y_id] = self.data[run_id]['mode_frequency']
 					if status[1]:
-						if 'ky' in self.reader.gyro_data[run_id]:
-							ky = self.reader.gyro_data[run_id]['ky']
+						if 'ky' in self.data[run_id]:
+							ky = self.data[run_id]['ky']
 						else:
 							ky = self.reader.single_parameters['ky'].values[0]
 						z_gr[x_id][y_id] = gr/ky**2
@@ -454,7 +455,7 @@ class plot_scan(object):
 			ant_x = []
 			ant_y = []
 			for run_id in run_ids:
-				run = self.reader.gyro_data[run_id]
+				run = self.data[run_id]
 				if 'parity' in run:
 					if run['parity'] == 1:
 						sym_x.append(run[self['x_axis_type']])
@@ -482,8 +483,8 @@ class plot_scan(object):
 				handles.append(Line2D([0.5],[0.5],marker='x',color='k',label="Equillibrium",linewidth=0))
 		
 		if status[4]:
-			if self.reader.data['ideal_data'] is not None and self.reader.data['ideal_data'][psiN] is not None:
-				idata = self.reader.data['ideal_data'][psiN]
+			if self.reader.data['ideal'] is not None and self.reader.data['ideal'][psiN] is not None:
+				idata = self.reader.data['ideal'][psiN]
 				self.ax[0].contourf(idata[self['x_axis_type']], idata[self['y_axis_type']], idata['stabilities'], [0.01,0.99], colors = ('k'))
 				self.ax[1].contourf(idata[self['x_axis_type']], idata[self['y_axis_type']], idata['stabilities'], [0.01,0.99], colors = ('k'))
 				handles.append(Line2D([0,1],[0.5,0.5],color='k',label="Ideal Boundary"))
@@ -518,14 +519,14 @@ class plot_scan(object):
 			self.ax[1].grid(which="minor",color='k')
 			
 		if vr_status[1] and self.verify is not None:
-			un_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged']]
-			un_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged']]
-			uns_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged_stable']]
-			uns_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged_stable']]
-			co_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['converged']]
-			co_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['converged']]
-			cof_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['converged_fit']]
-			cof_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['converged_fit']]
+			un_x = [self.data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged']]
+			un_y = [self.data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged']]
+			uns_x = [self.data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged_stable']]
+			uns_y = [self.data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['unconverged_stable']]
+			co_x = [self.data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['converged']]
+			co_y = [self.data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['converged']]
+			cof_x = [self.data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['converged_fit']]
+			cof_y = [self.data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['converged_fit']]
 			
 			self.ax[0].plot(un_x, un_y, 'c^', label = 'U')
 			self.ax[1].plot(un_x, un_y, 'c^', label = 'U')
@@ -538,8 +539,8 @@ class plot_scan(object):
 			self.ax[0].legend(loc = 'center', bbox_to_anchor=(0.5,1.1), ncol = 4)
 		
 		if vr_status[2]:
-			ns_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['nstep']]
-			ns_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['nstep']]
+			ns_x = [self.data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['nstep']]
+			ns_y = [self.data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['nstep']]
 
 			self.ax[0].plot(ns_x, ns_y, 'kX')
 			self.ax[1].plot(ns_x, ns_y, 'kX')
@@ -554,12 +555,12 @@ class plot_scan(object):
 				if run_id in self.verify['bpar']:
 					s += 'b,'
 				if s != '':
-					self.ax[0].text(self.reader.gyro_data[run_id][self['x_axis_type']], self.reader.gyro_data[run_id][self['y_axis_type']], s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
-					self.ax[1].text(self.reader.gyro_data[run_id][self['x_axis_type']], self.reader.gyro_data[run_id][self['y_axis_type']], s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
+					self.ax[0].text(self.data[run_id][self['x_axis_type']], self.data[run_id][self['y_axis_type']], s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
+					self.ax[1].text(self.data[run_id][self['x_axis_type']], self.data[run_id][self['y_axis_type']], s[:-1], color = 'k',ha='center',va='center',size=7, rotation = 45)
 		
 		if vr_status[4]:
-			na_x = [self.reader.gyro_data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['nan']]
-			na_y = [self.reader.gyro_data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['nan']]
+			na_x = [self.data[run_id][self['x_axis_type']] for run_id in run_ids if run_id in self.verify['nan']]
+			na_y = [self.data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['nan']]
 			self.ax[0].plot(na_x, na_y, 'kX')
 			self.ax[1].plot(na_x, na_y, 'kX')
 		

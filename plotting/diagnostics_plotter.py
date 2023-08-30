@@ -207,7 +207,7 @@ class plot_diag(object):
 				self.settings[key]['id'] = sli.val		
 		
 		run_id = self.reader.get_run_id(run=self['run'])
-		data = self.reader.gyro_data[run_id]
+		data = self.reader.data['gyro'][run_id]
 		
 		title = "".join([f"{self.reader.dimensions[x].axis_label}: {data[x]:.2g} | " for x in self.reader.inputs.dim_order])[:-3]
 		self.ax.set_title(title,fontsize=self['fontsizes']['title'])

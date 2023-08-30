@@ -4,7 +4,7 @@ class verify_scan(object):
 	
 	def __init__(self, reader):
 		self.reader = reader
-		self.scan = reader.gyro_data
+		self.scan = reader.data['gyro']
 		try:
 			self._nstep = reader.files['template_file']['knobs']['nstep']
 		except:

@@ -57,7 +57,7 @@ class myro_read(object):
 			for idx, i in enumerate(ids):
 				run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]
 			run_id = self.get_run_id(run)
-			return self.gyro_data[run_id][key]
+			return self.data['gyro'][run_id][key]
 		
 		if key in ['quasilinear','norm_gr','abs_gr']:
 			if not self.data[f'_{key}_keys']:
@@ -74,9 +74,9 @@ class myro_read(object):
 			if key == 'quasilinear':
 				return self.data['quasilinear'][run_id]
 			elif key == 'abs_gr':
-				return self.gyro_data[run_id]['growth_rate']
+				return self.data['gyro'][run_id]['growth_rate']
 			elif key == 'norm_gr':
-				return self.gyro_data[run_id]['growth_rate']/self.gyro_data[run_id]['ky']**2
+				return self.data['gyro'][run_id]['growth_rate']/self.data['gyro'][run_id]['ky']**2
 		
 		print(f"ERROR: {key} not found")
 		return None
@@ -255,13 +255,8 @@ class myro_read(object):
 			print("ERROR: could not load Run Info")
 			self.info = None
 		try:
-			self.gyro_data = data_in['gyro_data'].item()
-		except:
-			print("ERROR: could not load Gyro Data")
-			self.gyro_data = None
-		try:
 			self.data = data_in['data'].item()
-			possible_data = ['ideal_data','equilibrium','_run_keys','quasilinear']
+			possible_data = ['gyro','ideal_data','equilibrium','_run_keys','quasilinear']
 			for key in [x for x in possible_data if x not in self.data.keys()]:
 				self.data[key] = None
 		except:
@@ -294,13 +289,13 @@ class myro_read(object):
 	def save_file(self, filename = None, directory = "./"):
 		if filename == None:
 			filename = self['run_name']
-		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, gyro_data = self.gyro_data, data = self.data, run_info = self.info, files = self.files, verify = self.verify)
+		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = self.data, run_info = self.info, files = self.files, verify = self.verify)
 		
 	def _verify_run(self):
 		if not self['Gyro']:
 			return
 		self.verify = verify_scan(reader = self)
-		self.gyro_data = self.verify.scan
+		self.data['gyro'] = self.verify.scan
 		self.calculate_gr()
 	
 	def get_all_runs(self, excludeDimensions = []):
@@ -333,9 +328,9 @@ class myro_read(object):
 		for runs in self.get_all_runs(excludeDimensions = ['ky','theta0']):
 			run_ids = self.get_run_list(runs)
 			ql_key = str(uuid4())
-			for dim_name, val in [(x, y) for x, y in self.gyro_data[run_ids[0]].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
+			for dim_name, val in [(x, y) for x, y in self.data['gyro'][run_ids[0]].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
 				ql_keys[dim_name][val].append(ql_key)
-			qls[ql_key] = QL(run_ids,self.gyro_data)
+			qls[ql_key] = QL(run_ids,self.data['gyro'])
 			
 		self.data['quasilinear'] = qls
 		self.data['_quasilinear_keys'] = ql_keys
@@ -357,8 +352,8 @@ class myro_read(object):
 			abs_grs = []
 			norm_grs = []
 			for run_id in run_ids:
-				abs_grs.append(self.gyro_data[run_id]['growth_rate'])
-				norm_grs.append(self.gyro_data[run_id]['growth_rate']/self.gyro_data[run_id]['ky'])
+				abs_grs.append(self.data['gyro'][run_id]['growth_rate'])
+				norm_grs.append(self.data['gyro'][run_id]['growth_rate']/self.data['gyro'][run_id]['ky'])
 			
 			if len([x for x in abs_grs if isfinite(x)]) == 0:
 				abs_id = run_ids[0]
@@ -371,9 +366,9 @@ class myro_read(object):
 				norm_gr = max([x for x in norm_grs if isfinite(x)])
 				norm_id = run_ids[norm_grs.index(norm_gr)]
 
-			for dim_name, val in [(x, y) for x, y in self.gyro_data[abs_id].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
+			for dim_name, val in [(x, y) for x, y in self.data['gyro'][abs_id].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
 				abs_gr_keys[dim_name][val].append(abs_id)
-			for dim_name, val in [(x, y) for x, y in self.gyro_data[norm_id].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
+			for dim_name, val in [(x, y) for x, y in self.data['gyro'][norm_id].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
 				norm_gr_keys[dim_name][val].append(norm_id)
 		
 		self.data['_abs_gr_keys'] = abs_gr_keys

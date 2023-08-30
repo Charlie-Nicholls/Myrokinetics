@@ -297,7 +297,7 @@ wait""")
 		except:
 			print("ERROR: unable to import datetime module, setting run date to None")
 			date = None
-		self.info = {'run_name': self.run_name, 'run_uuid': ID, 'data_path': run_path, 'input_file': self.inputs.input_name, 'eq_file_name': self.inputs['eq_name'], 'kin_file_name': self.inputs['kin_name'], 'template_file_name': self.inputs['template_name'], 'kinetics_type': self.inputs['kinetics_type'], 'run_data': date, 'itteration': 0}
+		self.info = {'run_name': self.run_name, 'run_uuid': ID, 'data_path': run_path, 'input_name': self.inputs.input_name, 'eq_name': self.inputs['eq_name'], 'kin_name': self.inputs['kin_name'], 'template_name': self.inputs['template_name'], 'kinetics_type': self.inputs['kinetics_type'], 'run_data': date, 'itteration': 0}
 	
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
 		if self.info is None:
@@ -448,6 +448,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 						run_keys[key][run[key]].add(run_key)
 					
 					gyro_data[run_key] = run
+					#gyro_data['nml_diffs'] = self.namelist_diffs[?]
 					for key in all_keys:
 						gyro_data[run_key][key] = None
 						
@@ -507,8 +508,8 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 					stab = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_2d")
 					
 					ideal_data[psiN]['beta_prime'] = [abs(x) for x in bp]
-					ideal_data[psiN]['shear'] = shear
-					ideal_data[psiN]['stabilities'] = transpose(stab)
+					ideal_data[psiN]['shear'] = shear.tolist()
+					ideal_data[psiN]['stabilities'] = transpose(stab).tolist()
 				except:
 					ideal_data[psiN]['beta_prime'] = None
 					ideal_data[psiN]['shear'] = None
@@ -517,14 +518,14 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		else:
 			ideal_data = None
 		
-		data = {'ideal_data': ideal_data,
+		data = {'gyro': gyro_data,
+			'ideal': ideal_data,
 			'equilibrium': equilibrium,
 			'_run_keys': run_keys,
-			'namelist_differences': self.namelist_diffs
 			}
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
-		savez(f"{self.path}/{filename}", inputs = self.inputs.inputs, gyro_data = gyro_data, data = data, run_info = self.info, files = self.file_lines)
+		savez(f"{self.path}/{filename}", inputs = self.inputs.inputs, data = data, run_info = self.info, files = self.file_lines)
 	'''
 	def check_cancelled(self, directory = None, doPrint = True):
 		if self.info is None:

@@ -225,7 +225,7 @@ class plot_slice(object):
 			if self['y_axis_type'] == 'quasilinear':
 				y_vals[x_id] = self.reader.data['quasilinear'][run_id]
 			else:
-				y_vals[x_id] = self.reader.gyro_data[run_id][self['y_axis_type']]
+				y_vals[x_id] = self.reader.data['gyro'][run_id][self['y_axis_type']]
 		self.y_axis = y_vals
 		
 		

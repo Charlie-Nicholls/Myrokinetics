@@ -194,7 +194,7 @@ class plot_theta(object):
 				self.settings[key]['id'] = sli.val
 		
 		run_id = self.reader.get_run_id(run=self['run'])
-		data = self.reader.gyro_data[run_id]
+		data = self.reader.data['gyro'][run_id]
 		
 		theta = linspace(0, 2*pi, 100)
 		rt_fun = zeros((len(theta)))

@@ -376,8 +376,8 @@ class plot_ql(object):
 				handles.append(Line2D([0.5],[0.5],marker='x',color='k',label="Equillibrium",linewidth=0))
 		
 		if status[4]:
-			if self.reader.data['ideal_data'] is not None and self.reader.data['ideal_data'][psiN] is not None:
-				idata = self.reader.data['ideal_data'][psiN]
+			if self.reader.data['ideal'] is not None and self.reader.data['ideal'][psiN] is not None:
+				idata = self.reader.data['ideal'][psiN]
 				self.ax.contourf(idata[self['x_axis_type']], idata[self['y_axis_type']], idata['stabilities'], [0.01,0.99], colors = ('k'))
 				handles.append(Line2D([0,1],[0.5,0.5],color='k',label="Ideal Boundary"))
 			else:
