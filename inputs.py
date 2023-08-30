@@ -156,7 +156,7 @@ class scan_inputs(object):
 				self.inputs['sbatch'] = {}
 			for skey in sbatch:
 				if skey not in self.inputs['sbatch']:
-					if skey in == 'job-name':
+					if skey == 'job-name':
 						self.inputs['sbatch'][skey] = self.input_name.split('/')[-1].split('.')[0]
 					if skey == 'output':
 						self.inputs['sbatch'][skey] = self.input_name.split('/')[-1].split('.')[0] + ".slurm"
