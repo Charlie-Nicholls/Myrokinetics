@@ -20,7 +20,7 @@ default_settings = {"suptitle": None,
 class plot_ideal(object):
 	def __init__(self, reader, settings = {}):
 		self.reader = reader
-		if self.reader.data['ideal_data'] is None:
+		if self.reader.data['ideal'] is None:
 			print("Error: No ideal_ball data")
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
@@ -232,9 +232,9 @@ class plot_ideal(object):
 		else:
 			psiN = self.reader.single_parameters.values[0]
 		
-		x_axis = self.reader.data['ideal_data'][psiN][self['x_axis_type']]
-		y_axis = self.reader.data['ideal_data'][psiN][self['y_axis_type']]
-		stab = self.reader.data['ideal_data'][psiN]['stabilities']
+		x_axis = self.reader.data['ideal'][psiN][self['x_axis_type']]
+		y_axis = self.reader.data['ideal'][psiN][self['y_axis_type']]
+		stab = self.reader.data['ideal'][psiN]['stabilities']
 		x_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
 		y_val = self.reader.data['equilibrium'][psiN][self['y_axis_type']]
 		

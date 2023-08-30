@@ -156,8 +156,10 @@ class scan_inputs(object):
 				self.inputs['sbatch'] = {}
 			for skey in sbatch:
 				if skey not in self.inputs['sbatch']:
-					if skey in ['job-name','output']:
+					if skey in == 'job-name':
 						self.inputs['sbatch'][skey] = self.input_name.split('/')[-1].split('.')[0]
+					if skey == 'output':
+						self.inputs['sbatch'][skey] = self.input_name.split('/')[-1].split('.')[0] + ".slurm"
 					else:
 						self.inputs['sbatch'][skey] = sbatch[skey]
 					
@@ -292,7 +294,7 @@ class scan_inputs(object):
 
 		if self.input_name is None and filename is None:
 			filename = input("Input File Name: ")
-		elif self.input_name is None:
+		if self.input_name is None:
 			self.input_name = filename
 		if "." not in self.input_name:
 			self.input_name = self.input_name + ".in"
