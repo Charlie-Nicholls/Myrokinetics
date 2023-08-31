@@ -68,8 +68,8 @@ class myro_scan(object):
 		
 		if not self.info:
 			self._create_run_info()
-		else:
-			self.info['itteration'] += 1
+		#else:
+			#self.info['itteration'] += 1
 		run_path = self.info['data_path']
 		
 		if not os.path.exists(run_path):
@@ -113,7 +113,7 @@ class myro_scan(object):
 			return False
 		
 		if gyro and self.namelist_diffs is None:
-			self.namelist_diffs = full(self.inputs.shape,{})
+			self.namelist_diffs = {}
 		
 		if not os.path.exists(self.info['data_path']):
 			os.mkdir(self.info['data_path'])
@@ -223,11 +223,13 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			existing_inputs = [] 
 			for f in glob.glob(r'itteration_*.in'):
 				existing_inputs.append([x for x in f if x.isdigit()])
-			itt = max([eval("".join(x)) for x in existing_inputs],default=-1) + 1
-			filename = f"itteration_{itt}"
-			
-			subnml = self.eqbm.get_gyro_input(run = run)
-			subnml.write(f"{sub_dir}/{filename}.in", force=True)
+			itt = max([eval("".join(x)) for x in existing_inputs],default=-1)
+			if itt < self.info['itt']:
+				filename = f"itteration_{self.info['itt']}"
+				subnml = self.eqbm.get_gyro_input(run = run)
+				subnml.write(f"{sub_dir}/{filename}.in", force=True)
+			else:
+				filename = f"itteration_{itt}"
 						
 			if self['system'] == 'ypi_server':
 				self.jobs.append(f"mpirun -np 8 gs2 \"{sub_dir}/{filename}.in\"")
@@ -256,9 +258,9 @@ from joblib import Parallel, delayed
 input_files = {input_files}
 
 def start_run(run):
-	os.system(f"srun --nodes=1 --ntasks={systems[self['system']]['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
+	os.system(f"srun --nodes=1 --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
 
-Parallel(n_jobs={systems[self['system']]['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
+Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 			pyth.close()
 		
 			jobfile = open(f"{directory}/gyro.job",'w')
@@ -274,6 +276,10 @@ python {directory}/gyro.py &
 wait""")
 			jobfile.close()
 			self.jobs.append(f"sbatch \"{directory}/gyro.job\"")
+	
+	def update_itteration(self):
+		self.info['itt'] = self.info['itt'] + 1
+		print(f"Updated to itteration {self.info['itt']}")
 	
 	def _create_run_info(self):
 		try:
