@@ -224,8 +224,8 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			for f in glob.glob(r'itteration_*.in'):
 				existing_inputs.append([x for x in f if x.isdigit()])
 			itt = max([eval("".join(x)) for x in existing_inputs],default=-1)
-			if itt < self.info['itt']:
-				filename = f"itteration_{self.info['itt']}"
+			if itt < self.info['itteration']:
+				filename = f"itteration_{self.info['itteration']}"
 				subnml = self.eqbm.get_gyro_input(run = run)
 				subnml.write(f"{sub_dir}/{filename}.in", force=True)
 			else:
