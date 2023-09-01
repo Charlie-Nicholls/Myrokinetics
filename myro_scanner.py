@@ -31,6 +31,14 @@ class myro_scan(object):
 			self.inputs()
 		else:
         		return self.inputs[key]
+        
+	def __len__(self):
+		if self.dimensions is None:
+			return None
+		tot = 1
+		for dim in self.dimensions.values():
+			tot *= len(dim)
+		return tot
 
 	def print_inputs(self):
         	self.inputs.print_inputs()
@@ -131,11 +139,14 @@ class myro_scan(object):
 		return True
 	
 	def _run_jobs(self, n = None):
+		cwd = os.getcwd()
+		os.system(f"cd {self.info['data_path']}")
 		if n is None or n > len(self.jobs):
 			n = len(self.jobs)
 		for i in range(n):
 			os.system(self.jobs[i])
 		self.jobs = self.jobs[n:]
+		os.system(f"cd {cwd}")
 	
 	def _make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
 		if checkSetup:

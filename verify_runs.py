@@ -167,12 +167,14 @@ class verify_scan(object):
 			self.convergence['uncalculated'].add(run_id)
 			return
 			
-		increasing = all([y > x for x,y in zip(data['t'],data['t'][1:])])
-		if not increasing:
+		increasing = [y > x for x,y in zip(data['t'],data['t'][1:])]
+		if not all(increasing):
 			self.bad_runs['order'].add(run_id)
-		positive = all([x >= 0 for x in data['phi2']])
-		if not positive:
+		positive = [x >= 0 for x in data['phi2']]
+		if not all(positive):
 			self.bad_runs['negative'].add(run_id)
+			self.scan[run_id]['phi2'] = [x for idx, x in enumerate(self.scan[run_id]['phi2']) if positive[idx]]
+			self.scan[run_id]['t'] = [x for idx, x in enumerate(self.scan[run_id]['t']) if positive[idx]]
 									
 	def check_convergence(self, run_id):
 		from scipy.stats import pearsonr
@@ -230,10 +232,10 @@ class verify_scan(object):
 					findingGR = False
 				elif init_nt > 11 and nt < 110:
 					findingGR = False
-					nt = len(phi2)//10
+					nt = len(data['phi2'])//10
 				elif nt == 2:
 					findingGR = False
-					nt = len(phi2)
+					nt = len(data['phi2'])
 					
 			except Exception as e:
 				findingGR = False
@@ -266,10 +268,12 @@ class verify_scan(object):
 		if data['phi'] is None:
 			self.save_errors['phi'].add(run_id)
 			return
-			
-		phi_max = max([abs(x) for x in data['phi']])
-		if phi_max != 0 and (abs(data['phi'][0])/phi_max > 0.05 or abs(data['phi'][-1])/phi_max > 0.05):
-			self.bad_runs['phi'].add(run_id)
+		try:
+			phi_max = max([abs(x) for x in data['phi']])
+			if phi_max != 0 and (abs(data['phi'][0])/phi_max > 0.05 or abs(data['phi'][-1])/phi_max > 0.05):
+				self.bad_runs['phi'].add(run_id)
+		except:
+			pass
 
 	def check_apar(self, run_id):
 		data = self.scan[run_id]
@@ -278,10 +282,12 @@ class verify_scan(object):
 		if data['apar'] is None:
 			self.save_errors['apar'].add(run_id)
 			return
-			
-		apar_max = max([abs(x) for x in data['apar']])
-		if apar_max != 0 and (abs(data['apar'][0])/apar_max > 0.05 or abs(data['apar'][-1])/apar_max > 0.05):
-			self.bad_runs['apar'].add(run_id)
+		try:
+			apar_max = max([abs(x) for x in data['apar']])
+			if apar_max != 0 and (abs(data['apar'][0])/apar_max > 0.05 or abs(data['apar'][-1])/apar_max > 0.05):
+				self.bad_runs['apar'].add(run_id)
+		except:
+			pass
 		
 	def check_bpar(self, run_id):
 		data = self.scan[run_id]
@@ -290,10 +296,12 @@ class verify_scan(object):
 		if data['bpar'] is None:
 			self.save_errors['bpar'].add(run_id)
 			return
-			
-		bpar_max = max([abs(x) for x in data['bpar']])
-		if bpar_max != 0 and (abs(data['bpar'][0])/bpar_max > 0.05 or abs(data['bpar'][-1])/bpar_max > 0.05):
-			self.bad_runs['bpar'].add(run_id)
+		try:
+			bpar_max = max([abs(x) for x in data['bpar']])
+			if bpar_max != 0 and (abs(data['bpar'][0])/bpar_max > 0.05 or abs(data['bpar'][-1])/bpar_max > 0.05):
+				self.bad_runs['bpar'].add(run_id)
+		except:
+			pass
 	
 	def check_epar(self, run_id):
 		data = self.scan[run_id]
@@ -302,7 +310,9 @@ class verify_scan(object):
 		if data['epar'] is None:
 			self.save_errors['epar'].add(run_id)
 			return
-			
-		epar_max = max([abs(x) for x in data['epar']])
-		if epar_max != 0 and (abs(data['epar'][0])/epar_max > 0.05 or abs(data['epar'][-1])/epar_max > 0.05):
-			self.bad_runs['epar'].add(run_id)
+		try:
+			epar_max = max([abs(x) for x in data['epar']])
+			if epar_max != 0 and (abs(data['epar'][0])/epar_max > 0.05 or abs(data['epar'][-1])/epar_max > 0.05):
+				self.bad_runs['epar'].add(run_id)
+		except:
+			pass

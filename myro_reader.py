@@ -99,13 +99,13 @@ class myro_read(object):
 		elif key in ["ql", "quasi linear", "quasi_linear"]:
 			return self.data['quasilinear']
 			
-		elif key in self.dimensions:
+		elif self.dimensions and key in self.dimensions:
 			return self.dimensions.values
 		
-		#elif key in self.verify._all_keys():
-			#return self.verify[key]
+		elif self.verify and key in self.verify._all_keys():
+			return self.verify[key]
 			
-		else:
+		elif self.inputs:
 			return self.inputs[key]
 			#inputs also contains logic for if key not found
 			
