@@ -229,7 +229,7 @@ python {self.info['data_path']}/gyro.py &
 
 wait""")
 				jobfile.close()
-				os.system(f"sbatch \"{job_name}\"")
+				os.system(f"sbatch \"{filename}.job\"")
 			os.system(f"cd {cwd}")
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
