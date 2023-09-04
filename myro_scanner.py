@@ -17,7 +17,7 @@ class myro_scan(object):
 			directory = os.getcwd()
 		self.path = directory
 		self.info = self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
-		self.jobs = []
+		self._input_files = set()
 		if run_name:
 			self.run_name = run_name
 		elif input_file:
@@ -68,14 +68,14 @@ class myro_scan(object):
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
 		self.inputs.write_scan_input(filename = filename, directory = directory, doPrint = doPrint)
 	
-	def run_scan(self, gyro = None, ideal = None, directory = None, group_runs = None):
+	def run_scan(self, n_jobs = None, gyro = None, ideal = None, directory = None, group_runs = None):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
 			directory = self.path
 		
 		if not self.info:
-			self._create_run_info()
+			self.create_run_info()
 		#else:
 			#self.info['itteration'] += 1
 		run_path = self.info['data_path']
@@ -83,15 +83,15 @@ class myro_scan(object):
 		if not os.path.exists(run_path):
 			os.mkdir(run_path)
 		
-		if not self._check_setup(ideal = ideal, gyro = gyro):
+		if not self.check_setup(ideal = ideal, gyro = gyro):
 			return
 		if self['ideal']:
-			self._make_ideal_files(directory = run_path)
+			self.make_ideal_files(directory = run_path)
 		if self['gyro']:
-			self._make_gyro_files(directory = run_path, group_runs = group_runs)
-		self._run_jobs()
+			self.make_gyro_files(directory = run_path, group_runs = group_runs)
+		self.run_jobs(n_jobs = n_jobs)
 	
-	def _check_setup(self, ideal = None, gyro = None):
+	def check_setup(self, ideal = None, gyro = None):
 		if not self.inputs.check_scan():
 			return False
 		
@@ -111,7 +111,7 @@ class myro_scan(object):
 			return False
 			
 		if self.info is None:
-			self._create_run_info()
+			self.create_run_info()
 
 		if not self.inputs['eq_name'] or not self.inputs['kin_name']:
 			if not self.inputs['eq_name']:
@@ -138,19 +138,95 @@ class myro_scan(object):
 
 		return True
 	
-	def _run_jobs(self, n = None):
-		cwd = os.getcwd()
-		os.system(f"cd {self.info['data_path']}")
-		if n is None or n > len(self.jobs):
-			n = len(self.jobs)
-		for i in range(n):
-			os.system(self.jobs[i])
-		self.jobs = self.jobs[n:]
-		os.system(f"cd {cwd}")
+	def clear_jobs(self):
+		self._input_files = set()
 	
-	def _make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
+	def run_jobs(self, n_jobs = None):
+		if self['system'] in ['viking','archer2']:
+			cwd = os.getcwd()
+			compile_modules = systems[self['system']]['compile']
+			sbatch = "#!/bin/bash"
+			for key, val in self.inputs['sbatch'].items():
+				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+	
+		if self['system'] == 'ypi_server':
+			if n_jobs is None or n_jobs > len(self._input_files):
+				n_jobs = len(self._input_files)
+			while n_jobs > 0:
+				for input_file in self._input_files:
+					os.system(f"mpirun -np 8 gs2 \"{input_file}\"")
+					self._input_files.remove(input_file)
+					n_jobs -= 1
+		elif self['system'] == 'viking':
+			if n_jobs is None or n_jobs > len(self._input_files):
+				n_jobs = len(self._input_files)
+			while n_jobs > 0:
+				for input_file in self._input_files:
+					input_file = self._input_files[i]
+					job_name = input_file[:-3] + ".job"
+					directory = "".join([f"{x}/" for x in input_file.split('/')[:-1]])
+					os.system(f"cd {directory}")
+					jobfile = open(f"{job_name}",'w')
+					jobfile.write(f"""{sbatch}
+
+{compile_modules}
+
+which gs2
+gs2 --build-config
+
+echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
+echo \"Input: {sub_dir}/{filename}.in\"
+gs2 \"{sub_dir}/{filename}.in\"
+echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
+					jobfile.close()
+					
+					os.system(f"sbatch \"{job_name}\"")
+					os.system(f"cd {cwd}")
+					self._input_files.remove(input_file)
+					n_jobs -= 1
+		if self['system'] == 'archer2':
+			os.system(f"cd {self.info['data_path']}")
+			input_lists = {}
+			for n in range(n_par):
+				input_lists[n] = []
+			if n_jobs == None or n_jobs*n_par > len(self._input_files):
+				total_jobs = len(self._input_files)
+			else:
+				total_jobs = n_jobs*n_par
+			input_list = list(self._input_files)
+			for i in range(total_jobs):
+				input_lists[i%n_par].append(input_list[i])
+				self._input_files.remove(input_list[i])
+			for n in range(n_par):
+				pyth = open(f"gyro_{n}.py",'w')
+				pyth.write(f"""import os
+from joblib import Parallel, delayed
+
+input_files = {input_lists[n]}
+
+def start_run(run):
+	os.system(f"srun --nodes=1 --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
+
+Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
+				pyth.close()
+				jobfile = open(f"gyro_{n}.job",'w')
+				jobfile.write(f"""{sbatch}
+
+{compile_modules}
+
+which gs2
+gs2 --build-config
+
+python {directory}/gyro.py &
+
+wait""")
+				jobfile.close()
+				os.system(f"sbatch \"{job_name}\"")
+			os.system(f"cd {cwd}")
+	
+	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
 		if checkSetup:
-			if not self._check_setup():
+			if not self.check_setup():
 				return
 		if directory is None:
 			directory = self.info['data_path']
@@ -175,7 +251,7 @@ class myro_scan(object):
 			nml = self.eqbm.get_surface_input(psiN = psiN)
 			nml.write(f"{sub_dir}/{filename}.in", force=True)
 			if self['system'] == 'ypi_server':
-				self.jobs.append(f"ideal_ball \"{sub_dir}/{filename}.in\"")
+				self._input_files.append(f"ideal_ball \"{sub_dir}/{filename}.in\"")
 			else:
 				compile_modules = systems[self['system']]['compile']
 				jobfile = open(f"{sub_dir}/{filename}.job",'w')
@@ -192,7 +268,7 @@ gs2 --build-config
 
 ideal_ball \"{sub_dir}/{filename}.in\"""")
 				jobfile.close()
-				self.jobs.append(f"sbatch \"{sub_dir}/{filename}.job\"")
+				self._input_files.append(f"sbatch \"{sub_dir}/{filename}.job\"")
 	
 	def get_all_runs(self):
 		def loop(n,variables={},runs=[]):
@@ -207,9 +283,9 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 				return runs
 		return loop(n=len(self.dimensions))
 				
-	def _make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None, group_runs = None):
+	def make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None, group_runs = None):
 		if checkSetup:
-			if not self._check_setup():
+			if not self.check_setup():
 				return
 		if directory is None:
 			directory = self.info['data_path']
@@ -221,12 +297,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		else:
 			runs = specificRuns
 		
-		if self['system'] in ['viking','archer2']:
-			compile_modules = systems[self['system']]['compile']
-			sbatch = "#!/bin/bash"
-			for key, val in self.inputs['sbatch'].items():
-				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
-			input_files = []
+		
 			
 		for run in runs:
 			sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.2g}" for name in self.inputs.dim_order])
@@ -241,58 +312,14 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 				subnml.write(f"{sub_dir}/{filename}.in", force=True)
 			else:
 				filename = f"itteration_{itt}"
-						
-			if self['system'] == 'ypi_server':
-				self.jobs.append(f"mpirun -np 8 gs2 \"{sub_dir}/{filename}.in\"")
-			elif self['system'] == 'viking':
-				jobfile = open(f"{sub_dir}/{filename}.job",'w')
-				jobfile.write(f"""{sbatch}
-
-{compile_modules}
-
-which gs2
-gs2 --build-config
-
-echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
-echo \"Input: {sub_dir}/{filename}.in\"
-gs2 \"{sub_dir}/{filename}.in\"
-echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
-				jobfile.close()
-				self.jobs.append(f"sbatch \"{sub_dir}/{filename}.job\"")
-			elif self['system'] == 'archer2':
-				input_files.append(f"{sub_dir}/{filename}.in")
-		if self['system'] == 'archer2':
-			pyth = open(f"{directory}/gyro.py",'w')
-			pyth.write(f"""import os
-from joblib import Parallel, delayed
-
-input_files = {input_files}
-
-def start_run(run):
-	os.system(f"srun --nodes=1 --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
-
-Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
-			pyth.close()
-		
-			jobfile = open(f"{directory}/gyro.job",'w')
-			jobfile.write(f"""{sbatch}
-
-{compile_modules}
-
-which gs2
-gs2 --build-config
-
-python {directory}/gyro.py &
-
-wait""")
-			jobfile.close()
-			self.jobs.append(f"sbatch \"{directory}/gyro.job\"")
+				
+			self._input_files.add(f"{sub_dir}/{filename}.in")
 	
 	def update_itteration(self):
 		self.info['itt'] = self.info['itt'] + 1
 		print(f"Updated to itteration {self.info['itt']}")
 	
-	def _create_run_info(self):
+	def create_run_info(self):
 		try:
 			from uuid import uuid4
 			ID = str(uuid4())
@@ -318,7 +345,7 @@ wait""")
 	
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
 		if self.info is None:
-			self._create_run_info()		
+			self.create_run_info()		
 		if directory is None:
 			directory = self.info['data_path']
 			
@@ -388,7 +415,7 @@ wait""")
 			filename = self.run_name
 			
 		if self.info is None:
-			self._create_run_info()
+			self.create_run_info()
 		if directory is None:
 			directory = self.info['data_path']
 		
@@ -426,7 +453,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			os.chdir(f"{self.path}")
 			return
 			
-		if not self._check_setup():
+		if not self.check_setup():
 			return
 			
 		
@@ -546,7 +573,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 	'''
 	def check_cancelled(self, directory = None, doPrint = True):
 		if self.info is None:
-			self._create_run_info()		
+			self.create_run_info()		
 		if directory is None:
 			directory = self.info['data_path']
 		if not self['gyro']:
@@ -586,7 +613,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 	
 	def rerun_cancelled(self, directory = None, checkSetup = True, group_runs = None):
 		if self.info is None:
-			self._create_run_info()
+			self.create_run_info()
 		if directory is None:
 			directory = self.info['data_path']
 		cancelled = self.check_cancelled(directory = directory, doPrint = False)
@@ -596,8 +623,8 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		for p, i, j, k, t in cancelled:
 			if os.path.exists(f"{directory}/{self['psiNs'][p]}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc"):
 				os.remove(f"{directory}/{self['psiNs'][p]}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc")
-		self._make_gyro_files(directory = directory, specificRuns = cancelled, group_runs = group_runs)
-		self._run_jobs()
+		self.make_gyro_files(directory = directory, specificRuns = cancelled, group_runs = group_runs)
+		self.run_jobs()
 	
 	def rerun(self, runs = None, nml = None, directory = None, group_runs = None):
 		if runs is None:
@@ -607,7 +634,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			print("ERROR: nml not given, if you wish to rerun with no changes please use nml = {}")
 			return
 			
-		self._check_setup()
+		self.check_setup()
 		
 		if type(nml) == str:
 			nml = f90nml.read(nml)
@@ -615,8 +642,8 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			self.namelist_diffs[p][i][j][k][t] = nml
 		if self.info:
 			self.info['itteration'] += 1
-		self._make_gyro_files(specificRuns = runs, directory = directory, group_runs = group_runs)
-		self._run_jobs()
+		self.make_gyro_files(specificRuns = runs, directory = directory, group_runs = group_runs)
+		self.run_jobs()
 	'''
 	
 	def load_run_set(self, filename = None):
