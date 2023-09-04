@@ -68,7 +68,7 @@ class myro_scan(object):
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
 		self.inputs.write_scan_input(filename = filename, directory = directory, doPrint = doPrint)
 	
-	def run_scan(self, n_jobs = None, gyro = None, ideal = None, directory = None, group_runs = None):
+	def run_scan(self, n_jobs = None, n_par = None, gyro = None, ideal = None, directory = None, group_runs = None):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
@@ -89,7 +89,7 @@ class myro_scan(object):
 			self.make_ideal_files(directory = run_path)
 		if self['gyro']:
 			self.make_gyro_files(directory = run_path, group_runs = group_runs)
-		self.run_jobs(n_jobs = n_jobs)
+		self.run_jobs(n_jobs = n_jobs, n_par = n_par)
 	
 	def check_setup(self, ideal = None, gyro = None):
 		if not self.inputs.check_scan():
@@ -225,7 +225,7 @@ Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for ru
 which gs2
 gs2 --build-config
 
-python {directory}/gyro.py &
+python {self.info['data_path']}/gyro.py &
 
 wait""")
 				jobfile.close()
