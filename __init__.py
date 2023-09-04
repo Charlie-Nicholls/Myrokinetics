@@ -1,5 +1,5 @@
-from .myro_reader import myro_read as myro
-from .myro_scanner import myro_scan
+from .reader import myro_read as myro
+from .scanner import myro_scan
 from .peqdsk_reader import peqdsk as readp
 from .geqdsk_reader import geqdsk as readg
 from .ncdf2dict import ncdf2dict as readnc

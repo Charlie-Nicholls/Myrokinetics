@@ -206,7 +206,7 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 				else:
 					filename = "gyro"
 					sbatch_n = sbatch
-				pyth = open(f"{filename}.py",'w')
+				pyth = open(f"{self.info['data_path']}/{filename}.py",'w')
 				pyth.write(f"""import os
 from joblib import Parallel, delayed
 
@@ -217,7 +217,7 @@ def start_run(run):
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 				pyth.close()
-				jobfile = open(f"{filename}.job",'w')
+				jobfile = open(f"{self.info['data_path']}/{filename}.job",'w')
 				jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
@@ -225,11 +225,11 @@ Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for ru
 which gs2
 gs2 --build-config
 
-python {self.info['data_path']}/gyro.py &
+python {self.info['data_path']}/{filename}.py &
 
 wait""")
 				jobfile.close()
-				os.system(f"sbatch \"{filename}.job\"")
+				os.system(f"sbatch \"{self.info['data_path']}/{filename}.job\"")
 			os.system(f"cd {cwd}")
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
