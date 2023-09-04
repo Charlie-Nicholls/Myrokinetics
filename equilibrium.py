@@ -10,12 +10,8 @@ class equilibrium(object):
 			directory = os.getcwd()
 		self.path = directory
 		self.load_inputs(inputs)
-		self.eq_data = self.kin_data = self.pyro = self._eq_lines = self._kin_lines = self.beta_prime_profile = self.shear_profile = None
+		self.eq_data = self.kin_data = self.pyro = self._eq_path = self._kin_path = self._template_path = self._eq_lines = self._kin_lines = self.beta_prime_profile = self.shear_profile = None
 		self.surface_namelists = {}
-		if self.inputs['eq_file']:
-			self.load_geqdsk()
-		if self.inputs['kin_file']:
-			self.load_kinetics()
 
 	def load_geqdsk(self, eq_file = None, directory = None):
 		from .geqdsk_reader import geqdsk
@@ -26,24 +22,27 @@ class equilibrium(object):
 			self.inputs.inputs['files']['eq_name'] = template_file
 			self.inputs.check_inputs()
 		
-		if directory is not None:
-			self.inputs.inputs['files']['eq_path'] = directory
-		elif self.inputs['eq_path'] is None and self.path is None:
-			self.inputs.inputs['files']['eq_path'] = os.getcwd()
-		elif self.inputs['eq_path'] is None:
-			self.inputs.inputs['files']['eq_path'] = self.path
-		if self.inputs['eq_path'] == "./":
-			self.inputs.inputs['files']['eq_path'] = os.getcwd()
+		if directory is None:
+			if self.inputs['eq_path'] is None and self.path is None:
+				self.inputs.inputs['files']['eq_path'] = os.getcwd()
+			elif self.inputs['eq_path'] is None:
+				self.inputs.inputs['files']['eq_path'] = self.path
+			if self.inputs['eq_path'] == "./":
+				self.inputs.inputs['files']['eq_path'] = os.getcwd()
+			directory = self.inputs.inputs['files']['eq_path']
+		if directory == "./":
+			directory = os.getcwd()
+		self._eq_path = directory
 
 		if self.surface_namelists:
 			self.surface_namelists = {}
 		if self.pyro:
 			self.pyro = None
 		
-		with open(os.path.join(self.inputs['eq_path'],self.inputs['eq_name'])) as efile:
+		with open(os.path.join(self._eq_path,self.inputs['eq_name'])) as efile:
 			self._eq_lines = efile.readlines()
 			
-		self.eq_data = geqdsk(filename = self.inputs['eq_name'], directory = self.inputs['eq_path'])
+		self.eq_data = geqdsk(filename = self.inputs['eq_name'], directory = self._eq_path)
 	
 	def load_kinetics(self, kin_file = None, kinetics_type = None, directory = None):
 		if self.inputs['kin_name'] is None and kin_file is None:
@@ -53,21 +52,24 @@ class equilibrium(object):
 			self.inputs.inputs['files']['kin_name'] = template_file
 			self.inputs.check_inputs()
 		
-		if directory is not None:
-			self.inputs.inputs['files']['kin_path'] = directory
-		elif self.inputs['kin_path'] is None and self.path is None:
-			self.inputs.inputs['files']['kin_path'] = os.getcwd()
-		elif self.inputs['kin_path'] is None:
-			self.inputs.inputs['files']['kin_path'] = self.path
-		if self.inputs['kin_path'] == "./":
-			self.inputs.inputs['files']['kin_path'] = os.getcwd()
+		if directory is None:
+			if self.inputs['kin_path'] is None and self.path is None:
+				self.inputs.inputs['files']['kin_path'] = os.getcwd()
+			elif self.inputs['kin_path'] is None:
+				self.inputs.inputs['files']['kin_path'] = self.path
+			if self.inputs['kin_path'] == "./":
+				self.inputs.inputs['files']['kin_path'] = os.getcwd()
+			directory = self.inputs.inputs['files']['kin_path']
+		if directory == "./":
+			directory = os.getcwd()
+		self._kin_path = directory
 		
 		if self.surface_namelists:
 			self.surface_namelists = {}
 		if self.pyro:
 			self.pyro = None
 		
-		with open(os.path.join(self.inputs['kin_path'],self.inputs['kin_name'])) as kfile:
+		with open(os.path.join(self._kin_path,self.inputs['kin_name'])) as kfile:
 			self._kin_lines = kfile.readlines()
 			
 		if kinetics_type is not None:
@@ -78,10 +80,10 @@ class equilibrium(object):
 		
 		if self.inputs['kinetics_type'].upper() == "SCENE":
 			import xarray as xr
-			self.kin_data = xr.open_dataset(os.path.join(self.inputs['kin_path'],self.inputs['kin_name']))
+			self.kin_data = xr.open_dataset(os.path.join(self._kin_path,self.inputs['kin_name']))
 		elif self.inputs['kinetics_type'].upper() in ["PEQDSK","PFILE"]:
 			from .peqdsk_reader import peqdsk
-			self.kin_data = peqdsk(filename = self.inputs['kin_name'], directory = self.inputs['kin_path'])
+			self.kin_data = peqdsk(filename = self.inputs['kin_name'], directory = self._kin_path)
 		else:
 			print(f"ERROR: Kinetics type {self.inputs['kinetics_type']} not recognised. Currently supported: SCENE, PEQDSK/pFile")
 	
@@ -108,24 +110,32 @@ class equilibrium(object):
 			self.inputs.inputs['files']['template_name'] = gs2_template
 			self.inputs.inputs['files']['template_path'] = template_dir
 		
-		if directory is not None:
-			self.inputs.inputs['files']['template_path'] = directory
-		elif self.inputs['template_path'] is None and self.path is None:
-			self.inputs.inputs['files']['template_path'] = os.getcwd()
-		elif self.inputs['template_path'] is None:
-			self.inputs.inputs['files']['template_path'] = self.path
-		if self.inputs['template_path'] == "./":
-			self.inputs.inputs['files']['template_path'] = os.getcwd()
+		if directory is None:
+			if self.inputs['template_path'] is None and self.path is None:
+				self.inputs.inputs['files']['template_path'] = os.getcwd()
+			elif self.inputs['template_path'] is None:
+				self.inputs.inputs['files']['template_path'] = self.path
+			if self.inputs['template_path'] == "./":
+				self.inputs.inputs['files']['template_path'] = os.getcwd()
+			directory = self.inputs.inputs['files']['template_path']
+		if directory == "./":
+			directory = os.getcwd()
+		self._template_path = directory
 		
-		self._template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
+		if not self._eq_path:
+			self.load_geqdsk(directory = directory)
+		if not self._kin_path:
+			self.load_kinetics(directory = directory)
+		
+		self._template_lines = f90nml.read(os.path.join(self._template_path,self.inputs['template_name']))
 
 		kin_type = 'pFile' if self.inputs['kinetics_type'].upper() == 'PEQDSK' else self.inputs['kinetics_type'].upper()
 		self.pyro = Pyro(
-			eq_file = Path(self.inputs['eq_path']) / self.inputs['eq_name'],
+			eq_file = Path(self._eq_path) / self.inputs['eq_name'],
 		 	eq_type = "GEQDSK",
-		 	kinetics_file = Path(self.inputs['kin_path']) / self.inputs['kin_name'],
+		 	kinetics_file = Path(self._kin_path) / self.inputs['kin_name'],
 		 	kinetics_type = kin_type,
-		 	gk_file = Path(self.inputs['template_path']) / self.inputs['template_name'],
+		 	gk_file = Path(self._template_path) / self.inputs['template_name'],
 		 	)
 		self.pyro.gk_code = "GS2"
 		

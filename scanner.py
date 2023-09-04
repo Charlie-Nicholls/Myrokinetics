@@ -47,12 +47,18 @@ class myro_scan(object):
 		return self.inputs.keys()
 	
 	def load_geqdsk(self, eq_file, directory = None):
+		if directory:
+			self.inputs.inputs['files']['eq_path'] = directory
 		self.eqbm.load_geqdsk(eq_file = eq_file, directory = directory)
 	
 	def load_kinetics(self, kin_file, kinetics_type = None, directory = None):
+		if directory:
+			self.inputs.inputs['files']['kin_path'] = directory
 		self.eqbm.load_kinetics(self, kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
 	
 	def load_pyro(self, template_file = None, directory = None):
+		if directory:
+			self.inputs.inputs['files']['template_path'] = directory
 		self.eqbm.load_pyro(template_file = template_file, directory = directory)
 		
 	def load_inputs(self, input_file = None, directory = None):
@@ -127,7 +133,7 @@ class myro_scan(object):
 			os.mkdir(self.info['data_path'])
 
 		if not self.eqbm.pyro:
-			self.eqbm.load_pyro()
+			self.load_pyro()
 
 		os.system(f"cp \"{self.inputs['template_path']}/{self.inputs['template_name']}\" \"{self.info['data_path']}/{self.inputs['template_name']}\"")
 		os.system(f"cp \"{self.inputs['kin_path']}/{self.inputs['kin_name']}\" \"{self.info['data_path']}/{self.inputs['kin_name']}\"")

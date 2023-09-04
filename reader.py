@@ -194,6 +194,9 @@ class myro_read(object):
 		else:
 			print(f"ERROR: File Type {filetype} Not Found")
 			return
+		if lines is None:
+			print(f"ERROR: {filetype} lines not saved")
+			return
 		if filename:
 			name = filename
 		if not directory:
@@ -528,6 +531,7 @@ class myro_read(object):
 			self.write_template_file(directory = directory)
 			
 		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
+		self.eqbm.load_pyro(directory=directory)
 	
 	def write_gs2_input(self, indexes = None, run = None, filename = None, directory = None):
 		if directory is None and self.directory is None:
