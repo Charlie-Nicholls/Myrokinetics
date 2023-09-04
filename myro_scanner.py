@@ -201,7 +201,7 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 				self._input_files.remove(input_list[i])
 			for n in range(n_par):
 				if n_par > 1:
-					sbatch_n = sbatch.replace(f"{pre.inputs['sbatch']['output']}",f"{pre.inputs['sbatch']['output']}_{n}")
+					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
 					filename = f"gyro_{n}"
 				else:
 					filename = "gyro"
