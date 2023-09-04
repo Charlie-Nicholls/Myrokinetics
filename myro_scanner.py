@@ -141,7 +141,7 @@ class myro_scan(object):
 	def clear_jobs(self):
 		self._input_files = set()
 	
-	def run_jobs(self, n_jobs = None):
+	def run_jobs(self, n_jobs = None, n_par = None):
 		if self['system'] in ['viking','archer2']:
 			cwd = os.getcwd()
 			compile_modules = systems[self['system']]['compile']
@@ -187,6 +187,8 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 		if self['system'] == 'archer2':
 			os.system(f"cd {self.info['data_path']}")
 			input_lists = {}
+			if n_par is None:
+				n_par = 1
 			for n in range(n_par):
 				input_lists[n] = []
 			if n_jobs == None or n_jobs*n_par > len(self._input_files):
@@ -198,7 +200,13 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 				input_lists[i%n_par].append(input_list[i])
 				self._input_files.remove(input_list[i])
 			for n in range(n_par):
-				pyth = open(f"gyro_{n}.py",'w')
+				if n_par > 1:
+					sbatch_n = sbatch.replace(f"{pre.inputs['sbatch']['output']}",f"{pre.inputs['sbatch']['output']}_{n}")
+					filename = f"gyro_{n}"
+				else:
+					filename = "gyro"
+					sbatch_n = sbatch
+				pyth = open(f"{filename}.py",'w')
 				pyth.write(f"""import os
 from joblib import Parallel, delayed
 
@@ -209,8 +217,8 @@ def start_run(run):
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 				pyth.close()
-				jobfile = open(f"gyro_{n}.job",'w')
-				jobfile.write(f"""{sbatch}
+				jobfile = open(f"{filename}.job",'w')
+				jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
 
