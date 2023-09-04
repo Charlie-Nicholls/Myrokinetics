@@ -538,15 +538,31 @@ class myro_read(object):
 			directory = "./"
 		elif directory is None:
 			directory = self.directory
+		if run is None and indexes is None:
+			print("ERROR: run and indexes can not both be None")
+			return
 
 		if filename is None:
 			filename = f"itteration_{self.info['itteration']}.in"
-			
+		
+		if run is None:
+			if len(indexes) != len(self.inputs.dimensions):
+				print(f"ERROR: indexes must be of length {len(self.dimensions)}, {[self.inputs.dim_order]}")
+				return None
+			run = {}
+			for i, dim in zip(indexes,self.inputs.dimensions.values()):
+				run[dim.name] = dim.values[i]
+				
+		run_id = self.get_run_id(run=run)
+		
 		if self.eqbm is None:
 			self.load_equilibrium(directory = directory)
+		if 'nml_diffs' in self.data['gyro'][run_id].keys():
+			namelist_diff = self.data['gyro'][run_id]['nml_diffs']
+		else:
+			namelist_diff = {}
 		
-		#namelist_diff = self['namelist_diffs'][p][i][j][k]
-		nml = self.eqbm.get_gyro_input(run = run, indexes = indexes)
+		nml = self.eqbm.get_gyro_input(run = run, indexes = indexes, namelist_diff = namelist_diff)
 		
 		if not nml:
 			return
