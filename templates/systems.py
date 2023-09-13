@@ -30,7 +30,9 @@ ulimit -s unlimited
 export PATH=${PATH}:/work/e281/e281/cnicholls/gs2/bin
 source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 
-save_archer2 = ""
+save_archer2 = """module load PrgEnv-gnu
+module load cray-python
+source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 
 sbatch_archer2 = {
 	'time': '24:00:00',

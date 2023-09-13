@@ -219,7 +219,9 @@ from joblib import Parallel, delayed
 input_files = {input_lists[n]}
 
 def start_run(run):
+	print(f"Input: {run}")
 	os.system(f"srun --nodes=1 --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
+	os.system(f"touch {run[:-3]}.fin")
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 				pyth.close()
@@ -379,7 +381,10 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		if gyro:
 			for run in self.get_all_runs():
 				sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.2g}" for name in self.inputs.dim_order])
-				if os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
+				
+				if self['system'] != 'archer2' and os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
+					finished_gyro.append(run)
+				elif self['system'] == 'archer2' and os.path.exists(f"{sub_dir}/itteration_0.fin"):
 					finished_gyro.append(run)
 				else:
 					unfinished_gyro.append(run)
@@ -438,19 +443,35 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			return
 		
 		if self['system'] in ['viking','archer2'] and not SlurmSave:
+			save_modules = systems[self['system']]['save']
 			os.chdir(f"{directory}")
 			self._save_for_save(filename = "save_info", directory = directory)
 			job = open(f"save_out.job",'w')
-			job.write(f"""#!/bin/bash
-#SBATCH --time=36:00:00
+			if self['system'] == 'viking':
+				job.write(f"""#!/bin/bash
+#SBATCH --time=8:00:00
 #SBATCH --job-name={self.info['run_name']}
 #SBATCH --ntasks=1
 #SBATCH --mem=10gb
-#SBATCH --output=save_out.slurm
+#SBATCH --output={directory}/save_out.slurm
 
 {save_modules}
 
 python {directory}/save_out.py""")
+			if self['system'] == 'archer2':
+				job.write(f"""#!/bin/bash
+#SBATCH --time=8:00:00
+#SBATCH --job-name={self.info['run_name']}
+#SBATCH --partition=serial
+#SBATCH --qos=serial
+#SBATCH --ntasks=1
+#SBATCH --mem=10gb
+#SBATCH --output={directory}/save_out.slurm
+
+{save_modules}
+
+python {directory}/save_out.py &
+wait""")
 			job.close()
 			pyth = open(f"save_out.py",'w')
 			pyth.write(f"""from Myrokinetics import myro_scan
