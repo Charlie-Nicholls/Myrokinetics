@@ -228,8 +228,8 @@ class equilibrium(object):
 			nml['theta_grid_eik_knobs']['ntheta_geometry'] = 4096
 
 		if self.inputs['Ideal']:
-			beta_mul = self.inputs['beta_prime_max']/beta_prim
-			beta_div = beta_prim/self.inputs['beta_prime_min']
+			beta_mul = abs(self.inputs['beta_prime_max']/beta_prim)
+			beta_div = abs(beta_prim/self.inputs['beta_prime_min'])
 
 			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': self.inputs['shat_min'], 'shat_max': self.inputs['shat_max'], 'beta_div': beta_div, 'beta_mul': beta_mul}
 		try:
@@ -270,6 +270,13 @@ class equilibrium(object):
 			
 		for dim_name, dim in self.inputs.single_parameters.items():
 			nml = dim.single_edit_nml(nml)
+		
+		if self.inputs['knobs']['fixed_delt'] == False:
+			ky = nml['kt_grids_single_parameters']['aky']
+			delt = 0.04/ky
+			if delt > 0.01:
+				delt = 0.01
+			nml['knobs']['delt'] = delt
 			
 		for key in namelist_diff.keys():
 			for skey in namelist_diff[key].keys():
