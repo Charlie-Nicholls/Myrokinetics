@@ -467,6 +467,7 @@ python {directory}/save_out.py""")
 #SBATCH --ntasks=1
 #SBATCH --mem=10gb
 #SBATCH --output={directory}/save_out.slurm
+#SBATCH --account={self.inputs['sbatch']['account']}
 
 {save_modules}
 
