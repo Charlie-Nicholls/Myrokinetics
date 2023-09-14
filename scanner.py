@@ -219,9 +219,9 @@ from joblib import Parallel, delayed
 input_files = {input_lists[n]}
 
 def start_run(run):
-	print(f"Input: {run}")
+	print(f"Input: {{run}}")
 	os.system(f"srun --nodes=1 --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
-	os.system(f"touch {run[:-3]}.fin")
+	os.system(f"touch {{run[:-3]}}.fin")
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 				pyth.close()
