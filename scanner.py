@@ -221,7 +221,7 @@ input_files = {input_lists[n]}
 def start_run(run):
 	os.system(f"echo \\\"Input: {{run}}\\\"")
 	os.system(f"srun --nodes=1 --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
-	if os.path.exists(f"{run[:-3]}.out.nc"):
+	if os.path.exists(f\\\"{{run[:-3]}}.out.nc\\\"):
 		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
