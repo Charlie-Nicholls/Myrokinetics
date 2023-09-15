@@ -215,6 +215,7 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 				pyth = open(f"{self.info['data_path']}/{filename}.py",'w')
 				pyth.write(f"""import os
 from joblib import Parallel, delayed
+from time import sleep
 
 input_files = {input_lists[n]}
 
@@ -223,6 +224,9 @@ def start_run(run):
 	os.system(f"srun --nodes=1 --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
 	if os.path.exists(f\"{{run[:-3]}}.out.nc\"):
 		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
+	else:
+		sleep(60)
+		start_run(run)
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 				pyth.close()
