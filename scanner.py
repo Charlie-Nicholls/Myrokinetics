@@ -12,17 +12,12 @@ GYROKINETIC SCAN PERFORMER
 '''
 
 class myro_scan(object):
-	def __init__(self, input_file = None, directory = "./", run_name = None):
+	def __init__(self, input_file = None, directory = "./"):
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
-		self.info = self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
+		self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
 		self._input_files = set()
-		if run_name:
-			self.run_name = run_name
-		elif input_file:
-			self.run_name = input_file.split("/")[-1].split(".")[0]
-		
 		self.load_inputs(input_file = input_file, directory = directory)
 		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
 	
@@ -80,17 +75,14 @@ class myro_scan(object):
 		elif directory is None:
 			directory = self.path
 		
-		if not self.info:
-			self.create_run_info()
-		#else:
-			#self.info['itteration'] += 1
-		run_path = self.info['data_path']
+		if not self.check_setup(ideal = ideal, gyro = gyro):
+			return
+			
+		run_path = self.inputs['data_path']
 		
 		if not os.path.exists(run_path):
 			os.mkdir(run_path)
 		
-		if not self.check_setup(ideal = ideal, gyro = gyro):
-			return
 		if self['ideal']:
 			self.make_ideal_files(directory = run_path)
 		if self['gyro']:
@@ -116,8 +108,7 @@ class myro_scan(object):
 			print("ERROR: ideal must be boolean")
 			return False
 			
-		if self.info is None:
-			self.create_run_info()
+		self.inputs.create_run_info()
 
 		if not self.inputs['eq_name'] or not self.inputs['kin_name']:
 			if not self.inputs['eq_name']:
@@ -129,18 +120,30 @@ class myro_scan(object):
 		if gyro and self.namelist_diffs is None:
 			self.namelist_diffs = {}
 		
-		if not os.path.exists(self.info['data_path']):
-			os.mkdir(self.info['data_path'])
+		if not os.path.exists(self.inputs['data_path']):
+			os.mkdir(self.inputs['data_path'])
 
 		if not self.eqbm.pyro:
 			self.load_pyro()
-
-		os.system(f"cp \"{self.inputs['template_path']}/{self.inputs['template_name']}\" \"{self.info['data_path']}/{self.inputs['template_name']}\"")
-		os.system(f"cp \"{self.inputs['kin_path']}/{self.inputs['kin_name']}\" \"{self.info['data_path']}/{self.inputs['kin_name']}\"")
-		os.system(f"cp \"{self.inputs['eq_path']}/{self.inputs['eq_name']}\" \"{self.info['data_path']}/{self.inputs['eq_name']}\"")
-		if not self.inputs.input_name:
-			self.inputs.input_name = f"{self.run_name}.in"
-		self.write_scan_input(filename = self.inputs.input_name, directory = self.info['data_path'],doPrint=False)
+		
+		if self.inputs['data_path'] != self.inputs['template_path']:
+			os.system(f"cp \"{self.inputs['template_path']}/{self.inputs['template_name']}\" \"{self.inputs['data_path']}/{self.inputs['template_name']}\"")
+		if self.inputs['data_path'] != self.inputs['kin_path']:
+			os.system(f"cp \"{self.inputs['kin_path']}/{self.inputs['kin_name']}\" \"{self.inputs['data_path']}/{self.inputs['kin_name']}\"")
+		if self.inputs['data_path'] != self.inputs['eq_path']:
+			os.system(f"cp \"{self.inputs['eq_path']}/{self.inputs['eq_name']}\" \"{self.inputs['data_path']}/{self.inputs['eq_name']}\"")
+		if self.inputs['input_name']:
+			input_name = self.inputs['input_name']
+		elif self.inputs['info']['run_name']:
+			input_name = f"{self.inputs['info']['run_name']}.in"
+		else:
+			input_name = "myro.in"
+		input_path = self.inputs['input_path'] if self.inputs['input_path'] else self.path
+		self.inputs.inputs['input_name'] = input_name
+		self.inputs.inputs['input_path'] = input_path
+		self.write_scan_input(filename = input_name, directory = input_path, doPrint=False)
+		if input_path != self.inputs['data_path']:
+			self.write_scan_input(filename = input_name, directory = self.inputs['data_path'], doPrint=False)
 
 		return True
 	
@@ -191,7 +194,7 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 					self._input_files.remove(input_file)
 					n_jobs -= 1
 		if self['system'] == 'archer2':
-			os.system(f"cd {self.info['data_path']}")
+			os.system(f"cd {self.inputs['data_path']}")
 			input_lists = {}
 			if n_par is None:
 				n_par = 1
@@ -207,12 +210,12 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 				self._input_files.remove(input_list[i])
 			for n in range(n_par):
 				if n_par > 1:
-					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
+					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['data_path']}/{self.inputs['sbatch']['output']}_{n}")
 					filename = f"gyro_{n}"
 				else:
 					filename = "gyro"
 					sbatch_n = sbatch
-				pyth = open(f"{self.info['data_path']}/{filename}.py",'w')
+				pyth = open(f"{self.inputs['data_path']}/{filename}.py",'w')
 				pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
@@ -230,7 +233,7 @@ def start_run(run):
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 				pyth.close()
-				jobfile = open(f"{self.info['data_path']}/{filename}.job",'w')
+				jobfile = open(f"{self.inputs['data_path']}/{filename}.job",'w')
 				jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
@@ -238,11 +241,11 @@ Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for ru
 which gs2
 gs2 --build-config
 
-python {self.info['data_path']}/{filename}.py &
+python {self.inputs['data_path']}/{filename}.py &
 
 wait""")
 				jobfile.close()
-				os.system(f"sbatch \"{self.info['data_path']}/{filename}.job\"")
+				os.system(f"sbatch \"{self.inputs['data_path']}/{filename}.job\"")
 			os.system(f"cd {cwd}")
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
@@ -250,7 +253,7 @@ wait""")
 			if not self.check_setup():
 				return
 		if directory is None:
-			directory = self.info['data_path']
+			directory = self.inputs['data_path']
 		if specificRuns:
 			runs = specificRuns
 		else:
@@ -278,7 +281,7 @@ wait""")
 				jobfile = open(f"{sub_dir}/{filename}.job",'w')
 				jobfile.write(f"""#!/bin/bash
 #SBATCH --time=05:00:00
-#SBATCH --job-name={self.info['run_name']}
+#SBATCH --job-name={self.inputs['run_name']}
 #SBATCH --ntasks=1
 #SBATCH --output={sub_dir}/{filename}.slurm
 
@@ -309,7 +312,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			if not self.check_setup():
 				return
 		if directory is None:
-			directory = self.info['data_path']
+			directory = self.inputs['data_path']
 		if not specificRuns:
 			check = self.check_complete(directory = directory, doPrint = False, gyro = True, ideal = False)
 			if check['gyro_complete']:
@@ -327,8 +330,8 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			for f in glob.glob(r'itteration_*.in'):
 				existing_inputs.append([x for x in f if x.isdigit()])
 			itt = max([eval("".join(x)) for x in existing_inputs],default=-1)
-			if itt < self.info['itteration']:
-				filename = f"itteration_{self.info['itteration']}"
+			if itt < self.inputs['itteration']:
+				filename = f"itteration_{self.inputs['itteration']}"
 				subnml = self.eqbm.get_gyro_input(run = run)
 				subnml.write(f"{sub_dir}/{filename}.in", force=True)
 			else:
@@ -337,38 +340,17 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			self._input_files.add(f"{sub_dir}/{filename}.in")
 	
 	def update_itteration(self):
-		self.info['itt'] = self.info['itt'] + 1
-		print(f"Updated to itteration {self.info['itt']}")
+		self.inputs['info']['itteration'] = self.inputs['itteration'] + 1
+		print(f"Updated to itteration {self.inputs['itteration']}")
 	
 	def create_run_info(self):
-		try:
-			from uuid import uuid4
-			ID = str(uuid4())
-		except:
-			print("ERROR: unable to import uuid module, setting ID to None")
-			ID = None
-			
-		path = self.path
-		if path[:2] == "./":
-			path = os.getcwd() + path[1:]
-			
-		if self.run_name is None:
-			run_path = os.path.join(path, str(ID))
-		else:	
-			run_path = os.path.join(path, self.run_name)
-		try:
-			from datetime import datetime as dt
-			date = dt.now().strftime("%d/%m/%Y, %H:%M:%S")
-		except:
-			print("ERROR: unable to import datetime module, setting run date to None")
-			date = None
-		self.info = {'run_name': self.run_name, 'run_uuid': ID, 'data_path': run_path, 'input_name': self.inputs.input_name, 'eq_name': self.inputs['eq_name'], 'kin_name': self.inputs['kin_name'], 'template_name': self.inputs['template_name'], 'kinetics_type': self.inputs['kinetics_type'], 'run_data': date, 'itteration': 0}
+		self.inputs.create_run_info()
 	
 	def check_complete(self, directory = None, doPrint = True, ideal = None, gyro = None):
-		if self.info is None:
-			self.create_run_info()		
+		if self.inputs['data_path'] is None:
+			self.inputs.create_run_info()
 		if directory is None:
-			directory = self.info['data_path']
+			directory = self.inputs['data_path']
 			
 		if gyro is None:
 			gyro = self['gyro']
@@ -427,7 +409,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			filename = "save_info"
 		if directory is None:
 			directory = self.path
-		savez(f"{directory}/{filename}", name_diffs = self.namelist_diffs, info = self.info)
+		savez(f"{directory}/{filename}", name_diffs = self.namelist_diffs)
 	
 	def quick_save(self, filename = None, directory = None, SlurmSave = False):
 		self.save_out(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = True)
@@ -438,10 +420,10 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		elif filename is None:
 			filename = self.run_name
 			
-		if self.info is None:
-			self.create_run_info()
+		if self.inputs['data_path'] is None:
+			self.inputs.create_run_info()
 		if directory is None:
-			directory = self.info['data_path']
+			directory = self.inputs['data_path']
 		
 		if not self['gyro'] and not self['ideal']:
 			print("Error: Both Gyro and Ideal are False")
@@ -455,7 +437,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			if self['system'] == 'viking':
 				job.write(f"""#!/bin/bash
 #SBATCH --time=8:00:00
-#SBATCH --job-name={self.info['run_name']}
+#SBATCH --job-name={self.inputs['run_name']}
 #SBATCH --ntasks=1
 #SBATCH --mem=10gb
 #SBATCH --output={directory}/save_out.slurm
@@ -466,7 +448,7 @@ python {directory}/save_out.py""")
 			if self['system'] == 'archer2':
 				job.write(f"""#!/bin/bash
 #SBATCH --time=8:00:00
-#SBATCH --job-name={self.info['run_name']}
+#SBATCH --job-name={self.inputs['run_name']}
 #SBATCH --partition=serial
 #SBATCH --qos=serial
 #SBATCH --ntasks=1
@@ -524,7 +506,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
-						existing_inputs.append([x for x in f if x.isdigit()])
+			         			existing_inputs.append([x for x in f if x.isdigit()])
 					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
 					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
 					
@@ -610,13 +592,13 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			}
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
-		savez(f"{self.path}/{filename}", inputs = self.inputs.inputs, data = data, run_info = self.info, files = self.file_lines)
+		savez(f"{self.path}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
 	'''
 	def check_cancelled(self, directory = None, doPrint = True):
-		if self.info is None:
+		if self.inputs['data_path'] is None:
 			self.create_run_info()		
 		if directory is None:
-			directory = self.info['data_path']
+			directory = self.inputs['data_path']
 		if not self['gyro']:
 			print("Only Used For Gyro Runs")
 			return
@@ -653,10 +635,10 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			return cancelled
 	
 	def rerun_cancelled(self, directory = None, checkSetup = True, group_runs = None):
-		if self.info is None:
+		if self.inputs['data_path'] is None:
 			self.create_run_info()
 		if directory is None:
-			directory = self.info['data_path']
+			directory = self.inputs['data_path']
 		cancelled = self.check_cancelled(directory = directory, doPrint = False)
 		if len(cancelled) == 0:
 			print("No Cancelled Runs")
@@ -681,8 +663,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			nml = f90nml.read(nml)
 		for p,i,j,k,t in runs:
 			self.namelist_diffs[p][i][j][k][t] = nml
-		if self.info:
-			self.info['itteration'] += 1
+		self.inputs.inputs['itteration'] += 1
 		self.make_gyro_files(specificRuns = runs, directory = directory, group_runs = group_runs)
 		self.run_jobs()
 	'''
@@ -707,5 +688,5 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		with load(f"{directory}/{filename}",allow_pickle = True) as obj:
 			nd = obj['name_diffs']
 			info = obj['info'].item()
-			self.info = info
+			self.inputs = info
 			self.namelist_diffs = nd

@@ -85,12 +85,9 @@ class myro_read(object):
 		key = key.lower()
 		if key == "inputs":
 			return self.inputs.inputs
-			self.print_info()
 			
 		elif key in self.data.keys():
 			return self.data[key]
-		elif key in self.info.keys():
-			return self.info[key]
 		elif key in self.files.keys():
 			return self.files[key]
 		
@@ -140,7 +137,7 @@ class myro_read(object):
         	self.inputs.print_inputs()
 
 	def print_info(self):
-		for key, val in self.info.items():
+		for key, val in self.inputs['info'].items():
         		print(f"{key} = {val}")
 		
 	def _print_file(self, filetype = ''):
@@ -247,16 +244,6 @@ class myro_read(object):
 			except:
 				print(f"Could not load file {os.path.join(self.directory,self.filename)}.npz")
 				return False
-		
-		try:
-			self.info = data_in['run_info'].item()
-			possible_info = ['run_name','run_uuid','data_path','input_file','eq_file_name','template_file_name','kin_file_name',
-			'kinetics_type','run_data']
-			for key in [x for x in possible_info if x not in self.info.keys()]:
-				self.info[key] = None
-		except:
-			print("ERROR: could not load Run Info")
-			self.info = None
 		try:
 			self.data = data_in['data'].item()
 			possible_data = ['gyro','ideal_data','equilibrium','_run_keys','quasilinear']
@@ -276,8 +263,6 @@ class myro_read(object):
 		try:
 			self.inputs = scan_inputs(input_dict = data_in['inputs'].item())
 			self.dimensions = self.inputs.dimensions
-			if self.info:
-				self.inputs.input_name = self.info['input_file']
 		except:
 			print("ERROR: could not load Inputs")
 			self.inputs = None
@@ -292,7 +277,7 @@ class myro_read(object):
 	def save_file(self, filename = None, directory = "./"):
 		if filename == None:
 			filename = self['run_name']
-		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = self.data, run_info = self.info, files = self.files, verify = self.verify)
+		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = self.data, files = self.files, verify = self.verify)
 		
 	def _verify_run(self):
 		if not self['Gyro']:
@@ -543,7 +528,7 @@ class myro_read(object):
 			return
 
 		if filename is None:
-			filename = f"itteration_{self.info['itteration']}.in"
+			filename = f"itteration_{self.inputs['itteration']}.in"
 		
 		if run is None:
 			if len(indexes) != len(self.inputs.dimensions):

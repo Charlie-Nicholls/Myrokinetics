@@ -3,12 +3,6 @@ import f90nml
 from copy import deepcopy, copy
 from .templates import dim_lookup, template_dir, gs2_template, inputs_template, systems
 
-possible_inputs = {
-	'files': ['eq_name','eq_path','kin_name','kin_path','kin_type','template_name','template_path'],
-	'knobs': ['gyro','ideal','miller','system','fixed_delt','epar','num_shear_ideal','num_beta_ideal'],
-	'dimension_n': ['type','values','min','max','num'],
-	}
-
 possible_keys = {
 	'files': {
 	'eq_name': ['eq_name','eq','equilibrium','eq_file'],
@@ -18,6 +12,8 @@ possible_keys = {
 	'kin_type': ['kin_type','kinetics_type'],
 	'template_name': ['template_name','template','gk_file','template_file'],
 	'template_path': ['template_path','template_dir','template_directory'],
+	'input_name': ['input_name','input','input_file'],
+	'input_path': ['input_path','input_dir','input_directory'],
 	},
 	'knobs': {
 	'miller': ['miller','mill'],
@@ -28,6 +24,20 @@ possible_keys = {
 	'epar': ['epar','write_epar'],
 	'num_shear_ideal': ['num_shat_ideal','n_shat_ideal','shat_ideal_num','shat_ideal_n','ideal_shat_n','idea_shat_num','num_shear_ideal','n_shear_ideal','shear_ideal_num','shear_ideal_n','ideal_shear_n','idea_shear_num'],
 	'num_beta_ideal': ['num_beta_ideal','n_beta_ideal','beta_ideal_num','beta_ideal_n','ideal_beta_n','idea_beta_num','num_beta_prime_ideal','n_beta_prime_ideal','beta_prime_ideal_num','beta_prime_ideal_n','ideal_beta_prime_n','ideal_beta_prime_num'],
+	},
+	'info': {
+	'run_name': ['run_name','name'],
+	'run_uuid': ['run_uuid','uuid','run_id','id'],
+	'run_date': ['run_date','date','time','datetime','timedate'],
+	'data_path': ['data_path'],
+	'itteration': ['itteration','itt'],
+	},
+	'dimension_n': {
+	'type': ['type'],
+	'values': ['values','vals'],
+	'min': ['min','minimum'],
+	'max': ['max','maximum'],
+	'num': ['num','number','len'],
 	},
 	}
 
@@ -41,6 +51,8 @@ default_inputs = {'files': {
 	'kin_type': 'PEQDSK',
 	'template_name': None,
 	'template_path': None,
+	'input_name': None,
+	'input_path': None,
 	},
 	'knobs': {
 	'gyro': True,
@@ -51,6 +63,13 @@ default_inputs = {'files': {
 	'epar': False,
 	'num_shear_ideal': None,
 	'num_beta_ideal': None,
+	},
+	'info': {
+	'run_name': None,
+	'run_uuid': None,
+	'run_date': None,
+	'data_path': None,
+	'itteration': 0,
 	},
 	}
 
@@ -111,6 +130,20 @@ class scan_inputs(object):
 			sh[dim_id] = len(self.dimensions[dim_type])
 		return sh
 	
+	def load_inputs(self, filename = None, directory = "./"):
+		if self.input_name is None and filename is None:
+			filename = input("Input File Name: ")
+			if "." not in filename:
+				filename = filename + ".in"
+		elif self.input_name is None:
+			if "." not in filename:
+				filename = filename + ".in"
+			self.input_name = filename
+
+		self.inputs = f90nml.read(f"{directory}/{self.input_name}")
+		self.check_inputs()
+		self.load_dimensions()
+	
 	def load_input_dict(self, dic):
 		if not self.inputs:
 			self.inputs = f90nml.Namelist()
@@ -130,12 +163,16 @@ class scan_inputs(object):
 			for skey in defaults[key]:
 				if skey not in self.inputs[key]:
 					self.inputs[key][skey] = defaults[key][skey]
-		for key in ['knobs','files']:
+		for key in ['knobs','files','info']:
 			for skey in self.inputs[key]:
-				if skey not in possible_inputs[key]:
+				if skey not in possible_keys[key]:
 					print(f"ERROR: {skey} is not a valid {key} input")
 					del(self.inputs[key][skey])
-
+		if self.inputs['files']['input_name'] is None and self.inputs.input_name:
+			self.inputs['files']['input_name'] = self.inputs.input_name
+		if self.inputs['files']['input_path'] is None and self.inputs['files']['input_name']:
+			self.inputs['files']['input_path'] = self.path
+		
 		if not self.inputs['files']['template_name']:
 			self.inputs['files']['template_name'] = gs2_template
 			self.inputs['files']['template_path'] = template_dir
@@ -157,9 +194,9 @@ class scan_inputs(object):
 			for skey in sbatch:
 				if skey not in self.inputs['sbatch']:
 					if skey == 'job-name':
-						self.inputs['sbatch'][skey] = self.input_name.split('/')[-1].split('.')[0]
+						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0]
 					if skey == 'output':
-						self.inputs['sbatch'][skey] = self.input_name.split('/')[-1].split('.')[0] + ".slurm"
+						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0] + ".slurm"
 					else:
 						self.inputs['sbatch'][skey] = sbatch[skey]
 					
@@ -169,7 +206,7 @@ class scan_inputs(object):
 				del(self.inputs['single_parameters'][key])
 		for key in [x for x in self.inputs if 'dimension_' in x]:
 			for skey in self.inputs[key]:
-				if skey not in possible_inputs['dimension_n']:
+				if skey not in possible_keys['dimension_n']:
 					print(f"ERROR: {skey} is not a valid {key} input")
 					del(self.inputs[key][skey])
 			for skey in ['type','values','min','max','num']:
@@ -199,7 +236,7 @@ class scan_inputs(object):
 		if 'psin' not in self.dimensions:
 			print("ERROR: psiN must be specified as single parameter or scan dimension")
 			valid = False
-
+		
 		if self['ideal']:
 			if self['num_shear_ideal'] is None and self['n_shat']:
 				self.inputs['knobs']['num_shear_ideal'] = self['n_shat']
@@ -219,20 +256,40 @@ class scan_inputs(object):
 				valid = False
 
 		return valid
-
-	def load_inputs(self, filename = None, directory = "./"):
-		if self.input_name is None and filename is None:
-			filename = input("Input File Name: ")
-			if "." not in filename:
-				filename = filename + ".in"
-		elif self.input_name is None:
-			if "." not in filename:
-				filename = filename + ".in"
-			self.input_name = filename
-
-		self.inputs = f90nml.read(f"{directory}/{self.input_name}")
-		self.check_inputs()
-		self.load_dimensions()
+		
+	def create_run_info(self):
+		if self.inputs['info']['run_uuid'] is None:
+			try:
+				from uuid import uuid4
+				self.inputs['info']['run_uuid'] = str(uuid4())
+			except:
+				print("ERROR: unable to import uuid module, setting ID to None")
+				self.inputs['info']['run_uuid'] = None
+		if self.inputs['info']['run_name'] is None:
+			if self.inputs['files']['input_name']:
+				self.inputs['info']['run_name'] = self.inputs['files']['input_name'].split("/")[-1].split(".")[0]
+		if self.inputs['info']['data_path'] == './':
+			self.inputs['info']['data_path'] = os.getcwd()
+		if self.inputs['info']['data_path'] is None:
+			path = self.path
+			if path[:2] == "./":
+				path = os.getcwd() + path[1:]
+			if self.inputs['info']['run_name']:
+				self.inputs['info']['data_path'] = os.path.join(path, self.inputs['info']['run_name'])
+			elif self.inputs['info']['run_uuid']:
+				self.inputs['info']['data_path'] = os.path.join(path, self.inputs['info']['run_uuid'])
+			else:
+				self.inputs['info']['data_path'] = os.path.join(path, "myro_run")
+			
+		if self.inputs['info']['run_date'] is None:
+			try:
+				from datetime import datetime as dt
+				self.inputs['info']['run_date'] = dt.now().strftime("%d/%m/%Y, %H:%M:%S")
+			except:
+				print("ERROR: unable to import datetime module, setting run date to None")
+				self.inputs['info']['run_date'] = None
+		if self.inputs['info']['itteration'] is None:
+			self.inputs['info']['itteration'] = 0
 	
 	def load_dimensions(self):
 		dimensions = {}
@@ -292,13 +349,15 @@ class scan_inputs(object):
 		elif directory is None:
 			directory = self.path
 
-		if self.input_name is None and filename is None:
+		if self.inputs['files']['input_name'] is None and filename is None:
 			filename = input("Input File Name: ")
-		if self.input_name is None:
-			self.input_name = filename
-		if "." not in self.input_name:
-			self.input_name = self.input_name + ".in"
-
+		if self.inputs['files']['input_name'] is None:
+			self.inputs['files']['input_name'] = filename
+		if filename is None:
+			filename = self.inputs['files']['input_name']
+		if "." not in filename:
+			filename = filename + ".in"
+		
 		self.inputs.write(f"{directory}/{filename}",force=True)
 		
 		if doPrint:

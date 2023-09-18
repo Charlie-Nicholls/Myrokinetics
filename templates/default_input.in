@@ -6,6 +6,8 @@
     kin_type = 'PEQDSK'
     template_name = ''
     template_path = ''
+    input_name = ''
+    input_path = ''
 /
 
 &knobs
@@ -18,6 +20,13 @@
     num_shear_ideal = 100
     num_beta_ideal = 100
 /
+
+&info
+    run_name: ,
+    run_uuid: ,
+    run_date: ,
+    data_path': ,
+    itteration: 0
 
 &single_parameters
     theta0 = 0
