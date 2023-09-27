@@ -139,8 +139,8 @@ class myro_scan(object):
 		else:
 			input_name = "myro.in"
 		input_path = self.inputs['input_path'] if self.inputs['input_path'] else self.path
-		self.inputs.inputs['input_name'] = input_name
-		self.inputs.inputs['input_path'] = input_path
+		self.inputs.inputs['files']['input_name'] = input_name
+		self.inputs.inputs['files']['input_path'] = input_path
 		self.write_scan_input(filename = input_name, directory = input_path, doPrint=False)
 		if input_path != self.inputs['data_path']:
 			self.write_scan_input(filename = input_name, directory = self.inputs['data_path'], doPrint=False)
