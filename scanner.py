@@ -69,7 +69,7 @@ class myro_scan(object):
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
 		self.inputs.write_scan_input(filename = filename, directory = directory, doPrint = doPrint)
 	
-	def run_scan(self, n_jobs = None, n_par = None, gyro = None, ideal = None, directory = None, group_runs = None):
+	def run_scan(self, n_jobs = None, n_par = None, n_sim = None, gyro = None, ideal = None, directory = None, group_runs = None):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
@@ -87,7 +87,7 @@ class myro_scan(object):
 			self.make_ideal_files(directory = run_path)
 		if self['gyro']:
 			self.make_gyro_files(directory = run_path, group_runs = group_runs)
-		self.run_jobs(n_jobs = n_jobs, n_par = n_par)
+		self.run_jobs(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
 	
 	def check_setup(self, ideal = None, gyro = None):
 		if not self.inputs.check_scan():
@@ -150,12 +150,14 @@ class myro_scan(object):
 	def clear_jobs(self):
 		self._input_files = set()
 	
-	def run_jobs(self, n_jobs = None, n_par = None):
+	def run_jobs(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
 			cwd = os.getcwd()
 			compile_modules = systems[self['system']]['compile']
 			sbatch = "#!/bin/bash"
 			for key, val in self.inputs['sbatch'].items():
+				if key == 'output' and '/' not in val:
+					val = f"{self.inputs['data_path']}/submit_files/{val}"
 				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
 	
 		if self['system'] == 'ypi_server':
@@ -194,7 +196,11 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 					self._input_files.remove(input_file)
 					n_jobs -= 1
 		if self['system'] == 'archer2':
-			os.system(f"cd {self.inputs['data_path']}")
+			if n_sim is None:
+				n_sim = 8
+			if n_sim > 8:
+				print("Archer supports a maximum of n_sim = 8")
+				n_sim = 8
 			input_lists = {}
 			if n_par is None:
 				n_par = 1
@@ -210,12 +216,12 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 				self._input_files.remove(input_list[i])
 			for n in range(n_par):
 				if n_par > 1:
-					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['data_path']}/{self.inputs['sbatch']['output']}_{n}")
+					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
 					filename = f"gyro_{n}"
 				else:
 					filename = "gyro"
 					sbatch_n = sbatch
-				pyth = open(f"{self.inputs['data_path']}/{filename}.py",'w')
+				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
 				pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
@@ -233,7 +239,7 @@ def start_run(run):
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 				pyth.close()
-				jobfile = open(f"{self.inputs['data_path']}/{filename}.job",'w')
+				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
 				jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
@@ -241,12 +247,14 @@ Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for ru
 which gs2
 gs2 --build-config
 
-python {self.inputs['data_path']}/{filename}.py &
+python {self.inputs['data_path']}/submit_files/{filename}.py &
 
 wait""")
+				if n_par > n_sim and n + n_sum < npar:
+					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
 				jobfile.close()
-				os.system(f"sbatch \"{self.inputs['data_path']}/{filename}.job\"")
-			os.system(f"cd {cwd}")
+			for n in range(n_sim):
+				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
 		if checkSetup:

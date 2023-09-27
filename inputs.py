@@ -168,8 +168,8 @@ class scan_inputs(object):
 				if skey not in possible_keys[key]:
 					print(f"ERROR: {skey} is not a valid {key} input")
 					del(self.inputs[key][skey])
-		if self.inputs['files']['input_name'] is None and self.inputs.input_name:
-			self.inputs['files']['input_name'] = self.inputs.input_name
+		if self.inputs['files']['input_name'] is None and self.input_name:
+			self.inputs['files']['input_name'] = self.input_name
 		if self.inputs['files']['input_path'] is None and self.inputs['files']['input_name']:
 			self.inputs['files']['input_path'] = self.path
 		
