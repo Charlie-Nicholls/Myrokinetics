@@ -251,7 +251,7 @@ gs2 --build-config
 python {self.inputs['data_path']}/submit_files/{filename}.py &
 
 wait""")
-				if n_par > n_sim and n + n_sim < npar:
+				if n_par > n_sim and n + n_sim < n_par:
 					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
 				jobfile.close()
 			for n in range(n_sim):
