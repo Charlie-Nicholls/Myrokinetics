@@ -201,7 +201,8 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 			if n_sim > 8:
 				print("Archer supports a maximum of n_sim = 8")
 				n_sim = 8
-			os.mkdir(f"{self.inputs['data_path']}/submit_files/")
+			if not os.exists
+			os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
 			input_lists = {}
 			if n_par is None:
 				n_par = 1
