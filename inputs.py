@@ -344,7 +344,7 @@ class scan_inputs(object):
 		self.dim_order = dim_order
 
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
-		if directory is None and self.directory is None:
+		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
 			directory = self.path
@@ -364,7 +364,7 @@ class scan_inputs(object):
 			print(f"Created {filename} at {directory}")
 			
 	def write_default_input(self, filename = None, directory = "./", doPrint = True):
-		if directory is None and self.directory is None:
+		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
 			directory = self.path
