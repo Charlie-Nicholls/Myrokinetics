@@ -272,7 +272,7 @@ wait""")
 			runs = check['ideal_incomplete']
 			
 		for psiN in runs:
-			sub_dir = f"{directory}/ideal/psin = {psiN:.2g}"
+			sub_dir = f"{directory}/ideal/psin = {psiN:.4g}"
 			os.makedirs(sub_dir,exist_ok=True)
 			
 			existing_inputs = [] 
@@ -333,7 +333,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		
 			
 		for run in runs:
-			sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.2g}" for name in self.inputs.dim_order])
+			sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
 			os.makedirs(sub_dir,exist_ok=True)
 			existing_inputs = [] 
 			for f in glob.glob(r'itteration_*.in'):
@@ -376,7 +376,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		finished_gyro = []
 		if gyro:
 			for run in self.get_all_runs():
-				sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.2g}" for name in self.inputs.dim_order])
+				sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
 				
 				if self['system'] != 'archer2' and os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
 					finished_gyro.append(run)
@@ -511,7 +511,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 				
 			runs = self.get_all_runs()
 			for run in runs:
-				sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.2g}" for name in self.inputs.dim_order])
+				sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
 				try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
@@ -543,9 +543,9 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 								gyro_data[run_key][key] = key_data[0,0,:].tolist()
 								if key == 'phi':
 									symsum = sum(abs(key_data[0,0,:] + key_data[0,0,::-1]))/sum(abs(key_data[0,0,:]))
-									if  symsum > 1.9:
+									if  symsum > 1.5:
 										gyro_data[run_key]['parity'] = 1
-									elif symsum < 1:
+									elif symsum < 0.5:
 										gyro_data[run_key]['parity'] = -1
 									else:
 										gyro_data[run_key]['parity'] = 0
@@ -573,7 +573,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 			for psiN in self.dimensions['psin'].values:
 				try:
 					ideal_data[psiN] = {}
-					sub_dir = f"{directory}/ideal/psin = {psiN:.2g}"
+					sub_dir = f"{directory}/ideal/psin = {psiN:.4g}"
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
 						existing_inputs.append([x for x in f if x.isdigit()])

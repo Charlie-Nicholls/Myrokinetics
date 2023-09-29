@@ -114,6 +114,8 @@ class myro_read(object):
 	
 	def get_run_id(self, run, keys = '_run_keys'):
 		run_id = self.get_run_list(run, keys = keys)
+		if run_id is None:
+			return None
 		if len(run_id) == 1:
 			return run_id[0]
 		elif len(run_id) > 1:

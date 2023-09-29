@@ -307,7 +307,10 @@ class plot_ql(object):
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
 				run_id = self.reader.get_run_id(run = run, keys = '_quasilinear_keys')
-				z[x_id][y_id] = self.reader.data['quasilinear'][run_id]
+				if run_id is None or len(run_id) > 1:
+					z[x_id][y_id] = nan
+				else:
+					z[x_id][y_id] = self.reader.data['quasilinear'][run_id]
 		z = transpose(z)
 		self.z_axis = z
 		
