@@ -119,7 +119,6 @@ class myro_read(object):
 		if len(run_id) == 1:
 			return run_id[0]
 		elif len(run_id) > 1:
-			print("ERROR: multiple runs found")
 			return run_id
 		else:
 			return None
@@ -132,7 +131,6 @@ class myro_read(object):
 		if len(run_id) > 0:
 			return run_id
 		else:
-			print("ERROR: run not found")
 			return None
         		
 	def print_inputs(self):
