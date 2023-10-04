@@ -475,7 +475,7 @@ wait""")
 from numpy import load
 with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 	nd = obj['name_diffs']
-	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.path}\", run_name = \"{filename}\")
+	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.path}\")
 	run.namelist_diffs = nd
 	run.save_out(filename = \"{filename}\", directory = \"{directory}\",SlurmSave = True,QuickSave = {QuickSave})""")
 			pyth.close()
