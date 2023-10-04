@@ -423,11 +423,11 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 	def quick_save(self, filename = None, directory = None, SlurmSave = False):
 		self.save_out(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = True)
 	def save_out(self, filename = None, directory = None, SlurmSave = False, QuickSave = False):
-		if filename is None and self.run_name is None:
+		if filename is None and self.inputs['run_name'] is None:
 			filename = input("Output File Name: ")
 			filename = filename.split(".")[0]
 		elif filename is None:
-			filename = self.run_name
+			filename = self.inputs['run_name']
 			
 		if self.inputs['data_path'] is None:
 			self.inputs.create_run_info()
@@ -476,7 +476,7 @@ from numpy import load
 with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 	nd = obj['name_diffs']
 	info = obj['info'].item()
-	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.path}\", run_name = \"{self.run_name}\")
+	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.path}\", run_name = \"{filename}\")
 	run.info = info
 	run.namelist_diffs = nd
 	run.save_out(filename = \"{filename}\", directory = \"{directory}\",SlurmSave = True,QuickSave = {QuickSave})""")
@@ -693,7 +693,7 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 	def load_info(self, directory = None, filename = "save_info.npz"):
 		from numpy import load
 		if directory is None:
-			directory = os.path.join(self.path, self.run_name)
+			directory = os.path.join(self.path, self.inputs['run_name'])
 		with load(f"{directory}/{filename}",allow_pickle = True) as obj:
 			nd = obj['name_diffs']
 			info = obj['info'].item()

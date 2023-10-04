@@ -404,7 +404,6 @@ class plot_scan(object):
 					else:
 						z_gr[x_id][y_id] = gr
 				else:
-					print(run)
 					z_gr[x_id][y_id] = nan
 					z_mf[x_id][y_id] = nan
 		z_gr = transpose(z_gr)
