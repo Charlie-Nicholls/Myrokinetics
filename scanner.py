@@ -413,9 +413,9 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			pickle.dump(self,obj)
 		self.eqbm.pyro = temp
 
-	def _save_for_save(self, filename = None, directory = None):
+	def _save_nml_diff(self, filename = None, directory = None):
 		if filename is None:
-			filename = "save_info"
+			filename = "nml_diffs"
 		if directory is None:
 			directory = self.path
 		savez(f"{directory}/{filename}", name_diffs = self.namelist_diffs)
@@ -441,7 +441,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		if self['system'] in ['viking','archer2'] and not SlurmSave:
 			save_modules = systems[self['system']]['save']
 			os.chdir(f"{directory}")
-			self._save_for_save(filename = "save_info", directory = directory)
+			self._save_nml_diff(directory = directory)
 			job = open(f"save_out.job",'w')
 			if self['system'] == 'viking':
 				job.write(f"""#!/bin/bash
@@ -473,11 +473,9 @@ wait""")
 			pyth = open(f"save_out.py",'w')
 			pyth.write(f"""from Myrokinetics import myro_scan
 from numpy import load
-with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
+with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 	nd = obj['name_diffs']
-	info = obj['info'].item()
 	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.path}\", run_name = \"{filename}\")
-	run.info = info
 	run.namelist_diffs = nd
 	run.save_out(filename = \"{filename}\", directory = \"{directory}\",SlurmSave = True,QuickSave = {QuickSave})""")
 			pyth.close()
@@ -488,7 +486,6 @@ with load(\"{directory}/save_info.npz\",allow_pickle = True) as obj:
 		if not self.check_setup():
 			return
 			
-		
 		equilibrium = {}
 		for psiN in self.dimensions['psin'].values:
 			equilibrium[psiN] = {}
