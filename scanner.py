@@ -344,7 +344,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 				
 			self._input_files.add(f"{sub_dir}/{filename}.in")
 	
-	def get_run_directory(run):
+	def get_run_directory(self, run):
 		sub_dir = f"{self.inputs['data_path']}/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
 		return sub_dir
 	
