@@ -112,6 +112,12 @@ class myro_read(object):
 			tot *= len(dim)
 		return tot
 	
+	def get_run_from_id(self, run_id):
+		run = {}
+		for dim in self.dimensions:
+			run[dim] = self.data['gyro'][run_id][dim]
+		return run
+	
 	def get_run_id(self, run, keys = '_run_keys'):
 		run_id = self.get_run_list(run, keys = keys)
 		if run_id is None:
