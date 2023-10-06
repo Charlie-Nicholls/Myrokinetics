@@ -318,7 +318,13 @@ class myro_read(object):
 			ql_key = str(uuid4())
 			for dim_name, val in [(x, y) for x, y in self.data['gyro'][run_ids[0]].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
 				ql_keys[dim_name][val].append(ql_key)
-			qls[ql_key] = QL(run_ids,self.data['gyro'])
+			ql, [ql_norms,kys] = QL(run_ids,self.data['gyro'], returnlist = True)
+			qls[ql_key] = ql
+			for run_id in run_ids:
+				if self.data['gyro'][run_id]['ky'] in kys:
+					self.data['gyro'][run_id]['ql_norm'] = ql_norms[kys.index(self.data['gyro'][run_id]['ky'])]
+				else:
+					self.data['gyro'][run_id]['ql_norm'] = nan
 			
 		self.data['quasilinear'] = qls
 		self.data['_quasilinear_keys'] = ql_keys
@@ -342,6 +348,7 @@ class myro_read(object):
 			for run_id in run_ids:
 				abs_grs.append(self.data['gyro'][run_id]['growth_rate'])
 				norm_grs.append(self.data['gyro'][run_id]['growth_rate']/self.data['gyro'][run_id]['ky'])
+				self.data['gyro'][run_id]['growth_rate_norm'] = self.data['gyro'][run_id]['growth_rate']/self.data['gyro'][run_id]['ky']
 			
 			if len([x for x in abs_grs if isfinite(x)]) == 0:
 				abs_id = run_ids[0]

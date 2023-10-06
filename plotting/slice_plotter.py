@@ -8,10 +8,11 @@ default_settings = {"suptitle": None,
 		"y_axis_type": "quasilinear",
 		"slider_1": {"dimension_type": None, "id": 0},
 		"slider_2": {"dimension_type": None, "id": 0},
+		"slider_3": {"dimension_type": None, "id": 0},
 		"run": {},
 		"limit": None,
 		"fontsizes": {"title": 13, "axis": 17,"suptitle": 20},
-		"visible": {"slider_1": True, "slider_2": True, "eqbm": True, "suptitle": True, "title": True},
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "eqbm": True, "suptitle": True, "title": True},
 		"colours": {"eqbm": 'k', "points": 'k', "line": 'r'}
 }
 
@@ -56,8 +57,13 @@ class plot_slice(object):
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 		
-		self._slider_axes = {'slider_1': axes([0.25, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
-			'slider_2': axes([0.25, 0.05, 0.5, 0.03],visible=self['visible']['slider_2']),
+		self._axes_vals = {'slider_1':[0.25, 0.01, 0.5, 0.03],
+			'slider_2': [0.25, 0.05, 0.5, 0.03],
+			'slider_3': [0.92, 0.2, 0.03, 0.5],
+		}
+		self._slider_axes = {'slider_1': axes(self._axes_vals['slider_1'],visible=self['visible']['slider_1']),
+			'slider_2': axes(self._axes_vals['slider_2'],visible=self['visible']['slider_2']),
+			'slider_3': axes(self._axes_vals['slider_3'],visible=self['visible']['slider_3']),
 		}
 		self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type']]]
 		
@@ -81,32 +87,38 @@ class plot_slice(object):
 		
 		self.sliders = {}
 		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
-			dim = self.reader.dimensions[self.settings[key]['dimension_type']]
-			self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = self[key]['id'], valstep = 1)
-			self.sliders[key].on_changed(self.draw_fig)
-		
-		if not self['visible']['slider_1'] and not self['visible']['slider_2']:
-			self.fig.subplots_adjust(bottom=0.11)
-		elif not self['visible']['slider_2']: 
-			self.fig.subplots_adjust(bottom=0.13)
-		else:
-			self.fig.subplots_adjust(bottom=0.15)
-		
+			self.set_slider(key = key, dimension_type = self.settings[key]['dimension_type'], _drawfig = False)
+
 		ion()
 		show()
 		self.draw_fig()
 		
-	def set_slider(self, slider_num, dimension_type, visible = True):
+	def set_slider(self, num = None, key = None, dimension_type = None, _drawfig = True):
 		if dimension_type not in self.dims:
 			print(f"ERROR: invalid dimension type, valid: {self.dims}")
 			return
-		key = f"slider_{slider_num}"
+		if num is None and key is None:
+			print("ERROR: num or key must be given")
+		if key is None:	
+			key = f"slider_{slider_num}"
 		self.settings[key]['dimension_type'] = dimension_type
 		self.settings[key]['id'] = 0
 		dim = self.reader.dimensions[dimension_type]
-		self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = 0, valstep = 1)
-		self.set_visible(key,val=visible)
-		self.draw_fig()
+		if self._slider_axes[key]:
+			self._slider_axes[key].set_visible(False)
+			del(self._slider_axes[key])
+		self._slider_axes[key] = axes(self._axes_vals[key],visible=self['visible'][key])
+		if key in ['slider_1','slider_2']:
+			orient = 'horizontal'
+		elif key in ['slider_3','slider_4']:
+			orient = 'vertical'
+		self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = 0, valstep = 1, orientation = orient)
+		if orient == 'vertical':
+			self.sliders[key].label.set_rotation(90)
+		self.sliders[key].on_changed(self.draw_fig)
+		self.set_visible(key,val=self['visible'][key])
+		if _drawfig:
+			self.draw_fig()
 	
 	def _load_x_axis(self, axis_type):
 		if axis_type not in self.reader.dimensions:
@@ -130,8 +142,8 @@ class plot_slice(object):
 		self.draw_fig()
 	
 	def _load_y_axis(self, axis_type):
-		if axis_type not in ['quasilinear','growth_rate']:#,'growth_rate_norm']:
-			print(f"ERROR: axis_type not found, valid types ['quasilinear','growth_rate']")#,'growth_rate_norm']")
+		if axis_type not in ['quasilinear','growth_rate','growth_rate_norm','ql_norm']:
+			print(f"ERROR: axis_type not found, valid types ['quasilinear','growth_rate','growth_rate_norm',ql_norm]")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -140,15 +152,27 @@ class plot_slice(object):
 			self._y_axis_label = "Quasilinear Metric"
 			self._y_key = '_quasilinear_keys'
 			self.dims = [x for x in self.dims if x not in ['theta0','ky']]
-		elif axis_type == 'growth_rate':
-			self._y_axis_label = "Growth Rate"
+			if 'ky' in self['run']:
+				self.settings['run'].pop('ky')
+			if 'theta0' in self['run']:
+				self.settings['run'].pop('theta0')
+		elif axis_type in ['growth_rate','growth_rate_norm','ql_norm']:
 			self._y_key = '_run_keys'
 			if 'ky' in self.reader.dimensions and 'ky' not in self.dims:
 				self.dims.append('ky')
+			if 'ky' in self.reader.dimensions and 'ky' not in self['run']:
+				self.settings['run']['ky'] = self.reader.dimensions['ky'].values[0]
 			if 'theta0' in self.reader.dimensions and 'theta0' not in self.dims:
 				self.dims.append('theta0')
-		#elif axis_type == 'growth_rate_norm':
-			#self._y_axis_label = "Growth Rate/$(k_{y}\\rho_{0})^{2}$"
+			if 'theta0' in self.reader.dimensions and 'theta0' not in self['run']:
+				self.settings['run']['theta0'] = self.reader.dimensions['theta0'].values[0]
+			if axis_type == 'growth_rate':
+				self._y_axis_label = "Growth Rate"
+			elif axis_type == 'growth_rate_norm':
+				self._y_axis_label = "Growth Rate/$(k_{y}\\rho_{0})^{2}$"
+			elif axis_type == 'ql_norm':
+				self._y_axis_label = "QL Normalised Growth Rate"
+			
 		
 		for key in [x for x in self.settings if 'slider_' in x]:
 			if self.settings[key]['dimension_type'] is not None and  self.settings[key]['dimension_type'] not in self.dims:
@@ -213,7 +237,6 @@ class plot_slice(object):
 		x_axis = list(self.x_axis)
 		
 		self.ax.cla()
-		
 		self.ax.set_ylabel(self._y_axis_label,fontsize=self['fontsizes']['axis'])
 		self.ax.set_xlabel(self._x_axis_label,fontsize=self['fontsizes']['axis'])
 		
@@ -238,9 +261,10 @@ class plot_slice(object):
 				psiN = self['run']['psin']
 			else:
 				psiN = self.reader.single_parameters.values[0]
-			eqbm_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
-			self.ax.vlines(eqbm_val,0,limits[1],self['colours']['eqbm'])
-			handles.append(Line2D([0.5,0.5],[0,1],c=self['colours']['eqbm'],label = "Equillibrium"))
+			if self['x_axis_type'] in self.reader.data['equilibrium'][psiN]:
+				eqbm_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
+				self.ax.vlines(eqbm_val,0,limits[1],self['colours']['eqbm'])
+				handles.append(Line2D([0.5,0.5],[0,1],c=self['colours']['eqbm'],label = "Equillibrium"))
 		
 		if self['limit']:
 			self.ax.set_ylim(0,self['limit'])

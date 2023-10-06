@@ -20,7 +20,7 @@ def avg_kperp2_f(run,f):
 	
 	return top/bottom
 
-def QL(run_ids,gyro_data):
+def QL(run_ids,gyro_data, returnlist = False):
 	try:
 		errors = []
 		for run_id in run_ids:
@@ -79,7 +79,10 @@ def QL(run_ids,gyro_data):
 		intergrand = grs*(1/kp_phis + max_apars/(max_phis*kp_apars) + max_bpars/(max_phis*kp_bpars))
 		
 		QL = trapz(intergrand,kys)
-		return QL
+		if returnlist:
+			return QL, [list(intergrand),list(kys)]
+		else:
+			return QL
 	except Exception as e:
 		print(e)
 		return nan

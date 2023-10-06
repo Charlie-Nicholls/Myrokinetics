@@ -196,15 +196,15 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 					self._input_files.remove(input_file)
 					n_jobs -= 1
 		if self['system'] == 'archer2':
+			if n_par is None:
+				n_par = 1
 			if n_sim is None:
-				n_sim = 8
+				n_sim = n_par if n_par < 8 else 8
 			if n_sim > 8:
 				print("Archer supports a maximum of n_sim = 8")
 				n_sim = 8
 			os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
 			input_lists = {}
-			if n_par is None:
-				n_par = 1
 			for n in range(n_par):
 				input_lists[n] = []
 			if n_jobs == None or n_jobs*n_par > len(self._input_files):
@@ -216,12 +216,8 @@ echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
 				input_lists[i%n_par].append(input_list[i])
 				self._input_files.remove(input_list[i])
 			for n in range(n_par):
-				if n_par > 1:
-					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
-					filename = f"gyro_{n}"
-				else:
-					filename = "gyro"
-					sbatch_n = sbatch
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
+				filename = f"gyro_{n}"
 				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
 				pyth.write(f"""import os
 from joblib import Parallel, delayed
