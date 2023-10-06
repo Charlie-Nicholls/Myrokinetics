@@ -329,7 +329,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		
 			
 		for run in runs:
-			self.get_run_directory(run)
+			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
 			existing_inputs = [] 
 			for f in glob.glob(r'itteration_*.in'):
@@ -508,7 +508,7 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 				
 			runs = self.get_all_runs()
 			for run in runs:
-				self.get_run_directory(run)
+				sub_dir = self.get_run_directory(run)
 				try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
