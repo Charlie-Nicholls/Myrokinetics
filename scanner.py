@@ -329,7 +329,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		
 			
 		for run in runs:
-			sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
+			self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
 			existing_inputs = [] 
 			for f in glob.glob(r'itteration_*.in'):
@@ -343,6 +343,10 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 				filename = f"itteration_{itt}"
 				
 			self._input_files.add(f"{sub_dir}/{filename}.in")
+	
+	def get_run_directory(run):
+		sub_dir = f"{self.inputs['data_path']}/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
+		return sub_dir
 	
 	def update_itteration(self):
 		self.inputs['info']['itteration'] = self.inputs['itteration'] + 1
@@ -372,7 +376,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		finished_gyro = []
 		if gyro:
 			for run in self.get_all_runs():
-				sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
+				sub_dir = self.get_run_directory(run)
 				
 				if self['system'] != 'archer2' and os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
 					finished_gyro.append(run)
@@ -504,7 +508,7 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 				
 			runs = self.get_all_runs()
 			for run in runs:
-				sub_dir = f"{directory}/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
+				self.get_run_directory(run)
 				try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
@@ -556,6 +560,10 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 								gyro_data[run_key]['epar'] = epar
 						except:
 							print(f"Save Error in {sub_dir}/itteration_{itt}: {key}")
+							if key == 'omega':
+								gyro_data[run_key]['growth_rate'] = nan
+								gyro_data[run_key]['mode_frequency'] = nan
+								
 				except Exception as e:
 					print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
 		else:
