@@ -277,6 +277,8 @@ class equilibrium(object):
 			if delt > 0.01:
 				delt = 0.01
 			nml['knobs']['delt'] = delt
+		
+		nml['dist_fn_knobs']['g_exb'] = 0 
 			
 		for key in namelist_diff.keys():
 			for skey in namelist_diff[key].keys():

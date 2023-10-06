@@ -65,7 +65,7 @@ def QL(run_ids,gyro_data, returnlist = False):
 			if 'nan' in [str(max_phis[i]),str(max_apars[i]),str(max_bpars[i]),str(kp_phis[i]),str(kp_apars[i]),str(kp_bpars[i]),str(grs[i])]:
 				err.append(i)
 		if len(err) == nruns:
-			return nan
+			return nan, [[nan],[nan]]
 				
 		max_phis = array([max_phis[i] for i in range(nruns) if i not in err])
 		max_apars = array([max_apars[i] for i in range(nruns) if i not in err])
@@ -85,4 +85,7 @@ def QL(run_ids,gyro_data, returnlist = False):
 			return QL
 	except Exception as e:
 		print(e)
-		return nan
+		if returnlist:
+			return nan, [[nan],[nan]]
+		else:
+			return nan

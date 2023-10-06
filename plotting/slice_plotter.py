@@ -6,6 +6,8 @@ from copy import deepcopy
 default_settings = {"suptitle": None,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "quasilinear",
+		"xscale": "linear",
+		"yscale": "linear",
 		"slider_1": {"dimension_type": None, "id": 0},
 		"slider_2": {"dimension_type": None, "id": 0},
 		"slider_3": {"dimension_type": None, "id": 0},
@@ -184,6 +186,19 @@ class plot_slice(object):
 		self._load_y_axis(axis_type)
 		self.draw_fig()
 	
+	def set_xscale(self, scale):
+		self.ax.set_xscale(scale)
+		self.settings['xscale'] = scale
+		
+	def set_yscale(self, scale):
+		self.ax.set_yscale(scale)
+		self.settings['yscale'] = scale
+	
+	def set_limit(self, limit):
+		limits = self.ax.get_ylim()
+		self.ax.set_ylim(limits[0],limit)
+		self.settings['limit'] = limit
+	
 	def set_visible(self, key, val = None):
 		if key not in self['visible']:
 			print(f"ERROR: key not found, valid keys {self.settings['visible'].keys()}")
@@ -234,7 +249,7 @@ class plot_slice(object):
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
 				self.settings[key]['id'] = sli.val
 				handles.append(Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions[dim].axis_label} = {self.settings['run'][dim]}",visible = False))
-		x_axis = list(self.x_axis)
+		
 		
 		self.ax.cla()
 		self.ax.set_ylabel(self._y_axis_label,fontsize=self['fontsizes']['axis'])
@@ -250,10 +265,12 @@ class plot_slice(object):
 			else:
 				y_vals[x_id] = self.reader.data['gyro'][run_id][self['y_axis_type']]
 		self.y_axis = y_vals
+		x_axis = [x for i, x in enumerate(self.x_axis) if str(self.y_axis[i]) not in ['nan','inf','-inf']]
+		y_axis = [x for x in self.y_axis if str(x) not in ['nan','inf','-inf']]
 		
 		
-		self.ax.plot(self.x_axis,self.y_axis,c=self['colours']['line'])
-		self.ax.plot(self.x_axis,self.y_axis,'.',c=self['colours']['points'])
+		self.ax.plot(x_axis,y_axis,c=self['colours']['line'])
+		self.ax.plot(x_axis,y_axis,'.',c=self['colours']['points'])
 		
 		if self['visible']['eqbm']:
 			limits = self.ax.get_ylim()
@@ -267,7 +284,10 @@ class plot_slice(object):
 				handles.append(Line2D([0.5,0.5],[0,1],c=self['colours']['eqbm'],label = "Equillibrium"))
 		
 		if self['limit']:
-			self.ax.set_ylim(0,self['limit'])
+			limits = self.ax.get_ylim()
+			self.ax.set_ylim(limits[0],self['limit'])
+		self.ax.set_xscale(self['xscale'])
+		self.ax.set_yscale(self['yscale'])
 		
 		self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
 		self.ax.legend_.set_visible(self['visible']['title'])
