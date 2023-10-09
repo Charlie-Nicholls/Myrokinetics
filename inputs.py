@@ -233,7 +233,7 @@ class scan_inputs(object):
 				print(f"ERROR: {dim} dimensions invalid")
 				valid = False
 			
-		if 'psin' not in self.dimensions:
+		if 'psin' not in self.dimensions and 'psin' not in self.single_parameters:
 			print("ERROR: psiN must be specified as single parameter or scan dimension")
 			valid = False
 		
