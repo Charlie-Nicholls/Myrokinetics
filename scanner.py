@@ -486,8 +486,10 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 		if not self.check_setup():
 			return
 			
+		
+		psi_itt = self.single_parameters['psin'].values if 'psin' in self.single_parameters else self.dimensions['psin'].values
 		equilibrium = {}
-		for psiN in self.dimensions['psin'].values:
+		for psiN in psi_itt:
 			equilibrium[psiN] = {}
 			nml = self.eqbm.get_surface_input(psiN)
 			equilibrium[psiN]['shear'] = nml['theta_grid_eik_knobs']['s_hat_input']
@@ -571,7 +573,7 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 
 		if self['ideal']:
 			ideal_data = {}
-			for psiN in self.dimensions['psin'].values:
+			for psiN in psi_itt:
 				try:
 					ideal_data[psiN] = {}
 					sub_dir = f"{directory}/ideal/psin = {psiN:.4g}"
