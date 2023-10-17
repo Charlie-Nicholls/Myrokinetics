@@ -21,7 +21,6 @@ default_settings = {"suptitle": None,
 class plot_slice(object):
 	def __init__(self, reader, settings = {}):
 		self.reader = reader
-		
 		self.settings = {}
 		self.init_settings = {}
 		defaults = deepcopy(default_settings)
@@ -31,15 +30,20 @@ class plot_slice(object):
 			else:
 				self.settings[key] = settings[key]
 				self.init_settings[key] = settings[key]
+
 		for key in defaults:
 			if key not in settings:
 				self.settings[key] = defaults[key]
 				self.init_settings[key] = defaults[key]
-			elif type(self.settings[key]) == dict:
-				for skey in defaults[key]:
-					if skey not in self.settings[key]:
+			elif type(defaults[key]) == dict:
+				for skey in defaults[key].keys():
+					if skey not in settings[key].keys():
 						self.settings[key][skey] = defaults[key][skey]
 						self.init_settings[key][skey] = defaults[key][skey]
+						
+		if self.settings['x_axis_type'] not in self.reader.dimensions:
+			self.settings['x_axis_type'] = self.reader.inputs.dim_order[0]
+			self.init_settings['x_axis_type'] = self.reader.inputs.dim_order[0]
 		
 		self.open_plot()
 		
@@ -73,7 +77,7 @@ class plot_slice(object):
 		self._load_y_axis(self['y_axis_type'])
 		
 		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
-		unused_dims = [x for x in self.dims if x not in used_dims]
+		unused_dims = [x for x in self.dims if x not in used_dims and x != self.settings['x_axis_type']]
 		slider_keys = [x for x in self.settings if 'slider_' in x]
 		empty_sliders = [x for x in slider_keys if self.settings[x]['dimension_type'] is None]
 		for sli, key in enumerate(empty_sliders):
@@ -82,7 +86,7 @@ class plot_slice(object):
 				used_dims.append(unused_dims[sli])
 			else:
 				self.settings[key]['dimension_type'] = None
-				self.settings['visible'][key] = False
+				self.set_visible(key,False)
 			
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
@@ -277,7 +281,7 @@ class plot_slice(object):
 			if 'psin' in self['run']:
 				psiN = self['run']['psin']
 			else:
-				psiN = self.reader.single_parameters.values[0]
+				psiN = self.reader.single_parameters['psin'].values[0]
 			if self['x_axis_type'] in self.reader.data['equilibrium'][psiN]:
 				eqbm_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
 				self.ax.vlines(eqbm_val,0,limits[1],self['colours']['eqbm'])

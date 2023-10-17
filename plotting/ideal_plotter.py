@@ -230,7 +230,7 @@ class plot_ideal(object):
 		if 'psin' in self['run']:
 			psiN = self['run']['psin']
 		else:
-			psiN = self.reader.single_parameters.values[0]
+			psiN = self.reader.single_parameters['psin'].values[0]
 		
 		x_axis = self.reader.data['ideal'][psiN][self['x_axis_type']]
 		y_axis = self.reader.data['ideal'][psiN][self['y_axis_type']]

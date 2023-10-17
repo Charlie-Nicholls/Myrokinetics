@@ -1,4 +1,4 @@
-from numpy import real, imag, log, polyfit, array, exp
+from numpy import real, imag, log, polyfit, array, exp, amax
 from matplotlib.pyplot import *
 from matplotlib.widgets import Slider, CheckButtons, TextBox
 from scipy.stats import pearsonr
@@ -6,7 +6,6 @@ from copy import deepcopy
 
 default_settings = {"suptitle": None,
 		"var": 'omega',
-		"absolute": False,
 		"slider_1": {"dimension_type": None, "id": 0},
 		"slider_2": {"dimension_type": None, "id": 0},
 		"slider_3": {"dimension_type": None, "id": 0},
@@ -14,7 +13,7 @@ default_settings = {"suptitle": None,
 		"run": {},
 		"options": [True],
 		"fontsizes": {"legend": 10,"ch_box": 8,"axis": 11,"title": 13,"suptitle": 20, "verify": 8},
-		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "op_box": True, "suptitle": True, "title": True, "legend": True, "verify": True},
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "op_box": True, "suptitle": True, "title": True, "legend": True, "verify": True, 'absolute': True},
 }
 
 class plot_diag(object):
@@ -53,8 +52,10 @@ class plot_diag(object):
 			self.settings['var'] = "epar"
 		if self['var'] == 5:
 			self.settings['var'] = "phi2"
-		if self['var'] not in ['omega','phi','apar','bpar','epar','phi2']:
-			print(f"ERROR: variable name/value {self['var']} not supported. supported: omega/0, phi/1, apar/2, bpar/3, epar/4, phi2/5")
+		if self['var'] == 6:
+			self.settings['var'] = "jacob"
+		if self['var'] not in ['omega','phi','apar','bpar','epar','phi2','jacob']:
+			print(f"ERROR: variable name/value {self['var']} not supported. supported: omega/0, phi/1, apar/2, bpar/3, epar/4, phi2/5, jacob/6")
 			return
 			
 		self.open_plot()
@@ -172,8 +173,7 @@ class plot_diag(object):
 			self.fig._suptitle.set_visible(self['visible']['suptitle'])
 		elif key == 'title':
 			self.ax.legend_.set_visible(self['visible']['title'])
-		elif key == 'verify':
-			self.draw_fig()
+		self.draw_fig()
 	
 	def set_options_fontsize(self, fontsize):
 		self.settings['fontsizes']['ch_box'] = fontsize
@@ -233,19 +233,24 @@ class plot_diag(object):
 			self.ax.legend(loc=1)
 			self.ax2.legend(loc=1)
 			
-		elif self['var'] in ['phi','apar','bpar','epar']:
+		elif self['var'] in ['phi','apar','bpar','epar','jacob']:
 			if data[self['var']] is None or data['theta'] is None:
 				print("ERROR: data not found")
 			else:
 				field = data[self['var']]
 				theta = data['theta']
-				
-			self.ax.plot(theta,real(field),'r',label="real")
-			self.ax.plot(theta,imag(field),'b',label="imaginary")
-			if self['absolute']:
-				self.ax.plot(theta,[abs(x) for x in field],'k--',label="absolute")
+			
+			if self['var'] in ['phi','apar','bpar','epar']:
+				norm = max([amax([abs(i) for i in data[x]]) for x in ['phi','apar','bpar','epar'] if (x in data and data[x] is not None)])
+				field_norm = field/norm
+				self.ax.plot(theta,real(field_norm),'r',label="real")
+				self.ax.plot(theta,imag(field_norm),'b',label="imaginary")
+				if self['visible']['absolute']:
+					self.ax.plot(theta,[abs(x) for x in field_norm],'k--',label="absolute")
+				self.ax.legend(loc=0)
+			else:
+				self.ax.plot(theta,field,'r')
 			self.ax.set_xlabel("Ballooning Angle",fontsize=self['fontsizes']['axis'])
-			self.ax.legend(loc=0)
 			
 			if self['var'] == 'phi':
 				ylabel = "Electric Potential"
@@ -255,8 +260,9 @@ class plot_diag(object):
 				ylabel = "Parallel Mangetic Field"
 			elif self['var'] == 'epar':
 				ylabel = "Parallel Electric Field"
+			elif self['var'] == 'jacob':
+				ylabel = "Jacobian"
 			self.ax.set_ylabel(ylabel,fontsize=self['fontsizes']['axis'])
-
 			
 		elif self['var'] == 'phi2':
 			if data['phi2'] is None or data['t'] is None:

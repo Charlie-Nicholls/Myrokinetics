@@ -269,10 +269,12 @@ class myro_read(object):
 		try:
 			self.inputs = scan_inputs(input_dict = data_in['inputs'].item())
 			self.dimensions = self.inputs.dimensions
+			self.single_parameters = self.inputs.single_parameters
 		except:
 			print("ERROR: could not load Inputs")
 			self.inputs = None
 			self.dimensions = None
+			self.single_parameters = None
 		try:
 			self.verify = data_in['verify'].item()
 		except:
@@ -294,6 +296,8 @@ class myro_read(object):
 	
 	def get_all_runs(self, excludeDimensions = []):
 		dim_order = [x for x in self.inputs.dim_order if x not in excludeDimensions]
+		if len(dim_order) == 0:
+		 	return [{}]
 		def loop(n,variables={},runs=[]):
 			dim = self.dimensions[dim_order[len(dim_order)-n]]
 			for val in dim.values:
@@ -307,6 +311,7 @@ class myro_read(object):
 		return loop(n=len(dim_order))
 	
 	def calculate_ql(self):
+		#reexclude theta0 when ql calculation is updated in line 322&327&330
 		from .quasilinear import QL
 		from uuid import uuid4
 		if 'ky' not in self.dimensions:
@@ -314,15 +319,15 @@ class myro_read(object):
 			return
 		qls = {}
 		ql_keys = {}
-		for dim in [x for x in self.dimensions.values() if x.name not in ['ky','theta0']]:
+		for dim in [x for x in self.dimensions.values() if x.name not in ['ky']]:
 			ql_keys[dim.name] = {}
 			for val in dim.values:
 				ql_keys[dim.name][val] = []
 				
-		for runs in self.get_all_runs(excludeDimensions = ['ky','theta0']):
+		for runs in self.get_all_runs(excludeDimensions = ['ky']):
 			run_ids = self.get_run_list(runs)
 			ql_key = str(uuid4())
-			for dim_name, val in [(x, y) for x, y in self.data['gyro'][run_ids[0]].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
+			for dim_name, val in [(x, y) for x, y in self.data['gyro'][run_ids[0]].items() if (x in self.dimensions and x not in ['ky'])]:
 				ql_keys[dim_name][val].append(ql_key)
 			ql, [ql_norms,kys] = QL(run_ids,self.data['gyro'], returnlist = True)
 			qls[ql_key] = ql
@@ -354,7 +359,7 @@ class myro_read(object):
 			for run_id in run_ids:
 				abs_grs.append(self.data['gyro'][run_id]['growth_rate'])
 				norm_grs.append(self.data['gyro'][run_id]['growth_rate']/self.data['gyro'][run_id]['ky'])
-				self.data['gyro'][run_id]['growth_rate_norm'] = self.data['gyro'][run_id]['growth_rate']/self.data['gyro'][run_id]['ky']
+				self.data['gyro'][run_id]['growth_rate_norm'] = self.data['gyro'][run_id]['growth_rate']/(self.data['gyro'][run_id]['ky']**2)
 			
 			if len([x for x in abs_grs if isfinite(x)]) == 0:
 				abs_id = run_ids[0]
@@ -456,6 +461,9 @@ class myro_read(object):
 		
 	def plot_phi2(self, init = None, settings = {}):
 		return self._plot_diag(var = 'phi2', init = init, settings = settings)
+		
+	def plot_jacob(self, init = None, settings = {}):
+		return self._plot_diag(var = 'jacob', init = init, settings = settings)
 	
 	def _plot_diag(self, init = None, var = None, absolute = None, settings = {}):
 		if init is not None:
@@ -494,7 +502,7 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} {var}"
 		return Plotters['Theta'](reader = self, settings = settings)
 		
-	def plot_slice(self, slice_dim = None, y_dim = None, init = None, limit = None, settings = {}):
+	def plot_slice(self,  settings = {}, x_dim = None, y_dim = None, init = None, limit = None):
 		if self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
@@ -504,13 +512,13 @@ class myro_read(object):
 					if f"slider_{i+1}" not in settings:
 						settings[f"slider_{i+1}"] = {}
 					settings[f"slider_{i+1}"]['id'] = ini
-		if slice_dim:
+		if x_dim is not None:
 			settings['x_axis_type'] = slice_dim
-		if y_dim:
+		if y_dim is not None:
 			settings['y_axis_type'] = y_dim
 		if limit is not None:
 			settings['limit'] = limit
-		return Plotters['Slice'](reader= self, settings = settings)
+		return Plotters['Slice'](reader = self, settings = settings)
 	
 	def plot_eq(self):
 		if not self.eqbm:

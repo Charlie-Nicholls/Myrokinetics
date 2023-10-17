@@ -284,7 +284,7 @@ class plot_ql(object):
 		if 'psin' in self['run']:
 			psiN = self['run']['psin']
 		else:
-			psiN = self.reader.single_parameters.values[0]
+			psiN = self.reader.single_parameters['psin'].values[0]
 				
 		x_axis = list(self.x_axis)
 		y_axis = list(self.y_axis)
