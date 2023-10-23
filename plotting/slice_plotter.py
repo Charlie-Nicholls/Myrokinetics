@@ -148,8 +148,8 @@ class plot_slice(object):
 		self.draw_fig()
 	
 	def _load_y_axis(self, axis_type):
-		if axis_type not in ['quasilinear','growth_rate','growth_rate_norm','ql_norm']:
-			print(f"ERROR: axis_type not found, valid types ['quasilinear','growth_rate','growth_rate_norm',ql_norm]")
+		if axis_type not in ['quasilinear','growth_rate','growth_rate_norm','ql_norm','mode_frequency']:
+			print(f"ERROR: axis_type not found, valid types ['quasilinear','growth_rate','growth_rate_norm',ql_norm,mode_frequency]")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -162,7 +162,7 @@ class plot_slice(object):
 				self.settings['run'].pop('ky')
 			if 'theta0' in self['run']:
 				self.settings['run'].pop('theta0')
-		elif axis_type in ['growth_rate','growth_rate_norm','ql_norm']:
+		elif axis_type in ['growth_rate','growth_rate_norm','ql_norm','mode_frequency']:
 			self._y_key = '_run_keys'
 			if 'ky' in self.reader.dimensions and 'ky' not in self.dims:
 				self.dims.append('ky')
@@ -178,7 +178,8 @@ class plot_slice(object):
 				self._y_axis_label = "Growth Rate/$(k_{y}\\rho_{0})^{2}$"
 			elif axis_type == 'ql_norm':
 				self._y_axis_label = "QL Normalised Growth Rate"
-			
+			elif axis_type == 'mode_frequency':
+				self._y_axis_label = "Mode Frequency"
 		
 		for key in [x for x in self.settings if 'slider_' in x]:
 			if self.settings[key]['dimension_type'] is not None and  self.settings[key]['dimension_type'] not in self.dims:

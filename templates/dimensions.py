@@ -144,5 +144,42 @@ class ntheta(dimension):
 		nml['theta_grid_parameters']['ntheta'] = val
 		return nml
 
+class bakdif(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta]
+	name_keys = ['bakdif']
+	axis_label = 'bakdif'
+
+	def sub_validate(self, values):
+		if any([x < 0 for x in values]):
+			print("Error: bakdif values outside allowed range (x>=0)")
+			values = [x for x in values if (x>0)]
+		return values
+
+	def edit_nml(self, nml, val):
+		for key in [x for x in nml.keys() if 'dist_fn_species_knobs_' in x]:
+			nml[key]['bakdif'] = val
+		return nml
+
+class delt(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+
+	name_keys = ['delt']
+	axis_label = 'delt'
+
+	def sub_validate(self, values):
+		if any([x =< 0 for x in values]):
+			print("Error: delt values outside allowed range (x>0)")
+			values = [x for x in values if (x>0)]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['knobs']['delt'] = val
+		return nml
+
+
+
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,delt]
