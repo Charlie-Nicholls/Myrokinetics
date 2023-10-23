@@ -170,7 +170,7 @@ class delt(dimension):
 	axis_label = 'delt'
 
 	def sub_validate(self, values):
-		if any([x =< 0 for x in values]):
+		if any([x <= 0 for x in values]):
 			print("Error: delt values outside allowed range (x>0)")
 			values = [x for x in values if (x>0)]
 		return values
