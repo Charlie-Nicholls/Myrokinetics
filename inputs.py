@@ -299,7 +299,7 @@ class scan_inputs(object):
 			dim_type = self.inputs[key]['type']
 			dim_type = dim_type.lower()
 			if dim_type and dim_type not in dim_lookup['_full_list']:
-				print(f"ERROR: {dim_type} not a valid dimension. Valid = {dim_lookup['_list']}")
+				print(f"ERROR: {dim_type} not a valid dimension. Valid = {dim_lookup['_list'].keys()}")
 			elif dim_type:
 				dim = dim_lookup[dim_type](values=self.inputs[key]['values'],mini=self.inputs[key]['min'],maxi=self.inputs[key]['max'],num=self.inputs[key]['num'])
 				if dim.name in dimensions:
@@ -313,7 +313,7 @@ class scan_inputs(object):
 		if 'single_parameters' in self.inputs.keys():
 			for dim_type in self.inputs['single_parameters']:
 				if dim_type not in dim_lookup['_full_list']:
-					print(f"ERROR: {dim_type} not a valid parameter. Must be a dimension, valid = {dim_lookup['_list']}")
+					print(f"ERROR: {dim_type} not a valid parameter. Must be a dimension, valid = {dim_lookup['_list'].keys()}")
 				elif dim_type in dimensions:
 					print(f"ERROR: {dim_type} defined multiple times. As single parameter and dimension")
 				elif dim_type in single_parameters:

@@ -200,4 +200,4 @@ class delt(dimension):
 
 
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,delt]
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,fexpr,delt]
