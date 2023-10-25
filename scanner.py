@@ -301,6 +301,8 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 	
 	def get_all_runs(self):
 		def loop(n,variables={},runs=[]):
+			if n == 0:
+				return [{}]
 			dim = self.dimensions[self.inputs.dim_order[len(self.dimensions)-n]]
 			for val in dim.values:
 				variables[dim.name] = val
