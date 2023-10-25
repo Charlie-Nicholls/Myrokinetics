@@ -5,7 +5,7 @@ from copy import deepcopy
 
 default_settings = {"suptitle": None,
 		"x_axis_type": "beta_prime",
-		"y_axis_type": "quasilinear",
+		"y_axis_type": "growth_rate",
 		"xscale": "linear",
 		"yscale": "linear",
 		"slider_1": {"dimension_type": None, "id": 0},
@@ -128,7 +128,7 @@ class plot_slice(object):
 	
 	def _load_x_axis(self, axis_type):
 		if axis_type not in self.reader.dimensions:
-			print(f"ERROR: axis_type not found, valid types {self.reader.dimensions}")
+			print(f"ERROR: axis_type not found, valid types {self.reader.dimensions.keys()}")
 			return
 		
 		if self.settings['x_axis_type'] not in self.dims:

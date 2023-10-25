@@ -130,14 +130,21 @@ class myro_read(object):
 			return None
 	
 	def get_run_list(self, run, keys = '_run_keys'):
+		if run == {}:
+			return list(self.data['gyro'].keys())
 		idlist = []
 		for key, val in run.items():
 			idlist.append(self.data[keys][key][val])
-		run_id = list(set.intersection(*map(set, idlist)))
-		if len(run_id) > 0:
-			return run_id
-		else:
+		if len(idlist) == 0:
 			return None
+		elif len(idlist) == 1:
+			return list(idlist[0])
+		else:
+			run_id = list(set.intersection(*map(set, idlist)))
+			if len(run_id) > 0:
+				return run_id
+			else:
+				return None
         		
 	def print_inputs(self):
         	self.inputs.print_inputs()
@@ -358,8 +365,14 @@ class myro_read(object):
 			norm_grs = []
 			for run_id in run_ids:
 				abs_grs.append(self.data['gyro'][run_id]['growth_rate'])
-				norm_grs.append(self.data['gyro'][run_id]['growth_rate']/self.data['gyro'][run_id]['ky'])
-				self.data['gyro'][run_id]['growth_rate_norm'] = self.data['gyro'][run_id]['growth_rate']/(self.data['gyro'][run_id]['ky']**2)
+				if 'ky' in self.data['gyro'][run_id]:
+					ky = self.data['gyro'][run_id]['ky']
+				elif 'ky' in self.single_parameters:
+					ky = self.single_parameters['ky'].values[0]
+				else:
+					ky = nan
+				norm_grs.append(self.data['gyro'][run_id]['growth_rate']/ky)
+				self.data['gyro'][run_id]['growth_rate_norm'] = self.data['gyro'][run_id]['growth_rate']/(ky**2)
 			
 			if len([x for x in abs_grs if isfinite(x)]) == 0:
 				abs_id = run_ids[0]
@@ -503,7 +516,7 @@ class myro_read(object):
 		return Plotters['Theta'](reader = self, settings = settings)
 		
 	def plot_slice(self,  settings = {}, x_dim = None, y_dim = None, init = None, limit = None):
-		if self['ql'] is None:
+		if y_dim in ['quasilinear','ql_norm'] and self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
 			init = list(init)

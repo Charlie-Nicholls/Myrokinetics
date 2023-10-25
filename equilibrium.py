@@ -265,12 +265,6 @@ class equilibrium(object):
 			
 		nml = self.get_surface_input(psiN)
 		
-		for dim_name, dim in self.inputs.dimensions.items():
-			nml = dim.edit_nml(nml=nml,val=run[dim_name])
-			
-		for dim_name, dim in self.inputs.single_parameters.items():
-			nml = dim.single_edit_nml(nml)
-		
 		if self.inputs['knobs']['fixed_delt'] == False:
 			ky = nml['kt_grids_single_parameters']['aky']
 			delt = 0.04/ky
@@ -279,7 +273,13 @@ class equilibrium(object):
 			nml['knobs']['delt'] = delt
 		
 		nml['dist_fn_knobs']['g_exb'] = 0 
+		
+		for dim_name, dim in self.inputs.dimensions.items():
+			nml = dim.edit_nml(nml=nml,val=run[dim_name])
 			
+		for dim_name, dim in self.inputs.single_parameters.items():
+			nml = dim.single_edit_nml(nml)
+		
 		for key in namelist_diff.keys():
 			for skey in namelist_diff[key].keys():
 				nml[key][skey] = namelist_diff[key][skey]

@@ -13,13 +13,12 @@ default_settings = {"suptitle": None,
 		"slider_4": {"dimension_type": None, "id": 0},
 		"run": {},
 		"fontsizes": {"axis": 11,"title": 13,"suptitle": 20},
-		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "suptitle": True, "title": True},
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "suptitle": True, "title": True, 'absolute': True, 'real': True, 'imag': True},
 }
 
 class plot_theta(object):
 	def __init__(self, reader, settings = {}):
 		self.reader = reader
-		
 		self.settings = {}
 		self.init_settings = {}
 		defaults = deepcopy(default_settings)
@@ -214,16 +213,29 @@ class plot_theta(object):
 				i = i+1
 		
 		if self['polar']:
-			self.ax[1].plot(theta, rt_fun,'b--')
-			self.ax[1].plot(theta, it_fun,'r--')
+			if self['visible']['real']:
+				self.ax[1].plot(theta, rt_fun,'r--',label="real")
+			if self['visible']['imag']:
+				self.ax[1].plot(theta, it_fun,'b--',label="imaginary")
+			if self['visible']['absolute']:
+				self.ax[1].plot(theta,[(x**2 + y**2)**0.5 for x,y in zip(rt_fun,it_fun)],'k--',label="absolute")
 		else:
 			for i in range(self['periods']):
-				self.ax[1].plot(theta+i*2*pi, rt_fun,'b--')
-				self.ax[1].plot(theta+i*2*pi, it_fun,'r--')
+				if self['visible']['real']:
+					self.ax[1].plot(theta+i*2*pi, rt_fun,'b--',label="real")
+				if self['visible']['imag']:
+					self.ax[1].plot(theta+i*2*pi, it_fun,'r--',label="imaginary")
+				if self['visible']['absolute']:
+					self.ax[1].plot(theta+i*2*pi, [(x**2 + y**2)**0.5 for x,y in zip(rt_fun,it_fun)],'k--',label="absolute")
 			self.ax[1].set_xlabel("Theta")
 			self.ax[1].set_ylabel(self['var'])
-		self.ax[0].plot(data['theta'], real(data[self['var']]),'b--')
-		self.ax[0].plot(data['theta'], imag(data[self['var']]),'r--')
+		if self['visible']['real']:
+			self.ax[0].plot(data['theta'], real(data[self['var']]),'r--',label="real")
+		if self['visible']['imag']:
+			self.ax[0].plot(data['theta'], imag(data[self['var']]),'b--',label="imaginary")
+		if self['visible']['absolute']:
+			self.ax[0].plot(data['theta'], [abs(x) for x in data[self['var']]],'k--',label="absolute")
+		self.ax[0].legend(loc=0)
 		self.ax[0].set_xlabel("Ballooning Angle")
 		self.ax[0].set_ylabel(self['var'])
 		self.fig.canvas.draw_idle()

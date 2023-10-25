@@ -13,7 +13,7 @@ default_settings = {"suptitle": None,
 		"run": {},
 		"options": [True],
 		"fontsizes": {"legend": 10,"ch_box": 8,"axis": 11,"title": 13,"suptitle": 20, "verify": 8},
-		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "op_box": True, "suptitle": True, "title": True, "legend": True, "verify": True, 'absolute': True},
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "op_box": True, "suptitle": True, "title": True, "legend": True, "verify": True, 'absolute': True, 'real': True, 'imag': True},
 }
 
 class plot_diag(object):
@@ -243,8 +243,10 @@ class plot_diag(object):
 			if self['var'] in ['phi','apar','bpar','epar']:
 				norm = max([amax([abs(i) for i in data[x]]) for x in ['phi','apar','bpar','epar'] if (x in data and data[x] is not None)])
 				field_norm = field/norm
-				self.ax.plot(theta,real(field_norm),'r',label="real")
-				self.ax.plot(theta,imag(field_norm),'b',label="imaginary")
+				if self['visible']['real']:
+					self.ax.plot(theta,real(field_norm),'r',label="real")
+				if self['visible']['imag']:
+					self.ax.plot(theta,imag(field_norm),'b',label="imaginary")
 				if self['visible']['absolute']:
 					self.ax.plot(theta,[abs(x) for x in field_norm],'k--',label="absolute")
 				self.ax.legend(loc=0)

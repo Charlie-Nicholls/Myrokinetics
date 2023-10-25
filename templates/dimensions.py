@@ -161,6 +161,24 @@ class bakdif(dimension):
 		for key in [x for x in nml.keys() if 'dist_fn_species_knobs_' in x]:
 			nml[key]['bakdif'] = val
 		return nml
+		
+class fexpr(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+
+	name_keys = ['fexpr']
+	axis_label = 'fexpr'
+
+	def sub_validate(self, values):
+		if any([x < 0 or x > 1 for x in values]):
+			print("Error: fexpr values outside allowed range (0<=x<=1)")
+			values = [x for x in values if (0<=x<=1)]
+		return values
+
+	def edit_nml(self, nml, val):
+		for key in [x for x in nml.keys() if 'dist_fn_species_knobs_' in x]:
+			nml[key]['fexpr'] = val
+		return nml
 
 class delt(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None):
