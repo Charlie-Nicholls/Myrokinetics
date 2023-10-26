@@ -206,7 +206,11 @@ class equilibrium(object):
 		#Set bakdif to 0 for Electormagnetic Runs as a default
 		nml['dist_fn_species_knobs_1']['bakdif'] = 0
 		nml['dist_fn_species_knobs_2']['bakdif'] = 0
-		nml['dist_fn_species_knobs_3']['bakdif'] = 0	
+		nml['dist_fn_species_knobs_3']['bakdif'] = 0
+		
+		nml['dist_fn_knobs']['g_exb'] = 0
+		
+		nml['theta_grid_eik_knobs']['equal_arc'] = False
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
@@ -271,8 +275,6 @@ class equilibrium(object):
 			if delt > 0.01:
 				delt = 0.01
 			nml['knobs']['delt'] = delt
-		
-		nml['dist_fn_knobs']['g_exb'] = 0 
 		
 		for dim_name, dim in self.inputs.dimensions.items():
 			nml = dim.edit_nml(nml=nml,val=run[dim_name])
