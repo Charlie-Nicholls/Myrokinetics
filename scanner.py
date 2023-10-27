@@ -309,10 +309,10 @@ python {self.inputs['data_path']}/submit_files/{filename}.py &
 
 wait""")
 				if n_par > n_sim and n + n_sim < n_par:
-					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
+					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/ideal_{n+n_sim}.job")
 				jobfile.close()
 			for n in range(n_sim):
-				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
+				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/ideal_{n}.job\"")
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
 		if checkSetup:
