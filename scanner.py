@@ -267,8 +267,8 @@ wait""")
 				print(f"{len(check['ideal_complete'])} Existing Ideal Runs Detected")
 			runs = check['ideal_incomplete']
 			
-		for psiN in runs:
-			sub_dir = f"{directory}/ideal/psin = {psiN:.4g}"
+		for run in runs:
+			sub_dir = self.get_ideal_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
 			
 			existing_inputs = [] 
@@ -285,7 +285,7 @@ wait""")
 				compile_modules = systems[self['system']]['compile']
 				jobfile = open(f"{sub_dir}/{filename}.job",'w')
 				jobfile.write(f"""#!/bin/bash
-#SBATCH --time=05:00:00
+#SBATCH --time=02:00:00
 #SBATCH --job-name={self.inputs['run_name']}
 #SBATCH --ntasks=1
 #SBATCH --output={sub_dir}/{filename}.slurm
@@ -313,6 +313,25 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			if n == len(self.dimensions):
 				return runs
 		return loop(n=len(self.dimensions))
+	
+	def get_all_ideal_runs(self):
+		runs = []
+		if 'theta0' in self.dimensions:
+			theta0s = self.dimensions['theta0'].values
+		elif 'theta0' in self.single_parameters:
+			theta0s = self.single_parameters['theta'].values
+		else:
+			theta0s = [0]
+		
+		if 'psin' in self.dimensions:
+			psins = self.dimensions['psin'].values
+		else:
+			psins = self.single_parameters['psin'].values
+		
+		for psiN in psins:
+			for theta0 in theta0s:
+				runs.append({'psin': psiN, 'theta0': theta0})
+		return runs
 				
 	def make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None, group_runs = None):
 		if checkSetup:
@@ -347,7 +366,24 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 			self._input_files.add(f"{sub_dir}/{filename}.in")
 	
 	def get_run_directory(self, run):
-		sub_dir = f"{self.inputs['data_path']}/run_files/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
+		sub_dir = f"{self.inputs['data_path']}/gyro_files/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
+		return sub_dir
+	
+	def get_ideal_run_directory(self, run):
+		if 'psin' not in run and 'psin' not in self.single_parameters:
+			print("ERROR: psin not given")
+			return None
+		elif 'psin' not in run and 'psin' in self.single_parameters:
+			run['psin'] = self.single_parameters['psin'].values[0]
+		if 'theta0' not in run and 'theta0' not in self.single_parameters and 'theta0' not in self.dimensions:
+			run['theta0'] = 0
+		elif 'theta0' not in run and 'theta0' in self.single_parameters:
+			run['theta0'] = self.single_parameters['theta0'].values[0]
+		elif 'theta0' not in run and 'theta0' in self.dimensions:
+			print("ERROR: theta0 not given")
+			return None
+		
+		sub_dir = f"{self.inputs['data_path']}/ideal_files/" + "/".join([f"{name} = {run[name]:.4g}" for name in ['psin','theta0']])
 		return sub_dir
 	
 	def update_itteration(self):
@@ -379,7 +415,6 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		if gyro:
 			for run in self.get_all_runs():
 				sub_dir = self.get_run_directory(run)
-				
 				if self['system'] != 'archer2' and os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
 					finished_gyro.append(run)
 				elif self['system'] == 'archer2' and os.path.exists(f"{sub_dir}/itteration_0.fin"):
@@ -390,11 +425,12 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		unfinished_ideal = []
 		finished_ideal = []
 		if ideal:
-			for psiN in self.dimensions['psin'].values:
-				if os.path.exists(f"{directory}/ideal/psin = {psiN}/itteration_0.ballstab_2d"):
-					finished_ideal.append(psiN)
+			for run in self.get_all_ideal_runs():
+				sub_dir = self.get_ideal_run_directory(run)
+				if os.path.exists(f"{sub_dir}/itteration_0.ballstab_2d"):
+					finished_ideal.append(run)
 				else:
-					unfinished_ideal.append(psiN)
+					unfinished_ideal.append(run)
 		
 		if doPrint:
 			print(f"Gyro Runs Complete: {len(finished_gyro)} | Incomplete : {len(unfinished_gyro)}")
