@@ -71,6 +71,7 @@ default_inputs = {'files': {
 	'data_path': None,
 	'itteration': 0,
 	},
+	'single_parameters': {},
 	}
 
 class scan_inputs(object):

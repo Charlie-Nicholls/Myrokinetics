@@ -18,6 +18,7 @@ class myro_scan(object):
 		self.path = directory
 		self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
 		self._input_files = set()
+		self._ideal_input_files = set()
 		self.load_inputs(input_file = input_file, directory = directory)
 		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
 	
@@ -169,32 +170,8 @@ class myro_scan(object):
 					self._input_files.remove(input_file)
 					n_jobs -= 1
 		elif self['system'] == 'viking':
-			if n_jobs is None or n_jobs > len(self._input_files):
-				n_jobs = len(self._input_files)
-			while n_jobs > 0:
-				for input_file in self._input_files:
-					input_file = self._input_files[i]
-					job_name = input_file[:-3] + ".job"
-					directory = "".join([f"{x}/" for x in input_file.split('/')[:-1]])
-					os.system(f"cd {directory}")
-					jobfile = open(f"{job_name}",'w')
-					jobfile.write(f"""{sbatch}
-
-{compile_modules}
-
-which gs2
-gs2 --build-config
-
-echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"
-echo \"Input: {sub_dir}/{filename}.in\"
-gs2 \"{sub_dir}/{filename}.in\"
-echo \"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\"""")
-					jobfile.close()
-					
-					os.system(f"sbatch \"{job_name}\"")
-					os.system(f"cd {cwd}")
-					self._input_files.remove(input_file)
-					n_jobs -= 1
+			#Update for Viking2
+			pass
 		if self['system'] == 'archer2':
 			if n_par is None:
 				n_par = 1
@@ -253,6 +230,86 @@ wait""")
 			for n in range(n_sim):
 				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
 	
+	def run_ideal_jobs(self, n_jobs = None, n_par = None, n_sim = None):
+		if self['system'] in ['viking','archer2']:
+			cwd = os.getcwd()
+			compile_modules = systems[self['system']]['compile']
+			sbatch = "#!/bin/bash"
+			for key, val in self.inputs['sbatch'].items():
+				if key == 'output' and '/' not in val:
+					val = f"{self.inputs['data_path']}/submit_files/{val}"
+				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+	
+		if self['system'] == 'ypi_server':
+			if n_jobs is None or n_jobs > len(self._input_files):
+				n_jobs = len(self._input_files)
+			while n_jobs > 0:
+				for input_file in self._ideal_input_files:
+					os.system(f"ideal_ball \"{input_file}\"")
+					self._ideal_input_files.remove(input_file)
+					n_jobs -= 1
+		elif self['system'] == 'viking':
+			#Update for Viking2	
+			pass	
+		if self['system'] == 'archer2':
+			if n_par is None:
+				n_par = 1
+			if n_sim is None:
+				n_sim = n_par if n_par < 8 else 8
+			if n_sim > 8:
+				print("Archer supports a maximum of n_sim = 8")
+				n_sim = 8
+			os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
+			input_lists = {}
+			for n in range(n_par):
+				input_lists[n] = []
+			if n_jobs == None or n_jobs*n_par > len(self._ideal_input_files):
+				total_jobs = len(self._ideal_input_files)
+			else:
+				total_jobs = n_jobs*n_par
+			input_list = list(self._ideal_input_files)
+			for i in range(total_jobs):
+				input_lists[i%n_par].append(input_list[i])
+				self._ideal_input_files.remove(input_list[i])
+			for n in range(n_par):
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
+				sbatch_n = sbatch_n.replace(f"#SBATCH --nodes = {self.inputs['sbatch']['nodes']}",f"#SBATCH --nodes = 1")
+				filename = f"ideal_{n}"
+				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
+				pyth.write(f"""import os
+from joblib import Parallel, delayed
+from time import sleep
+
+input_files = {input_lists[n]}
+
+def start_run(run):
+	os.system(f"echo \\\"Ideal Input: {{run}}\\\"")
+	os.system(f"srun --nodes=1 --ntasks=1 ideal_ball \\\"{{run}}\\\"")
+	if os.path.exists(f\"{{run[:ballstab_2d]}}.out.nc\"):
+		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
+	else:
+		sleep(60)
+		start_run(run)
+
+Parallel(n_jobs={self.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(run) for run in input_files)""")
+				pyth.close()
+				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
+				jobfile.write(f"""{sbatch_n}
+
+{compile_modules}
+
+which gs2
+gs2 --build-config
+
+python {self.inputs['data_path']}/submit_files/{filename}.py &
+
+wait""")
+				if n_par > n_sim and n + n_sim < n_par:
+					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
+				jobfile.close()
+			for n in range(n_sim):
+				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
+	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
 		if checkSetup:
 			if not self.check_setup():
@@ -279,25 +336,7 @@ wait""")
 			
 			nml = self.eqbm.get_surface_input(psiN = psiN)
 			nml.write(f"{sub_dir}/{filename}.in", force=True)
-			if self['system'] == 'ypi_server':
-				self._input_files.append(f"ideal_ball \"{sub_dir}/{filename}.in\"")
-			else:
-				compile_modules = systems[self['system']]['compile']
-				jobfile = open(f"{sub_dir}/{filename}.job",'w')
-				jobfile.write(f"""#!/bin/bash
-#SBATCH --time=02:00:00
-#SBATCH --job-name={self.inputs['run_name']}
-#SBATCH --ntasks=1
-#SBATCH --output={sub_dir}/{filename}.slurm
-
-{compile_modules}
-
-which gs2
-gs2 --build-config
-
-ideal_ball \"{sub_dir}/{filename}.in\"""")
-				jobfile.close()
-				self._input_files.append(f"sbatch \"{sub_dir}/{filename}.job\"")
+			self._ideal_input_files.append(f"{sub_dir}/{filename}.job")
 	
 	def get_all_runs(self):
 		def loop(n,variables={},runs=[]):
@@ -427,7 +466,7 @@ ideal_ball \"{sub_dir}/{filename}.in\"""")
 		if ideal:
 			for run in self.get_all_ideal_runs():
 				sub_dir = self.get_ideal_run_directory(run)
-				if os.path.exists(f"{sub_dir}/itteration_0.ballstab_2d"):
+				if os.path.exists(f"{sub_dir}/itteration_0.fin"):
 					finished_ideal.append(run)
 				else:
 					unfinished_ideal.append(run)
