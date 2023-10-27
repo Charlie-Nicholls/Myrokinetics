@@ -337,7 +337,7 @@ wait""")
 			nml = self.eqbm.get_surface_input(psiN = run['psin'])
 			nml['ballstab_knobs']['theta0'] = run['theta0']
 			nml.write(f"{sub_dir}/{filename}.in", force=True)
-			self._ideal_input_files.append(f"{sub_dir}/{filename}.job")
+			self._ideal_input_files.add(f"{sub_dir}/{filename}.job")
 	
 	def get_all_runs(self):
 		def loop(n,variables={},runs=[]):
