@@ -84,11 +84,15 @@ class myro_scan(object):
 		if not os.path.exists(run_path):
 			os.mkdir(run_path)
 		
-		if self['ideal']:
-			self.make_ideal_files(directory = run_path)
 		if self['gyro']:
 			self.make_gyro_files(directory = run_path, group_runs = group_runs)
-		self.run_jobs(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
+			self.run_jobs(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
+		if self['ideal']:
+			self.make_ideal_files(directory = run_path)
+			if self['gyro']:
+				print("Gyro scan currently running, use run_ideal_jobs when completed to run ideal scan")
+			else:
+				self.run_ideal_jobs(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
 	
 	def check_setup(self, ideal = None, gyro = None):
 		if not self.inputs.check_scan():
@@ -285,7 +289,7 @@ input_files = {input_lists[n]}
 def start_run(run):
 	os.system(f"echo \\\"Ideal Input: {{run}}\\\"")
 	os.system(f"srun --nodes=1 --ntasks=1 ideal_ball \\\"{{run}}\\\"")
-	if os.path.exists(f\"{{run[:ballstab_2d]}}.out.nc\"):
+	if os.path.exists(f\"{{run[:-3]}}.ballstab_2d\"):
 		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
 	else:
 		sleep(60)
@@ -337,7 +341,7 @@ wait""")
 			nml = self.eqbm.get_surface_input(psiN = run['psin'])
 			nml['ballstab_knobs']['theta0'] = run['theta0']
 			nml.write(f"{sub_dir}/{filename}.in", force=True)
-			self._ideal_input_files.add(f"{sub_dir}/{filename}.job")
+			self._ideal_input_files.add(f"{sub_dir}/{filename}.in")
 	
 	def get_all_runs(self):
 		def loop(n,variables={},runs=[]):
