@@ -1,6 +1,7 @@
 class dimension(object):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		self.values = values
+		self.option = None
 		self.edit_dimension(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = []
@@ -57,9 +58,6 @@ class dimension(object):
 	@property
 	def num(self):
 		return len(self.values)
-	
-	def option(self):
-		return self.option
 		
 	def __len__(self):
 		return len(self.values)
