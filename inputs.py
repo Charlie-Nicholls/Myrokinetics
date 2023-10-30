@@ -38,6 +38,7 @@ possible_keys = {
 	'min': ['min','minimum'],
 	'max': ['max','maximum'],
 	'num': ['num','number','len'],
+	'option': ['option','opt','options'],
 	},
 	}
 
