@@ -210,7 +210,7 @@ class scan_inputs(object):
 				if skey not in possible_keys['dimension_n']:
 					print(f"ERROR: {skey} is not a valid {key} input")
 					del(self.inputs[key][skey])
-			for skey in ['type','values','min','max','num','options']:
+			for skey in ['type','values','min','max','num','option']:
 				if skey not in self.inputs[key]:
 					self.inputs[key][skey] = None
 			if type(self.inputs[key]['values']) == list:
