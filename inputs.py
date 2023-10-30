@@ -210,7 +210,7 @@ class scan_inputs(object):
 				if skey not in possible_keys['dimension_n']:
 					print(f"ERROR: {skey} is not a valid {key} input")
 					del(self.inputs[key][skey])
-			for skey in ['type','values','min','max','num']:
+			for skey in ['type','values','min','max','num','options']:
 				if skey not in self.inputs[key]:
 					self.inputs[key][skey] = None
 			if type(self.inputs[key]['values']) == list:
@@ -302,7 +302,7 @@ class scan_inputs(object):
 			if dim_type and dim_type not in dim_lookup['_full_list']:
 				print(f"ERROR: {dim_type} not a valid dimension. Valid = {dim_lookup['_list'].keys()}")
 			elif dim_type:
-				dim = dim_lookup[dim_type](values=self.inputs[key]['values'],mini=self.inputs[key]['min'],maxi=self.inputs[key]['max'],num=self.inputs[key]['num'])
+				dim = dim_lookup[dim_type](values=self.inputs[key]['values'],mini=self.inputs[key]['min'],maxi=self.inputs[key]['max'],num=self.inputs[key]['num'],option=self.inputs[key]['option'])
 				if dim.name in dimensions:
 					print(f"ERROR: {dim_type} defined multiple times")
 				else:
@@ -339,6 +339,7 @@ class scan_inputs(object):
 			self.inputs[f"dimension_{dim_id+1}"]['min'] = dim.min
 			self.inputs[f"dimension_{dim_id+1}"]['max'] = dim.max
 			self.inputs[f"dimension_{dim_id+1}"]['num'] = len(dim)
+			self.inputs[f"dimension_{dim_id+1}"]['option'] = dim.option
 		
 		self.dimensions = dimensions
 		self.single_parameters = single_parameters

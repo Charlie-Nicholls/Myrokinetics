@@ -1,9 +1,11 @@
 class dimension(object):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		self.values = values
-		self.edit_dimension(values = values, mini = mini, maxi = maxi, num = num)
+		self.edit_dimension(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = []
+	axis_label = ''
+	valid_options = []
 
 	def __getitem__(self, key):
 		if type(key) == int:
@@ -15,6 +17,8 @@ class dimension(object):
 			return self.max
 		if key in ['num','n','len']:
 			return len(self)
+		if key in ['option']:
+			return self.option
 		print(f"{key} not found")
 		return None
 		
@@ -53,6 +57,9 @@ class dimension(object):
 	@property
 	def num(self):
 		return len(self.values)
+	
+	def option(self):
+		return self.option
 		
 	def __len__(self):
 		return len(self.values)
@@ -62,7 +69,7 @@ class dimension(object):
 		return self.name_keys[0].lower()
 
 
-	def edit_dimension(self, values = None, mini = None, maxi = None, num = None):
+	def edit_dimension(self, values = None, mini = None, maxi = None, num = None, option = None):
 		if all([x is None for x in [values, mini, maxi, num]]):
 			print(f"ERROR: all {self.name} values are None")
 			return
@@ -92,3 +99,8 @@ class dimension(object):
 		if self.values is not None:
 			self.values.sort()
 			self.values = self.sub_validate(self.values)
+		
+		if option in self.valid_options:
+			self.option = option
+		elif option is not None and option not in self.valid_options:
+			print(f"ERROR: option is not valid, valid options = {self.valid_options}")

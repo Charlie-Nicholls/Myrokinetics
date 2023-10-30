@@ -3,11 +3,12 @@ from ..dimension import dimension
 '''
 TEMPLATE DIMENSION SUBCLASS | Rememeber to add any new dimensions to dimensions_list
 class DimensionType(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['']
 	axis_label = ''
+	valid_options = []
 
 	def sub_validate(self, values):
 		#Any constraints or corrections for your specific dimension
@@ -19,11 +20,12 @@ class DimensionType(dimension):
 '''
 
 class psiN(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['psin','psi','psi_norm']
 	axis_label = r'$\psi_{N}$'
+	valid_options = []
 
 	def sub_validate(self, values):
 		if any([x <= 0 or x > 1 for x in values]):
@@ -35,12 +37,13 @@ class psiN(dimension):
 		return nml
 
 class beta_prime(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['beta_prime','betap','bp','beta_p','b_p']
 	axis_label = r'$\beta^{\prime}$'
-
+	valid_options = []
+	
 	def sub_validate(self, values):
 		values = [abs(x) for x in values]
 		values.sort()
@@ -59,12 +62,13 @@ class beta_prime(dimension):
 		return nml
 
 class shear(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['shear','shat','s_hat','sh']
 	axis_label = r'$\hat{s}$'
-
+	valid_options = []
+	
 	def sub_validate(self, values):
 		if any([x<1e-4 for x in values]):
 				values = list(set([x if x>1e-4 else 1e-4 for x in values]))
@@ -76,11 +80,12 @@ class shear(dimension):
 		return nml
 
 class ky(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['ky','aky','ky_rho0']
 	axis_label = r'$k_{y}\rho_{0}$'
+	valid_options = []
 
 	def sub_validate(self, values):
 		if any([x <= 0 for x in values]):
@@ -93,11 +98,12 @@ class ky(dimension):
 		return nml
 
 class theta0(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['theta0','theta','t0']
 	axis_label = r'$\theta_{0}$'
+	valid_options = []
 
 	def sub_validate(self, values):
 		from numpy import pi
@@ -111,11 +117,12 @@ class theta0(dimension):
 		return nml
 
 class nperiod(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['nperiod']
 	axis_label = 'nperiod'
+	valid_options = []
 
 	def sub_validate(self, values):
 		if any([x <= 0 for x in values]):
@@ -128,11 +135,12 @@ class nperiod(dimension):
 		return nml
 
 class ntheta(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['ntheta']
 	axis_label = 'ntheta'
+	valid_options = []
 
 	def sub_validate(self, values):
 		if any([x <= 0 for x in values]):
@@ -145,11 +153,12 @@ class ntheta(dimension):
 		return nml
 
 class bakdif(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['bakdif']
 	axis_label = 'bakdif'
+	valid_options = []
 
 	def sub_validate(self, values):
 		if any([x < 0 for x in values]):
@@ -163,11 +172,12 @@ class bakdif(dimension):
 		return nml
 		
 class fexpr(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['fexpr']
 	axis_label = 'fexpr'
+	valid_options = []
 
 	def sub_validate(self, values):
 		if any([x < 0 or x > 1 for x in values]):
@@ -181,11 +191,12 @@ class fexpr(dimension):
 		return nml
 
 class delt(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
 
 	name_keys = ['delt']
 	axis_label = 'delt'
+	valid_options = []
 
 	def sub_validate(self, values):
 		if any([x <= 0 for x in values]):
@@ -197,7 +208,34 @@ class delt(dimension):
 		nml['knobs']['delt'] = val
 		return nml
 
+class vnewk(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+		if self.option is None:
+			self.option = 'all'
 
+	name_keys = ['vnewk']
+	axis_label = 'vnewk'
+	valid_options = ['all','electron','ion','deuterium','tritium','impurity']
 
+	def sub_validate(self, values):
+		if any([x < 0 for x in values]):
+			print("Error: delt values outside allowed range (x>=0)")
+			values = [x for x in values if (x>=0)]
+		return values
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,fexpr,delt]
+	def edit_nml(self, nml, val):
+		for key in [x for x in nml.keys() if 'species_parameter_' in x]:
+			spec_type = nml[key]['type']
+			spec_z = nml[key]['z']
+			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
+				nml[key]['vnewk'] = val
+			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
+				nml[key]['vnewk'] = val
+			elif nml[key]['type'] == 'ion' and nml[key]['z'] == 1 and self.option in ['all','ion','tritium']:
+				nml[key]['vnewk'] = val
+			elif nml[key]['type'] == 'ion' and self.option in ['all','impurity']:
+				nml[key]['vnewk'] = val
+		return nml
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,fexpr,delt,vnewk]
