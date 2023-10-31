@@ -301,7 +301,7 @@ class scan_inputs(object):
 			dim_type = self.inputs[key]['type']
 			dim_type = dim_type.lower()
 			if dim_type and dim_type not in dim_lookup['_full_list']:
-				print(f"ERROR: {dim_type} not a valid dimension. Valid = {dim_lookup['_list'].keys()}")
+				print(f"ERROR: {dim_type} not a valid dimension. Valid = {dim_lookup['_list']}")
 			elif dim_type:
 				dim = dim_lookup[dim_type](values=self.inputs[key]['values'],mini=self.inputs[key]['min'],maxi=self.inputs[key]['max'],num=self.inputs[key]['num'],option=self.inputs[key]['option'])
 				if dim.name in dimensions:
