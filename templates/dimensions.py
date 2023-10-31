@@ -225,7 +225,7 @@ class vnewk(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		for key in [x for x in nml.keys() if 'species_parameter_' in x]:
+		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
 			spec_type = nml[key]['type']
 			spec_z = nml[key]['z']
 			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:

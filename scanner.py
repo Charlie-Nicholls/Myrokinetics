@@ -274,7 +274,7 @@ wait""")
 				self._ideal_input_files.remove(input_list[i])
 			for n in range(n_par):
 				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
-				sbatch_n = sbatch_n.replace(f"#SBATCH --nodes ={self.inputs['sbatch']['nodes']}",f"#SBATCH --nodes={len(input_lists[n])}")
+				sbatch_n = sbatch_n.replace(f"#SBATCH --nodes={self.inputs['sbatch']['nodes']}",f"#SBATCH --nodes={len(input_lists[n])}")
 				filename = f"ideal_{n}"
 				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
 				pyth.write(f"""import os
