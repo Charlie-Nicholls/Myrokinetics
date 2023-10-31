@@ -245,8 +245,8 @@ class tprim(dimension):
 		if self.option is None:
 			self.option = 'all'
 
-	name_keys = ['vnewk']
-	axis_label = 'vnewk'
+	name_keys = ['tprim']
+	axis_label = 'tprim'
 	valid_options = ['all','electron','ion','deuterium','tritium','impurity']
 
 	def sub_validate(self, values):

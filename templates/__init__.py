@@ -4,7 +4,7 @@ from .systems import systems
 
 dim_lookup = {'_list': [], '_full_list': []}
 for dim in dimensions_list:
-	dim_lookup['_list'].append(dim.name)
+	dim_lookup['_list'].append(dim.name_keys[0].lower())
 	for dim_name in dim.name_keys:
 		dim_name = dim_name.lower()
 		dim_lookup[dim_name] = dim
