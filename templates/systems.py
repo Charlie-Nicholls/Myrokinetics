@@ -1,25 +1,32 @@
 complile_viking = """module purge
-module load tools/git
-module load compiler/ifort
-module load mpi/impi
-module load numlib/FFTW
-module load data/netCDF/4.6.1-intel-2018b
-module load data/netCDF-Fortran/4.4.4-intel-2018b
-module load numlib/imkl/2018.3.222-iimpi-2018b
-module load lang/Python/3.7.0-intel-2018b
+module load gompi/2022b
+module load OpenMPI/4.1.4-GCC-12.2.0
+module load netCDF-Fortran/4.6.0-gompi-2022b
+module load FFTW/3.3.10-GCC-12.2.0
+module load OpenBLAS/0.3.21-GCC-12.2.0
+module load Python/3.10.8-GCCcore-12.2.0
 export GK_SYSTEM=viking
 export MAKEFLAGS=-IMakefiles
-ulimit -s unlimited"""
+ulimit -s unlimited
+export PATH=${PATH}:${HOME}/gs2/bin"""
 
-save_viking = """module load lang/Python/3.7.0-intel-2018b
-module swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0
-source $HOME/pyroenv2/bin/activate"""
+save_viking = ""#"""module load lang/Python/3.7.0-intel-2018b
+#module swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0
+#source $HOME/pyroenv2/bin/activate"""
 
 sbatch_viking = {
-	'time': '24:00:00',
 	'job-name': 'myro',
+	'partition': 'nodes',
+	'time': '01:00:00',
 	'ntasks': 1,
+	'cpus-per-task': 1,
+	'mem': '1G',
+	'nodes': 1,
+	'account': 'pet-gspt-2019',
+	'mail-type': None,
+	'mail-user': 'cn762@york.ac.uk',
 	'output': 'myro.slurm',
+	'error': 'myro.err',
 	}
 
 complile_archer2 = """module load PrgEnv-gnu
@@ -35,7 +42,7 @@ module load cray-python
 source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 
 sbatch_archer2 = {
-	'time': '24:00:00',
+	'time': '01:00:00',
 	'job-name': 'myro',
 	'nodes': 1,
 	'output': 'myro.slurm',
