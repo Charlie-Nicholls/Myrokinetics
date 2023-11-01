@@ -71,8 +71,7 @@ class plot_ideal(object):
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
 		
-		self.dims = [x for x in self.reader.inputs.dim_order if x in ['psin','theta0']
-
+		self.dims = [x for x in self.reader.inputs.dim_order if x in ['psin','theta0']]
 		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
 		unused_dims = [x for x in self.dims if x not in used_dims]
 		slider_keys = [x for x in self.settings if 'slider_' in x]
@@ -250,7 +249,8 @@ class plot_ideal(object):
 		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions['psin'].axis_label} = {psiN}",visible = False)
 		theta0_line = None
 		if 'theta0' in self['run']:
-			Line2D([0,1],[0.5,0.5],color='k',label=f"{r'$\theta_{0}$'} = {self['run']['theta0']}",visible = False)
+			t0_axis = r'$\theta_{0}$'
+			Line2D([0,1],[0.5,0.5],color='k',label=f"{t0_axis} = {self['run']['theta0']}",visible = False)
 		ideal_line = None
 		eqbm_line = None
 		s_patch = None
