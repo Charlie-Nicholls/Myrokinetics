@@ -241,7 +241,7 @@ class vnewk(dimension):
 class tprim(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		print("Warning, tprim dimension does not adjust beta_prime or fprim for consisntency")
+		print("Warning: tprim dimension does not adjust beta_prime or fprim for consistency")
 		if self.option is None:
 			self.option = 'all'
 
@@ -250,9 +250,6 @@ class tprim(dimension):
 	valid_options = ['all','electron','ion','deuterium','tritium','impurity']
 
 	def sub_validate(self, values):
-		if any([x < 0 for x in values]):
-			print("Error: delt values outside allowed range (x>=0)")
-			values = [x for x in values if (x>=0)]
 		return values
 
 	def edit_nml(self, nml, val):
@@ -269,4 +266,32 @@ class tprim(dimension):
 				nml[key]['tprim'] = val
 		return nml
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim]
+class fprim(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+		print("Warning: fprim dimension does not adjust beta_prime or tprim for consistency")
+		if self.option is None:
+			self.option = 'all'
+
+	name_keys = ['fprim']
+	axis_label = 'fprim'
+	valid_options = ['all','electron','ion','deuterium','tritium','impurity']
+
+	def sub_validate(self, values):
+		return values
+
+	def edit_nml(self, nml, val):
+		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
+			spec_type = nml[key]['type']
+			spec_z = nml[key]['z']
+			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
+				nml[key]['fprim'] = val
+			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
+				nml[key]['fprim'] = val
+			elif nml[key]['type'] == 'ion' and nml[key]['z'] == 1 and self.option in ['all','ion','tritium']:
+				nml[key]['fprim'] = val
+			elif nml[key]['type'] == 'ion' and self.option in ['all','impurity']:
+				nml[key]['fprim'] = val
+		return nml
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim]
