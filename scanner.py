@@ -256,10 +256,7 @@ wait""")
 			if n_par is None:
 				n_par = 1
 			if n_sim is None:
-				n_sim = n_par if n_par < 16 else 16
-			if n_sim > 16:
-				print("Viking limit defaults to n_sim = 16")
-				n_sim = 8
+				n_sim = n_par
 			os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
 			input_lists = {}
 			for n in range(n_par):
@@ -274,28 +271,24 @@ wait""")
 				self._ideal_input_files.remove(input_list[i])
 			for n in range(n_par):
 				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
-				sbatch_n = sbatch_n.replace(f"#SBATCH --nodes={self.inputs['sbatch']['nodes']}",f"#SBATCH --nodes={len(input_lists[n])}")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_ideal_{n}")
 				filename = f"ideal_{n}"
 				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
-				pyth.write(f"""import os
-from joblib import Parallel, delayed
-from time import sleep
-
+				pyth.write(f"""import os, sys
+				
 input_files = {input_lists[n]}
 
-def start_run(run):
-	os.system(f"echo \\\"Ideal Input: {{run}}\\\"")
-	os.system(f"srun --nodes=1 ideal_ball \\\"{{run}}\\\"")
-	if os.path.exists(f\"{{run[:-3]}}.ballstab_2d\"):
-		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
-	else:
-		sleep(60)
-		start_run(run)
-
-Parallel(n_jobs={len(input_lists[n])})(delayed(start_run)(run) for run in input_files)""")
+if __name__ == '__main__':
+	slurm_id = int(sys.argv[1])
+	input_file = input_files[slurm_id]
+	os.system(f"echo \\\"Ideal Input: {{input_file}}\\\"")
+	os.system(f"srun ideal_ball \\\"{{input_file}}\\\"")
+	if os.path.exists(f\"{{input_file[:-3]}}.ballstab2d\"):
+		os.system(f"touch \\\"{{input_file[:-3]}}.fin\\\"")""")
 				pyth.close()
 				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
 				jobfile.write(f"""{sbatch_n}
+#SBATCH --array=0-{n_jobs}
 
 {compile_modules}
 

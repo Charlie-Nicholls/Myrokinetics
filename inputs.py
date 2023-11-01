@@ -199,6 +199,8 @@ class scan_inputs(object):
 						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0]
 					if skey == 'output':
 						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0] + ".slurm"
+					if skey == 'error':
+						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0] + ".err"
 					else:
 						self.inputs['sbatch'][skey] = sbatch[skey]
 					
