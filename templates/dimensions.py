@@ -294,4 +294,34 @@ class fprim(dimension):
 				nml[key]['fprim'] = val
 		return nml
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim]
+class mass(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+		if self.option is None:
+			self.option = 'electron'
+
+	name_keys = ['mass']
+	axis_label = 'mass'
+	valid_options = ['all','electron','ion','deuterium','tritium','impurity']
+
+	def sub_validate(self, values):
+		if any([x <= 0 for x in values]):
+			print("Error: mass values outside allowed range (x>0)")
+			values = [x for x in values if (x>0)]
+		return values
+
+	def edit_nml(self, nml, val):
+		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
+			spec_type = nml[key]['type']
+			spec_z = nml[key]['z']
+			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
+				nml[key]['mass'] = val
+			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
+				nml[key]['mass'] = val
+			elif nml[key]['type'] == 'ion' and nml[key]['z'] == 1 and self.option in ['all','ion','tritium']:
+				nml[key]['mass'] = val
+			elif nml[key]['type'] == 'ion' and self.option in ['all','impurity']:
+				nml[key]['mass'] = val
+		return nml
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass]
