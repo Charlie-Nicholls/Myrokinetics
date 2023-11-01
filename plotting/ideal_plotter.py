@@ -10,10 +10,11 @@ default_settings = {"suptitle": None,
 		"x_axis_type": 'beta_prime',
 		"y_axis_type": 'shear',
 		"slider_1": {"dimension_type": None, "id": 0},
+		"slider_1": {"dimension_type": None, "id": 0},
 		"run": {},
 		"options": [True,False,True,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
-		"visible": {"slider_1": True, "op_box": True, "suptitle": True, "title": True},
+		"visible": {"slider_1": True, "slider_2": True, "op_box": True, "suptitle": True, "title": True},
 		"colours": {"unstable": 'r', "stable": 'g', "boundary": 'k'}
 }
 
@@ -70,7 +71,7 @@ class plot_ideal(object):
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
 		
-		self.dims = [x for x in self.reader.inputs.dim_order if x == 'psin']
+		self.dims = [x for x in self.reader.inputs.dim_order if x in ['psin','theta0']
 
 		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
 		unused_dims = [x for x in self.dims if x not in used_dims]
@@ -87,7 +88,8 @@ class plot_ideal(object):
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
 		
-		self._slider_axes = {'slider_1': axes([0.15, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
+		self._slider_axes = {'slider_1': axes([0.25, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
+		'slider_2': axes([0.25, 0.05, 0.5, 0.03],visible=self['visible']['slider_2']),
 		}
 		self.sliders = {}
 		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
@@ -231,10 +233,12 @@ class plot_ideal(object):
 			psiN = self['run']['psin']
 		else:
 			psiN = self.reader.single_parameters['psin'].values[0]
+		run_id = self.reader.get_run_id(run=self['run'],key='_ideal_keys')
+		data = self.reader.data['ideal'][run_id]
 		
-		x_axis = self.reader.data['ideal'][psiN][self['x_axis_type']]
-		y_axis = self.reader.data['ideal'][psiN][self['y_axis_type']]
-		stab = self.reader.data['ideal'][psiN]['stabilities']
+		x_axis = self.reader.data['ideal'][run_id][self['x_axis_type']]
+		y_axis = self.reader.data['ideal'][run_id][self['y_axis_type']]
+		stab = self.reader.data['ideal'][run_id]['stabilities']
 		x_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
 		y_val = self.reader.data['equilibrium'][psiN][self['y_axis_type']]
 		
@@ -244,6 +248,9 @@ class plot_ideal(object):
 		self.ax.set_xlabel(self._x_axis_label,fontsize=self['fontsizes']['axis'])
 		
 		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions['psin'].axis_label} = {psiN}",visible = False)
+		theta0_line = None
+		if 'theta0' in self['run']:
+			Line2D([0,1],[0.5,0.5],color='k',label=f"{r'$\theta_{0}$'} = {self['run']['theta0']}",visible = False)
 		ideal_line = None
 		eqbm_line = None
 		s_patch = None
@@ -276,7 +283,7 @@ class plot_ideal(object):
 				s_patch = pt.Patch(color=self['colours']['stable'], label='Stable')
 				u_patch = pt.Patch(color=self['colours']['unstable'], label='Unstable')
 				
-		handles = [line for line in [psi_line,eqbm_line,ideal_line,s_patch,u_patch] if line is not None]
+		handles = [line for line in [psi_line,theta0_line,eqbm_line,ideal_line,s_patch,u_patch] if line is not None]
 		self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
 		self.ax.legend_.set_visible(self['visible']['title'])
 		

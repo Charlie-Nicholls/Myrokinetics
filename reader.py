@@ -118,18 +118,16 @@ class myro_read(object):
 			run[dim] = self.data['gyro'][run_id][dim]
 		return run
 	
-	def get_run_id(self, run, keys = '_run_keys'):
+	def get_run_id(self, run, keys = '_gyro_keys'):
 		run_id = self.get_run_list(run, keys = keys)
 		if run_id is None:
 			return None
 		if len(run_id) == 1:
 			return run_id[0]
-		elif len(run_id) > 1:
-			return run_id
 		else:
 			return None
 	
-	def get_run_list(self, run, keys = '_run_keys'):
+	def get_run_list(self, run, keys = '_gyro_keys'):
 		if run == {}:
 			return list(self.data['gyro'].keys())
 		idlist = []
@@ -259,7 +257,7 @@ class myro_read(object):
 				return False
 		try:
 			self.data = data_in['data'].item()
-			possible_data = ['gyro','ideal_data','equilibrium','_run_keys','quasilinear']
+			possible_data = ['gyro','ideal_data','equilibrium','_gyro_keys','quasilinear']
 			for key in [x for x in possible_data if x not in self.data.keys()]:
 				self.data[key] = None
 		except:

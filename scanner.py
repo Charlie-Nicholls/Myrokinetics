@@ -458,7 +458,7 @@ wait""")
 		if 'theta0' in self.dimensions:
 			theta0s = self.dimensions['theta0'].values
 		elif 'theta0' in self.single_parameters:
-			theta0s = self.single_parameters['theta'].values
+			theta0s = self.single_parameters['theta0'].values
 		else:
 			theta0s = [0]
 		
@@ -679,11 +679,11 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob'})
 			all_keys = ['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob']
 			
-			run_keys = {}
+			gyro_keys = {}
 			for dim in self.dimensions.values():
-				run_keys[dim.name] = {}
+				gyro_keys[dim.name] = {}
 				for val in dim.values:
-					run_keys[dim.name][val] = set()
+					gyro_keys[dim.name][val] = set()
 				
 			runs = self.get_all_runs()
 			for run in runs:
@@ -697,7 +697,7 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 					
 					run_key = run_data['attributes']['id']
 					for key in run:
-						run_keys[key][run[key]].add(run_key)
+						gyro_keys[key][run[key]].add(run_key)
 					
 					gyro_data[run_key] = run
 					#gyro_data['nml_diffs'] = self.namelist_diffs[?]
@@ -749,11 +749,29 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 			gyro_data = None
 
 		if self['ideal']:
+			from uuid import uuid4
+			ideal_keys = {}
+			if 'theta0' in self.single_parameters:
+				theta0_itt = self.single_parameters['theta0'].values  
+			if 'theta0' in self.dimensions:
+				theta0_itt = self.dimensions['theta0'].values
+			else:
+				theta0_itt = [0]
+			
+			ideal_keys['psin'] = {}
+			for val in psi_itt:
+				ideal_keys['psin'][val] = set()
+			for val in theta0_itt:
+				ideal_keys['psin'][val] = set()
+
 			ideal_data = {}
-			for psiN in psi_itt:
+			for run in self.get_all_ideal_runs():
+				run_id = uuid4()
+				for key in run:
+					gyro_keys[key][run[key]].add(run_id)
+				ideal_data[run_id] = {}
 				try:
-					ideal_data[psiN] = {}
-					sub_dir = f"{directory}/ideal/psin = {psiN:.4g}"
+					sub_dir = get_ideal_run_directory(run)
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
 						existing_inputs.append([x for x in f if x.isdigit()])
@@ -763,21 +781,22 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 					bp = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_bp")
 					stab = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_2d")
 					
-					ideal_data[psiN]['beta_prime'] = [abs(x) for x in bp]
-					ideal_data[psiN]['shear'] = shear.tolist()
-					ideal_data[psiN]['stabilities'] = transpose(stab).tolist()
+					ideal_data[run_id]['beta_prime'] = [abs(x) for x in bp]
+					ideal_data[run_id]['shear'] = shear.tolist()
+					ideal_data[run_id]['stabilities'] = transpose(stab).tolist()
 				except:
-					ideal_data[psiN]['beta_prime'] = None
-					ideal_data[psiN]['shear'] = None
-					ideal_data[psiN]['stabilities'] = None
-					print(f"Save Error for ideal psiN = {psiN}")
+					ideal_data[run_id]['beta_prime'] = None
+					ideal_data[run_id]['shear'] = None
+					ideal_data[run_id]['stabilities'] = None
+					print(f"Save Error for ideal run: {run}")
 		else:
 			ideal_data = None
 		
 		data = {'gyro': gyro_data,
 			'ideal': ideal_data,
 			'equilibrium': equilibrium,
-			'_run_keys': run_keys,
+			'_gyro_keys': gyro_keys,
+			'_ideal_keys': ideal_keys,
 			}
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
