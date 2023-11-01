@@ -174,8 +174,56 @@ class myro_scan(object):
 					self._input_files.remove(input_file)
 					n_jobs -= 1
 		elif self['system'] == 'viking':
-			#Update for Viking2
-			pass
+			if n_par is None:
+				n_par = 1
+			if n_sim is None:
+				n_sim = n_par
+			os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
+			input_lists = {}
+			for n in range(n_par):
+				input_lists[n] = []
+			if n_jobs == None or n_jobs*n_par > len(self._ideal_input_files):
+				total_jobs = len(self._ideal_input_files)
+			else:
+				total_jobs = n_jobs*n_par
+			input_list = list(self._ideal_input_files)
+			for i in range(total_jobs):
+				input_lists[i%n_par].append(input_list[i])
+				self._ideal_input_files.remove(input_list[i])
+			for n in range(n_par):
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_ideal_{n}")
+				filename = f"gyro_{n}"
+				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
+				pyth.write(f"""import os, sys
+				
+input_files = {input_lists[n]}
+
+if __name__ == '__main__':
+	slurm_id = int(sys.argv[1])
+	input_file = input_files[slurm_id]
+	os.system(f"echo \\\"Input: {{input_file}}\\\"")
+	os.system(f"srun --ntasks={self.inputs['sbatch']['cpus-per-task']} \\\"{{input_file}}\\\"")
+	if os.path.exists(f\"{{input_file[:-3]}}.out.nc\"):
+		os.system(f"touch \\\"{{input_file[:-3]}}.fin\\\"")""")
+				pyth.close()
+				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
+				jobfile.write(f"""{sbatch_n}
+#SBATCH --array=0-{len(input_lists[n])}
+
+{compile_modules}
+
+which gs2
+gs2 --build-config
+
+python {self.inputs['data_path']}/submit_files/{filename}.py &
+
+wait""")
+				if n_par > n_sim and n + n_sim < n_par:
+					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
+				jobfile.close()
+			for n in range(n_sim):
+				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")	
 		if self['system'] == 'archer2':
 			if n_par is None:
 				n_par = 1
@@ -272,6 +320,7 @@ wait""")
 			for n in range(n_par):
 				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
 				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_ideal_{n}")
+				sbatch_n = sbatch_n.replace(f"--cpus-per-task={self.inputs['sbatch']['cpus-per-task']}",f"--cpus-per-task=1")
 				filename = f"ideal_{n}"
 				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
 				pyth.write(f"""import os, sys
@@ -288,19 +337,16 @@ if __name__ == '__main__':
 				pyth.close()
 				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
 				jobfile.write(f"""{sbatch_n}
-#SBATCH --array=0-{n_jobs}
+#SBATCH --array=0-{len(input_lists[n])}
 
 {compile_modules}
 
 which gs2
 gs2 --build-config
 
-python {self.inputs['data_path']}/submit_files/{filename}.py &
-
-wait""")
+python {self.inputs['data_path']}/submit_files/{filename}.py $SLURM_ARRAY_TASK_ID""")
 				if n_par > n_sim and n + n_sim < n_par:
 					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/ideal_{n+n_sim}.job")
-				jobfile.close()
 				jobfile.close()
 			for n in range(n_sim):
 				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/ideal_{n}.job\"")	
