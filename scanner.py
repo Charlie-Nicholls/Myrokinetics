@@ -791,6 +791,7 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 					print(f"Save Error for ideal run: {run}")
 		else:
 			ideal_data = None
+			ideal_keys = None
 		
 		data = {'gyro': gyro_data,
 			'ideal': ideal_data,

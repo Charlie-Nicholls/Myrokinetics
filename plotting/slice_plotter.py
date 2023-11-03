@@ -13,9 +13,10 @@ default_settings = {"suptitle": None,
 		"slider_3": {"dimension_type": None, "id": 0},
 		"run": {},
 		"limit": None,
+		"ref_line": {"x_axis": [], "y_axis": []},
 		"fontsizes": {"title": 13, "axis": 17,"suptitle": 20},
-		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "eqbm": True, "suptitle": True, "title": True},
-		"colours": {"eqbm": 'k', "points": 'k', "line": 'r'}
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "eqbm": True, "suptitle": True, "title": True, "ref_line": False},
+		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k'}
 }
 
 class plot_slice(object):
@@ -269,13 +270,13 @@ class plot_slice(object):
 				y_vals[x_id] = self.reader.data['quasilinear'][run_id]
 			else:
 				y_vals[x_id] = self.reader.data['gyro'][run_id][self['y_axis_type']]
-		self.y_axis = y_vals
-		x_axis = [x for i, x in enumerate(self.x_axis) if str(self.y_axis[i]) not in ['nan','inf','-inf']]
-		y_axis = [x for x in self.y_axis if str(x) not in ['nan','inf','-inf']]
+
+		self.x_axis = [x for i, x in enumerate(self.x_axis) if str(y_vals[i]) not in ['nan','inf','-inf']]
+		self.y_axis = [x for x in y_vals if str(x) not in ['nan','inf','-inf']]
 		
 		
-		self.ax.plot(x_axis,y_axis,c=self['colours']['line'])
-		self.ax.plot(x_axis,y_axis,'.',c=self['colours']['points'])
+		self.ax.plot(self.x_axis,self.y_axis,c=self['colours']['line'])
+		self.ax.plot(self.x_axis,self.y_axis,'.',c=self['colours']['points'])
 		
 		if self['visible']['eqbm']:
 			limits = self.ax.get_ylim()
@@ -287,6 +288,10 @@ class plot_slice(object):
 				eqbm_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
 				self.ax.vlines(eqbm_val,0,limits[1],self['colours']['eqbm'])
 				handles.append(Line2D([0.5,0.5],[0,1],c=self['colours']['eqbm'],label = "Equillibrium"))
+		
+		if self['visible']['ref_line']:
+			self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],c=self['colours']['ref_line'])
+			self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],'.',c=self['colours']['ref_points'])
 		
 		if self['limit']:
 			limits = self.ax.get_ylim()
