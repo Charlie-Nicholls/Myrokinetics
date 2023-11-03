@@ -147,10 +147,8 @@ class plot_scan(object):
 		for run in self.data.values():
 			if str(run['growth_rate']) not in ['-inf','inf','nan']:
 				abs_grs.append(run['growth_rate'])
-				if 'ky' in run:
-					norm_grs.append(run['growth_rate']/run['ky']**2)
-				elif 'ky' in self.reader.single_parameters:
-					norm_grs.append(run['growth_rate']/self.reader.single_parameters['ky'].values[0]**2)
+			if str(run['growth_rate_norm']) not in ['-inf','inf','nan']:
+				abs_grs.append(run['growth_rate_norm'])
 			if str(run['mode_frequency']) not in ['-inf','inf','nan']:
 				mfs.append(run['mode_frequency'])
 				
@@ -180,9 +178,9 @@ class plot_scan(object):
 			else:
 				#self.x_axis = self.data['alpha_axis'] needs updating
 				self._x_axis_label = r'$\alpha$'
-		else:
+		elif axis_type in ['beta_prime']:
 			self.x_axis = self.reader.dimensions['beta_prime'].values
-			self._x_axis_label = r'$\beta^{\prime}$'
+			self._x_axis_label = self.reader.dimensions['beta_prime'].axis_label	
 			
 	def set_x_axis_type(self, axis_type):
 		self._load_x_axis(axis_type)
@@ -385,7 +383,7 @@ class plot_scan(object):
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
 				if self['aky']:
-					key = '_run_keys'
+					key = '_gyro_keys'
 				elif status[1]:
 					key = '_norm_gr_keys'
 				else:
@@ -393,16 +391,11 @@ class plot_scan(object):
 				run_id = self.reader.get_run_id(run = run, keys = key)
 				if run_id is not None:
 					run_ids.append(run_id)
-					gr = self.data[run_id]['growth_rate']
 					z_mf[x_id][y_id] = self.data[run_id]['mode_frequency']
 					if status[1]:
-						if 'ky' in self.data[run_id]:
-							ky = self.data[run_id]['ky']
-						else:
-							ky = self.reader.single_parameters['ky'].values[0]
-						z_gr[x_id][y_id] = gr/ky**2
+						z_gr[x_id][y_id] = self.data[run_id]['growth_rate_norm']
 					else:
-						z_gr[x_id][y_id] = gr
+						z_gr[x_id][y_id] = self.data[run_id]['growth_rate']
 				else:
 					z_gr[x_id][y_id] = nan
 					z_mf[x_id][y_id] = nan

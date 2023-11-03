@@ -233,9 +233,9 @@ class verify_scan(object):
 				elif init_nt > 11 and nt < 110:
 					findingGR = False
 					nt = len(data['phi2'])//10
-				elif nt == 2:
+				elif nt == 4:
 					findingGR = False
-					nt = len(data['phi2'])
+					nt = init_nt
 					
 			except Exception as e:
 				findingGR = False

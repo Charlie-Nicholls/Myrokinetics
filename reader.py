@@ -257,7 +257,7 @@ class myro_read(object):
 				return False
 		try:
 			self.data = data_in['data'].item()
-			possible_data = ['gyro','ideal_data','equilibrium','_gyro_keys','quasilinear']
+			possible_data = ['gyro','ideal','equilibrium','_gyro_keys','_ideal_keys','quasilinear']
 			for key in [x for x in possible_data if x not in self.data.keys()]:
 				self.data[key] = None
 		except:
@@ -400,13 +400,10 @@ class myro_read(object):
 		alpha_axis = []
 		alpha_values = []
 		alpha_axis_ideal = []
-		for p, psiN in enumerate(self['psiNs']):
-			alpha_axis.append([abs(x)*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2 for x in self['beta_prime_axis'][p]])
-			alpha_values.append(abs(self['beta_prime_values'][p])*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2)
+		for rid, run in self.data['gyro'].items():
+			self.data['gyro'][rid]['alpha'] = abs(run['beta_prime'])*self.eqbm.eq_data['rmaxis']*qspline(run['psin'])**2
+		for 
 			alpha_axis_ideal.append([abs(x)*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2 for x in self['beta_prime_axis_ideal'][p]])
-		self.data['alpha_axis'] = alpha_axis
-		self.data['alpha_values'] = alpha_values
-		self.data['alpha_axis_ideal'] = alpha_axis_ideal
 	'''
 		
 	def plot_aky(self, init = None, settings = {}):
@@ -426,6 +423,19 @@ class myro_read(object):
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Scan"
 		return Plotters['Scan'](reader = self, settings = settings)
+		
+	def plot_kxky(self, init = None, aky = None, settings = {}):
+		if init is not None:
+			init = list(init)
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
+					settings[f"slider_{i+1}"]['id'] = ini
+					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
+		if 'title' not in settings:
+			settings['suptitle'] = f"{self['run_name']} kxky"
+		return Plotters['kxky'](reader = self, settings = settings)
 	
 	def plot_ql(self, init = None, settings = {}):
 		if self['ql'] is None:

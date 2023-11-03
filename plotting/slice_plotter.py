@@ -163,7 +163,7 @@ class plot_slice(object):
 			if 'theta0' in self['run']:
 				self.settings['run'].pop('theta0')
 		elif axis_type in ['growth_rate','growth_rate_norm','ql_norm','mode_frequency']:
-			self._y_key = '_run_keys'
+			self._y_key = '_gyro_keys'
 			if 'ky' in self.reader.dimensions and 'ky' not in self.dims:
 				self.dims.append('ky')
 			if 'ky' in self.reader.dimensions and 'ky' not in self['run']:
