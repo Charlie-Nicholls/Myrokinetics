@@ -114,6 +114,28 @@ class theta0(dimension):
 
 	def edit_nml(self, nml, val):
 		nml['kt_grids_single_parameters']['theta0'] = val
+		if 'akx' in nml['kt_grids_single_parameters']:
+			del(nml['kt_grids_single_parameters']['akx'])
+		return nml
+
+class kx(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['kx','akx','kx_rho0']
+	axis_label = r'$k_{x}\rho_{0}$'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([x <= 0 for x in values]):
+			print("Error: kx values outside allowed range (x>0)")
+			values = [x for x in values if (x>0)]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['kt_grids_single_parameters']['akx'] = val
+		if 'theta0' in nml['kt_grids_single_parameters']:
+			del(nml['kt_grids_single_parameters']['theta0'])
 		return nml
 
 class nperiod(dimension):
@@ -324,4 +346,4 @@ class mass(dimension):
 				nml[key]['mass'] = val
 		return nml
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass]
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass]

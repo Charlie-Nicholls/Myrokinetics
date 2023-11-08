@@ -241,6 +241,10 @@ class scan_inputs(object):
 			print("ERROR: psiN must be specified as single parameter or scan dimension")
 			valid = False
 		
+		if ('kx' in self.dimensions or 'kx' in self.single_parameters) and ('theta0' in self.dimensions or 'theta0' in self.single_parameters):
+			print("ERROR: cannot define both kx and theta0 dimensions")
+			valid = False
+		
 		if self['ideal']:
 			if self['num_shear_ideal'] is None and self['n_shat']:
 				self.inputs['knobs']['num_shear_ideal'] = self['n_shat']
