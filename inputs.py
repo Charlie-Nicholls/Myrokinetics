@@ -206,7 +206,7 @@ class scan_inputs(object):
 					else:
 						self.inputs['sbatch'][skey] = sbatch[skey]
 			
-			sbatch_save = copy(systems[self['knobs']['system']]['sbatch_save'])
+			sbatch_save = copy(systems[self['knobs']['system']]['save_sbatch'])
 			if 'sbatch_save' not in self.inputs:
 				self.inputs['sbatch_save'] = {}
 			for skey in sbatch_save:
