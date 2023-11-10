@@ -135,16 +135,13 @@ class verify_scan(object):
 				self.save_errors['t'].add(run_id)
 			return
 	
-		if str(data['phi2'][-1]) in ['nan','inf','-inf','0.0','0']:
+		if str(data['phi2'][-1]) in ['nan','inf','-inf']:
 			if str(data['phi2'][-1]) == 'nan':
 				self.bad_runs['nan'].add(run_id)
-			bad_phi2_ids = [idx for idx, x in enumerate(data['phi2']) if str(x) in ['nan','inf','-inf','0.0','0']]
+			bad_phi2_ids = [idx for idx, x in enumerate(data['phi2']) if str(x) in ['nan','inf','-inf']]
 			if len(data['phi2']) == len(bad_phi2_ids):
-				data['phi2'] = None
-				data['omega'] = None
-				data['t'] = None
-				data['growth_rates_all'] = nan
-				data['mode_frequencies_all'] = nan
+				data['growth_rate'] = nan
+				data['mode_frequency'] = nan
 				return
 			
 			data['phi2'] = [x for idx, x in enumerate(data['phi2']) if idx not in bad_phi2_ids]
@@ -213,37 +210,45 @@ class verify_scan(object):
 				return gradgr, nan, 'unconverged_stable'
 			else:
 				return nan, nan, 'unconverged'
-		
-		gradgr = log(data['phi2'][-1]/data['phi2'][0])/(data['t'][-1]-data['t'][0])/2
-		findingGR = True
-		if len(data['phi2']) > 100:
-			nt = len(data['phi2'])//10 + 10
-		else:
-			nt = 11
-		init_nt = nt
-		while findingGR:
-			if nt > 11:
-				nt = nt - 10
+		phi2 = [x for x in data['phi2'] if x !=0]
+		t = [x for xi, x in enumerate(data['t']) if data['phi2'][xi] != 0]
+		if len(phi2) != 0:
+			gradgr = log(phi2[-1]/phi2[0])/(t[-1]-t[0])/2
+			findingGR = True
+			if len(phi2) > 100:
+				nt = len(phi2)//10 + 10
 			else:
-				nt = nt - 1
-			try:
-				new_gr, new_mf, cat = find_gr(nt = nt, t = data['t'], phi2 = data['phi2'], gr = data['growth_rate'], mf = data['mode_frequency'], gradgr = gradgr)
-				if cat not in ['unconverged','unconverged_stable']:
+				nt = 11
+			init_nt = nt
+			while findingGR:
+				if nt > 11:
+					nt = nt - 10
+				else:
+					nt = nt - 1
+				try:
+					new_gr, new_mf, cat = find_gr(nt = nt, t = t, phi2 = phi2, gr = data['growth_rate'], mf = data['mode_frequency'], gradgr = gradgr)
+					if cat not in ['unconverged','unconverged_stable']:
+						findingGR = False
+					elif init_nt > 11 and nt < 110:
+						findingGR = False
+						nt = len(data['phi2'])//10
+					elif nt == 4:
+						findingGR = False
+						nt = init_nt
+						
+				except Exception as e:
 					findingGR = False
-				elif init_nt > 11 and nt < 110:
-					findingGR = False
-					nt = len(data['phi2'])//10
-				elif nt == 4:
-					findingGR = False
-					nt = init_nt
-					
-			except Exception as e:
-				findingGR = False
-				new_gr = nan
-				new_mf = nan
-				cat = 'uncalculated'
-				print(f"ERROR ON {run_id}")
-				print(e)
+					new_gr = nan
+					new_mf = nan
+					cat = 'uncalculated'
+					nt = None
+					print(f"ERROR ON {run_id}")
+					print(e)
+		else:
+			new_gr = nan
+			new_mf = nan
+			cat = 'uncalculated'
+			nt = None
 		
 		self.scan[run_id]['growth_rate'] = new_gr
 		self.scan[run_id]['mode_frequency'] = new_mf

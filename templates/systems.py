@@ -10,9 +10,7 @@ export MAKEFLAGS=-IMakefiles
 ulimit -s unlimited
 export PATH=${PATH}:${HOME}/gs2/bin"""
 
-save_viking = ""#"""module load lang/Python/3.7.0-intel-2018b
-#module swap lang/Python lang/Python/3.10.4-GCCcore-11.3.0
-#source $HOME/pyroenv2/bin/activate"""
+save_viking = """module load Python/3.10.8-GCCcore-12.2.0"""
 
 sbatch_viking = {
 	'job-name': 'myro',

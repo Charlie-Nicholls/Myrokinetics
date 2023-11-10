@@ -676,8 +676,8 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 			gyro_data = {}
 			only = set({'omega'})
 			if not QuickSave:
-				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob'})
-			all_keys = ['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob']
+				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode'})
+			all_keys = ['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','parity','ql_metric']
 			
 			gyro_keys = {}
 			for dim in self.dimensions.values():
@@ -718,7 +718,10 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 							elif key in ['phi','apar','bpar']:
 								gyro_data[run_key][key] = key_data[0,0,:].tolist()
 								if key == 'phi':
-									symsum = sum(abs(key_data[0,0,:] + key_data[0,0,::-1]))/sum(abs(key_data[0,0,:]))
+									try:
+										symsum = sum(abs(key_data[0,0,:] + key_data[0,0,::-1]))/sum(abs(key_data[0,0,:]))
+									except:
+										symsum = 1
 									if  symsum > 1.5:
 										gyro_data[run_key]['parity'] = 1
 									elif symsum < 0.5:
@@ -727,6 +730,8 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 										gyro_data[run_key]['parity'] = 0
 							elif key in ['phi2','t','theta', 'gds2', 'jacob']:
 								gyro_data[run_key][key] = key_data.tolist()
+							elif key in ['ql_metric_by_mode']:
+								gyro_data[run_key]['ql_metric'] = key_data[-1,0,0]
 							elif key in ['epar']:
 								epar_path = f"{sub_dir}/itteration_{itt}.epar"
 						

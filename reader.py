@@ -262,24 +262,24 @@ class myro_read(object):
 				self.data[key] = None
 		except:
 			print("ERROR: could not load Data")
-			self.data = None
+			self.data = {}
 		try:
 			self.files = data_in['files'].item()
 			possible_files = ['eq_file','kin_file','template_file','namelist_differences']
 			for key in [x for x in possible_files if x not in self.files.keys()]:
-				self.files[key] = None
+				self.files[key] = {}
 		except:
-			print("ERROR: could not load Input Files")
-			self.files = None
+			print("ERROR: could not load Files")
+			self.files = {}
 		try:
 			self.inputs = scan_inputs(input_dict = data_in['inputs'].item())
 			self.dimensions = self.inputs.dimensions
 			self.single_parameters = self.inputs.single_parameters
 		except:
 			print("ERROR: could not load Inputs")
-			self.inputs = None
-			self.dimensions = None
-			self.single_parameters = None
+			self.inputs = {}
+			self.dimensions = {}
+			self.single_parameters = {}
 		try:
 			self.verify = data_in['verify'].item()
 		except:
@@ -369,8 +369,15 @@ class myro_read(object):
 					ky = self.single_parameters['ky'].values[0]
 				else:
 					ky = nan
-				norm_grs.append(self.data['gyro'][run_id]['growth_rate']/ky)
-				self.data['gyro'][run_id]['growth_rate_norm'] = self.data['gyro'][run_id]['growth_rate']/(ky**2)
+				if ky == 0:
+					if self.data['gyro'][run_id]['growth_rate'] == 0:
+						norm_gr = 0
+					else:
+						norm_gr = nan
+				else:
+					norm_gr = self.data['gyro'][run_id]['growth_rate']/(ky**2)
+				norm_grs.append(norm_gr)
+				self.data['gyro'][run_id]['growth_rate_norm'] = norm_gr
 			
 			if len([x for x in abs_grs if isfinite(x)]) == 0:
 				abs_id = run_ids[0]
@@ -406,7 +413,7 @@ class myro_read(object):
 			alpha_axis_ideal.append([abs(x)*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2 for x in self['beta_prime_axis_ideal'][p]])
 	'''
 		
-	def plot_aky(self, init = None, settings = {}):
+	def plot_aky(self, settings = {}, init = None):
 		self.plot_scan(init = init, aky = True, settings = settings)
 		
 	def plot_scan(self, init = None, aky = None, settings = {}):
@@ -424,7 +431,7 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} Scan"
 		return Plotters['Scan'](reader = self, settings = settings)
 		
-	def plot_kxky(self, init = None, aky = None, settings = {}):
+	def plot_kxky(self, settings = {}, init = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -437,7 +444,7 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} kxky"
 		return Plotters['kxky'](reader = self, settings = settings)
 	
-	def plot_ql(self, init = None, settings = {}):
+	def plot_ql(self, settings = {}, init = None):
 		if self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
@@ -452,7 +459,7 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} QuasiLinear"
 		return Plotters['QL'](reader = self, settings = settings)
 	
-	def plot_ideal(self, init = None, settings = {}):
+	def plot_ideal(self, settings = {}, init = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -465,7 +472,7 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} Ideal Ballooning"
 		return Plotters['Ideal'](reader = self, settings = settings)
 	
-	def plot_omega(self, init = None, settings = {}):
+	def plot_omega(self, settings = {}, init = None):
 		return self._plot_diag(var = 'omega', init = init, settings = settings)
 	
 	def plot_phi(self, init = None, absolute = None, settings = {}):
@@ -480,10 +487,10 @@ class myro_read(object):
 	def plot_epar(self, init = None, absolute = None, settings = {}):
 		return self._plot_diag(var = 'epar', init = init, absolute = absolute, settings = settings)
 		
-	def plot_phi2(self, init = None, settings = {}):
+	def plot_phi2(self, settings = {}, init = None):
 		return self._plot_diag(var = 'phi2', init = init, settings = settings)
 		
-	def plot_jacob(self, init = None, settings = {}):
+	def plot_jacob(self, settings = {}, init = None):
 		return self._plot_diag(var = 'jacob', init = init, settings = settings)
 	
 	def _plot_diag(self, init = None, var = None, absolute = None, settings = {}):

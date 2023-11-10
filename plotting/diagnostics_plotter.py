@@ -270,32 +270,33 @@ class plot_diag(object):
 			if data['phi2'] is None or data['t'] is None:
 				print("ERROR: data not found")
 			else:
-				phi2 = data['phi2']
-				t = data['t']
-			self.ax.plot(t,phi2,'k')
-			if max(phi2) > 1e267:
-				self.ax.set_ylim(min(phi2)/100, 1e267) #Display error occurs on log scale above 1e267
-			self.ax.set_ylabel("$\phi^{2}$",fontsize=self['fontsizes']['axis'])
-			self.ax.set_yscale('log')
-			self.ax.set_xlabel(f"Time ({len(t)} steps)",fontsize=self['fontsizes']['axis'])
-			
-			if self.options.get_status()[0] and self.verify is not None:
-				if run_id in self.verify.nts:
-					nt = self.verify.nts[run_id]
-				else:
-					nt = None
-				if nt is not None:
-					fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
-					fitgr = fit[0]/2
-					pr = pearsonr(t[-nt:],log(phi2[-nt:]))
-					gradgr = log(phi2[-1]/phi2[0])/(t[-1]-t[0])/2
-					omega = data['omega']
-					
-					self.ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fitgr:+.2e}\nR = {pr[0]:.4f}")
-					self.ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {gradgr:+.2e}")
-					self.ax.text(0.01,0.99,f"GR: {data['growth_rate']:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
-					self.ax.set_xlabel(f"Time ({len(t)} steps) | nt = {nt}")
-					self.ax.legend(loc=1,fontsize=self['fontsizes']['legend'])
+				phi2 = [x for x in data['phi2'] if x !=0]
+				t = [x for xi, x in enumerate(data['t']) if data['phi2'][xi] != 0]
+			if len(phi2) > 0:
+				self.ax.plot(t,phi2,'k')
+				if max(phi2) > 1e267:
+					self.ax.set_ylim(min(phi2)/100, 1e267) #Display error occurs on log scale above 1e267
+				self.ax.set_ylabel("$\phi^{2}$",fontsize=self['fontsizes']['axis'])
+				self.ax.set_yscale('log')
+				self.ax.set_xlabel(f"Time ({len(t)} steps)",fontsize=self['fontsizes']['axis'])
+				
+				if self.options.get_status()[0] and self.verify is not None:
+					if run_id in self.verify.nts:
+						nt = self.verify.nts[run_id]
+					else:
+						nt = None
+					if nt is not None:
+						fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
+						fitgr = fit[0]/2
+						pr = pearsonr(t[-nt:],log(phi2[-nt:]))
+						gradgr = log(phi2[-1]/phi2[0])/(t[-1]-t[0])/2
+						omega = data['omega']
+						
+						self.ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fitgr:+.2e}\nR = {pr[0]:.4f}")
+						self.ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {gradgr:+.2e}")
+						self.ax.text(0.01,0.99,f"GR: {data['growth_rate']:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
+						self.ax.set_xlabel(f"Time ({len(t)} steps) | nt = {nt}")
+						self.ax.legend(loc=1,fontsize=self['fontsizes']['legend'])
 		
 		if self.verify is not None and self['visible']['verify']:
 			bad = []
