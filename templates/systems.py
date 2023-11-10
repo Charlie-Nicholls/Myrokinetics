@@ -30,9 +30,9 @@ viking_save_sbatch = {
 	'ntasks': 1,
 	'mem': '1gb',
 	'output': 'save_out.slurm',
-	'account': 'cn762@york.ac.uk'
+	'account': 'cn762@york.ac.uk',
 	'mail-type': None,
-	'mail-user': 'cn762@york.ac.uk',,
+	'mail-user': 'cn762@york.ac.uk',
 	}
 
 archer2_modules = """module load PrgEnv-gnu
