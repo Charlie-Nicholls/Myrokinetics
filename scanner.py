@@ -756,7 +756,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			for run in self.get_all_ideal_runs():
 				run_id = uuid4()
 				for key in run:
-					gyro_keys[key][run[key]].add(run_id)
+					ideal_keys[key][run[key]].add(run_id)
 				ideal_data[run_id] = {}
 				try:
 					sub_dir = get_ideal_run_directory(run)
