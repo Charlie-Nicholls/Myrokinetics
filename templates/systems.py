@@ -27,6 +27,7 @@ viking_sbatch = {
 viking_save_sbatch = {
 	'time': '00:10:00',
 	'job-name': 'myro',
+	'partition': 'nodes',
 	'ntasks': 1,
 	'mem': '1gb',
 	'output': 'save_out.slurm',
