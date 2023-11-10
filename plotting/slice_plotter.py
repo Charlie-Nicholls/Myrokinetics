@@ -278,6 +278,10 @@ class plot_slice(object):
 		self.ax.plot(self.x_axis,self.y_axis,c=self['colours']['line'])
 		self.ax.plot(self.x_axis,self.y_axis,'.',c=self['colours']['points'])
 		
+		if self['visible']['ref_line']:
+			self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],c=self['colours']['ref_line'])
+			self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],'.',c=self['colours']['ref_points'])
+		
 		if self['visible']['eqbm']:
 			limits = self.ax.get_ylim()
 			if 'psin' in self['run']:
@@ -288,10 +292,6 @@ class plot_slice(object):
 				eqbm_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
 				self.ax.vlines(eqbm_val,0,limits[1],self['colours']['eqbm'])
 				handles.append(Line2D([0.5,0.5],[0,1],c=self['colours']['eqbm'],label = "Equillibrium"))
-		
-		if self['visible']['ref_line']:
-			self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],c=self['colours']['ref_line'])
-			self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],'.',c=self['colours']['ref_points'])
 		
 		if self['limit']:
 			limits = self.ax.get_ylim()
