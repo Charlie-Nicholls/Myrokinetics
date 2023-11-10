@@ -158,7 +158,7 @@ class myro_scan(object):
 	def run_jobs(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
 			cwd = os.getcwd()
-			compile_modules = systems[self['system']]['compile']
+			compile_modules = systems[self['system']]['modules']
 			sbatch = "#!/bin/bash"
 			for key, val in self.inputs['sbatch'].items():
 				if key == 'output' and '/' not in val:
@@ -285,7 +285,7 @@ wait""")
 	def run_ideal_jobs(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
 			cwd = os.getcwd()
-			compile_modules = systems[self['system']]['compile']
+			compile_modules = systems[self['system']]['modules']
 			sbatch = "#!/bin/bash"
 			for key, val in self.inputs['sbatch'].items():
 				if key == 'output' and '/' not in val:
@@ -594,7 +594,7 @@ wait""")
 		if filename is None:
 			filename = "nml_diffs"
 		if directory is None:
-			directory = self.path
+			directory = self.inputs['data_path']
 		savez(f"{directory}/{filename}", name_diffs = self.namelist_diffs)
 	
 	def quick_save(self, filename = None, directory = None, SlurmSave = False):
@@ -609,55 +609,37 @@ wait""")
 		if self.inputs['data_path'] is None:
 			self.inputs.create_run_info()
 		if directory is None:
-			directory = self.inputs['data_path']
+			directory = self.path
 		
 		if not self['gyro'] and not self['ideal']:
 			print("Error: Both Gyro and Ideal are False")
 			return
 		
 		if self['system'] in ['viking','archer2'] and not SlurmSave:
-			save_modules = systems[self['system']]['save']
-			os.chdir(f"{directory}")
-			self._save_nml_diff(directory = directory)
-			job = open(f"save_out.job",'w')
-			if self['system'] == 'viking':
-				job.write(f"""#!/bin/bash
-#SBATCH --time=8:00:00
-#SBATCH --job-name={self.inputs['run_name']}
-#SBATCH --ntasks=1
-#SBATCH --mem=10gb
-#SBATCH --output={directory}/save_out.slurm
+			save_modules = systems[self['system']]['save_modules']
+			self._save_nml_diff()
+			sbatch = "#!/bin/bash"
+			for key, val in self.inputs['sbatch_save'].items():
+				if key == 'output' and '/' not in val:
+					val = f"{self.inputs['data_path']}/submit_files/{val}"
+				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+			job = open(f"{self.inputs['data_path']}/submit_files/save_out.job",'w')
+			job.write(f"""{sbatch}
 
 {save_modules}
 
-python {directory}/save_out.py""")
-			if self['system'] == 'archer2':
-				job.write(f"""#!/bin/bash
-#SBATCH --time=8:00:00
-#SBATCH --job-name={self.inputs['run_name']}
-#SBATCH --partition=serial
-#SBATCH --qos=serial
-#SBATCH --ntasks=1
-#SBATCH --mem=10gb
-#SBATCH --output={directory}/save_out.slurm
-#SBATCH --account={self.inputs['sbatch']['account']}
-
-{save_modules}
-
-python {directory}/save_out.py &
-wait""")
+python {self.inputs['data_path']}/submit_files/save_out.py""")
 			job.close()
-			pyth = open(f"save_out.py",'w')
+			pyth = open(f"{self.inputs['data_path']}/submit_files/save_out.py",'w')
 			pyth.write(f"""from Myrokinetics import myro_scan
 from numpy import load
-with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
+with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
 	nd = obj['name_diffs']
-	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.path}\")
+	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
 	run.namelist_diffs = nd
 	run.save_out(filename = \"{filename}\", directory = \"{directory}\",SlurmSave = True,QuickSave = {QuickSave})""")
 			pyth.close()
-			os.system(f"sbatch \"save_out.job\"")
-			os.chdir(f"{self.path}")
+			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
 			return
 			
 		if not self.check_setup():
@@ -752,6 +734,7 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 					print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
 		else:
 			gyro_data = None
+			gyro_keys = None
 
 		if self['ideal']:
 			from uuid import uuid4
@@ -806,63 +789,9 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 			}
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
-		savez(f"{self.path}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
+		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
+	
 	'''
-	def check_cancelled(self, directory = None, doPrint = True):
-		if self.inputs['data_path'] is None:
-			self.create_run_info()		
-		if directory is None:
-			directory = self.inputs['data_path']
-		if not self['gyro']:
-			print("Only Used For Gyro Runs")
-			return
-		
-		cancelled = set()
-		os.system(f"grep --include=\*slurm -rnwl {directory} -e \"CANCELLED\" > {directory}/grep.out")
-		grep = open(f"{directory}/grep.out")
-		lines = grep.readlines()
-		grep.close()
-		if len(lines) > 0:
-			for line in lines:
-				if "_old.slurm" not in line:
-					ids = line.split("/")[-1].strip("\n").strip(".slurm").split("_")
-					if len(ids) != 1:
-						psiN = eval(line.split("/")[-3])
-						p = self['psiNs'].index(psiN)
-						if len(ids) == 4:
-							i, j, k, t = [eval(x) for x in ids]
-							cancelled.add((p,i,j,k,t))
-						elif len(ids) == 3:
-							f = open(line.strip("\n"))
-							lins = f.readlines()
-							f.close()
-							for l in lins:
-								if ".in" in l:
-									inp = l.split("/")[-1].split(".")[0]
-							i, j, k, t = [eval(x) for x in inp.split("_")]
-							for ti in range(t, self['n_theta0']):
-								cancelled.add((p,i,j,k,ti))
-		if doPrint:		
-			print(f"{len(cancelled)} Cancelled Runs")
-			return
-		else:
-			return cancelled
-	
-	def rerun_cancelled(self, directory = None, checkSetup = True, group_runs = None):
-		if self.inputs['data_path'] is None:
-			self.create_run_info()
-		if directory is None:
-			directory = self.inputs['data_path']
-		cancelled = self.check_cancelled(directory = directory, doPrint = False)
-		if len(cancelled) == 0:
-			print("No Cancelled Runs")
-			return
-		for p, i, j, k, t in cancelled:
-			if os.path.exists(f"{directory}/{self['psiNs'][p]}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc"):
-				os.remove(f"{directory}/{self['psiNs'][p]}/{i}/{j}/{k}/{i}_{j}_{k}_{t}.out.nc")
-		self.make_gyro_files(directory = directory, specificRuns = cancelled, group_runs = group_runs)
-		self.run_jobs()
-	
 	def rerun(self, runs = None, nml = None, directory = None, group_runs = None):
 		if runs is None:
 			print("ERROR: runs not given")
@@ -880,8 +809,7 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 		self.inputs.inputs['itteration'] += 1
 		self.make_gyro_files(specificRuns = runs, directory = directory, group_runs = group_runs)
 		self.run_jobs()
-	'''
-	
+		
 	def load_run_set(self, filename = None):
 		if filename is None:
 			print("ERROR: filename not given")
@@ -894,13 +822,4 @@ with load(\"{directory}/nml_diffs.npz\",allow_pickle = True) as obj:
 				p,i,j,k,t = [eval(x) for x in line.strip("\n").split("_")]
 				runs.add((p,i,j,k,t))
 		return runs
-	
-	def load_info(self, directory = None, filename = "save_info.npz"):
-		from numpy import load
-		if directory is None:
-			directory = os.path.join(self.path, self.inputs['run_name'])
-		with load(f"{directory}/{filename}",allow_pickle = True) as obj:
-			nd = obj['name_diffs']
-			info = obj['info'].item()
-			self.inputs = info
-			self.namelist_diffs = nd
+	'''

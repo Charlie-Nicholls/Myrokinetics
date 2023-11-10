@@ -205,6 +205,18 @@ class scan_inputs(object):
 						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0] + ".err"
 					else:
 						self.inputs['sbatch'][skey] = sbatch[skey]
+			
+			sbatch_save = copy(systems[self['knobs']['system']]['sbatch_save'])
+			if 'sbatch_save' not in self.inputs:
+				self.inputs['sbatch_save'] = {}
+			for skey in sbatch_save:
+				if skey not in self.inputs['sbatch_save']:
+					if skey == 'job-name':
+						self.inputs['sbatch_save'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0]
+					if skey == 'output':
+						self.inputs['sbatch_save'][skey] = "save_out.slurm"
+					else:
+						self.inputs['sbatch_save'][skey] = sbatch_save[skey]
 					
 		for key in self.inputs['single_parameters']:
 			if key not in dim_lookup:
