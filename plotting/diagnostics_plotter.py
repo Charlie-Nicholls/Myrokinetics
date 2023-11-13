@@ -11,6 +11,7 @@ default_settings = {"suptitle": None,
 		"slider_3": {"dimension_type": None, "id": 0},
 		"slider_4": {"dimension_type": None, "id": 0},
 		"run": {},
+		"normalisation": "highest",
 		"options": [True],
 		"fontsizes": {"legend": 10,"ch_box": 8,"axis": 11,"title": 13,"suptitle": 20, "verify": 8},
 		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "op_box": True, "suptitle": True, "title": True, "legend": True, "verify": True, 'absolute': True, 'real': True, 'imag': True},
@@ -122,6 +123,8 @@ class plot_diag(object):
 			self.set_visible(key,val=self['visible'][key])
 			if orient == 'vertical':
 				self.sliders[key].label.set_rotation(90)
+				
+		self.set_normalisation(self['normalisation'])
 		
 		ion()
 		show()
@@ -197,6 +200,14 @@ class plot_diag(object):
 	def set_suptitle(self, title):
 		self.settings['suptitle'] = title
 		self.fig.suptitle(title,fontsize=self.settings['fontsizes']['suptitle'])
+	
+	def set_normalisation(self, norm):
+		if norm.lower() not in ['none','highest','phi','apar','bpar','epar']:
+			print("ERROR: invalid normalisation, allowed: ['none','highest','phi','apar','bpar','epar']")
+			return
+			
+		self.settings['normalisation'] = norm.lower()
+		self.draw_fig()
 		
 	def draw_fig(self, val = None):
 		self.ax.cla()
@@ -239,10 +250,28 @@ class plot_diag(object):
 			else:
 				field = data[self['var']]
 				theta = data['theta']
+				
+			if self['var'] == 'phi':
+				ylabel = "$\phi$"
+			elif self['var'] == 'apar':
+				ylabel = "$A_{\parallel}$"
+			elif self['var'] == 'bpar':
+				ylabel = "$B_{\parallel}$"
+			elif self['var'] == 'epar':
+				ylabel = "$E_{\parallel}$"
+			elif self['var'] == 'jacob':
+				ylabel = "Jacobian"
 			
 			if self['var'] in ['phi','apar','bpar','epar']:
-				norm = max([amax([abs(i) for i in data[x]]) for x in ['phi','apar','bpar','epar'] if (x in data and data[x] is not None)])
-				field_norm = field/norm
+				if self['normalisation'] == 'highest':
+					norm = max([amax([abs(i) for i in data[x]]) for x in ['phi','apar','bpar','epar'] if (x in data and data[x] is not None)])
+					ylabel += " / max($\phi,A_{\parallel},B_{\parallel},E_{\parallel}$)"
+				elif self['normalisation'] in ['phi','apar','bpar','epar']:
+					norm = amax([abs(i) for i in data[self['normalisation']]])
+					ylabel += f" / max({self['normalisation']})"
+				else:
+					norm = 1
+				field_norm = array(field)/norm
 				if self['visible']['real']:
 					self.ax.plot(theta,real(field_norm),'r',label="real")
 				if self['visible']['imag']:
@@ -252,18 +281,8 @@ class plot_diag(object):
 				self.ax.legend(loc=0)
 			else:
 				self.ax.plot(theta,field,'r')
+				
 			self.ax.set_xlabel("Ballooning Angle",fontsize=self['fontsizes']['axis'])
-			
-			if self['var'] == 'phi':
-				ylabel = "Electric Potential"
-			elif self['var'] == 'apar':
-				ylabel = "Parallel Mangetic Potential"
-			elif self['var'] == 'bpar':
-				ylabel = "Parallel Mangetic Field"
-			elif self['var'] == 'epar':
-				ylabel = "Parallel Electric Field"
-			elif self['var'] == 'jacob':
-				ylabel = "Jacobian"
 			self.ax.set_ylabel(ylabel,fontsize=self['fontsizes']['axis'])
 			
 		elif self['var'] == 'phi2':
