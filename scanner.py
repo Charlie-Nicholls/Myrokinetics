@@ -750,7 +750,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			for val in psi_itt:
 				ideal_keys['psin'][val] = set()
 			for val in theta0_itt:
-				ideal_keys['psin'][val] = set()
+				ideal_keys['theta0'][val] = set()
 
 			ideal_data = {}
 			for run in self.get_all_ideal_runs():
