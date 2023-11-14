@@ -20,23 +20,19 @@ class plot_theta(object):
 	def __init__(self, reader, settings = {}):
 		self.reader = reader
 		self.settings = {}
-		self.init_settings = {}
 		defaults = deepcopy(default_settings)
 		for key in settings:
 			if key not in defaults:
 				print(f"ERROR: {key} not found")
 			else:
 				self.settings[key] = settings[key]
-				self.init_settings[key] = settings[key]
 		for key in defaults:
 			if key not in self.settings:
 				self.settings[key] = defaults[key]
-				self.init_settings[key] = defaults[key]
 			elif type(self.settings[key]) == dict:
 				for skey in defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
-						self.init_settings[key][skey] = defaults[key][skey]
 				
 		if self['var'] == 0:
 			self.settings['var'] = "phi"

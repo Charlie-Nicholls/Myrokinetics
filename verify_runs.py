@@ -274,9 +274,10 @@ class verify_scan(object):
 			self.save_errors['phi'].add(run_id)
 			return
 		try:
-			phi_max = max([abs(x) for x in data['phi']])
-			if phi_max != 0 and (abs(data['phi'][0])/phi_max > 0.05 or abs(data['phi'][-1])/phi_max > 0.05):
-				self.bad_runs['phi'].add(run_id)
+			if self.reader.inputs['grid_option'] != 'box':
+				phi_max = max([abs(x) for x in data['phi']])
+				if phi_max != 0 and (abs(data['phi'][0])/phi_max > 0.05 or abs(data['phi'][-1])/phi_max > 0.05):
+					self.bad_runs['phi'].add(run_id)
 		except:
 			pass
 
@@ -288,9 +289,10 @@ class verify_scan(object):
 			self.save_errors['apar'].add(run_id)
 			return
 		try:
-			apar_max = max([abs(x) for x in data['apar']])
-			if apar_max != 0 and (abs(data['apar'][0])/apar_max > 0.05 or abs(data['apar'][-1])/apar_max > 0.05):
-				self.bad_runs['apar'].add(run_id)
+			if self.reader.inputs['grid_option'] != 'box':
+				apar_max = max([abs(x) for x in data['apar']])
+				if apar_max != 0 and (abs(data['apar'][0])/apar_max > 0.05 or abs(data['apar'][-1])/apar_max > 0.05):
+					self.bad_runs['apar'].add(run_id)
 		except:
 			pass
 		
@@ -302,9 +304,10 @@ class verify_scan(object):
 			self.save_errors['bpar'].add(run_id)
 			return
 		try:
-			bpar_max = max([abs(x) for x in data['bpar']])
-			if bpar_max != 0 and (abs(data['bpar'][0])/bpar_max > 0.05 or abs(data['bpar'][-1])/bpar_max > 0.05):
-				self.bad_runs['bpar'].add(run_id)
+			if self.reader.inputs['grid_option'] != 'box':
+				bpar_max = max([abs(x) for x in data['bpar']])
+				if bpar_max != 0 and (abs(data['bpar'][0])/bpar_max > 0.05 or abs(data['bpar'][-1])/bpar_max > 0.05):
+					self.bad_runs['bpar'].add(run_id)
 		except:
 			pass
 	
@@ -316,8 +319,9 @@ class verify_scan(object):
 			self.save_errors['epar'].add(run_id)
 			return
 		try:
-			epar_max = max([abs(x) for x in data['epar']])
-			if epar_max != 0 and (abs(data['epar'][0])/epar_max > 0.05 or abs(data['epar'][-1])/epar_max > 0.05):
-				self.bad_runs['epar'].add(run_id)
+			if self.reader.inputs['grid_option'] != 'box':
+				epar_max = max([abs(x) for x in data['epar']])
+				if epar_max != 0 and (abs(data['epar'][0])/epar_max > 0.05 or abs(data['epar'][-1])/epar_max > 0.05):
+					self.bad_runs['epar'].add(run_id)
 		except:
 			pass

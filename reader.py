@@ -23,11 +23,16 @@ class myro_read(object):
 			self._verify_run()
 	
 	def __call__(self, key, *indexes):
-		if type(indexes[0]) == int:
+		if type(indexes[0]) == dict:
+			run = indexes[0]
+			ids = None
+		elif type(indexes[0]) == int:
+			run = None
 			ids = list(indexes)
 		else:
+			run = None
 			ids = list(indexes[0])
-	
+		
 		key.lower()
 		if key in ['gr','growth','gamma']:
 			key = 'growth_rate'
@@ -42,23 +47,6 @@ class myro_read(object):
 		elif key in ['abs_growth_rate','absolute_gr','absolute_growth_rate']:
 			key = 'abs_gr'
 		
-		if key in self.inputs.dim_order:
-			idx = self.inputs.dim_order.index(key)
-			if idx + 1 > len(ids):
-				print(f"ERROR: ids must be at least length {idx+1}")
-				return None
-			return self.dimensions[key].values[ids[idx]]
-		
-		if key in ['growth_rate','mode_frequency','omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','epar_norm']:
-			if len(ids) != len(self.dimensions):
-				print(f"ERROR: ids must be length {len(self.dimensions)}")
-				return None
-			run = {}
-			for idx, i in enumerate(ids):
-				run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]
-			run_id = self.get_run_id(run)
-			return self.data['gyro'][run_id][key]
-		
 		if key in ['quasilinear','norm_gr','abs_gr']:
 			if not self.data[f'_{key}_keys']:
 				print(f"ERROR: {key} not calculated")
@@ -67,9 +55,10 @@ class myro_read(object):
 			dim_order = [x for x in self.inputs.dim_order if x not in ['ky','theta0']]
 			if len(ids) != len(dim_order):
 				print(f"ERROR: ids must be length {len(dim_order)}")
-			run = {}
-			for idx, i in enumerate(ids):
-				run[dim_order[idx]] = self.dimensions[dim_order[idx]].values[i]
+			if run == None:
+				run = {}
+				for idx, i in enumerate(ids):
+					run[dim_order[idx]] = self.dimensions[dim_order[idx]].values[i]
 			run_id = self.get_run_id(run, keys = f'_{key}_keys')
 			if key == 'quasilinear':
 				return self.data['quasilinear'][run_id]
@@ -78,8 +67,25 @@ class myro_read(object):
 			elif key == 'norm_gr':
 				return self.data['gyro'][run_id]['growth_rate']/self.data['gyro'][run_id]['ky']**2
 		
-		print(f"ERROR: {key} not found")
-		return None
+		else:
+			
+			if run is None:
+				if len(ids) != len(self.dimensions):
+					print(f"ERROR: ids must be length {len(self.dimensions)}")
+					return None
+				run = {}
+				for idx, i in enumerate(ids):
+					run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]
+			run_id = self.get_run_id(run)
+			if run_id is None:
+				return None
+			if key in self.data['gyro'][run_id].keys():
+				return self.data['gyro'][run_id][key]
+			elif key in ['data','all']:
+				return self.data['gyro'][run_id]
+			else:
+				print(f"ERROR: {key} not found")
+			return None
 		
 	def __getitem__(self, key):
 		key = key.lower()
@@ -414,7 +420,7 @@ class myro_read(object):
 	'''
 		
 	def plot_aky(self, settings = {}, init = None):
-		self.plot_scan(init = init, aky = True, settings = settings)
+		return self.plot_scan(init = init, aky = True, settings = settings)
 		
 	def plot_scan(self, init = None, aky = None, settings = {}):
 		if init is not None:
@@ -507,6 +513,21 @@ class myro_read(object):
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
 		return Plotters['Diag'](reader = self, settings = settings)
+	
+	def plot_stitched_diag(self, init = None, var = None, absolute = None, settings = {}):
+		if init is not None:
+			init = list(init)
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
+					settings[f"slider_{i+1}"]['id'] = ini
+					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
+		if var is not None:
+			settings['var'] = var
+		if 'title' not in settings:
+			settings['suptitle'] = f"{self['run_name']} {var}"
+		return Plotters['Stitch'](reader = self, settings = settings)
 	
 	#def plot_epar_scan(self):
 		#Plotters['Epar'](data = self.run['data'], inputs = self.inputs)

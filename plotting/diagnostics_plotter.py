@@ -15,6 +15,7 @@ default_settings = {"suptitle": None,
 		"options": [True],
 		"fontsizes": {"legend": 10,"ch_box": 8,"axis": 11,"title": 13,"suptitle": 20, "verify": 8},
 		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "op_box": True, "suptitle": True, "title": True, "legend": True, "verify": True, 'absolute': True, 'real': True, 'imag': True},
+		"colours": {"real": 'r', "imag": 'b', "absolute": 'k', "divider": 'g'},
 }
 
 class plot_diag(object):
@@ -23,23 +24,19 @@ class plot_diag(object):
 		self.verify = reader.verify
 		
 		self.settings = {}
-		self.init_settings = {}
 		defaults = deepcopy(default_settings)
 		for key in settings:
 			if key not in defaults:
 				print(f"ERROR: {key} not found")
 			else:
 				self.settings[key] = settings[key]
-				self.init_settings[key] = settings[key]
 		for key in defaults:
 			if key not in self.settings:
 				self.settings[key] = defaults[key]
-				self.init_settings[key] = defaults[key]
 			elif type(self.settings[key]) == dict:
 				for skey in defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
-						self.init_settings[key][skey] = defaults[key][skey]
 		
 		if self['var'] == 0:
 			self.settings['var'] = "omega"
@@ -232,8 +229,8 @@ class plot_diag(object):
 			
 			self.ax2.cla()
 			
-			self.ax2.plot(t,real(omega),'r',label="mode frequency")
-			self.ax.plot(t,imag(omega),'b',label="growth rate")
+			self.ax2.plot(t,real(omega),color=self['colours']['real'],label="mode frequency")
+			self.ax.plot(t,imag(omega),color=self['colours']['imag'],label="growth rate")
 			
 			self.ax.text(0.01,0.99,f"GR: {data['growth_rate']:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
 			self.ax2.text(0.01,0.99,f"MF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax2.transAxes,fontsize=self['fontsizes']['legend'])
@@ -273,11 +270,11 @@ class plot_diag(object):
 					norm = 1
 				field_norm = array(field)/norm
 				if self['visible']['real']:
-					self.ax.plot(theta,real(field_norm),'r',label="real")
+					self.ax.plot(theta,real(field_norm),color=self['colours']['real'],label="real")
 				if self['visible']['imag']:
-					self.ax.plot(theta,imag(field_norm),'b',label="imaginary")
+					self.ax.plot(theta,imag(field_norm),color=self['colours']['imag'],label="imaginary")
 				if self['visible']['absolute']:
-					self.ax.plot(theta,[abs(x) for x in field_norm],'k--',label="absolute")
+					self.ax.plot(theta,[abs(x) for x in field_norm],color=self['colours']['absolute'],linestyle='--',label="absolute")
 				self.ax.legend(loc=0)
 			else:
 				self.ax.plot(theta,field,'r')

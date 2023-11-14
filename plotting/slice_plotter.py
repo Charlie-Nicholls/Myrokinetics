@@ -16,35 +16,30 @@ default_settings = {"suptitle": None,
 		"ref_line": {"x_axis": [], "y_axis": []},
 		"fontsizes": {"title": 13, "axis": 17,"suptitle": 20},
 		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "eqbm": True, "suptitle": True, "title": True, "ref_line": False},
-		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k'}
+		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k'},
 }
 
 class plot_slice(object):
 	def __init__(self, reader, settings = {}):
 		self.reader = reader
 		self.settings = {}
-		self.init_settings = {}
 		defaults = deepcopy(default_settings)
 		for key in settings:
 			if key not in defaults:
 				print(f"ERROR: {key} not found")
 			else:
 				self.settings[key] = settings[key]
-				self.init_settings[key] = settings[key]
 
 		for key in defaults:
 			if key not in settings:
 				self.settings[key] = defaults[key]
-				self.init_settings[key] = defaults[key]
 			elif type(defaults[key]) == dict:
 				for skey in defaults[key].keys():
 					if skey not in settings[key].keys():
 						self.settings[key][skey] = defaults[key][skey]
-						self.init_settings[key][skey] = defaults[key][skey]
 						
 		if self.settings['x_axis_type'] not in self.reader.dimensions:
 			self.settings['x_axis_type'] = self.reader.inputs.dim_order[0]
-			self.init_settings['x_axis_type'] = self.reader.inputs.dim_order[0]
 		
 		self.open_plot()
 		

@@ -343,4 +343,25 @@ class mass(dimension):
 				nml[key]['mass'] = val
 		return nml
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass]
+class jtwist(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['jtwist']
+	axis_label = 'jtwist'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([x <= 0 for x in values]):
+			print("Error: jtwist values outside the allowed range (x>0)")
+			values = [x for x in values if (x>0)]
+		if any([x != int(x) for x in values]):
+			print("Error: jtwist values must be integers")
+			values = [x for x in values if (x==int(x))]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['kt_grids_box_parameters']['jwist'] = val
+		return nml
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,jtwist]

@@ -11,12 +11,13 @@ default_settings = {"suptitle": None,
 		"contour_type": 0,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
+		"z_axis_type": "growth_rate",
 		"slider_1": {"dimension_type": None, "id": 0},
 		"slider_2": {"dimension_type": None, "id": 0},
 		"gr_slider": {"scale": 100, "max": None},
 		"mf_slider": {"scale": 100, "max": None},
 		"run": {},
-		"options": [False,True,True,True,False],
+		"options": [False,False,True,False],
 		"vr_options": [False,False,False,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8, "vr_box": 8, "axis": 17, "suptitle": 20, "legend": 13},
 		"visible": {"slider_1": True, "slider_2": True, "gr_slider": True, "mf_slider": True, "op_box": True, "vr_box": True, "suptitle": True, "title": True, "legend": True},
@@ -34,26 +35,22 @@ class plot_scan(object):
 			print("Error: No Gyrokinetic Data")
 			return
 		self.settings = {}
-		self.init_settings = {}
 		defaults = deepcopy(default_settings)
 		for key in settings:
 			if key not in defaults:
 				print(f"ERROR: {key} not found")
 			else:
 				self.settings[key] = settings[key]
-				self.init_settings[key] = settings[key]
 		for key in defaults:
 			if key not in self.settings:
 				self.settings[key] = defaults[key]
-				self.init_settings[key] = defaults[key]
 			elif type(self.settings[key]) == dict and key != 'cdict':
 				for skey in defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
-						self.init_settings[key][skey] = defaults[key][skey]
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
-		self._options = ["Show Parities","Normalised Growth Rate","Global Colorbar","Show Equillibrium","Show Ideal"]
+		self._options = ["Show Parities","Global Colorbar","Show Equillibrium","Show Ideal"]
 		self._vr_options = ["Show ID","Show Convergence","Show Bad nstep","Show bad fields","Show Omega -> nan"]
 		
 		if self['eqbm_style'] not in self._valid_eqbm_styles:
@@ -79,6 +76,7 @@ class plot_scan(object):
 		
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
+		self._load_z_axis(self['z_axis_type'])
 		
 		if self['aky']:
 			self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type']]]
@@ -141,28 +139,13 @@ class plot_scan(object):
 		else:
 			self.fig.subplots_adjust(bottom=0.15)
 
-		norm_grs = []
-		abs_grs = []
 		mfs = []
 		for run in self.data.values():
-			if str(run['growth_rate']) not in ['-inf','inf','nan']:
-				abs_grs.append(run['growth_rate'])
-			if str(run['growth_rate_norm']) not in ['-inf','inf','nan']:
-				abs_grs.append(run['growth_rate_norm'])
 			if str(run['mode_frequency']) not in ['-inf','inf','nan']:
 				mfs.append(run['mode_frequency'])
-				
-		self._norm_gr_max = max(norm_grs,default=1)
-		self._abs_gr_max = max(abs_grs)
 		self._mf_max = max(mfs,default=1)
-		
-		ion()
 		self.draw_fig()
-		if self['gr_slider']['max']:
-			self.set_gr_max(self.init_settings['gr_max'])
-		if self['mf_slider']['max']:
-			self.set_mf_max(self.init_settings['mf_max'])
-		
+		ion()
 		show()
 	
 	def _load_x_axis(self, axis_type):
@@ -203,12 +186,38 @@ class plot_scan(object):
 		self._load_y_axis(axis_type)
 		self.draw_fig()
 	
+	def _load_z_axis(self, axis_type):
+		if axis_type not in ['growth_rate','growth_rate_norm','ql_norm']:
+			print(f"ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm']")
+			return
+		if axis_type == 'ql_norm' and not self['aky']:
+			print("ERROR: ql_norm axis type only allowed on seperate ky plots")
+			
+		self.settings['z_axis_type'] = axis_type
+		
+		zs = []
+		for run in self.data.values():
+			if str(run[axis_type]) not in ['-inf','inf','nan']:
+				zs.append(run[axis_type])
+		self._z_max = max(zs,default=100)
+		
+		if axis_type in ['growth_rate']:
+			self._z_axis_label = r'$\gamma$'
+		elif axis_type in ['growth_rate_norm']:
+			self._z_axis_label = r'$\gamma/k_{y}^{2}$'
+		elif axis_type in ['ql_norm']:
+			self._z_axis_label = "QL Metric"
+			
+	def set_z_axis_type(self, axis_type):
+		self._load_z_axis(axis_type)
+		self.draw_fig()
+	
 	def set_gr_max(self, val):
-		self.settings['gr_max'] = val
+		self.settings['gr_slider']['max'] = val
 		self.draw_fig()
 		
 	def set_mf_max(self, val):
-		self.settings['mf_max'] = val
+		self.settings['mf_slider']['max'] = val
 		self.draw_fig()
 	
 	def set_visible(self, key, val = None):
@@ -384,36 +393,27 @@ class plot_scan(object):
 				run[self['y_axis_type']] = y_value
 				if self['aky']:
 					key = '_gyro_keys'
-				elif status[1]:
+				elif self['z_axis_type'] == 'growth_rate_norm':
 					key = '_norm_gr_keys'
-				else:
+				elif self['z_axis_type'] == 'growth_rate':
 					key = '_abs_gr_keys'
 				run_id = self.reader.get_run_id(run = run, keys = key)
 				if run_id is not None:
 					run_ids.append(run_id)
 					z_mf[x_id][y_id] = self.data[run_id]['mode_frequency']
-					if status[1]:
-						z_gr[x_id][y_id] = self.data[run_id]['growth_rate_norm']
-					else:
-						z_gr[x_id][y_id] = self.data[run_id]['growth_rate']
+					z_gr[x_id][y_id] = self.data[run_id][self['z_axis_type']]
 				else:
 					z_gr[x_id][y_id] = nan
 					z_mf[x_id][y_id] = nan
-		z_gr = transpose(z_gr)
-		z_mf = transpose(z_mf)
 		
-		if status[1]:
-			self.ax[0].set_title("Growth Rate/$(k_{y}\\rho_{0})^{2}$",fontsize=self['fontsizes']['title'])
-		else:
-			self.ax[0].set_title("Growth Rate",fontsize=self['fontsizes']['title'])
+		self.z_axis_gr = z_gr = transpose(z_gr)
+		self.z_axis_mf = z_mf = transpose(z_mf)
+		self.ax[0].set_title(self._z_axis_label,fontsize=self['fontsizes']['title'])
 		
 		if self['gr_slider']['max']:
 			grmax = self.sliders['gr_slider'].val * self['gr_slider']['max']/100
-		elif status[2]:
-			if status[1]:
-				grmax = self.sliders['gr_slider'].val * self._norm_gr_max/100
-			else:
-				grmax = self.sliders['gr_slider'].val * self._abs_gr_max/100
+		elif status[1]:
+			grmax = self.sliders['gr_slider'].val * self._z_max/100
 		else:
 			try:
 				grmax = self.sliders['gr_slider'].val * amax(abs(array(z_gr)[isfinite(z_gr)]))/100
@@ -431,7 +431,7 @@ class plot_scan(object):
 		
 		if self['mf_slider']['max']:
 			mfmax = self.sliders['mf_slider'].val * self['mf_slider']['max']/100
-		elif status[2]:
+		elif status[1]:
 			mfmax = self.sliders['mf_slider'].val * self._mf_max/100
 		else:
 			try:
@@ -464,12 +464,12 @@ class plot_scan(object):
 			self.ax[0].plot(ant_x, ant_y, '_', color = 'cyan', label = 'par')
 			self.ax[1].plot(ant_x, ant_y, '_', color = 'cyan', label = 'par')
 		
-		if status[3]:
+		if status[2]:
 			self.ax[0].plot(x_val,y_val,'kx')
 			self.ax[1].plot(x_val,y_val,'kx')
 			if self['eqbm_style'] in ["point",2,"point numless",4]:
 				self.ax[0].annotate("Eqbm",(x_val,y_val),textcoords = "offset points",xytext = (0,7), ha = "center")
-				self.ax[1].annotate("Eqbm",(x_val,y_val),textcoords = "offset points",xytext = (0,7), ha = "center")
+				self.ax[1].annotateself.ax[0].set_title(self._z_axis_label,fontsize=self['fontsizes']['title'])("Eqbm",(x_val,y_val),textcoords = "offset points",xytext = (0,7), ha = "center")
 			if self['eqbm_style'] in ["split",1,"point",2]:
 				self.ax[0].annotate(f"{x_val:.2f},{y_val:.2f}",(x_val,y_val),textcoords = "offset points",xytext = (0,-13), ha = "center")
 				self.ax[1].annotate(f"{x_val:.2f},{y_val:.2f}",(x_val,y_val),textcoords = "offset points",xytext = (0,-13), ha = "center")
@@ -478,12 +478,12 @@ class plot_scan(object):
 			if self['eqbm_style'] in ["split",1,"title numless",3]:
 				handles.append(Line2D([0.5],[0.5],marker='x',color='k',label="Equillibrium",linewidth=0))
 		
-		if status[4]:
+		if status[3]:
 			if 'theta0' in self['run']:
 				theta0 = self['run']['theta0']
 			else:
-				theta0 = self.reader.data['_ideal_keys']['theta0'].keys()[0]
-			run_id = self.reader.get_run_id(run={'psin': psiN,'theta0': theta0},key='_ideal_keys')
+				theta0 = list(self.reader.data['_ideal_keys']['theta0'].keys())[0]
+			run_id = self.reader.get_run_id(run={'psin': psiN,'theta0': theta0},keys='_ideal_keys')
 			if run_id is not None:
 				idata = self.reader.data['ideal'][run_id]
 				self.ax[0].contourf(idata[self['x_axis_type']], idata[self['y_axis_type']], idata['stabilities'], [0.01,0.99], colors = ('k'))

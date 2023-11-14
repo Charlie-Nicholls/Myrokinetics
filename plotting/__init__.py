@@ -6,6 +6,7 @@ from .theta_plotter import plot_theta
 from .ql_plotter import plot_ql
 from .slice_plotter import plot_slice
 from .kxky_plotter import plot_kxky
+from .stitched_diagnostics_plotter import plot_stitched_diag
 
 Plotters = {}
 Plotters["Scan"] = plot_scan
@@ -16,5 +17,6 @@ Plotters["Theta"] = plot_theta
 Plotters["QL"] = plot_ql
 Plotters["Slice"] = plot_slice
 Plotters["kxky"] = plot_kxky
+Plotters["Stitch"] = plot_stitched_diag
 
 __all__ = ["Plotters"]

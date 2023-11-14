@@ -34,23 +34,19 @@ class plot_kxky(object):
 			print("Error: No Gyrokinetic Data")
 			return
 		self.settings = {}
-		self.init_settings = {}
 		defaults = deepcopy(default_settings)
 		for key in settings:
 			if key not in defaults:
 				print(f"ERROR: {key} not found")
 			else:
 				self.settings[key] = settings[key]
-				self.init_settings[key] = settings[key]
 		for key in defaults:
 			if key not in self.settings:
 				self.settings[key] = defaults[key]
-				self.init_settings[key] = defaults[key]
 			elif type(self.settings[key]) == dict and key != 'cdict':
 				for skey in defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
-						self.init_settings[key][skey] = defaults[key][skey]
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
 		
@@ -125,13 +121,8 @@ class plot_kxky(object):
 		else:
 			self.fig.subplots_adjust(bottom=0.15)
 
-		ion()
 		self.draw_fig()
-		if self['gr_slider']['max']:
-			self.set_gr_max(self.init_settings['gr_max'])
-		if self['mf_slider']['max']:
-			self.set_mf_max(self.init_settings['mf_max'])
-		
+		ion()
 		show()
 	
 	def _load_x_axis(self, axis_type):
@@ -189,7 +180,7 @@ class plot_kxky(object):
 		elif axis_type in ['growth_rate_norm']:
 			self._z_axis_label = r'$\gamma/k_{y}^{2}$'
 		elif axis_type in ['ql_norm']:
-			self._z_axis_label = "QL"
+			self._z_axis_label = "QL metric"
 			
 	def set_z_axis_type(self, axis_type):
 		self._load_z_axis(axis_type)
@@ -206,11 +197,11 @@ class plot_kxky(object):
 		self.settings['yscale'] = scale
 	
 	def set_gr_max(self, val):
-		self.settings['gr_max'] = val
+		self.settings['gr_slider']['max'] = val
 		self.draw_fig()
 		
 	def set_mf_max(self, val):
-		self.settings['mf_max'] = val
+		self.settings['mf_slider']['max'] = val
 		self.draw_fig()
 	
 	def set_visible(self, key, val = None):
@@ -325,8 +316,8 @@ class plot_kxky(object):
 				else:
 					z_gr[x_id][y_id] = nan
 					z_mf[x_id][y_id] = nan
-		z_gr = transpose(z_gr)
-		z_mf = transpose(z_mf)
+		self.z_axis_gr = z_gr = transpose(z_gr)
+		self.z_axis_mf = z_mf = transpose(z_mf)
 		
 		self.ax[0].set_title(self._z_axis_label,fontsize=self['fontsizes']['title'])
 		

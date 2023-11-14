@@ -10,7 +10,7 @@ default_settings = {"suptitle": None,
 		"x_axis_type": 'beta_prime',
 		"y_axis_type": 'shear',
 		"slider_1": {"dimension_type": None, "id": 0},
-		"slider_1": {"dimension_type": None, "id": 0},
+		"slider_2": {"dimension_type": None, "id": 0},
 		"run": {},
 		"options": [True,False,True,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
@@ -28,23 +28,19 @@ class plot_ideal(object):
 		self._options = ["Colour","Global Axis Limits","Show Equillibrium","Show Legend"]
 		
 		self.settings = {}
-		self.init_settings = {}
 		defaults = deepcopy(default_settings)
 		for key in settings:
 			if key not in defaults:
 				print(f"ERROR: {key} not found")
 			else:
 				self.settings[key] = settings[key]
-				self.init_settings[key] = settings[key]
 		for key in defaults:
 			if key not in settings:
 				self.settings[key] = defaults[key]
-				self.init_settings[key] = defaults[key]
 			elif type(self.settings[key]) == dict:
 				for skey in self.defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
-						self.init_settings[key][skey] = defaults[key][skey]
 		
 		if self['eqbm_style'] not in self._valid_eqbm_styles:
 			print("ERROR: eqbm_style not found, valid styles = {self._valid_eqbm_styles}")
@@ -232,7 +228,7 @@ class plot_ideal(object):
 			psiN = self['run']['psin']
 		else:
 			psiN = self.reader.single_parameters['psin'].values[0]
-		run_id = self.reader.get_run_id(run=self['run'],key='_ideal_keys')
+		run_id = self.reader.get_run_id(run=self['run'],keys='_ideal_keys')
 		data = self.reader.data['ideal'][run_id]
 		
 		x_axis = self.reader.data['ideal'][run_id][self['x_axis_type']]
