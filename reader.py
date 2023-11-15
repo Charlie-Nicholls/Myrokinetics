@@ -422,7 +422,7 @@ class myro_read(object):
 	def plot_aky(self, settings = {}, init = None):
 		return self.plot_scan(init = init, aky = True, settings = settings)
 		
-	def plot_scan(self, init = None, aky = None, settings = {}):
+	def plot_scan(self, settings = {}, init = None, aky = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -481,16 +481,16 @@ class myro_read(object):
 	def plot_omega(self, settings = {}, init = None):
 		return self._plot_diag(var = 'omega', init = init, settings = settings)
 	
-	def plot_phi(self, init = None, absolute = None, settings = {}):
+	def plot_phi(self, settings = {}, init = None):
 		return self._plot_diag(var = 'phi', init = init, absolute = absolute, settings = settings)
 	
-	def plot_apar(self, init = None, absolute = None, settings = {}):
+	def plot_apar(self, settings = {}, init = None):
 		return self._plot_diag(var = 'apar', init = init, absolute = absolute, settings = settings)
 		
-	def plot_bpar(self, init = None, absolute = None, settings = {}):
+	def plot_bpar(self, settings = {}, init = None):
 		return self._plot_diag(var = 'bpar', init = init, absolute = absolute, settings = settings)
 		
-	def plot_epar(self, init = None, absolute = None, settings = {}):
+	def plot_epar(self, settings = {}, init = None):
 		return self._plot_diag(var = 'epar', init = init, absolute = absolute, settings = settings)
 		
 	def plot_phi2(self, settings = {}, init = None):
@@ -499,7 +499,7 @@ class myro_read(object):
 	def plot_jacob(self, settings = {}, init = None):
 		return self._plot_diag(var = 'jacob', init = init, settings = settings)
 	
-	def _plot_diag(self, init = None, var = None, absolute = None, settings = {}):
+	def _plot_diag(self, settings = {}, init = None, var = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -514,7 +514,22 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} {var}"
 		return Plotters['Diag'](reader = self, settings = settings)
 	
-	def plot_stitched_diag(self, init = None, var = None, absolute = None, settings = {}):
+	def plot_box_phi(self, settings = {}, init = None):
+		return self._plot_box_diag(var = 'phi', init = init, absolute = absolute, settings = settings)
+	
+	def plot_box_apar(self, settings = {}, init = None):
+		return self._plot_box_diag(var = 'apar', init = init, absolute = absolute, settings = settings)
+		
+	def plot_box_bpar(self, settings = {}, init = None):
+		return self._plot_box_diag(var = 'bpar', init = init, absolute = absolute, settings = settings)
+		
+	def plot_box_epar(self, settings = {}, init = None):
+		return self._plot_box_diag(var = 'epar', init = init, absolute = absolute, settings = settings)
+	
+	def _plot_box_diag(self, settings = {}, init = None, var = None):
+		if self.inputs['grid_option'] != 'box':
+			print("ERROR: box plot only used for flux tube runs [inputs -> grid_option = box]")
+			return
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -527,12 +542,12 @@ class myro_read(object):
 			settings['var'] = var
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
-		return Plotters['Stitch'](reader = self, settings = settings)
+		return Plotters['Box_Diag'](reader = self, settings = settings)
 	
 	#def plot_epar_scan(self):
 		#Plotters['Epar'](data = self.run['data'], inputs = self.inputs)
 	
-	def plot_theta(self, init = None, var = None, periods = None, polar = None, settings = {}):
+	def plot_theta(self, settings = {}, init = None, var = None, periods = None, polar = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
