@@ -1,24 +1,26 @@
-from numpy import linspace, pi, zeros, real, imag
-from scipy.interpolate import InterpolatedUnivariateSpline
+from numpy import real, imag, array, pi
 from matplotlib.pyplot import *
+from matplotlib.widgets import Slider
 from copy import deepcopy
 
 default_settings = {"suptitle": None,
 		"var": 'phi',
-		"periods": 3,
-		"polar": True,
 		"slider_1": {"dimension_type": None, "id": 0},
 		"slider_2": {"dimension_type": None, "id": 0},
 		"slider_3": {"dimension_type": None, "id": 0},
 		"slider_4": {"dimension_type": None, "id": 0},
 		"run": {},
-		"fontsizes": {"axis": 11,"title": 13,"suptitle": 20},
-		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "suptitle": True, "title": True, 'absolute': True, 'real': True, 'imag': True},
+		"normalisation": "True",
+		"fontsizes": {"legend": 10,"ch_box": 8,"axis": 11,"title": 13,"suptitle": 20, "verify": 8},
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "suptitle": True, "title": True, "legend": True, 'absolute': True, 'real': True, 'imag': True, 'divider': True},
+		"colours": {"real": 'r', "imag": 'b', "absolute": 'k', "divider": 'g'},
 }
 
-class plot_theta(object):
+class plot_box_diag(object):
 	def __init__(self, reader, settings = {}):
 		self.reader = reader
+		self.verify = reader.verify
+		
 		self.settings = {}
 		defaults = deepcopy(default_settings)
 		for key in settings:
@@ -33,21 +35,22 @@ class plot_theta(object):
 				for skey in defaults[key]:
 					if skey not in self.settings[key]:
 						self.settings[key][skey] = defaults[key][skey]
-				
-		if self['var'] == 0:
-			self.settings['var'] = "phi"
+		
 		if self['var'] == 1:
-			self.settings['var'] = "apar"
+			self.settings['var'] = "phi"
 		if self['var'] == 2:
-			self.settings['var'] = "bpar"
+			self.settings['var'] = "apar"
 		if self['var'] == 3:
+			self.settings['var'] = "bpar"
+		if self['var'] == 4:
 			self.settings['var'] = "epar"
-		if self['var'] not in ['omega','phi','apar','bpar','epar','phi2']:
-			print(f"ERROR: variable name/value {self['var']} not supported. supported: phi/0, apar/1, bpar/2, epar/3")
+		if self['var'] not in ['phi','apar','bpar','epar']:
+			print(f"ERROR: variable name/value {self['var']} not supported. supported: phi/1, apar/2, bpar/3, epar/4")
 			return
 			
 		self.open_plot()
-	
+
+
 	def __getitem__(self, key):
 		if key in self.settings:
 			return self.settings[key]
@@ -56,18 +59,11 @@ class plot_theta(object):
 	
 	def save_plot(self, filename = None):
 		if filename is None:
-			filename = f"Theta_{self['var']}_{self['slider_1']['id']}_{self['slider_2']}_{self['slider_3']['id']}_{self['slider_4']['id']}"
+			filename = f"{self['var']}_{self['slider_1']['id']}_{self['slider_2']['id']}_{self['slider_3']['id']}_{self['slider_4']['id']}"
 		self.fig.savefig(filename)
 	
 	def open_plot(self):
-		if self['polar']:
-			self.fig = figure(figsize=(14.6,7))
-			self.fig.add_subplot(121)
-			self.fig.add_subplot(122,polar=True)
-			self.ax = self.fig.get_axes()
-		else:
-			self.fig, self.ax = subplots(1,2,figsize=(14.6,7))
-		
+		self.fig, self.ax = subplots(figsize=(8.8,5.8))	
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 		
@@ -107,6 +103,8 @@ class plot_theta(object):
 			self.set_visible(key,val=self['visible'][key])
 			if orient == 'vertical':
 				self.sliders[key].label.set_rotation(90)
+				
+		self.set_normalisation(self['normalisation'])
 		
 		ion()
 		show()
@@ -151,10 +149,12 @@ class plot_theta(object):
 				self.fig.subplots_adjust(bottom=0.13)
 			else:
 				self.fig.subplots_adjust(bottom=0.15)
+		
 		elif key == 'suptitle':
 			self.fig._suptitle.set_visible(self['visible']['suptitle'])
 		elif key == 'title':
 			self.ax.legend_.set_visible(self['visible']['title'])
+		self.draw_fig()
 	
 	def set_options_fontsize(self, fontsize):
 		self.settings['fontsizes']['ch_box'] = fontsize
@@ -179,59 +179,79 @@ class plot_theta(object):
 		self.settings['suptitle'] = title
 		self.fig.suptitle(title,fontsize=self.settings['fontsizes']['suptitle'])
 	
+	def set_normalisation(self, norm):
+		self.settings['normalisation'] = norm
+		self.draw_fig()
+		
 	def draw_fig(self, val = None):
-		self.ax[0].cla()
-		self.ax[1].cla()
+		self.ax.cla()
 		for key, sli in self.sliders.items():
 			dim = self[key]['dimension_type']
 			if dim is not None:
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-				self.settings[key]['id'] = sli.val
+				self.settings[key]['id'] = sli.val		
 		
-		run_id = self.reader.get_run_id(run=self['run'])
-		data = self.reader.data['gyro'][run_id]
-		
-		theta = linspace(0, 2*pi, 100)
-		rt_fun = zeros((len(theta)))
-		it_fun = zeros((len(theta)))
-		re_fun = InterpolatedUnivariateSpline(data['theta'],real(data[self['var']]))
-		ie_fun = InterpolatedUnivariateSpline(data['theta'],imag(data[self['var']]))
-		for t, th in enumerate(theta):
-			sampling = True
-			i = 0
-			while sampling:
-				th_p = data['theta'][0] + th + 2*pi*i
-				if data['theta'][0] <= th_p <= data['theta'][-1]:
-					rt_fun[t] += re_fun(th_p)
-					it_fun[t] += ie_fun(th_p)
-				elif th_p > data['theta'][-1]:
-					sampling = False
-				i = i+1
-		
-		if self['polar']:
+		data = self.reader('data',self['run'])
+		ky_id = self.reader.dimensions['ky'].values.index(data['ky'])
+		if ky_id != 0:
+			if 'jtwist' in self['run']:
+				jtwist = self['run']['jtwist']
+			else:
+				jtwist = self.reader.single_parameters['jtwist'].values[0]
+			kx_id = self.reader.dimensions['kx'].values.index(data['kx'])
+			kx_list = set()
+			offset = jtwist*ky_id
+			new_id = kx_id%offset
+			while new_id < len(self.reader.dimensions['kx']):
+				kx_list.add(new_id)
+				new_id += offset
+			kx_list = list(kx_list)
+			kx_list.sort()
+			kx_list.reverse()
+			field = []
+			theta = []
+			for i, kxid in enumerate(kx_list):
+				run = deepcopy(self['run'])
+				run['kx'] = self.reader.dimensions['kx'].values[kxid]
+				field += self.reader(self['var'],run)
+				theta += list(2*pi*i+array(self.reader('theta',run)))
+			theta = list(array(theta)-(len(kx_list)-1)*pi)
+			
+			title = "".join([f"{self.reader.dimensions[x].axis_label}: {data[x]:.2g} | " for x in [y for y in self.reader.inputs.dim_order if y != 'kx']])
+			kxs = [f"{self.reader.dimensions['kx'].values[i]:.2g}" for i in kx_list]
+			title += "kx: "
+			title += "".join([f"{kx}, " for kx in kxs])[:-2]
+			self.ax.set_title(title,fontsize=self['fontsizes']['title'])
+			
+			if self['var'] == 'phi':
+				ylabel = "$\phi$"
+			elif self['var'] == 'apar':
+				ylabel = "$A_{\parallel}$"
+			elif self['var'] == 'bpar':
+				ylabel = "$B_{\parallel}$"
+			elif self['var'] == 'epar':
+				ylabel = "$E_{\parallel}$"
+			
+			if self['normalisation'] == True:
+				norm = max(field)
+				ylabel += f" / max({ylabel})"
+			else:
+				norm = 1
+			field_norm = array(field)/norm
 			if self['visible']['real']:
-				self.ax[1].plot(theta, rt_fun,'r--',label="real")
+				self.ax.plot(theta,real(field_norm),color=self['colours']['real'],label="real")
 			if self['visible']['imag']:
-				self.ax[1].plot(theta, it_fun,'b--',label="imaginary")
+				self.ax.plot(theta,imag(field_norm),color=self['colours']['imag'],label="imaginary")
 			if self['visible']['absolute']:
-				self.ax[1].plot(theta,[(x**2 + y**2)**0.5 for x,y in zip(rt_fun,it_fun)],'k--',label="absolute")
-		else:
-			for i in range(self['periods']):
-				if self['visible']['real']:
-					self.ax[1].plot(theta+i*2*pi, rt_fun,'b--',label="real")
-				if self['visible']['imag']:
-					self.ax[1].plot(theta+i*2*pi, it_fun,'r--',label="imaginary")
-				if self['visible']['absolute']:
-					self.ax[1].plot(theta+i*2*pi, [(x**2 + y**2)**0.5 for x,y in zip(rt_fun,it_fun)],'k--',label="absolute")
-			self.ax[1].set_xlabel("Theta")
-			self.ax[1].set_ylabel(self['var'])
-		if self['visible']['real']:
-			self.ax[0].plot(data['theta'], real(data[self['var']]),'r--',label="real")
-		if self['visible']['imag']:
-			self.ax[0].plot(data['theta'], imag(data[self['var']]),'b--',label="imaginary")
-		if self['visible']['absolute']:
-			self.ax[0].plot(data['theta'], [abs(x) for x in data[self['var']]],'k--',label="absolute")
-		self.ax[0].legend(loc=0)
-		self.ax[0].set_xlabel("Ballooning Angle")
-		self.ax[0].set_ylabel(self['var'])
+				self.ax.plot(theta,[abs(x) for x in field_norm],color=self['colours']['absolute'],linestyle='--',label="absolute")
+			if self['visible']['divider']:
+				vls = [min(theta) + 2*pi*(i+1) for i in range(len(kx_list)-1)]
+				ylim = self.ax.get_ylim()
+				self.ax.vlines(vls,ylim[0],ylim[1],color=self['colours']['divider'],linestyle='--')
+				
+			self.ax.legend(loc=0)
+				
+			self.ax.set_xlabel("Ballooning Angle",fontsize=self['fontsizes']['axis'])
+			self.ax.set_ylabel(ylabel,fontsize=self['fontsizes']['axis'])
 		self.fig.canvas.draw_idle()
+		return

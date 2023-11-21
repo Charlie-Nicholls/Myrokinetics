@@ -1,0 +1,67 @@
+&files
+    eq_name = ''
+    eq_path = ''
+    kin_name = ''
+    kin_path = ''
+    kin_type = 'PEQDSK'
+    template_name = ''
+    template_path = ''
+    input_name = ''
+    input_path = ''
+/
+
+&knobs
+    gyro = .true.
+    ideal = .true.
+    miller = .false.
+    system = 'viking'
+    fixed_delt = .false.
+    epar = .false.
+    num_shear_ideal = 100
+    num_beta_ideal = 100
+/
+
+&info
+    run_name: ,
+    run_uuid: ,
+    run_date: ,
+    data_path': ,
+    itteration: 0
+
+&single_parameters
+    theta0 = 0
+    nperiod = 4
+    ntheta = 32
+/
+
+&dimension_1
+    type = 'psiN'
+    values = ,
+    min = ,
+    max = ,
+    num = ,
+/
+
+&dimension_2
+    type = 'beta_prime'
+    values = ,
+    min = ,
+    max = ,
+    num = ,
+/
+
+&dimension_3
+    type = 'shear'
+    values = ,
+    min = ,
+    max = ,
+    num = ,
+/
+
+&dimension_4
+    type = 'ky'
+    values = ,
+    min = ,
+    max = ,
+    num = ,
+/

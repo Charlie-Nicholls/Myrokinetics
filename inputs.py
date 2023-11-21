@@ -1,218 +1,139 @@
 import os
+import f90nml
+from copy import deepcopy, copy
+from .templates import dim_lookup, template_dir, gs2_template, inputs_template, systems
 
-possible_keys = {'psiN': {'min': ['psi_min','min_psi','psin_min','min_psin'],
-			'max': ['psi_max','max_psi','psin_max','max_psin'],
-			'num': ['psi_num','num_psi','n_psi','psi_n','psi_number','number_psi','len_psi','psi_len','psin_num','num_psin','n_psin','psin_n','psin_number','number_psin','len_psin','psin_len'],
-			'values': ['psis','psi_values','values_psi','psi_v','psi_vals','psins','psin_values','values_psin','psin_v','psin_vals']},
-		'shat': {'min': ['shat_min','min_shat'],
-			'max': ['shat_max','max_shat'],
-			'num': ['shat_num','num_shat','n_shat','shat_n','shat_number','number_shat','len_shat','shat_len'],
-			'values': ['shats','shat_values','values_shat','shat_v','shat_vals'],
-			'ideal_num': ['shat_num_ideal','num_shat_ideal','n_shat_ideal','shat_n_ideal','shat_number_ideal','number_shat_ideal','len_shat_ideal','shat_len_ideal']},
-		'beta': {'min': ['beta_min','min_beta'],
-			'max': ['beta_max','max_beta'],
-			'num': ['beta_num','num_beta','n_beta','beta_n','beta_number','number_beta','len_beta','beta_len'],
-			'values': ['betas','beta_values','values_beta','beta_v','beta_vals'],
-			'ideal_num': ['beta_num_ideal','num_beta_ideal','n_beta_ideal','beta_n_ideal','beta_number_ideal','number_beta_ideal','len_beta_ideal','beta_len_ideal']},
-		'aky': {'min': ['aky_min','min_aky'],
-			'max': ['aky_max','max_aky'],
-			'num': ['aky_num','num_aky','n_aky','aky_n','aky_number','number_aky','len_aky','aky_len','ky_num','num_ky','n_ky','ky_n','ky_number','number_ky','len_ky','ky_len'],
-			'values': ['akys','aky_values','values_aky','aky_v','aky_vals']},
-		'theta0': {'min': ['theta_min','min_theta','theta0_min','min_theta0'],
-			'max': ['theta_max','max_theta','theta0_max','max_theta0'],
-			'num': ['theta_num','num_theta','n_theta','theta_n','theta_number','number_theta','len_theta','theta_len','theta0_num','num_theta0','n_theta0','theta0_n','theta0_number','number_theta0','len_theta0','theta0_len'],
-			'values': ['thetas','theta_values','values_theta','theta_v','theta_vals','theta0s','theta0_values','values_theta0','theta0_v','theta0_vals']},
-		'Miller': ['miller','mill'],
-		'Ideal': ['ideal'],
-		'Gyro': ['gyro'],
-		'System': ['system','sys','server'],
-		'Fixed_delt': ['fixed_delt','delt','delt','fix_delt'],
-		'Epar': ['epar','write_epar'],
-		}
+possible_keys = {
+	'files': {
+	'eq_name': ['eq_name','eq','equilibrium','eq_file'],
+	'eq_path': ['eq_path','eq_dir','equilibrium_path','equilibrium_dir','eq_directory'],
+	'kin_name': ['kin_name','kin','kinetic','kin_file'],
+	'kin_path': ['kin_path','kin_dir','kinetic_path','kinetic_dir','kin_directory'],
+	'kin_type': ['kin_type','kinetics_type'],
+	'template_name': ['template_name','template','gk_file','template_file'],
+	'template_path': ['template_path','template_dir','template_directory'],
+	'input_name': ['input_name','input','input_file'],
+	'input_path': ['input_path','input_dir','input_directory'],
+	},
+	'knobs': {
+	'miller': ['miller','mill'],
+	'ideal': ['ideal'],
+	'gyro': ['gyro'],
+	'system': ['system','sys','server'],
+	'grid_option': ['grid_option', 'grid'],
+	'fixed_delt': ['fixed_delt','delt','delt','fix_delt'],
+	'epar': ['epar','write_epar'],
+	'num_shear_ideal': ['num_shat_ideal','n_shat_ideal','shat_ideal_num','shat_ideal_n','ideal_shat_n','idea_shat_num','num_shear_ideal','n_shear_ideal','shear_ideal_num','shear_ideal_n','ideal_shear_n','idea_shear_num'],
+	'num_beta_ideal': ['num_beta_ideal','n_beta_ideal','beta_ideal_num','beta_ideal_n','ideal_beta_n','idea_beta_num','num_beta_prime_ideal','n_beta_prime_ideal','beta_prime_ideal_num','beta_prime_ideal_n','ideal_beta_prime_n','ideal_beta_prime_num'],
+	},
+	'info': {
+	'run_name': ['run_name','name'],
+	'run_uuid': ['run_uuid','uuid','run_id','id'],
+	'run_date': ['run_date','date','time','datetime','timedate'],
+	'data_path': ['data_path'],
+	'itteration': ['itteration','itt'],
+	},
+	'dimension_n': {
+	'type': ['type'],
+	'values': ['values','vals'],
+	'min': ['min','minimum'],
+	'max': ['max','maximum'],
+	'num': ['num','number','len'],
+	'option': ['option','opt','options'],
+	},
+	}
+
+valid_systems = ['ypi_server','viking','archer2']
+
+default_inputs = {'files': {
+	'eq_name': None,
+	'eq_path': None,
+	'kin_name': None,
+	'kin_path': None,
+	'kin_type': 'PEQDSK',
+	'template_name': None,
+	'template_path': None,
+	'input_name': None,
+	'input_path': None,
+	},
+	'knobs': {
+	'gyro': True,
+	'ideal': True,
+	'miller': False,
+	'system': 'viking',
+	'grid_option': 'single',
+	'fixed_delt': False,
+	'epar': False,
+	'num_shear_ideal': None,
+	'num_beta_ideal': None,
+	},
+	'info': {
+	'run_name': None,
+	'run_uuid': None,
+	'run_date': None,
+	'data_path': None,
+	'itteration': 0,
+	},
+	'single_parameters': {},
+	}
 
 class scan_inputs(object):
 	def __init__(self, input_file = None, directory = "./", input_dict = None):
-		self._create_empty_inputs()
-		self.input_name = input_file
-		self._valid_systems = ['plasma','viking','archer']
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
+		self.input_name = input_file
 		
+		self.inputs = self.dimensions = self.dim_order = None
 		if input_file is not None:
 			self.load_inputs()
 		if input_dict is not None:
 			self.load_input_dict(input_dict)
-	
+
 	def __getitem__(self, key):
-		pkey, skey = self.find_key(key)
-		if skey:
-			return self.inputs[pkey][skey]
-		elif pkey:
-			return self.inputs[pkey]
-					
-		return None
-	
-	def find_key(self, key):
 		key = key.lower()
+		
 		if key in self.inputs.keys():
-			return key, None
-		if key in ['psi','psin']:
-			return 'psiN', None
-		if key == 'ky':
-			return 'aky', None
-			
-		for pkey in possible_keys:	
-			if type(possible_keys[pkey]) == dict:
-				for skey in possible_keys[pkey]:
-					if key in possible_keys[pkey][skey]:
-						return pkey, skey
-			else:
-				if key in possible_keys[pkey]:
-					return pkey, None
-					
+			return self.inputs[key]
+
+		for pkey in possible_keys:
+			for skey in possible_keys[pkey]:
+				if key in possible_keys[pkey][skey]:
+					for sskey in possible_keys[pkey][skey]:
+						if sskey in self.inputs[pkey]:
+							return self.inputs[pkey][sskey]
+		
+		if self.dimensions:
+			if key in ['order','dim_oder','dimension_order','dimensions_order']:
+				return self.dim_order
+			for dim in self.dimensions:
+				for skey in self.dimensions[dim].possible_keys:
+					if key in self.dimensions[dim].possible_keys[skey]:
+						return self.dimensions[dim][skey]
+
 		print(f"ERROR: {key} not found")
-		return None, None
-	
+		return None
+		
 	def print_inputs(self):
+		if self.inputs is None:
+			return
 		for key in self.inputs:
-			if type(self.inputs[key]) == dict:
-				print(f"{key}:")
-				for sub_key in self.inputs[key]:
-					print(f"\t{sub_key} = {self.inputs[key][sub_key]}")
-			else:
-				print(f"{key} = {self.inputs[key]}")
-        	
+			print(f"{key}:")
+			for sub_key in self.inputs[key]:
+				print(f"\t{sub_key} = {self.inputs[key][sub_key]}")
+
 	def keys(self):
 		return self.inputs.keys()
-		
-	def _create_empty_inputs(self):
-		self.inputs = {
-		'psiN': {'min': None, 'max': None, 'num': None, 'values': None},
-		'shat': {'min': None, 'max': None, 'num': None, 'values': None, 'ideal_num': None},
-		'beta': {'min': None, 'max': None, 'num': None, 'values': None, 'ideal_num': None},
-		'aky': {'min': None, 'max': None, 'num': None, 'values': None},
-		'theta0': {'min': None, 'max': None, 'num': None, 'values': None},
-		'Miller': False,
-		'Ideal': True,
-		'Gyro': True,
-		'System': 'viking',
-		'Fixed_delt': False,
-		'Epar': False,
-		}
 	
-	def edit_inputs(self, key = None, val = 'None'):
-		if key and val == 'None':
-			print(f"ERROR: please enter val for {key}")
-			return
-		if key in ['beta_div','beta_mul','shat_div','shat_mul'] and val is None:
-			return
-		elif key:
-			if key.lower() == 'viking':
-				key = 'system'
-				if val == True:
-					val = 'viking'
-				elif val == False:
-					val = 'plasma'
-			pkey, skey = self.find_key(key)
-			if skey:
-				self.inputs[pkey][skey] = val
-			elif pkey:
-				self.inputs[pkey] = val
-			return
-				
-		for key in self.inputs:
-			if type(self[key]) == dict:
-				for sub_key in self[key]:
-					if self[key][sub_key] is None:
-						val = input(f"Input value for {key}_{sub_key} (Current value: None): ")
-					else:
-						val = input(f"Input value for {key}_{sub_key} (Current value: {self[key][sub_key]}): ")
-					if sub_key == 'value' and val != "":
-						if val[0] != "[":
-							val = "[" + val
-						if val[-1] != "]":
-							val = val+ "]"
-					if val != "":
-						self.inputs[key][sub_key] = eval(val)
-			else:
-				if self[key] is None:
-					val = input(f"Input value for {key} (Current value: None): ")
-				else:
-					val = input(f"Input value for {key} (Current value: {self[key]}): ")
-				if key == 'System':
-					val = val.lower()
-					if val != "" and val not in self._valid_systems:
-						print(f"ERROR: {val} is not a valid system, supported: {self._valid_systems}")
-						val = ""
-					if val != "":
-						self.inputs[key] = val
-				if val != "":
-						self.inputs[key] = eval(val)
-
-		self.validate_inputs()
+	@property
+	def shape(self):
+		if not self.dimensions:
+			return []
+		sh = [None] * len(self.dimensions)
+		for dim_id, dim_type in enumerate(self.dim_order):
+			sh[dim_id] = len(self.dimensions[dim_type])
+		return sh
 	
-	def load_input_dict(self, dic):
-		for key in dic:
-			if type(dic[key]) == dict:
-				for sub_key in dic[key]:
-					self.edit_inputs(key = f"{key}_{sub_key}", val = dic[key][sub_key])
-			else:
-				self.edit_inputs(key = key, val = dic[key])
-	
-	def validate_inputs(self):
-		valid = True
-		if self['gyro']:
-			for key in ['psiN','shat','beta','aky','theta0']:
-				if all([x is None for x in self[key].values()]):
-					print(f"ERROR: all {key} values are None")
-					valid = False
-				elif self[key]['values'] is None and (self[key]['num'] == 1 or (self[key]['min'] == self[key]['max'] != None)):
-					if self[key]['min']:
-						self[key]['values'] = [self[key]['min']]
-					elif self[key]['max']:
-						self[key]['values'] = [self[key]['max']]
-					else:
-						print(f"ERROR: too many {key} values are None")
-						valid = False
-				elif self[key]['values'] is None and any([self[key]['min'] is None,self[key]['max'] is None,self[key]['num'] is None]):
-					print(f"ERROR: too many {key} values are None")
-					valid = False
-				else:
-					if type(self[key]['values']) in [int,float]:
-						self.inputs[key]['values'] = [self[key]['values']]
-					
-					if self[key]['values'] is None:
-						vals = []
-						for i in range(self[key]['num']):
-							vals.append((self[key]['max'] - self[key]['min'])*i/(self[key]['num']-1) + self[key]['min'])
-						self.inputs[key]['values'] = vals
-					if key == 'beta':
-						self.inputs[key]['values'] = [abs(x) for x in self.inputs[key]['values']]
-						
-					self.inputs[key]['values'].sort()
-					self.inputs[key]['min'] = min(self[key]['values'])
-					self.inputs[key]['max'] = max(self[key]['values'])
-					self.inputs[key]['num'] = len(self[key]['values'])
-			
-			if self['shat']['min'] < 1e-4:
-				self.inputs['shat']['min'] = 1e-4
-				self.inputs['shat']['values'][0] = 1e-4
-			
-		if self['ideal']:
-			if self['n_shat_ideal'] is None and self['n_shat']:
-				self.inputs['shat']['n_shat_ideal'] = self['n_shat']
-			elif self['n_shat_ideal'] is None:
-				print("ERROR: n_shat_ideal is None")
-				valid = False
-			if self['n_beta_ideal'] is None and self['n_beta']:
-				self.inputs['beta']['n_beta_ideal'] = self['n_beta']
-			elif self['n_beta_ideal'] is None:
-				print("ERROR: n_beta_ideal is None")
-				valid = False
-		
-		return valid
-			
 	def load_inputs(self, filename = None, directory = "./"):
 		if self.input_name is None and filename is None:
 			filename = input("Input File Name: ")
@@ -223,56 +144,263 @@ class scan_inputs(object):
 				filename = filename + ".in"
 			self.input_name = filename
 
-		with open(os.path.join(self.path,self.input_name)) as in_file:
-			lines = in_file.readlines()
-			for line in lines:
-				key = line.split(" = ")[0].strip("\t\n ")
-				val = line.split(" = ")[1].strip("\t\n ")
-				
-				if key == 'Viking':
-					if val == "True":
-						key = "System"
-						val = "viking"
-					if val == "False":
-						key = "System"
-						val = "plasma"
-				
-				pkey, skey = self.find_key(key)
-				
-				if skey == 'value':
-					if val[0] != "[":
-						val = "[" + val
-					if val[-1] != "]":
-						val = val + "]"
-						
-				if pkey == 'System':
-					self.inputs[pkey] = val
-				elif skey:
-					 self.inputs[pkey][skey] = eval(val)
-				elif pkey:
-					self.inputs[pkey] = eval(val)
+		self.inputs = f90nml.read(f"{directory}/{self.input_name}")
+		self.check_inputs()
+		self.load_dimensions()
+	
+	def load_input_dict(self, dic):
+		if not self.inputs:
+			self.inputs = f90nml.Namelist()
+		for key in dic:
+			if key not in self.inputs.keys():
+				self.inputs[key] = {}
+			for sub_key in dic[key]:
+				self.inputs[key][sub_key] = dic[key][sub_key]
+		self.check_inputs()
+		self.load_dimensions()
+
+	def check_inputs(self):
+		defaults = deepcopy(default_inputs)
+		for key in defaults:
+			if key not in self.inputs:
+				self.inputs[key] = {}
+			for skey in defaults[key]:
+				if skey not in self.inputs[key]:
+					self.inputs[key][skey] = defaults[key][skey]
+		for key in ['knobs','files','info']:
+			for skey in self.inputs[key]:
+				if skey not in possible_keys[key]:
+					print(f"ERROR: {skey} is not a valid {key} input")
+					del(self.inputs[key][skey])
+		if self.inputs['files']['input_name'] is None and self.input_name:
+			self.inputs['files']['input_name'] = self.input_name
+		if self.inputs['files']['input_path'] is None and self.inputs['files']['input_name']:
+			self.inputs['files']['input_path'] = self.path
 		
-		self.validate_inputs()
+		if not self.inputs['files']['template_name']:
+			self.inputs['files']['template_name'] = gs2_template
+			self.inputs['files']['template_path'] = template_dir
+		for key in ['eq','kin']:
+			if not self.inputs['files'][f'{key}_name']:
+				print(f"ERROR: No {key} file given")
+			elif not self.inputs['files'][f'{key}_path']:
+				if '/' in self.inputs['files'][f'{key}_name']:
+					full = self.inputs['files'][f'{key}_name']
+					self.inputs['files'][f'{key}_name'] = full.split('/')[-1]
+					self.inputs['files'][f'{key}_path'] = full[:-len(self.inputs['files'][f'{key}_name'])]
+				else:
+					self.inputs['files'][f'{key}_path'] = self.path
+		
+		if self['knobs']['system'] in ['archer2','viking']:
+			sbatch = copy(systems[self['knobs']['system']]['sbatch'])
+			if 'sbatch' not in self.inputs:
+				self.inputs['sbatch'] = {}
+			for skey in sbatch:
+				if skey not in self.inputs['sbatch']:
+					if skey == 'job-name':
+						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0]
+					if skey == 'output':
+						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0] + ".slurm"
+					if skey == 'error':
+						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0] + ".err"
+					else:
+						self.inputs['sbatch'][skey] = sbatch[skey]
 			
-	def write_scan_input(self, filename = None, directory = "./", doPrint = False):
-		if directory is None and self.directory is None:
+			sbatch_save = copy(systems[self['knobs']['system']]['save_sbatch'])
+			if 'sbatch_save' not in self.inputs:
+				self.inputs['sbatch_save'] = {}
+			for skey in sbatch_save:
+				if skey not in self.inputs['sbatch_save']:
+					if skey == 'job-name':
+						self.inputs['sbatch_save'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0]
+					if skey == 'output':
+						self.inputs['sbatch_save'][skey] = "save_out.slurm"
+					else:
+						self.inputs['sbatch_save'][skey] = sbatch_save[skey]
+					
+		for key in self.inputs['single_parameters']:
+			if key not in dim_lookup:
+				print(f"ERROR: {key} is not a valid parameter, valid parameters: {dim_lookup['_list']}")
+				del(self.inputs['single_parameters'][key])
+		for key in [x for x in self.inputs if 'dimension_' in x]:
+			for skey in self.inputs[key]:
+				if skey not in possible_keys['dimension_n']:
+					print(f"ERROR: {skey} is not a valid {key} input")
+					del(self.inputs[key][skey])
+			for skey in ['type','values','min','max','num','option']:
+				if skey not in self.inputs[key]:
+					self.inputs[key][skey] = None
+			if type(self.inputs[key]['values']) == list:
+				if self.inputs[key]['values'][0] == '[':
+					self.inputs[key]['values'] = self.inputs[key]['values'][1:]
+				if self.inputs[key]['values'][-1] == ']':
+					self.inputs[key]['values'] = self.inputs[key]['values'][:-1]
+			if not self.inputs[key]['type']:
+				print(f"ERROR: {key} has no type, valid types: {dim_lookup['_list']}")
+	
+	def check_scan(self):
+		valid = True
+		if not self.inputs:
+			print("ERROR: No inputs loaded")
+			return False
+		if not self.dimensions:
+			self.load_dimensions()
+			
+		for dim in self.dimensions:
+			if self.dimensions[dim].values is None:
+				print(f"ERROR: {dim} dimensions invalid")
+				valid = False
+			
+		if 'psin' not in self.dimensions and 'psin' not in self.single_parameters:
+			print("ERROR: psiN must be specified as single parameter or scan dimension")
+			valid = False
+		
+		if ('kx' in self.dimensions or 'kx' in self.single_parameters) and ('theta0' in self.dimensions or 'theta0' in self.single_parameters):
+			print("ERROR: cannot define both kx and theta0 dimensions")
+			valid = False
+		
+		if self['ideal']:
+			if self['num_shear_ideal'] is None and self['n_shat']:
+				self.inputs['knobs']['num_shear_ideal'] = self['n_shat']
+			elif self['num_shear_ideal'] is None:
+				print("ERROR: num_shear_ideal is None")
+				valid = False
+			if self['num_beta_ideal'] is None and self['n_beta']:
+				self.inputs['knobs']['num_beta_ideal'] = self['n_beta']
+			elif self['num_beta_ideal'] is None:
+				print("ERROR: num_beta_ideal is None")
+				valid = False
+			if 'beta_prime' not in self.dimensions:
+				print("ERROR: beta_prime dimension must be given for ideal scan")
+				valid = False
+			if 'shear' not in self.dimensions:
+				print("ERROR: shear dimension must be given for ideal scan")
+				valid = False
+
+		return valid
+		
+	def create_run_info(self):
+		if self.inputs['info']['run_uuid'] is None:
+			try:
+				from uuid import uuid4
+				self.inputs['info']['run_uuid'] = str(uuid4())
+			except:
+				print("ERROR: unable to import uuid module, setting ID to None")
+				self.inputs['info']['run_uuid'] = None
+		if self.inputs['info']['run_name'] is None:
+			if self.inputs['files']['input_name']:
+				self.inputs['info']['run_name'] = self.inputs['files']['input_name'].split("/")[-1].split(".")[0]
+		if self.inputs['info']['data_path'] == './':
+			self.inputs['info']['data_path'] = os.getcwd()
+		if self.inputs['info']['data_path'] is None:
+			path = self.path
+			if path[:2] == "./":
+				path = os.getcwd() + path[1:]
+			if self.inputs['info']['run_name']:
+				self.inputs['info']['data_path'] = os.path.join(path, self.inputs['info']['run_name'])
+			elif self.inputs['info']['run_uuid']:
+				self.inputs['info']['data_path'] = os.path.join(path, self.inputs['info']['run_uuid'])
+			else:
+				self.inputs['info']['data_path'] = os.path.join(path, "myro_run")
+			
+		if self.inputs['info']['run_date'] is None:
+			try:
+				from datetime import datetime as dt
+				self.inputs['info']['run_date'] = dt.now().strftime("%d/%m/%Y, %H:%M:%S")
+			except:
+				print("ERROR: unable to import datetime module, setting run date to None")
+				self.inputs['info']['run_date'] = None
+		if self.inputs['info']['itteration'] is None:
+			self.inputs['info']['itteration'] = 0
+	
+	def load_dimensions(self):
+		dimensions = {}
+		single_parameters = {}
+		dim_order = []
+		for key in [x for x in self.inputs.keys() if 'dimension_' in x]:
+			dim_type = self.inputs[key]['type']
+			dim_type = dim_type.lower()
+			if dim_type and dim_type not in dim_lookup['_full_list']:
+				print(f"ERROR: {dim_type} not a valid dimension. Valid = {dim_lookup['_list']}")
+			elif dim_type:
+				dim = dim_lookup[dim_type](values=self.inputs[key]['values'],mini=self.inputs[key]['min'],maxi=self.inputs[key]['max'],num=self.inputs[key]['num'],option=self.inputs[key]['option'])
+				if dim.name in dimensions:
+					print(f"ERROR: {dim_type} defined multiple times")
+				else:
+					if len(dim) == 1:
+						single_parameters[dim.name] = dim
+					else:
+						dimensions[dim.name] = dim
+					
+		if 'single_parameters' in self.inputs.keys():
+			for dim_type in self.inputs['single_parameters']:
+				if dim_type not in dim_lookup['_full_list']:
+					print(f"ERROR: {dim_type} not a valid parameter. Must be a dimension, valid = {dim_lookup['_list'].keys()}")
+				elif dim_type in dimensions:
+					print(f"ERROR: {dim_type} defined multiple times. As single parameter and dimension")
+				elif dim_type in single_parameters:
+					print(f"ERROR: {dim_type} defined multiple times.")
+				else:
+					dim = dim_lookup[dim_type](values=self.inputs['single_parameters'][dim_type])
+					single_parameters[dim.name] = dim
+		
+		for key in [x for x in self.inputs if 'dimension_' in x]:
+			del self.inputs[key]
+		self.inputs['single_parameters'] = {}
+		
+		for dim_type in single_parameters:
+			self.inputs['single_parameters'][dim_type] = single_parameters[dim_type].values[0]
+				
+		for dim in dimensions.values():
+			dim_order.append(dim.name)
+			dim_id = dim_order.index(dim.name)
+			self.inputs[f"dimension_{dim_id+1}"] = {}
+			self.inputs[f"dimension_{dim_id+1}"]['type'] = dim.name
+			self.inputs[f"dimension_{dim_id+1}"]['values'] = dim.values
+			self.inputs[f"dimension_{dim_id+1}"]['min'] = dim.min
+			self.inputs[f"dimension_{dim_id+1}"]['max'] = dim.max
+			self.inputs[f"dimension_{dim_id+1}"]['num'] = len(dim)
+			self.inputs[f"dimension_{dim_id+1}"]['option'] = dim.option
+		
+		self.dimensions = dimensions
+		self.single_parameters = single_parameters
+		self.dim_order = dim_order
+
+	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
+		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
 			directory = self.path
-			
-		if self.input_name is None and filename is None:
+
+		if self.inputs['files']['input_name'] is None and filename is None:
 			filename = input("Input File Name: ")
-		elif self.input_name is None:
-			self.input_name = filename
-		if "." not in self.input_name:
-			self.input_name = self.input_name + ".in"
+		if self.inputs['files']['input_name'] is None:
+			self.inputs['files']['input_name'] = filename
+		if filename is None:
+			filename = self.inputs['files']['input_name']
+		if "." not in filename:
+			filename = filename + ".in"
 		
-		with open(os.path.join(directory,self.input_name),'w') as in_file:
-			for key in self.inputs.keys():
-				if type(self.inputs[key]) == dict:
-					for skey in self.inputs[key]:
-						in_file.write(f"{key}_{skey} = {self.inputs[key][skey]}\n")
-				else:
-					in_file.write(f"{key} = {self.inputs[key]}\n")
+		self.inputs.write(f"{directory}/{filename}",force=True)
+		
+		if doPrint:
+			print(f"Created {filename} at {directory}")
+			
+	def write_default_input(self, filename = None, directory = "./", doPrint = True):
+		if directory is None and self.path is None:
+			directory = "./"
+		elif directory is None:
+			directory = self.path
+
+		if filename is None:
+			filename = "default_input.in"
+		if "." not in filename:
+			filename = filename + ".in"
+		
+		default_in = f90nml.read(f"{template_dir}/{inputs_template}")
+		if default_in['knobs']['system'] in systems and 'sbatch' in systems[default_in['knobs']['system']]:
+			default_in['sbatch'] = systems[default_in['knobs']['system']]['sbatch']
+		default_in.write(f"{directory}/{filename}",force=True)
+		
 		if doPrint:
 			print(f"Created {filename} at {directory}")
