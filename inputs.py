@@ -21,6 +21,7 @@ possible_keys = {
 	'gyro': ['gyro'],
 	'system': ['system','sys','server'],
 	'grid_option': ['grid_option', 'grid'],
+	'non_linear': ['non_linear','nl','nonlin','non_lin'],
 	'fixed_delt': ['fixed_delt','delt','delt','fix_delt'],
 	'epar': ['epar','write_epar'],
 	'num_shear_ideal': ['num_shat_ideal','n_shat_ideal','shat_ideal_num','shat_ideal_n','ideal_shat_n','idea_shat_num','num_shear_ideal','n_shear_ideal','shear_ideal_num','shear_ideal_n','ideal_shear_n','idea_shear_num'],
@@ -62,6 +63,7 @@ default_inputs = {'files': {
 	'miller': False,
 	'system': 'viking',
 	'grid_option': 'single',
+	'non_linear': False,
 	'fixed_delt': False,
 	'epar': False,
 	'num_shear_ideal': None,
@@ -254,6 +256,31 @@ class scan_inputs(object):
 		if 'psin' not in self.dimensions and 'psin' not in self.single_parameters:
 			print("ERROR: psiN must be specified as single parameter or scan dimension")
 			valid = False
+		
+		if self['grid_option'] == 'box':
+			if 'ky' in self.dimensions or 'ky' in self.single_parameters:
+				print("ERROR: ky dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
+				valid = False
+			if 'kx' in self.dimensions or 'kx' in self.single_parameters:
+				print("ERROR: kx dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
+				valid = False
+			if 'theta0' in self.dimensions or 'theta0' in self.single_parameters:
+				print("ERROR: theta0 dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
+				valid = False
+		
+		if self['grid_option'] == 'single':
+			if 'ny' in self.dimensions or 'ny' in self.single_parameters:
+				print("ERROR: ny dimension is not compatible with grid_option == single: use ky")
+				valid = False
+			if 'nx' in self.dimensions or 'nx' in self.single_parameters:
+				print("ERROR: nx dimension is not compatible with grid_option == single: use ky")
+				valid = False
+			if 'y0' in self.dimensions or 'nx' in self.single_parameters:
+				print("ERROR: nx dimension is not compatible with grid_option == single")
+				valid = False
+			if 'jtwist' in self.dimensions or 'nx' in self.single_parameters:
+				print("ERROR: nx dimension is not compatible with grid_option == single")
+				valid = False
 		
 		if ('kx' in self.dimensions or 'kx' in self.single_parameters) and ('theta0' in self.dimensions or 'theta0' in self.single_parameters):
 			print("ERROR: cannot define both kx and theta0 dimensions")

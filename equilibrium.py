@@ -209,7 +209,8 @@ class equilibrium(object):
 		nml['dist_fn_species_knobs_3']['bakdif'] = 0
 		
 		nml['dist_fn_knobs']['g_exb'] = 0
-		
+		#if nml['init_g_knobs']['ginit_option'] = 'default':
+			#nml['init_g_knobs']['ginit_option'] = 'noise'
 		nml['theta_grid_eik_knobs']['equal_arc'] = False
 		
 		if self.inputs['Miller']:
