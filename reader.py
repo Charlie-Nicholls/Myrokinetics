@@ -48,14 +48,14 @@ class myro_read(object):
 			key = 'abs_gr'
 		
 		if key in ['quasilinear','norm_gr','abs_gr']:
-			if not self.data[f'_{key}_keys']:
+			if f"_{key}_keys" not in self.data.keys():
 				print(f"ERROR: {key} not calculated")
 				return None
 			
-			dim_order = [x for x in self.inputs.dim_order if x not in ['ky','theta0']]
-			if len(ids) != len(dim_order):
-				print(f"ERROR: ids must be length {len(dim_order)}")
-			if run == None:
+			if run is None:
+				dim_order = [x for x in self.inputs.dim_order if x not in ['ky']] #Update to exclude theta0
+				if len(ids) != len(dim_order):
+					print(f"ERROR: ids must be length {len(dim_order)}")
 				run = {}
 				for idx, i in enumerate(ids):
 					run[dim_order[idx]] = self.dimensions[dim_order[idx]].values[i]
@@ -140,7 +140,8 @@ class myro_read(object):
 			return list(self.data['gyro'].keys())
 		idlist = []
 		for key, val in run.items():
-			idlist.append(self.data[keys][key][val])
+			if key in self.data[keys] and val in self.data[keys][key]:
+				idlist.append(self.data[keys][key][val])
 		if len(idlist) == 0:
 			return None
 		elif len(idlist) == 1:
@@ -324,7 +325,7 @@ class myro_read(object):
 		return loop(n=len(dim_order))
 	
 	def calculate_ql(self):
-		#reexclude theta0 when ql calculation is updated in line 322&327&330
+		#reexclude theta0 when ql calculation is updated in line 322 & 327 & 330 & 56 & plotters
 		from .quasilinear import QL
 		from uuid import uuid4
 		if 'ky' not in self.dimensions:
@@ -465,7 +466,7 @@ class myro_read(object):
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} QuasiLinear"
-		return Plotters['QL'](reader = self, settings = settings)
+		return Plotters['2D'](reader = self, settings = settings)
 	
 	def plot_ideal(self, settings = {}, init = None):
 		if init is not None:

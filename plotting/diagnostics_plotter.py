@@ -214,25 +214,23 @@ class plot_diag(object):
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
 				self.settings[key]['id'] = sli.val		
 		
-		run_id = self.reader.get_run_id(run=self['run'])
-		data = self.reader.data['gyro'][run_id]
-		
-		title = "".join([f"{self.reader.dimensions[x].axis_label}: {data[x]:.2g} | " for x in self.reader.inputs.dim_order])[:-3]
+		run=self['run']
+		title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.2g} | " for x in self.reader.inputs.dim_order])[:-3]
 		self.ax.set_title(title,fontsize=self['fontsizes']['title'])
 		
 		if self['var'] == 'omega':
-			if data['omega'] is None or data['t'] is None:
+			if self.reader('omega',run) is None or self.reader('t',run) is None:
 				print("ERROR: data not found")
 			else:
-				omega = data['omega']
-				t = data['t']
+				omega = self.reader('omega',run)
+				t = self.reader('t',run)
 			
 			self.ax2.cla()
 			
 			self.ax2.plot(t,real(omega),color=self['colours']['real'],label="mode frequency")
 			self.ax.plot(t,imag(omega),color=self['colours']['imag'],label="growth rate")
 			
-			self.ax.text(0.01,0.99,f"GR: {data['growth_rate']:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
+			self.ax.text(0.01,0.99,f"GR: {self.reader('growth_rate',run):+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
 			self.ax2.text(0.01,0.99,f"MF: {real(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax2.transAxes,fontsize=self['fontsizes']['legend'])
 			self.ax.set_ylabel("Growth Rate",fontsize=self['fontsizes']['axis'])
 			self.ax.set_xlabel(f"Time ({len(t)} steps)",fontsize=self['fontsizes']['axis'])
@@ -242,11 +240,11 @@ class plot_diag(object):
 			self.ax2.legend(loc=1)
 			
 		elif self['var'] in ['phi','apar','bpar','epar','jacob']:
-			if data[self['var']] is None or data['theta'] is None:
+			if self.reader(self['var'],run) is None or self.reader('theta',run) is None:
 				print("ERROR: data not found")
 			else:
-				field = data[self['var']]
-				theta = data['theta']
+				field = self.reader(self['var'],run)
+				theta = self.reader('theta',run)
 				
 			if self['var'] == 'phi':
 				ylabel = "$\phi$"
@@ -261,10 +259,10 @@ class plot_diag(object):
 			
 			if self['var'] in ['phi','apar','bpar','epar']:
 				if self['normalisation'] == 'highest':
-					norm = max([amax([abs(i) for i in data[x]]) for x in ['phi','apar','bpar','epar'] if (x in data and data[x] is not None)])
+					norm = max([amax([abs(i) for i in self.reader(x,run)]) for x in ['phi','apar','bpar','epar'] if (x in data and self.reader(x,run) is not None)])
 					ylabel += " / max($\phi,A_{\parallel},B_{\parallel},E_{\parallel}$)"
 				elif self['normalisation'] in ['phi','apar','bpar','epar']:
-					norm = amax([abs(i) for i in data[self['normalisation']]])
+					norm = amax([abs(i) for i in self.reader(self['normalisation'],run)])
 					ylabel += f" / max({self['normalisation']})"
 				else:
 					norm = 1
@@ -283,11 +281,11 @@ class plot_diag(object):
 			self.ax.set_ylabel(ylabel,fontsize=self['fontsizes']['axis'])
 			
 		elif self['var'] == 'phi2':
-			if data['phi2'] is None or data['t'] is None:
+			if self.reader('phi2',run) is None or self.reader('t',run) is None:
 				print("ERROR: data not found")
 			else:
-				phi2 = [x for x in data['phi2'] if x !=0]
-				t = [x for xi, x in enumerate(data['t']) if data['phi2'][xi] != 0]
+				phi2 = [x for x in self.reader('phi2',run) if x !=0]
+				t = [x for xi, x in enumerate(self.reader('t',run)) if self.reader('phi2',run)[xi] != 0]
 			if len(phi2) > 0:
 				self.ax.plot(t,phi2,'k')
 				if max(phi2) > 1e267:
@@ -306,11 +304,11 @@ class plot_diag(object):
 						fitgr = fit[0]/2
 						pr = pearsonr(t[-nt:],log(phi2[-nt:]))
 						gradgr = log(phi2[-1]/phi2[0])/(t[-1]-t[0])/2
-						omega = data['omega']
+						omega = self.reader('omega',run)
 						
 						self.ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fitgr:+.2e}\nR = {pr[0]:.4f}")
 						self.ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {gradgr:+.2e}")
-						self.ax.text(0.01,0.99,f"GR: {data['growth_rate']:+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
+						self.ax.text(0.01,0.99,f"GR: {self.reader('growth_rate',run):+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
 						self.ax.set_xlabel(f"Time ({len(t)} steps) | nt = {nt}")
 						self.ax.legend(loc=1,fontsize=self['fontsizes']['legend'])
 		

@@ -188,23 +188,22 @@ class plot_theta(object):
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
 				self.settings[key]['id'] = sli.val
 		
-		run_id = self.reader.get_run_id(run=self['run'])
-		data = self.reader.data['gyro'][run_id]
-		
+		run = self['run']
+
 		theta = linspace(0, 2*pi, 100)
 		rt_fun = zeros((len(theta)))
 		it_fun = zeros((len(theta)))
-		re_fun = InterpolatedUnivariateSpline(data['theta'],real(data[self['var']]))
-		ie_fun = InterpolatedUnivariateSpline(data['theta'],imag(data[self['var']]))
+		re_fun = InterpolatedUnivariateSpline(self.reader('theta',run),real(self.reader(self['var'],run)))
+		ie_fun = InterpolatedUnivariateSpline(self.reader('theta',run),imag(self.reader(self['var'],run)))
 		for t, th in enumerate(theta):
 			sampling = True
 			i = 0
 			while sampling:
-				th_p = data['theta'][0] + th + 2*pi*i
-				if data['theta'][0] <= th_p <= data['theta'][-1]:
+				th_p = self.reader('theta',run)[0] + th + 2*pi*i
+				if self.reader('theta',run)[0] <= th_p <= self.reader('theta',run)[-1]:
 					rt_fun[t] += re_fun(th_p)
 					it_fun[t] += ie_fun(th_p)
-				elif th_p > data['theta'][-1]:
+				elif th_p > self.reader('theta',run)[-1]:
 					sampling = False
 				i = i+1
 		
@@ -226,11 +225,11 @@ class plot_theta(object):
 			self.ax[1].set_xlabel("Theta")
 			self.ax[1].set_ylabel(self['var'])
 		if self['visible']['real']:
-			self.ax[0].plot(data['theta'], real(data[self['var']]),'r--',label="real")
+			self.ax[0].plot(self.reader('theta',run), real(self.reader(self['var'],run)),'r--',label="real")
 		if self['visible']['imag']:
-			self.ax[0].plot(data['theta'], imag(data[self['var']]),'b--',label="imaginary")
+			self.ax[0].plot(self.reader('theta',run), imag(self.reader(self['var'],run)),'b--',label="imaginary")
 		if self['visible']['absolute']:
-			self.ax[0].plot(data['theta'], [abs(x) for x in data[self['var']]],'k--',label="absolute")
+			self.ax[0].plot(self.reader('theta',run), [abs(x) for x in self.reader(self['var'],run)],'k--',label="absolute")
 		self.ax[0].legend(loc=0)
 		self.ax[0].set_xlabel("Ballooning Angle")
 		self.ax[0].set_ylabel(self['var'])

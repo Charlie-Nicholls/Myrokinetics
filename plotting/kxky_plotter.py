@@ -18,8 +18,8 @@ default_settings = {"suptitle": None,
 		"gr_slider": {"scale": 100, "max": None},
 		"mf_slider": {"scale": 100, "max": None},
 		"run": {},
-		"fontsizes": {"title": 13, "ch_box": 8, "vr_box": 8, "axis": 17, "suptitle": 20, "legend": 13},
-		"visible": {"slider_1": True, "slider_2": True, "gr_slider": True, "mf_slider": True, "op_box": True, "vr_box": True, "suptitle": True, "title": True, "legend": True},
+		"fontsizes": {"title": 13, "ch_box": 8, "axis": 17, "suptitle": 20, "legend": 13},
+		"visible": {"slider_1": True, "slider_2": True, "gr_slider": True, "mf_slider": True, "op_box": True, "suptitle": True, "title": True, "legend": True},
 		"cdict": {'red':  ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.8, 0.8)),
 			'green':  ((0.0, 0.8, 0.8),(0.5, 1, 1),(1.0, 0.0, 0.0)),
 			'blue': ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.0, 0.0))},
@@ -30,7 +30,7 @@ class plot_kxky(object):
 		self.reader = reader
 		self.verify = reader.verify
 		self.data = reader.data['gyro']
-		if self.data is None:
+		if self.reader.data['gyro'] is None:
 			print("Error: No Gyrokinetic Data")
 			return
 		self.settings = {}
@@ -114,9 +114,9 @@ class plot_kxky(object):
 		self.sliders['mf_slider'] = Slider(self.mf_axes, 'MF', 0, 100, valinit = self['mf_slider']['scale'], valstep = 1, orientation = 'vertical')
 		self.sliders['mf_slider'].on_changed(self.draw_fig)
 		
-		if not self['visible']['slider_1'] and not self['visible']['slider_2'] and not self['visible']['vr_box']:
+		if not self['visible']['slider_1'] and not self['visible']['slider_2']:
 			self.fig.subplots_adjust(bottom=0.11)
-		elif not self['visible']['slider_2'] and not self['visible']['vr_box']: 
+		elif not self['visible']['slider_2']: 
 			self.fig.subplots_adjust(bottom=0.13)
 		else:
 			self.fig.subplots_adjust(bottom=0.15)
@@ -217,16 +217,14 @@ class plot_kxky(object):
 			self._slider_axes[key].set_visible(self['visible'][key])
 		elif key == 'op_box':
 			self.ch_axes.set_visible(self['visible']['op_box'])
-		elif key == 'vr_box':
-			self.vr_axes.set_visible(self['visible']['vr_box'])
 		elif key == 'suptitle':
 			self.fig._suptitle.set_visible(self['visible']['suptitle'])
 		elif key == 'title':
 			self.ax.legend_.set_visible(self['visible']['title'])
 			
-		if not self['visible']['slider_1'] and not self['visible']['slider_2'] and not self['visible']['vr_box']:
+		if not self['visible']['slider_1'] and not self['visible']['slider_2']:
 			self.fig.subplots_adjust(bottom=0.11)
-		elif not self['visible']['slider_2'] and not self['visible']['vr_box']: 
+		elif not self['visible']['slider_2']: 
 			self.fig.subplots_adjust(bottom=0.13)
 		else:
 			self.fig.subplots_adjust(bottom=0.15)
@@ -302,47 +300,40 @@ class plot_kxky(object):
 		
 		z_gr = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
 		z_mf = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
-		run_ids = []
 		for x_id, x_value in enumerate(self.x_axis):
 			for y_id, y_value in enumerate(self.y_axis):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
-				run_id = self.reader.get_run_id(run = run)
-				if run_id is not None:
-					run_ids.append(run_id)
-					z_mf[x_id][y_id] = self.data[run_id]['mode_frequency']
-					z_gr[x_id][y_id] = self.data[run_id][self['z_axis_type']]
-				else:
-					z_gr[x_id][y_id] = nan
-					z_mf[x_id][y_id] = nan
-		self.z_axis_gr = z_gr = transpose(z_gr)
-		self.z_axis_mf = z_mf = transpose(z_mf)
+				z_mf[x_id][y_id] = self.reader('mode_frequency',run)
+				z_gr[x_id][y_id] = self.reader(self['z_axis_type'],run)
+		self.z_axis_gr = transpose(z_gr)
+		self.z_axis_mf = transpose(z_mf)
 		
 		self.ax[0].set_title(self._z_axis_label,fontsize=self['fontsizes']['title'])
 		
 		if self['gr_slider']['max']:
 			grmax = self.sliders['gr_slider'].val * self['gr_slider']['max']/100
 		else:
-			grmax = self.sliders['gr_slider'].val * amax(abs(array(z_gr)[isfinite(z_gr)]))/100
+			grmax = self.sliders['gr_slider'].val * amax(abs(array(self.z_axis_gr)[isfinite(self.z_axis_gr)]))/100
 
 		norm_gr = Normalize(vmin=-grmax,vmax=grmax)
 		self.settings['gr_slider']['scale'] = self.sliders['gr_slider'].val
 		self.cbar_gr.update_normal(ScalarMappable(norm = norm_gr, cmap = self.cmap))
 		if self['contour_type'] == 1:
-			self.ax[0].contourf(x_axis, y_axis, z_gr, cmap = self.cmap, norm=norm_gr)
+			self.ax[0].contourf(x_axis, y_axis, self.z_axis_gr, cmap = self.cmap, norm=norm_gr)
 		else:
-			self.ax[0].pcolormesh(x_axis, y_axis, z_gr, cmap = self.cmap, norm=norm_gr)
+			self.ax[0].pcolormesh(x_axis, y_axis, self.z_axis_gr, cmap = self.cmap, norm=norm_gr)
 		
 		if self['mf_slider']['max']:
 			mfmax = self.sliders['mf_slider'].val * self['mf_slider']['max']/100
 		else:
-			mfmax = self.sliders['mf_slider'].val * amax(abs(array(z_mf)[isfinite(z_mf)]))/100
+			mfmax = self.sliders['mf_slider'].val * amax(abs(array(self.z_axis_mf)[isfinite(self.z_axis_mf)]))/100
 
 		norm_mf = Normalize(vmin=-mfmax,vmax=mfmax)
 		self.settings['mf_slider']['scale'] = self.sliders['mf_slider'].val
 		self.cbar_mf.update_normal(ScalarMappable(norm = norm_mf))
-		self.ax[1].pcolormesh(x_axis, y_axis, z_mf, norm = norm_mf)
+		self.ax[1].pcolormesh(x_axis, y_axis, self.z_axis_mf, norm = norm_mf)
 		
 		self.ax[0].legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0,1.02),loc = "lower left", fontsize = self['fontsizes']['title'], frameon = False)
 		self.ax[0].legend_.set_visible(self['visible']['legend'])

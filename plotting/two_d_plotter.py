@@ -12,17 +12,18 @@ default_settings = {"suptitle": None,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
 		"slider_1": {"dimension_type": None, "id": 0},
-		"ql_slider": {"scale": 100, "max": None},
+		"slider_2": {"dimension_type": None, "id": 0},
+		"z_slider": {"scale": 100, "max": None},
 		"run": {},
 		"options": [False,False,True,True,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
-		"visible": {"slider_1": True, "ql_slider": True, "op_box": True, "suptitle": True, "title": True},
+		"visible": {"slider_1": True, "slider_2": True, "z_slider": True, "op_box": True, "suptitle": True, "title": True},
 		"cdict": {"red": ((0.0, 1, 1),(1.0, 0.8, 0.8)),
 			"green": ((0.0, 1, 1),(1.0, 0.0, 0.0)),
 			"blue": ((0.0, 1, 1),(1.0, 0.0, 0.0))},
 }
 
-class plot_ql(object):
+class plot_2d(object):
 	def __init__(self, reader, settings = {}):	
 		self.reader = reader
 		if self.reader['quasilinear'] is None:
@@ -61,7 +62,7 @@ class plot_ql(object):
 		
 	def save_plot(self, filename = None):
 		if filename is None:
-			filename = f"QL_{self['slider_1']['id']}"
+			filename = f"self['z_axis_type']_{self['slider_1']['id']}_{self['slider_2']['id']}"
 		self.fig.savefig(filename)
 		
 	def open_plot(self):
@@ -71,8 +72,9 @@ class plot_ql(object):
 	
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
+		self._load_z_axis(self['z_axis_type'])
 		
-		self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type'],'ky','theta0']]
+		self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type'],self['z_axis_type']]]
 		
 		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
 		unused_dims = [x for x in self.dims if x not in used_dims]
@@ -99,6 +101,7 @@ class plot_ql(object):
 		self.set_options_fontsize(self['fontsizes']['ch_box'])
 		
 		self._slider_axes = {'slider_1': axes([0.15, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
+			'slider_2': axes([0.15, 0.05, 0.5, 0.03],visible=self['visible']['slider_2']),
 		}
 		self.sliders = {}
 		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
@@ -106,22 +109,24 @@ class plot_ql(object):
 			self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = self[key]['id'], valstep = 1)
 			self.sliders[key].on_changed(self.draw_fig)
 		
-		self.ql_axes = axes([0.9, 0.13, 0.01, 0.73],visible=self['visible']['ql_slider'])
-		self.sliders['ql_slider'] = Slider(self.ql_axes, 'Scale', 0, 100, valinit = self['ql_slider']['scale'], valstep = 1, orientation = 'vertical')
-		self.sliders['ql_slider'].on_changed(self.draw_fig)
+		self.z_axes = axes([0.9, 0.13, 0.01, 0.73],visible=self['visible']['z_slider'])
+		self.sliders['z_slider'] = Slider(self.z_axes, 'Scale', 0, 100, valinit = self['z_slider']['scale'], valstep = 1, orientation = 'vertical')
+		self.sliders['z_slider'].on_changed(self.draw_fig)
 			
-		if self['visible']['slider_1'] == True:	
-			self.fig.subplots_adjust(bottom=0.15)
-		elif self['visible']['slider_1'] == False:
+		if not self['visible']['slider_1'] and not self['visible']['slider_2']:
 			self.fig.subplots_adjust(bottom=0.11)
+		elif not self['visible']['slider_2']: 
+			self.fig.subplots_adjust(bottom=0.13)
+		else:
+			self.fig.subplots_adjust(bottom=0.15)
 			
-		qls = [x for x in self.reader.data['quasilinear'].values() if str(x) not in ['-inf','inf','nan']]
-		self._ql_max = max(qls,default=1)
+		zs = [x for x in self.reader.data['quasilinear'].values() if str(x) not in ['-inf','inf','nan']]
+		self._z_max = max(zs,default=1)
 		
 		ion()
 		self.draw_fig()
-		if self['ql_slider']['max']:
-			self.set_ql_max(self.settings['ql_slider']['max'])
+		if self['z_slider']['max']:
+			self.set_z_max(self.settings['z_slider']['max'])
 		show()
 	
 	def set_slider(self, slider_num, dimension_type, visible = True):
@@ -144,14 +149,11 @@ class plot_ql(object):
 		self.settings['x_axis_type'] = axis_type
 		
 		if axis_type in ['alpha']:
-			if not self.data['alpha_axis']:
-				print("ERROR: Alpha not calculated, use calculate_alpha()")
-			else:
-				#self.x_axis = self.data['alpha_axis'] needs updating
-				self._x_axis_label = r'$\alpha$'
+			print("Not yet implimented")
+			self._x_axis_label = r'$\alpha$'
 		else:
 			self.x_axis = self.reader.dimensions['beta_prime'].values
-			self._x_axis_label = r'$\beta^{\prime}$'
+			self._x_axis_label = self.reader.dimensions['beta_prime'].axis_label
 			
 	def set_x_axis_type(self, axis_type):
 		self._load_x_axis(axis_type)
@@ -168,14 +170,50 @@ class plot_ql(object):
 			print("Not yet implimented")
 		else:
 			self.y_axis = self.reader.dimensions['shear'].values
-			self._y_axis_label = r'$\hat{s}$'
+			self._y_axis_label = self.reader.dimensions['shear'].axis_label
 			
 	def set_y_axis_type(self, axis_type):
 		self._load_y_axis(axis_type)
 		self.draw_fig()
 	
-	def set_ql_max(self, val = None):
-		self.settings['ql_slider']['max'] = val
+	def _load_z_axis(self, axis_type):
+		if axis_type not in ['growth_rate','growth_rate_norm','mode_frequency','quasilinear','ql_norm','ql_metric']:
+			print(f"ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']")
+			return
+			
+		self.settings['z_axis_type'] = axis_type
+		zs = []
+		for run in self.reader.get_all_runs():
+			val = self.reader(self['z_axis_type'],run)
+			if str(val) not in ['-inf','inf','nan']:
+				zs.append(val)
+		self._z_max = max(zs,default=100)
+		
+		if axis_type in ['growth_rate']:
+			self._z_axis_label = r'$\gamma$'
+		elif axis_type in ['growth_rate_norm']:
+			self._z_axis_label = r'$\gamma/k_{y}^{2}$'
+		elif axis_type in ['mode_frequency']:
+			self._z_axis_label = "Mode Frequency"
+		elif axis_type in ['ql_norm']:
+			self._z_axis_label = "QL norm"
+		elif axis_type in ['ql_metric']:
+			self._z_axis_label = "QL norm (gs2)"
+		elif axis_type in ['quasilinear']:
+			self._z_axis_label = "Quasilinear Metric"
+			self.dims = [x for x in self.dims if x not in ['ky']]#&theta0
+			if 'ky' in self['run']:
+				self.settings['run'].pop('ky')
+			#remove ky sliders
+			#if 'theta0' in self['run']:
+				#self.settings['run'].pop('theta0')
+			
+	def set_z_axis_type(self, axis_type):
+		self._load_z_axis(axis_type)
+		self.draw_fig()
+	
+	def set_max(self, val = None):
+		self.settings['z_slider']['max'] = val
 		self.draw_fig()
 	
 	def set_visible(self, key, val = None):
@@ -194,8 +232,8 @@ class plot_ql(object):
 			elif self['visible']['slider_1'] == False:
 				self.fig.subplots_adjust(bottom=0.11)
 				
-		elif key == 'ql_slider':
-			self.ql_axes.set_visible(self['visible']['ql_slider'])
+		elif key == 'z_slider':
+			self.z_axes.set_visible(self['visible']['z_slider'])
 		elif key == 'op_box':
 			self.ch_axes.set_visible(self['visible']['op_box'])
 		elif key == 'suptitle':
@@ -269,7 +307,7 @@ class plot_ql(object):
 
 	def draw_fig(self, val = None):
 		handles = []
-		for key in [x for x in self.sliders.keys() if x != 'ql_slider']:
+		for key in [x for x in self.sliders.keys() if x != 'z_slider']:
 			sli = self.sliders[key]
 			dim = self[key]['dimension_type']
 			if dim is not None:
@@ -302,28 +340,24 @@ class plot_ql(object):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
-				run_id = self.reader.get_run_id(run = run, keys = '_quasilinear_keys')
-				if run_id is None or type(run_id) == list:
-					z[x_id][y_id] = nan
-				else:
-					z[x_id][y_id] = self.reader.data['quasilinear'][run_id]
+				z[x_id][y_id] = self.reader(self['z_axis_type'],run)
 		z = transpose(z)
 		self.z_axis = z
 		
-		if self['ql_slider']['max']:
-			qlmax = self.sliders['ql_slider'].val * self['ql_slider']['max']/100
+		if self['z_slider']['max']:
+			z_max = self.sliders['z_slider'].val * self['z_slider']['max']/100
 		elif status[2]:
-			qlmax = self.sliders['ql_slider'].val * self._ql_max/100
+			z_max = self.sliders['z_slider'].val * self._z_max/100
 		else:
 			try:
-				qlmax = self.sliders['ql_slider'].val * amax(abs(array(z)[isfinite(z)]))/100
-				if qlmax < 10e-10:
-					qlmax = 10e-10
+				z_max = self.sliders['z_slider'].val * amax(abs(array(z)[isfinite(z)]))/100
+				if z_max < 10e-10:
+					z_max = 10e-10
 			except:
-				qlmax = 1
+				z_max = 1
 		
-		norm = Normalize(vmin=0,vmax=qlmax)	
-		self.settings['ql_slider']['scale'] = self.sliders['ql_slider'].val
+		norm = Normalize(vmin=0,vmax=z_max)	
+		self.settings['z_slider']['scale'] = self.sliders['z_slider'].val
 		self.cbar.update_normal(ScalarMappable(norm = norm, cmap = self.cmap))
 		if self['contour_type'] == 1:
 			self.ax.contourf(x_axis,y_axis,z, cmap = self.cmap, norm = norm)
@@ -335,8 +369,8 @@ class plot_ql(object):
 			if min(x_axis) > x_val or max(x_axis) < x_val or min(y_axis) > y_val or max(y_axis) < y_val:
 				print("ERRROR: eqbm point outside scan range")
 			else:
-				eqbm_ql = grid((x_val,y_val))
-				self.ax.contourf(x_axis, y_axis, z, [eqbm_ql-eqbm_ql/100,eqbm_ql+eqbm_ql/100], colors = ('b'))
+				eqbm_val = grid((x_val,y_val))
+				self.ax.contourf(x_axis, y_axis, z, [eqbm_val-eqbm_val/100,eqbm_val+eqbm_val/100], colors = ('b'))
 			
 		if status[0]:
 			xticks = [x+dx/2 for dx,x in zip(diff(x_axis),x_axis)]
@@ -364,7 +398,7 @@ class plot_ql(object):
 			self.ax.plot(x_val,y_val,'kx')
 			eqbm_pos = f"{x_val:.2f},{y_val:.2f}"
 			if status[5]:
-				eqbm_pos += f",{eqbm_ql:.2f}"
+				eqbm_pos += f",{eqbm_val:.2f}"
 			if self['eqbm_style'] in ["point",2,"point numless",4]:
 				self.ax.annotate("Eqbm",(x_val,y_val),textcoords = "offset points",xytext = (0,7), ha = "center")
 			if self['eqbm_style'] in ["split",1,"point",2]:

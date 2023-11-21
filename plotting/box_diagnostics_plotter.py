@@ -191,14 +191,14 @@ class plot_box_diag(object):
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
 				self.settings[key]['id'] = sli.val		
 		
-		data = self.reader('data',self['run'])
-		ky_id = self.reader.dimensions['ky'].values.index(data['ky'])
+		run = self['run']
+		ky_id = self.reader.dimensions['ky'].values.index(self.reader('ky',run))
 		if ky_id != 0:
 			if 'jtwist' in self['run']:
 				jtwist = self['run']['jtwist']
 			else:
 				jtwist = self.reader.single_parameters['jtwist'].values[0]
-			kx_id = self.reader.dimensions['kx'].values.index(data['kx'])
+			kx_id = self.reader.dimensions['kx'].values.index(self.reader('kx',run))
 			kx_list = set()
 			offset = jtwist*ky_id
 			new_id = kx_id%offset
@@ -217,7 +217,7 @@ class plot_box_diag(object):
 				theta += list(2*pi*i+array(self.reader('theta',run)))
 			theta = list(array(theta)-(len(kx_list)-1)*pi)
 			
-			title = "".join([f"{self.reader.dimensions[x].axis_label}: {data[x]:.2g} | " for x in [y for y in self.reader.inputs.dim_order if y != 'kx']])
+			title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.2g} | " for x in [y for y in self.reader.inputs.dim_order if y != 'kx']])
 			kxs = [f"{self.reader.dimensions['kx'].values[i]:.2g}" for i in kx_list]
 			title += "kx: "
 			title += "".join([f"{kx}, " for kx in kxs])[:-2]

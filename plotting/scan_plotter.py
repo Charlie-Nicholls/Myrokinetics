@@ -140,9 +140,10 @@ class plot_scan(object):
 			self.fig.subplots_adjust(bottom=0.15)
 
 		mfs = []
-		for run in self.data.values():
-			if str(run['mode_frequency']) not in ['-inf','inf','nan']:
-				mfs.append(run['mode_frequency'])
+		for run in self.get_all_runs():
+			val = self.reader('mode_frequency',run)
+			if str(val) not in ['-inf','inf','nan']:
+				mfs.append(val)
 		self._mf_max = max(mfs,default=1)
 		self.draw_fig()
 		ion()
@@ -196,9 +197,10 @@ class plot_scan(object):
 		self.settings['z_axis_type'] = axis_type
 		
 		zs = []
-		for run in self.data.values():
-			if str(run[axis_type]) not in ['-inf','inf','nan']:
-				zs.append(run[axis_type])
+		for run in self.reader.get_all_runs():
+			val = self.reader(self['z_axis_type'],run)
+			if str(val) not in ['-inf','inf','nan']:
+				zs.append(val)
 		self._z_max = max(zs,default=100)
 		
 		if axis_type in ['growth_rate']:
@@ -391,20 +393,14 @@ class plot_scan(object):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
-				if self['aky']:
-					key = '_gyro_keys'
-				elif self['z_axis_type'] == 'growth_rate_norm':
-					key = '_norm_gr_keys'
-				elif self['z_axis_type'] == 'growth_rate':
-					key = '_abs_gr_keys'
-				run_id = self.reader.get_run_id(run = run, keys = key)
-				if run_id is not None:
-					run_ids.append(run_id)
-					z_mf[x_id][y_id] = self.data[run_id]['mode_frequency']
-					z_gr[x_id][y_id] = self.data[run_id][self['z_axis_type']]
-				else:
-					z_gr[x_id][y_id] = nan
-					z_mf[x_id][y_id] = nan
+				run_ids.append(run_id)
+				z_type = self['z_axis_type']
+				if not self['aky'] and z_type == 'growth_rate':
+					z_type = 'abs_gr'
+				elif not self['aky'] and z_type == 'growth_rate_norm':
+					z_type = 'norm_gr'
+				z_mf[x_id][y_id] = self.reader('mode_frequency',run) if self.reader('mode_frequency',run) is not None else nan
+				z_gr[x_id][y_id] = self.reader(z_type,run) if self.reader(z_type,run) is not None else nan
 		
 		self.z_axis_gr = z_gr = transpose(z_gr)
 		self.z_axis_mf = z_mf = transpose(z_mf)
