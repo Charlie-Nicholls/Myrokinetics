@@ -720,10 +720,12 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 												gyro_data[run_key]['parity'] = 0
 									elif key in ['phi2','t','theta', 'gds2', 'jacob']:
 										gyro_data['group'][group_key][key] = key_data.tolist()
+									elif key in ['phi2']:
+										gyro_data['group'][group_key]['phi2_avg'] = key_data.tolist()
 									elif key in ['ql_metric_by_mode']:
 										gyro_data[run_key]['ql_metric'] = key_data[-1,yi,xi]
 									elif key in ['phi2_metric_by_mode']:
-										gyro_data[run_key]['phi2_metric'] = key_data[-1,yi,xi]
+										gyro_data[run_key]['phi2'] = key_data[-1,yi,xi]
 									elif key in ['epar']:
 										epar_path = f"{sub_dir}/itteration_{itt}.epar"
 								
