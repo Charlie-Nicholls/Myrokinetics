@@ -81,6 +81,8 @@ class myro_read(object):
 				return None
 			if key in self.data['gyro'][run_id].keys():
 				return self.data['gyro'][run_id][key]
+			elif key in self.data['gyro']['group'][run['group_key']].keys():
+				return self.data['gyro']['group'][run['group_key']][key]
 			elif key in ['data','all']:
 				return self.data['gyro'][run_id]
 			else:
@@ -515,16 +517,16 @@ class myro_read(object):
 		return Plotters['Diag'](reader = self, settings = settings)
 	
 	def plot_box_phi(self, settings = {}, init = None):
-		return self._plot_box_diag(var = 'phi', init = init, absolute = absolute, settings = settings)
+		return self._plot_box_diag(var = 'phi', init = init, settings = settings)
 	
 	def plot_box_apar(self, settings = {}, init = None):
-		return self._plot_box_diag(var = 'apar', init = init, absolute = absolute, settings = settings)
+		return self._plot_box_diag(var = 'apar', init = init, settings = settings)
 		
 	def plot_box_bpar(self, settings = {}, init = None):
-		return self._plot_box_diag(var = 'bpar', init = init, absolute = absolute, settings = settings)
+		return self._plot_box_diag(var = 'bpar', init = init, settings = settings)
 		
 	def plot_box_epar(self, settings = {}, init = None):
-		return self._plot_box_diag(var = 'epar', init = init, absolute = absolute, settings = settings)
+		return self._plot_box_diag(var = 'epar', init = init, settings = settings)
 	
 	def _plot_box_diag(self, settings = {}, init = None, var = None):
 		if self.inputs['grid_option'] != 'box':

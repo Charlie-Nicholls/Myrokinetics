@@ -6,6 +6,7 @@ from .templates import systems
 from .inputs import scan_inputs
 import f90nml
 import glob
+from uuid import uuid4
 
 '''
 GYROKINETIC SCAN PERFORMER
@@ -256,7 +257,7 @@ input_files = {input_lists[n]}
 
 def start_run(run):
 	os.system(f"echo \\\"Input: {{run}}\\\"")
-	os.system(f"srun --nodes=1 --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
+	os.system(f"srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
 	if os.path.exists(f\"{{run[:-3]}}.out.nc\"):
 		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
 	else:
@@ -656,10 +657,11 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		
 		if self['gyro']:
 			gyro_data = {}
+			gyro_data['group'] = {}
 			only = set({'omega'})
 			if not QuickSave:
-				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode'})
-			all_keys = ['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','parity','ql_metric']
+				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
+			all_keys = ['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','parity','ql_metric','phi2_by_mode']
 			
 			gyro_keys = {}
 			for dim in self.dimensions.values():
@@ -676,60 +678,68 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			         			existing_inputs.append([x for x in f if x.isdigit()])
 					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
 					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
-					
-					run_key = run_data['attributes']['id']
-					for key in run:
-						gyro_keys[key][run[key]].add(run_key)
-					
-					gyro_data[run_key] = run
-					#gyro_data['nml_diffs'] = self.namelist_diffs[?]
-					for key in all_keys:
-						gyro_data[run_key][key] = None
-						
-					for key in only:
-						try:
-							key_data = run_data[key]
-							
-							if key == 'omega':
-								om = key_data[-1,0,0]
-								if type(om) != complex:
-									om = key_data[-2,0,0]
-								gyro_data[run_key]['growth_rate'] = imag(om)
-								gyro_data[run_key]['mode_frequency'] = real(om)
-								gyro_data[run_key]['omega'] = key_data[:,0,0].tolist()
-							elif key in ['phi','apar','bpar']:
-								gyro_data[run_key][key] = key_data[0,0,:].tolist()
-								if key == 'phi':
-									try:
-										symsum = sum(abs(key_data[0,0,:] + key_data[0,0,::-1]))/sum(abs(key_data[0,0,:]))
-									except:
-										symsum = 1
-									if  symsum > 1.5:
-										gyro_data[run_key]['parity'] = 1
-									elif symsum < 0.5:
-										gyro_data[run_key]['parity'] = -1
-									else:
-										gyro_data[run_key]['parity'] = 0
-							elif key in ['phi2','t','theta', 'gds2', 'jacob']:
-								gyro_data[run_key][key] = key_data.tolist()
-							elif key in ['ql_metric_by_mode']:
-								gyro_data[run_key]['ql_metric'] = key_data[-1,0,0]
-							elif key in ['epar']:
-								epar_path = f"{sub_dir}/itteration_{itt}.epar"
-						
-								bpar = key_data['bpar'][0,0,:]
-								epar_data = loadtxt(epar_path)
-								epar = []
-								for l in range(len(epar_data[:,3])):
-									epar.append(complex(epar_data[l,3],epar_data[l,4]))
-								epar = array(epar)
-								gyro_data[run_key]['epar'] = epar
-						except:
-							print(f"Save Error in {sub_dir}/itteration_{itt}: {key}")
-							if key == 'omega':
-								gyro_data[run_key]['growth_rate'] = nan
-								gyro_data[run_key]['mode_frequency'] = nan
+					group_key = run_data['attributes']['id']
+					for xi, kx in enumerate(run_data['kx']):
+						for yi, ky in enumerate(run_data['ky']):
+							run_key = uuid4()
+							gyro_data[run_key]['group_key'] = group_key
+							gyro_data['group'][group_key] = {}
+							for key in run:
+								gyro_keys[key][run[key]].add(run_key)
+							if self.inputs['grid_option'] == 'box':
+								gyro_keys['ky'][ky].add(run_key)
+								gyro_keys['kx'][kx].add(run_key)
+							gyro_data[run_key] = run
+							#gyro_data['nml_diffs'] = self.namelist_diffs[?]
+							for key in all_keys:
+								gyro_data[run_key][key] = None
 								
+							for key in only:
+								try:
+									key_data = run_data[key]
+									
+									if key == 'omega':
+										om = key_data[-1,yi,xi]
+										if type(om) != complex:
+											om = key_data[-2,yi,xi]
+										gyro_data[run_key]['growth_rate'] = imag(om)
+										gyro_data[run_key]['mode_frequency'] = real(om)
+										gyro_data[run_key]['omega'] = key_data[:,yi,xi].tolist()
+									elif key in ['phi','apar','bpar']:
+										gyro_data[run_key][key] = key_data[yi,xi,:].tolist()
+										if key == 'phi':
+											try:
+												symsum = sum(abs(key_data[yi,xi,:] + key_data[yi,xi,::-1]))/sum(abs(key_data[yi,xi,:]))
+											except:
+												symsum = 1
+											if  symsum > 1.5:
+												gyro_data[run_key]['parity'] = 1
+											elif symsum < 0.5:
+												gyro_data[run_key]['parity'] = -1
+											else:
+												gyro_data[run_key]['parity'] = 0
+									elif key in ['phi2','t','theta', 'gds2', 'jacob']:
+										gyro_data['group'][group_key][key] = key_data.tolist()
+									elif key in ['ql_metric_by_mode']:
+										gyro_data[run_key]['ql_metric'] = key_data[-1,yi,xi]
+									elif key in ['phi2_metric_by_mode']:
+										gyro_data[run_key]['phi2_metric'] = key_data[-1,yi,xi]
+									elif key in ['epar']:
+										epar_path = f"{sub_dir}/itteration_{itt}.epar"
+								
+										bpar = key_data['bpar'][yi,xi,:]
+										epar_data = loadtxt(epar_path)
+										epar = []
+										for l in range(len(epar_data[:,3])):
+											epar.append(complex(epar_data[l,3],epar_data[l,4]))
+										epar = array(epar)
+										gyro_data[run_key]['epar'] = epar
+								except:
+									print(f"Save Error in {sub_dir}/itteration_{itt}: {key}")
+									if key == 'omega':
+										gyro_data[run_key]['growth_rate'] = nan
+										gyro_data[run_key]['mode_frequency'] = nan
+										
 				except Exception as e:
 					print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
 		else:
@@ -737,7 +747,6 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			gyro_keys = None
 
 		if self['ideal']:
-			from uuid import uuid4
 			ideal_keys = {}
 			if 'theta0' in self.single_parameters:
 				theta0_itt = self.single_parameters['theta0'].values  

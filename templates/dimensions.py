@@ -343,6 +343,66 @@ class mass(dimension):
 				nml[key]['mass'] = val
 		return nml
 
+class nx(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['nx']
+	axis_label = 'nx'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([x <= 0 for x in values]):
+			print("Error: nx values outside the allowed range (x>0)")
+			values = [x for x in values if (x>0)]
+		if any([x != int(x) for x in values]):
+			print("Error: nx values must be integers")
+			values = [x for x in values if (x==int(x))]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['kt_grids_box_parameters']['nx'] = val
+		return nml
+
+class ny(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['ny']
+	axis_label = 'ny'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([x <= 0 for x in values]):
+			print("Error: ny values outside the allowed range (x>0)")
+			values = [x for x in values if (x>0)]
+		if any([x != int(x) for x in values]):
+			print("Error: ny values must be integers")
+			values = [x for x in values if (x==int(x))]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['kt_grids_box_parameters']['ny'] = val
+		return nml
+
+class y0(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['y0']
+	axis_label = 'y0'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([x == 0 for x in values]):
+			print("Error: y0 values outside the allowed range (x!=0)")
+			values = [x for x in values if (x!=0)]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['kt_grids_box_parameters']['y0'] = val
+		return nml
+
 class jtwist(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
