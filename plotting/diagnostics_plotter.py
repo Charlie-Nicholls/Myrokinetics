@@ -215,6 +215,7 @@ class plot_diag(object):
 				self.settings[key]['id'] = sli.val		
 		
 		run=self['run']
+		run_id = self.reader.get_run_id(run)
 		title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.2g} | " for x in self.reader.inputs.dim_order])[:-3]
 		self.ax.set_title(title,fontsize=self['fontsizes']['title'])
 		
