@@ -219,7 +219,8 @@ class equilibrium(object):
 			nml['dist_fn_knobs']['boundary_option'] = 'linked'
 			nml['dist_fn_knobs']['esv'] = True
 			nml['fields_knobs']['field_option'] = 'local'
-
+			if 'kt_grids_box_parameters' not in nml:
+				nml['kt_grids_box_parameters'] = {'nx': 50, 'ny': 50, 'y0': -0.05, 'jtwist': 1}
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
