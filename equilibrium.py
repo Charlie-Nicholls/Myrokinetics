@@ -212,9 +212,9 @@ class equilibrium(object):
 		nml['theta_grid_eik_knobs']['equal_arc'] = False
 		nml['init_g_knobs']['ginit_option'] = 'random_sine'
 		
-		if self.inputs['grid_option'] = 'single':
+		if self.inputs['grid_option'] == 'single':
 			nml['kt_grids_knobs']['grid_option'] = 'single'
-		elif self.inputs['grid_option'] = 'box':
+		elif self.inputs['grid_option'] == 'box':
 			nml['kt_grids_knobs']['grid_option'] = 'box
 			nml['dist_fn_knobs']['boundary_option'] = 'linked'
 			nml['dist_fn_knobs']['esv'] = True
