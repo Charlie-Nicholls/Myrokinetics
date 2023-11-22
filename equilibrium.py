@@ -215,7 +215,7 @@ class equilibrium(object):
 		if self.inputs['grid_option'] == 'single':
 			nml['kt_grids_knobs']['grid_option'] = 'single'
 		elif self.inputs['grid_option'] == 'box':
-			nml['kt_grids_knobs']['grid_option'] = 'box
+			nml['kt_grids_knobs']['grid_option'] = 'box'
 			nml['dist_fn_knobs']['boundary_option'] = 'linked'
 			nml['dist_fn_knobs']['esv'] = True
 			nml['fields_knobs']['field_option'] = 'local'
