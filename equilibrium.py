@@ -209,9 +209,17 @@ class equilibrium(object):
 		nml['dist_fn_species_knobs_3']['bakdif'] = 0
 		
 		nml['dist_fn_knobs']['g_exb'] = 0
-		#if nml['init_g_knobs']['ginit_option'] = 'default':
-			#nml['init_g_knobs']['ginit_option'] = 'noise'
 		nml['theta_grid_eik_knobs']['equal_arc'] = False
+		nml['init_g_knobs']['ginit_option'] = 'random_sine'
+		
+		if self.inputs['grid_option'] = 'single':
+			nml['kt_grids_knobs']['grid_option'] = 'single'
+		elif self.inputs['grid_option'] = 'box':
+			nml['kt_grids_knobs']['grid_option'] = 'box
+			nml['dist_fn_knobs']['boundary_option'] = 'linked'
+			nml['dist_fn_knobs']['esv'] = True
+			nml['fields_knobs']['field_option'] = 'local'
+
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
@@ -237,11 +245,8 @@ class equilibrium(object):
 			beta_div = abs(beta_prim/self.inputs['beta_prime_min'])
 
 			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': self.inputs['shat_min'], 'shat_max': self.inputs['shat_max'], 'beta_div': beta_div, 'beta_mul': beta_mul}
-		try:
-			if nml['kt_grids_knobs']['grid_option'] in ['single','default']:
-				nml['knobs']['wstar_units'] = False
-		except:
-			nml['knobs']['wstar_units'] = False
+
+		nml['knobs']['wstar_units'] = False
 		
 		self.surface_namelists[psiN] = nml
 		
