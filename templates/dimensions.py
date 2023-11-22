@@ -421,7 +421,7 @@ class jtwist(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['kt_grids_box_parameters']['jwist'] = val
+		nml['kt_grids_box_parameters']['jtwist'] = val
 		return nml
 
 dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist]
