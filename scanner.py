@@ -662,7 +662,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			only = set({'omega','kx','ky'})
 			if not QuickSave:
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
-			all_keys = ['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','parity','ql_metric','phi2_by_mode']
+			all_keys = ['omega','phi','bpar','apar','epar','phi2','t','theta', 'gds2', 'jacob','parity','ql_metric','phi2_by_mode']
 			
 			gyro_keys = {}
 			for dim in self.dimensions.values():
@@ -702,8 +702,10 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 									gyro_keys['kx'][kx] = set()
 								gyro_keys['ky'][ky].add(run_key)
 								gyro_keys['kx'][kx].add(run_key)
-								gyro_data['ky'] = ky
-								gyro_data['kx'] = kx
+							if 'kx' not in gyro_data[run_key]:
+								gyro_data[run_key]['kx'] = kx
+							if 'ky' not in gyro_data[run_key]:
+								gyro_data[run_key]['ky'] = ky
 							#gyro_data['nml_diffs'] = self.namelist_diffs[?]
 							for key in all_keys:
 								gyro_data[run_key][key] = None

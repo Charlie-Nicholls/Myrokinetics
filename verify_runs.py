@@ -15,7 +15,7 @@ class verify_scan(object):
 			self._nwrite = 50 #Pyro Default
 		self.bad_runs = {'nstep': set(), 'nan': set(), 'phi': set(), 'apar': set(), 'bpar': set(), 'epar': set(), 'order': set(), 'negative': set()}
 		self.convergence = {'converged': set(), 'converged_fit': set(), 'unconverged_stable': set(), 'unconverged': set(), 'uncalculated': set()}
-		self.save_errors = {'omega': set(), 'phi2': set(), 't': set(), 'phi': set(), 'apar': set(), 'bpar': set()}
+		self.save_errors = {'omega': set(), 'phi2': set(), 't': set(), 'phi': set(), 'apar': set(), 'bpar': set(), 'epar': set()}
 		self.nts = {}
 		self.check_all()
 	
@@ -108,82 +108,82 @@ class verify_scan(object):
 			print(f"Found {len(self.runs_with_save_errors)} runs with save errors")
 
 	def check_all(self):
-		for run_id in self.scan.keys():
-			self.check_run(run_id)
+		for run in self.reader.get_all_runs():
+			self.check_run(run)
 		self.print_verify()
 		
-	def check_run(self, run_id):
-		self.check_nan(run_id)
-		self.check_order(run_id)
-		self.check_convergence(run_id)
-		self.check_nstep(run_id)
-		self.check_phi(run_id)
-		self.check_apar(run_id)
-		self.check_bpar(run_id)
-		self.check_epar(run_id)
+	def check_run(self, run):
+		self.check_nan(run)
+		self.check_order(run)
+		self.check_convergence(run)
+		self.check_nstep(run)
+		self.check_phi(run)
+		self.check_apar(run)
+		self.check_bpar(run)
+		self.check_epar(run)
 
-	def check_nan(self, run_id):
-		data = self.scan[run_id]
-		if any([x not in data for x in ['omega','phi2','t']]):
-			return
-		if any([data[x] is None for x in ['omega','phi2','t']]):
-			if data['omega'] is None:
+	def check_nan(self, run):
+		omega = self.reader('omega',run)
+		phi2 = self.reader('phi2',run)
+		t = self.reader('t',run)
+		run_id = self.reader.get_run_id(run)
+		if any([x is None for x in [omega,phi2,t]]):
+			if omega is None:
 				self.save_errors['omega'].add(run_id)
-			if data['phi2'] is None:
+			if phi2 is None:
 				self.save_errors['phi2'].add(run_id)
-			if data['t'] is None:
+			if t is None:
 				self.save_errors['t'].add(run_id)
 			return
-	
-		if str(data['phi2'][-1]) in ['nan','inf','-inf']:
-			if str(data['phi2'][-1]) == 'nan':
+		
+		if str(phi2[-1]) in ['nan','inf','-inf']:
+			if str(phi2[-1]) == 'nan':
 				self.bad_runs['nan'].add(run_id)
-			bad_phi2_ids = [idx for idx, x in enumerate(data['phi2']) if str(x) in ['nan','inf','-inf']]
-			if len(data['phi2']) == len(bad_phi2_ids):
-				data['growth_rate'] = nan
-				data['mode_frequency'] = nan
+			bad_phi2_ids = [idx for idx, x in enumerate(phi2) if str(x) in ['nan','inf','-inf']]
+			if len(phi2) == len(bad_phi2_ids):
+				self.scan[run_id]['growth_rate'] = nan
+				self.scan[run_id]['mode_frequency'] = nan
 				return
 			
-			data['phi2'] = [x for idx, x in enumerate(data['phi2']) if idx not in bad_phi2_ids]
-			data['omega'] = [x for idx, x in enumerate(data['omega']) if idx not in bad_phi2_ids]
-			data['t'] = [x for idx, x in enumerate(data['t']) if idx not in bad_phi2_ids]
-			data['growth_rate'] = imag(data['omega'][-1])
-			data['mode_frequency'] = real(data['omega'][-1])
-		self.scan[run_id] = data
+			self.scan[run_id]['phi2'] = [x for idx, x in enumerate(phi2) if idx not in bad_phi2_ids]
+			self.scan[run_id]['omega'] = [x for idx, x in enumerate(omega) if idx not in bad_phi2_ids]
+			self.scan[run_id]['t'] = [x for idx, x in enumerate(t) if idx not in bad_phi2_ids]
+			self.scan[run_id]['growth_rate'] = imag(omega[-1])
+			self.scan[run_id]['mode_frequency'] = real(omega[-1])
 			
-	def check_order(self, run_id):
-		data = self.scan[run_id]
-		if any([x not in data for x in ['phi2','t']]):
+	def check_order(self, run):
+		phi2 = self.reader('phi2',run)
+		t = self.reader('t',run)
+		run_id = self.reader.get_run_id(run)
+		if any([x is None for x in [phi2,t]]):
 			self.convergence['uncalculated'].add(run_id)
-			return
-		if any([data[x] is None for x in ['phi2','t']]):
-			if data['phi2'] is None:
+			if phi2 is None:
 				self.save_errors['phi2'].add(run_id)
-			if data['t'] is None:
+			if t is None:
 				self.save_errors['t'].add(run_id)
-			self.convergence['uncalculated'].add(run_id)
 			return
 			
-		increasing = [y > x for x,y in zip(data['t'],data['t'][1:])]
+		increasing = [y > x for x,y in zip(t,t[1:])]
 		if not all(increasing):
 			self.bad_runs['order'].add(run_id)
-		positive = [x >= 0 for x in data['phi2']]
+		positive = [x >= 0 for x in phi2]
 		if not all(positive):
 			self.bad_runs['negative'].add(run_id)
-			self.scan[run_id]['phi2'] = [x for idx, x in enumerate(self.scan[run_id]['phi2']) if positive[idx]]
-			self.scan[run_id]['t'] = [x for idx, x in enumerate(self.scan[run_id]['t']) if positive[idx]]
+			self.scan[run_id]['phi2'] = [x for idx, x in enumerate(phi2) if positive[idx]]
+			self.scan[run_id]['t'] = [x for idx, x in enumerate(t) if positive[idx]]
 									
-	def check_convergence(self, run_id):
+	def check_convergence(self, run):
 		from scipy.stats import pearsonr
-		data = self.scan[run_id]
-		if any([x not in data for x in ['omega','phi2','t']]):
-			return
-		if any([data[x] is None for x in ['omega','phi2','t']]):
-			if data['omega'] is None:
+		omega = self.reader('omega',run)
+		phi2 = self.reader('phi2',run)
+		t = self.reader('t',run)
+		run_id = self.reader.get_run_id(run)
+		if any([x is None for x in [omega,phi2,t]]):
+			if omega is None:
 				self.save_errors['omega'].add(run_id)
-			if data['phi2'] is None:
+			if phi2 is None:
 				self.save_errors['phi2'].add(run_id)
-			if data['t'] is None:
+			if t is None:
 				self.save_errors['t'].add(run_id)
 			return
 
@@ -210,8 +210,8 @@ class verify_scan(object):
 				return gradgr, nan, 'unconverged_stable'
 			else:
 				return nan, nan, 'unconverged'
-		phi2 = [x for x in data['phi2'] if x !=0]
-		t = [x for xi, x in enumerate(data['t']) if data['phi2'][xi] != 0]
+		t = [x for xi, x in enumerate(t) if phi2[xi] != 0]
+		phi2 = [x for x in phi2 if x !=0]
 		if len(phi2) != 0:
 			gradgr = log(phi2[-1]/phi2[0])/(t[-1]-t[0])/2
 			findingGR = True
@@ -226,12 +226,12 @@ class verify_scan(object):
 				else:
 					nt = nt - 1
 				try:
-					new_gr, new_mf, cat = find_gr(nt = nt, t = t, phi2 = phi2, gr = data['growth_rate'], mf = data['mode_frequency'], gradgr = gradgr)
+					new_gr, new_mf, cat = find_gr(nt = nt, t = t, phi2 = phi2, gr = self.reader('growth_rate',run), mf = self.reader('mode_frequency',run), gradgr = gradgr)
 					if cat not in ['unconverged','unconverged_stable']:
 						findingGR = False
 					elif init_nt > 11 and nt < 110:
 						findingGR = False
-						nt = len(data['phi2'])//10
+						nt = len(phi2)//10
 					elif nt == 4:
 						findingGR = False
 						nt = init_nt
@@ -255,73 +255,68 @@ class verify_scan(object):
 		self.convergence[cat].add(run_id)
 		self.nts[run_id] = nt
 
-	def check_nstep(self, run_id):
-		data = self.scan[run_id]
-		if 'omega' not in data:
-			return
-		if data['omega'] is None:
+	def check_nstep(self, run):
+		omega = self.reader('omega',run)
+		run_id = self.reader.get_run_id(run)
+		if omega is None:
 			self.save_errors['omega'].add(run_id)
 			return
 		lim = int(self._nstep/self._nwrite)
-		if len(data['omega']) in [lim,lim+1]:
+		if len(omega) in [lim,lim+1]:
 			self.bad_runs['nstep'].add(run_id)
 		
-	def check_phi(self, run_id):
-		data = self.scan[run_id]
-		if 'phi' not in data:
-			return
-		if data['phi'] is None:
+	def check_phi(self, run):
+		phi = self.reader('phi',run)
+		run_id = self.reader.get_run_id(run)
+		if phi is None:
 			self.save_errors['phi'].add(run_id)
 			return
 		try:
 			if self.reader.inputs['grid_option'] != 'box':
-				phi_max = max([abs(x) for x in data['phi']])
-				if phi_max != 0 and (abs(data['phi'][0])/phi_max > 0.05 or abs(data['phi'][-1])/phi_max > 0.05):
+				phi_max = max([abs(x) for x in phi])
+				if phi_max != 0 and (abs(phi[0])/phi_max > 0.05 or abs(phi[-1])/phi_max > 0.05):
 					self.bad_runs['phi'].add(run_id)
 		except:
 			pass
 
-	def check_apar(self, run_id):
-		data = self.scan[run_id]
-		if 'apar' not in data:
-			return
-		if data['apar'] is None:
+	def check_apar(self, run):
+		apar = self.reader('apar',run)
+		run_id = self.reader.get_run_id(run)
+		if apar is None:
 			self.save_errors['apar'].add(run_id)
 			return
 		try:
 			if self.reader.inputs['grid_option'] != 'box':
-				apar_max = max([abs(x) for x in data['apar']])
-				if apar_max != 0 and (abs(data['apar'][0])/apar_max > 0.05 or abs(data['apar'][-1])/apar_max > 0.05):
+				apar_max = max([abs(x) for x in apar])
+				if apar_max != 0 and (abs(apar[0])/apar_max > 0.05 or abs(apar[-1])/apar_max > 0.05):
 					self.bad_runs['apar'].add(run_id)
 		except:
 			pass
 		
-	def check_bpar(self, run_id):
-		data = self.scan[run_id]
-		if 'bpar' not in data:
-			return
-		if data['bpar'] is None:
+	def check_bpar(self, run):
+		bpar = self.reader('bpar',run)
+		run_id = self.reader.get_run_id(run)
+		if bpar is None:
 			self.save_errors['bpar'].add(run_id)
 			return
 		try:
 			if self.reader.inputs['grid_option'] != 'box':
-				bpar_max = max([abs(x) for x in data['bpar']])
-				if bpar_max != 0 and (abs(data['bpar'][0])/bpar_max > 0.05 or abs(data['bpar'][-1])/bpar_max > 0.05):
+				bpar_max = max([abs(x) for x in bpar])
+				if bpar_max != 0 and (abs(bpar[0])/bpar_max > 0.05 or abs(bpar[-1])/bpar_max > 0.05):
 					self.bad_runs['bpar'].add(run_id)
 		except:
 			pass
 	
-	def check_epar(self, run_id):
-		data = self.scan[run_id]
-		if 'epar' not in data:
-			return
-		if data['epar'] is None:
+	def check_epar(self, run):
+		epar = self.reader('epar',run)
+		run_id = self.reader.get_run_id(run)
+		if epar is None:
 			self.save_errors['epar'].add(run_id)
 			return
 		try:
 			if self.reader.inputs['grid_option'] != 'box':
-				epar_max = max([abs(x) for x in data['epar']])
-				if epar_max != 0 and (abs(data['epar'][0])/epar_max > 0.05 or abs(data['epar'][-1])/epar_max > 0.05):
+				epar_max = max([abs(x) for x in epar])
+				if epar_max != 0 and (abs(epar[0])/epar_max > 0.05 or abs(epar[-1])/epar_max > 0.05):
 					self.bad_runs['epar'].add(run_id)
 		except:
 			pass
