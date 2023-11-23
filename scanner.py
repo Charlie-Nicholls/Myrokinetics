@@ -699,7 +699,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 								if ky not in gyro_keys['ky']:
 									gyro_keys['ky'][ky] = set()
 								if kx not in gyro_keys['kx']:
-									gyro_keys['kx'][ky] = set()
+									gyro_keys['kx'][kx] = set()
 								gyro_keys['ky'][ky].add(run_key)
 								gyro_keys['kx'][kx].add(run_key)
 								gyro_data['ky'] = ky
