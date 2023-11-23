@@ -687,10 +687,10 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 						kxs.add(kx)
 						for yi, ky in enumerate(run_data['ky']):
 							kys.add(ky)
-							run_key = uuid4()
+							run_key = str(uuid4())
+							gyro_data[run_key] = run
 							gyro_data[run_key]['group_key'] = group_key
 							gyro_data['group'][group_key] = {}
-							gyro_data[run_key] = run
 							for key in run:
 								gyro_keys[key][run[key]].add(run_key)
 							if self.inputs['grid_option'] == 'box':
@@ -758,10 +758,10 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
 				kxs = list(kys)
 				kxs.sort()
-				self.inputs.inputs['dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'option': None}
+				self.inputs.inputs['dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
 				kys = list(kys)
 				kys.sort()
-				self.inputs.inputs['dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'option': None}
+				self.inputs.inputs['dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
 				self.inputs.load_dimensions()
 		else:
 			gyro_data = None
@@ -785,7 +785,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 
 			ideal_data = {}
 			for run in self.get_all_ideal_runs():
-				run_id = uuid4()
+				run_id = str(uuid4())
 				for key in run:
 					ideal_keys[key][run[key]].add(run_id)
 				ideal_data[run_id] = {}
