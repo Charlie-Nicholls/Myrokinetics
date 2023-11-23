@@ -677,7 +677,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			runs = self.get_all_runs()
 			for run in runs:
 				sub_dir = self.get_run_directory(run)
-				if True #try:
+				if True: #try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
 			         			existing_inputs.append([x for x in f if x.isdigit()])
