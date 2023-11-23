@@ -758,10 +758,10 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
 				kxs = list(kys)
 				kxs.sort()
-				self.inputs.inputs['dimension_{dim_n}'] = {'type': 'kx', 'values': kxs}
+				self.inputs.inputs['dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'option': None}
 				kys = list(kys)
 				kys.sort()
-				self.inputs.inputs['dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys}
+				self.inputs.inputs['dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'option': None}
 				self.inputs.load_dimensions()
 		else:
 			gyro_data = None
