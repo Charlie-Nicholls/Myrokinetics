@@ -689,7 +689,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 						for yi, ky in enumerate(run_data['ky']):
 							kys.add(ky)
 							run_key = str(uuid4())
-							gyro_data[run_key] = run
+							gyro_data[run_key] = deepcopy(run)
 							for key in run:
 								gyro_keys[key][run[key]].add(run_key)
 							gyro_data[run_key]['group_key'] = group_key
