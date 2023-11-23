@@ -668,15 +668,16 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				gyro_keys[dim.name] = {}
 				for val in dim.values:
 					gyro_keys[dim.name][val] = set()
-			
 			if self.inputs['grid_option'] == 'box':
 				kxs = set()
 				kys = set()
+				gyro_keys['ky'] = {}
+				gyro_keys['kx'] = {}
 			
 			runs = self.get_all_runs()
 			for run in runs:
 				sub_dir = self.get_run_directory(run)
-				try:
+				if True#try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
 			         			existing_inputs.append([x for x in f if x.isdigit()])
@@ -689,11 +690,15 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 							kys.add(ky)
 							run_key = str(uuid4())
 							gyro_data[run_key] = run
-							gyro_data[run_key]['group_key'] = group_key
-							gyro_data['group'][group_key] = {}
 							for key in run:
 								gyro_keys[key][run[key]].add(run_key)
+							gyro_data[run_key]['group_key'] = group_key
+							gyro_data['group'][group_key] = {}
 							if self.inputs['grid_option'] == 'box':
+								if ky not in gyro_keys['ky']:
+									gyro_keys['ky'][ky] = set()
+								if kx not in gyro_keys['kx']:
+									gyro_keys['kx'][ky] = set()
 								gyro_keys['ky'][ky].add(run_key)
 								gyro_keys['kx'][kx].add(run_key)
 								gyro_data['ky'] = ky
@@ -749,8 +754,8 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 										gyro_data[run_key]['growth_rate'] = nan
 										gyro_data[run_key]['mode_frequency'] = nan
 										
-				except Exception as e:
-					print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
+				#except Exception as e:
+					#print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
 			if self.inputs['grid_option'] == 'box':
 				existing_dim_keys = []
 				for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
