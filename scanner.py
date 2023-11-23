@@ -764,7 +764,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
 	         			existing_dim_keys.append([x for x in key if x.isdigit()])
 				dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
-				kxs = list(kys)
+				kxs = list(kxs)
 				kxs.sort()
 				self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
 				kys = list(kys)
