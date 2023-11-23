@@ -642,6 +642,64 @@ class myro_read(object):
 		
 		nml.write(os.path.join(directory,filename), force=True)
 		print(f"Created {filename} at {directory}")
+	
+	def merge_myro(self, myro):
+		dims = set(self.dimensions.keys()).union(set(self.single_parameters.keys()))
+		compare_dims = set(myro.dimensions.keys()).union(set(myro.single_parameters.keys()))
+		if dims != compare_dims:
+			print(f"ERROR: merging myro objects requires the same set of combined dimensions & single parameters; {dims} vs {compare_dims}")
+			return
+		from copy import deepcopy
+		inputs_nml = deepcopy(self.inputs.inputs)
+		del(inputs_nml['single_parameters'])
+		new_dim_order = self.inputs.dim_order
+		for dim in dims:
+			if dim not in new_dim_order:
+				new_dim_order.append(dim)
+		for i, dim in enumerate(new_dim_order):
+			in_dict = {'type': dim}
+			if dim in self.dimensions:	
+				vals = set(self.dimensions[dim].values)
+				opt = self.dimensions[dim].option
+			else:
+				vals = set(self.singe_parameters[dim].values)
+				opt = self.dimensions[dim].option
+			if dim in myro.dimensions:	
+				vals = list(vals.union(set(myro.dimensions[dim].values)))
+				opt2 = self.dimensions[dim].option
+			else:
+				vals = list(vals.union(set(myro.singe_parameters[dim].values)))
+				opt2 = self.dimensions[dim].option
+			vals.sort()
+			in_dict['values'] = vals
+			if opt != opt2:
+				print(f"Warning: option for {dim} differs between scans; {opt} vs {opt2}")
+			in_dict['option'] = opt
+			inputs_nml[f'dimension_{i}'] = in_dict
+		new_inputs = scan_inputs(input_dict = inputs_nml)
+		new_inputs.inputs.check_inputs()
+		new_inputs.inputs.load_dimensions()
+		for dim in new_inputs.dimensions:
+			if dim not in self.data['_gyro_keys']:
+				self.data['_gyro_keys'][dim] = {}
+			for val in new_inputs.dimensions[dim].values:
+				if val not in self.data['_gyro_keys'][dim]:
+					self.data['_gyro_keys'][dim] = set()
+		for dim in new_inputs.dimensions:
+			if dim in self.single_parameters:
+				for rid, run in self.data['gyro'].items():
+					self.data['gyro'][rid][dim] = self.single_parameters.values[0]
+					self.data['_gyro_keys'][dim][self.single_parameters.values[0]].add(rid)
+			if dim in myro.single_parameters:
+				for rid, run in myro.data['gyro'].items():
+					myro.data['gyro'][rid][dim] = myro.single_parameters.values[0]
+		for rid, run in myro.data['gyro'].items():
+			self.data['gyro'][rid] = run
+			for dim in new_inputs.dimensions:
+				self.data['_gyro_runs'][dim][run[dim]].add(rid)
+		self.inputs = new_inputs
+		self.dimensions = self.inputs.dimensions
+		self.single_parameters = self.inputs.single_parameters
 		
 	'''
 	def _return_mf_set(self, psi_id, ky_id, mf = None, mferr = None, mfmax = None, mfmin = None, smin_id = None, smax_id = None, bmin_id = None, bmax_id = None):
