@@ -744,7 +744,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 									elif key in ['ql_metric_by_mode']:
 										gyro_data[run_key]['ql_metric'] = key_data[-1,yi,xi]
 									elif key in ['phi2_metric_by_mode']:
-										gyro_data[run_key]['phi2'] = key_data[-1,yi,xi]
+										gyro_data[run_key]['phi2'] = key_data[:,yi,xi]
 									elif key in ['epar']:
 										epar_path = f"{sub_dir}/itteration_{itt}.epar"
 								

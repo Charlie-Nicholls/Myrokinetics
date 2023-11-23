@@ -82,7 +82,7 @@ class myro_read(object):
 			if key in self.data['gyro'][run_id].keys():
 				return self.data['gyro'][run_id][key]
 			elif 'group_key' in self.data['gyro'][run_id].keys() and key in self.data['gyro']['group'][self.data['gyro'][run_id]['group_key']].keys():
-				return self.data['gyro']['group'][run['group_key']][key]
+				return self.data['gyro']['group'][self.data['gyro'][run_id]['group_key']][key]
 			elif key in ['data','all']:
 				return self.data['gyro'][run_id]
 			elif key in ['nt']:

@@ -222,6 +222,7 @@ class plot_diag(object):
 		if self['var'] == 'omega':
 			if self.reader('omega',run) is None or self.reader('t',run) is None:
 				print("ERROR: data not found")
+				return
 			else:
 				omega = self.reader('omega',run)
 				t = self.reader('t',run)
@@ -243,6 +244,7 @@ class plot_diag(object):
 		elif self['var'] in ['phi','apar','bpar','epar','jacob']:
 			if self.reader(self['var'],run) is None or self.reader('theta',run) is None:
 				print("ERROR: data not found")
+				return
 			else:
 				field = self.reader(self['var'],run)
 				theta = self.reader('theta',run)
@@ -284,6 +286,7 @@ class plot_diag(object):
 		elif self['var'] == 'phi2':
 			if self.reader('phi2',run) is None or self.reader('t',run) is None:
 				print("ERROR: data not found")
+				return
 			else:
 				phi2 = [x for x in self.reader('phi2',run) if x !=0]
 				t = [x for xi, x in enumerate(self.reader('t',run)) if self.reader('phi2',run)[xi] != 0]
