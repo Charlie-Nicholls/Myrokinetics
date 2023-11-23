@@ -658,7 +658,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		if self['gyro']:
 			gyro_data = {}
 			gyro_data['group'] = {}
-			only = set({'omega'})
+			only = set({'omega','kx','ky'})
 			if not QuickSave:
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
 			all_keys = ['omega','phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','parity','ql_metric','phi2_by_mode']
