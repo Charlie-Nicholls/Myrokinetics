@@ -664,7 +664,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
 			#if self.inputs['epar']:
 				#only = only | set({'epar'}) NOT CURRENTLY WORKING
-			data_keys = ['omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
+			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
 			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob']
 			gyro_keys = {}
 			for dim in self.dimensions.values():
@@ -687,6 +687,9 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
 					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
 					group_key = run_data['attributes']['id']
+					gyro_data['group'][group_key] = {}
+					for key in group_keys:
+						gyro_data['group'][group_key][key] = None
 					for xi, kx in enumerate(run_data['kx']):
 						kxs.add(kx)
 						for yi, ky in enumerate(run_data['ky']):
@@ -696,7 +699,6 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 							for key in run:
 								gyro_keys[key][run[key]].add(run_key)
 							gyro_data[run_key]['group_key'] = group_key
-							gyro_data['group'][group_key] = {}
 							if self.inputs['grid_option'] == 'box':
 								if ky not in gyro_keys['ky']:
 									gyro_keys['ky'][ky] = set()
@@ -709,7 +711,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 							if 'ky' not in gyro_data[run_key]:
 								gyro_data[run_key]['ky'] = ky
 							#gyro_data['nml_diffs'] = self.namelist_diffs[?]
-							for key in all_keys:
+							for key in data_keys:
 								gyro_data[run_key][key] = None
 							for key in only:
 								try:
