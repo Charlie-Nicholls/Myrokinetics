@@ -7,6 +7,7 @@ from .inputs import scan_inputs
 import f90nml
 import glob
 from uuid import uuid4
+from copy import deepcopy
 
 '''
 GYROKINETIC SCAN PERFORMER
