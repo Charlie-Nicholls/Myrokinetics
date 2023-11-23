@@ -662,8 +662,10 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			only = set({'omega','kx','ky'})
 			if not QuickSave:
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
-			all_keys = ['omega','phi','bpar','apar','epar','phi2','t','theta', 'gds2', 'jacob','parity','ql_metric','phi2_by_mode']
-			
+			#if self.inputs['epar']:
+				#only = only | set({'epar'}) NOT CURRENTLY WORKING
+			data_keys = ['omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
+			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob']
 			gyro_keys = {}
 			for dim in self.dimensions.values():
 				gyro_keys[dim.name] = {}
@@ -678,7 +680,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			runs = self.get_all_runs()
 			for run in runs:
 				sub_dir = self.get_run_directory(run)
-				if True: #try:
+				try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
 			         			existing_inputs.append([x for x in f if x.isdigit()])
@@ -733,7 +735,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 												gyro_data[run_key]['parity'] = -1
 											else:
 												gyro_data[run_key]['parity'] = 0
-									elif key in ['phi2','t','theta', 'gds2', 'jacob']:
+									elif key in ['t','theta', 'gds2', 'jacob']:
 										gyro_data['group'][group_key][key] = key_data.tolist()
 									elif key in ['phi2']:
 										gyro_data['group'][group_key]['phi2_avg'] = key_data.tolist()
@@ -757,8 +759,8 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 										gyro_data[run_key]['growth_rate'] = nan
 										gyro_data[run_key]['mode_frequency'] = nan
 										
-				#except Exception as e:
-					#print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
+				except Exception as e:
+					print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
 			if self.inputs['grid_option'] == 'box':
 				existing_dim_keys = []
 				for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
