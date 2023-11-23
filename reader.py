@@ -366,7 +366,6 @@ class myro_read(object):
 			for val in dim.values:
 				abs_gr_keys[dim.name][val] = []
 				norm_gr_keys[dim.name][val] = []
-		print(abs_gr_keys)
 		for runs in self.get_all_runs(excludeDimensions = ['ky']):
 			run_ids = self.get_run_list(runs)
 		
