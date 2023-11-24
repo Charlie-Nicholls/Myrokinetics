@@ -267,6 +267,9 @@ class scan_inputs(object):
 			if 'theta0' in self.dimensions or 'theta0' in self.single_parameters:
 				print("ERROR: theta0 dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
 				valid = False
+			if not self['fixed_delt']:
+				print("grid_option == box runs can only use fixed_delt == True")
+				self.inputs['fixed_delt'] = True
 		
 		if self['grid_option'] == 'single':
 			if 'ny' in self.dimensions or 'ny' in self.single_parameters:

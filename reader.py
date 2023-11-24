@@ -499,6 +499,9 @@ class myro_read(object):
 		
 	def plot_phi2(self, settings = {}, init = None):
 		return self._plot_diag(var = 'phi2', init = init, settings = settings)
+	
+	def plot_phi2_avg(self, settings = {}, init = None):
+		return self._plot_diag(var = 'phi2_avg', init = init, settings = settings)
 		
 	def plot_jacob(self, settings = {}, init = None):
 		return self._plot_diag(var = 'jacob', init = init, settings = settings)

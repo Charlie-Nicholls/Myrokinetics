@@ -214,6 +214,10 @@ class equilibrium(object):
 		
 		if self.inputs['grid_option'] == 'single':
 			nml['kt_grids_knobs']['grid_option'] = 'single'
+			if 'kt_grids_single_parameters' not in nml:
+				nml['kt_grids_single_parameters'] = {'aky': 0.1, 'theta0': 0}
+			if 'kt_grids_box_parameters' in nml:
+				del(nml['kt_grids_box_parameters'])
 		elif self.inputs['grid_option'] == 'box':
 			nml['kt_grids_knobs']['grid_option'] = 'box'
 			nml['dist_fn_knobs']['boundary_option'] = 'linked'
@@ -221,6 +225,8 @@ class equilibrium(object):
 			nml['fields_knobs']['field_option'] = 'local'
 			if 'kt_grids_box_parameters' not in nml:
 				nml['kt_grids_box_parameters'] = {'nx': 50, 'ny': 50, 'y0': -0.05, 'jtwist': 1}
+			if 'kt_grids_single_parameters' in nml:
+				del(nml['kt_grids_single_parameters'])
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0

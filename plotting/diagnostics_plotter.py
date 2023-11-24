@@ -51,13 +51,13 @@ class plot_diag(object):
 		if self['var'] == 5:
 			self.settings['var'] = "phi2"
 		if self['var'] == 6:
+			self.settings['var'] = "phi2_avg"
+		if self['var'] == 7:
 			self.settings['var'] = "jacob"
-		if self['var'] not in ['omega','phi','apar','bpar','epar','phi2','jacob']:
-			print(f"ERROR: variable name/value {self['var']} not supported. supported: omega/0, phi/1, apar/2, bpar/3, epar/4, phi2/5, jacob/6")
+		if self['var'] not in ['omega','phi','apar','bpar','epar','phi2','phi2_avg','jacob']:
+			print(f"ERROR: variable name/value {self['var']} not supported. supported: omega/0, phi/1, apar/2, bpar/3, epar/4, phi2/5, phi2_avg/6, jacob/7")
 			return
-			
 		self.open_plot()
-
 
 	def __getitem__(self, key):
 		if key in self.settings:
@@ -283,13 +283,13 @@ class plot_diag(object):
 			self.ax.set_xlabel("Ballooning Angle",fontsize=self['fontsizes']['axis'])
 			self.ax.set_ylabel(ylabel,fontsize=self['fontsizes']['axis'])
 			
-		elif self['var'] == 'phi2':
-			if self.reader('phi2',run) is None or self.reader('t',run) is None:
+		elif self['var'] in ['phi2','phi2_avg']:
+			if self.reader(self['var'],run) is None or self.reader('t',run) is None:
 				print("ERROR: data not found")
 				return
 			else:
-				phi2 = [x for x in self.reader('phi2',run) if x !=0]
-				t = [x for xi, x in enumerate(self.reader('t',run)) if self.reader('phi2',run)[xi] != 0]
+				phi2 = [x for x in self.reader(self['var'],run) if x !=0]
+				t = [x for xi, x in enumerate(self.reader('t',run)) if self.reader(self['var'],run)[xi] != 0]
 			if len(phi2) > 0:
 				self.ax.plot(t,phi2,'k')
 				if max(phi2) > 1e267:
@@ -298,7 +298,7 @@ class plot_diag(object):
 				self.ax.set_yscale('log')
 				self.ax.set_xlabel(f"Time ({len(t)} steps)",fontsize=self['fontsizes']['axis'])
 				
-				if self.options.get_status()[0] and self.verify is not None:
+				if self['var'] == 'phi2' and self.options.get_status()[0] and self.verify is not None:
 					if run_id in self.verify.nts:
 						nt = self.verify.nts[run_id]
 					else:
