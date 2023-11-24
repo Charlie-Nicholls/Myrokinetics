@@ -422,6 +422,17 @@ class myro_read(object):
 		for 
 			alpha_axis_ideal.append([abs(x)*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2 for x in self['beta_prime_axis_ideal'][p]])
 	'''
+	
+	def make_slider_axes(self, settings = {}, init = None):
+		if init is not None:
+			init = list(init)
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
+					settings[f"slider_{i+1}"]['id'] = ini
+					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
+		return Plotters['Sliders'](reader = self, settings = settings)			
 		
 	def plot_aky(self, settings = {}, init = None):
 		return self.plot_scan(init = init, aky = True, settings = settings)
@@ -573,7 +584,7 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} {var}"
 		return Plotters['Theta'](reader = self, settings = settings)
 		
-	def plot_slice(self,  settings = {}, x_dim = None, y_dim = None, init = None, limit = None):
+	def plot_slice(self,  settings = {}, x_dim = None, y_dim = None, init = None, limit = None, sliders = None):
 		if y_dim in ['quasilinear','ql_norm'] and self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
@@ -589,7 +600,7 @@ class myro_read(object):
 			settings['y_axis_type'] = y_dim
 		if limit is not None:
 			settings['limit'] = limit
-		return Plotters['Slice'](reader = self, settings = settings)
+		return Plotters['Slice'](reader = self, settings = settings, sliders = sliders)
 	
 	def plot_eq(self):
 		if not self.eqbm:
