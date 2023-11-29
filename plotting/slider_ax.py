@@ -3,15 +3,15 @@ from matplotlib.widgets import Slider
 from numpy import array, full, nan
 from copy import deepcopy
 
-default_settings = {"slider_1": {"dimension_type": None, "id": 0, "axis": [0.2,0.9,0.7,0.05]},
-		"slider_2": {"dimension_type": None, "id": 0, "axis": [0.2,0.8,0.7,0.05]},
-		"slider_3": {"dimension_type": None, "id": 0, "axis": [0.2,0.7,0.7,0.05]},
-		"slider_4": {"dimension_type": None, "id": 0, "axis": [0.2,0.6,0.7,0.05]},
-		"slider_5": {"dimension_type": None, "id": 0, "axis": [0.2,0.5,0.7,0.05]},
-		"slider_6": {"dimension_type": None, "id": 0, "axis": [0.2,0.4,0.7,0.05]},
-		"slider_7": {"dimension_type": None, "id": 0, "axis": [0.2,0.3,0.7,0.05]},
-		"slider_8": {"dimension_type": None, "id": 0, "axis": [0.2,0.2,0.7,0.05]},
-		"slider_9": {"dimension_type": None, "id": 0, "axis": [0.2,0.1,0.7,0.05]},
+default_settings = {"slider_1": {"dimension_type": None, "id": 0, "axis": [0.2,0.9,0.7,0.05], "orientation": 'horizontal'},
+		"slider_2": {"dimension_type": None, "id": 0, "axis": [0.2,0.8,0.7,0.05], "orientation": 'horizontal'},
+		"slider_3": {"dimension_type": None, "id": 0, "axis": [0.2,0.7,0.7,0.05], "orientation": 'horizontal'},
+		"slider_4": {"dimension_type": None, "id": 0, "axis": [0.2,0.6,0.7,0.05], "orientation": 'horizontal'},
+		"slider_5": {"dimension_type": None, "id": 0, "axis": [0.2,0.5,0.7,0.05], "orientation": 'horizontal'},
+		"slider_6": {"dimension_type": None, "id": 0, "axis": [0.2,0.4,0.7,0.05], "orientation": 'horizontal'},
+		"slider_7": {"dimension_type": None, "id": 0, "axis": [0.2,0.3,0.7,0.05], "orientation": 'horizontal'},
+		"slider_8": {"dimension_type": None, "id": 0, "axis": [0.2,0.2,0.7,0.05], "orientation": 'horizontal'},
+		"slider_9": {"dimension_type": None, "id": 0, "axis": [0.2,0.1,0.7,0.05], "orientation": 'horizontal'},
 		"dims": None,
 		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "slider_5": True, "slider_6": True, "slider_7": True, "slider_8": True, "slider_9": True},
 }
@@ -58,6 +58,7 @@ class slider_axes(object):
 			'slider_8': axes(self.settings['slider_8']['axis'],visible=self['visible']['slider_8']),
 			'slider_9': axes(self.settings['slider_9']['axis'],visible=self['visible']['slider_9']),
 		}
+		
 		if self['dims'] is None:
 			self.settings['dims'] = [x for x in self.reader.inputs.dim_order]
 		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
@@ -95,7 +96,9 @@ class slider_axes(object):
 			self.axes[key].set_visible(False)
 			del(self.axes[key])
 		self.axes[key] = axes(self[key]['axis'],visible=self['visible'][key])
-		self.sliders[key] = Slider(self.axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = 0, valstep = 1)
+		self.sliders[key] = Slider(self.axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = 0, valstep = 1, orientation = self[key]['orientation'])
+		if self[key]['orientation'] == 'vertical':
+			self.sliders[key].label.set_rotation(90)
 		self.sliders[key].on_changed(self.draw_fig)
 		self.set_visible(key,val=self['visible'][key])
 		if _drawfig:
@@ -116,11 +119,8 @@ class slider_axes(object):
 			return
 		if val not in [True,False]:
 			val = not self['visible'][key]
-		
 		self.settings['visible'][key] = val
-		
-		if 'slider_' in key:
-			self.axes[key].set_visible(self['visible'][key])
+		self.axes[key].set_visible(self['visible'][key])
 	
 	def add_plot(self, plot):
 		self.plots.add(plot)

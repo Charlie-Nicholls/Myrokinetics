@@ -17,10 +17,13 @@ default_settings = {"suptitle": None,
 		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k'},
 }
 
-#"slider_1": {"dimension_type": None, "id": 0, "axis": [0.25, 0.01, 0.5, 0.03]},
-#"slider_2": {"dimension_type": None, "id": 0, "axis": [0.25, 0.05, 0.5, 0.03]},
-#"slider_3": {"dimension_type": None, "id": 0, "axis": [0.92, 0.2, 0.03, 0.5]},
-#"slider_1": True, "slider_2": True, "slider_3": True, 
+slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
+		"slider_2": {"axis": [0.25, 0.05, 0.5, 0.03]},
+		"slider_3": {"axis": [0.92, 0.2, 0.03, 0.5], "orientation": 'vertical'},
+		"slider_4": {"axis": [0.96, 0.2, 0.03, 0.5], "orientation": 'vertical'},
+		"dims": None,
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "slider_5": False, "slider_6": False, "slider_7": False, "slider_8": False, "slider_9": False},
+}
 
 class plot_slice(object):
 	def __init__(self, reader, settings = {}, sliders = None):
@@ -67,10 +70,17 @@ class plot_slice(object):
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
 			
-		if self.sliders is None:
-			self.sliders = slider_axes(reader=self.reader,settings={'dims':self.dims})
+		if self.sliders in [None,'seperate']:
+			slider_defaults = deepcopy(slider_settings)
+			slider_defaults['dims'] = self.dims
+			self.fig.subplots_adjust(bottom=0.15)
+			if self.sliders == 'seperate':
+				sl_ax = None
+			else:
+				sl_ax = self.ax
+			self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=sl_ax)
 		self.sliders.add_plot(self)
-			
+		
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
 
@@ -78,8 +88,8 @@ class plot_slice(object):
 		show()
 		self.draw_fig()
 		
-	def set_slider(self, num = None, key = None, dimension_type = None, _drawfig = True):
-		self.sliders.set_slider(num = num, key = key, dimension_type = dimension_type, _drawfig = _drawfig)
+	def set_slider(self, num = None, key = None, dimension_type = None):
+		self.sliders.set_slider(num = num, key = key, dimension_type = dimension_type)
 	
 	def _load_x_axis(self, axis_type):
 		if axis_type not in self.reader.dimensions:
@@ -156,20 +166,20 @@ class plot_slice(object):
 		self.settings['limit'] = limit
 	
 	def set_visible(self, key, val = None):
-		if key not in self['visible']:
-			print(f"ERROR: key not found, valid keys {self.settings['visible'].keys()}")
+		if key not in self['visible'] and key not in self.sliders['visible']:
+			print(f"ERROR: key not found, valid keys: {list(self['visible'].keys())} {list(self.sliders['visible'].keys())}")
 			return
-		if val not in [True,False]:
-			val = not self['visible'][key]
-		
-		self.settings['visible'][key] = val
-		
 		if 'slider_' in key:
-			self.slider.set_visible(key=key,val=val)
-		elif key == 'suptitle':
-			self.fig._suptitle.set_visible(self['visible']['suptitle'])
-		elif key == 'title':
-			self.ax.legend_.set_visible(self['visible']['title'])
+			self.sliders.set_visible(key=key,val=val)
+		else:
+			if val not in [True,False]:
+				val = not self['visible'][key]
+			self.settings['visible'][key] = val
+			if key == 'suptitle':
+				self.fig._suptitle.set_visible(self['visible']['suptitle'])
+			elif key == 'title':
+				self.ax.legend_.set_visible(self['visible']['title'])
+		self.draw_fig()
 	
 	def set_axis_fontsize(self, fontsize):
 		self.settings['fontsizes']['axis'] = fontsize
@@ -195,7 +205,6 @@ class plot_slice(object):
 			dim = self.sliders.settings[key]['dimension_type']
 			if dim in self.dims:
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-				self.sliders.settings[key]['id'] = sli.val
 				handles.append(Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions[dim].axis_label} = {self.settings['run'][dim]}",visible = False))
 		
 		self.ax.cla()
