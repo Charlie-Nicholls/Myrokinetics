@@ -4,6 +4,7 @@ import matplotlib.patches as pt
 from matplotlib.widgets import Slider, CheckButtons
 from time import sleep
 from copy import deepcopy
+from .slider_ax import slider_axes
 
 default_settings = {"suptitle": None,
 		"eqbm_style": "split",
@@ -14,13 +15,20 @@ default_settings = {"suptitle": None,
 		"run": {},
 		"options": [True,False,True,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
-		"visible": {"slider_1": True, "slider_2": True, "op_box": True, "suptitle": True, "title": True},
+		"visible": {"op_box": True, "suptitle": True, "title": True},
 		"colours": {"unstable": 'r', "stable": 'g', "boundary": 'k'}
 }
 
+slider_settings = {"slider_1": {"axis": [0.15, 0.01, 0.5, 0.03]},
+		"slider_2": {"axis": [0.15, 0.05, 0.5, 0.03]},
+		"dims": None,
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": False, "slider_4": False, "slider_5": False, "slider_6": False, "slider_7": False, "slider_8": False, "slider_9": False},
+}
+
 class plot_ideal(object):
-	def __init__(self, reader, settings = {}):
+	def __init__(self, reader, settings = {}, sliders = None):
 		self.reader = reader
+		self.sliders = sliders
 		if self.reader.data['ideal'] is None:
 			print("Error: No ideal_ball data")
 		
@@ -67,42 +75,24 @@ class plot_ideal(object):
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
 		
-		self.dims = [x for x in self.reader.inputs.dim_order if x in ['psin','theta0']]
-		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
-		unused_dims = [x for x in self.dims if x not in used_dims]
-		slider_keys = [x for x in self.settings if 'slider_' in x]
-		empty_sliders = [x for x in slider_keys if self.settings[x]['dimension_type'] is None]
-		for sli, key in enumerate(empty_sliders):
-			if len(unused_dims) > sli:
-				self.settings[key]['dimension_type'] = unused_dims[sli]
-				used_dims.append(unused_dims[sli])
-			else:
-				self.settings[key]['dimension_type'] = None
-				self.settings['visible'][key] = False
-			
+		self.dims = [x for x in self.reader.inputs.dim_order if x in ['psin','theta0']]		
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
 		
-		self._slider_axes = {'slider_1': axes([0.25, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
-		'slider_2': axes([0.25, 0.05, 0.5, 0.03],visible=self['visible']['slider_2']),
-		}
-		self.sliders = {}
-		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
-			dim = self.reader.dimensions[self.settings[key]['dimension_type']]
-			self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = self[key]['id'], valstep = 1)
-			self.sliders[key].on_changed(self.draw_fig)
-		
-		if self['visible']['slider_1'] == True:	
+		if self.sliders in [None,'seperate']:
 			self.fig.subplots_adjust(bottom=0.15)
-		elif self['visible']['slider_1'] == False:
-			self.fig.subplots_adjust(bottom=0.11)
+			if self.sliders == 'seperate':
+				self.sliders = slider_axes(reader=self.reader)
+			else:
+				slider_defaults = deepcopy(slider_settings)
+				slider_defaults['dims'] = self.dims
+				self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=self.ax)
+		self.sliders.add_plot(self)
 
 		self.ch_axes = axes([0.72, 0.01, 0.09, 0.1],frame_on=False)
 		self.options = CheckButtons(self.ch_axes, self._options, self['options'])
 		self.options.on_clicked(self.draw_fig)
 		
-		
-
 		ion()
 		show()
 		self.draw_fig()
@@ -143,24 +133,21 @@ class plot_ideal(object):
 		self.draw_fig()
 	
 	def set_visible(self, key, val = None):
-		if key not in self['visible']:
-			print(f"ERROR: key not found, valid keys {self.settings['visible'].keys()}")
+		if key not in self['visible'] and key not in self.sliders['visible']:
+			print(f"ERROR: key not found, valid keys: {list(self['visible'].keys())} {list(self.sliders['visible'].keys())}")
 			return
-		if val not in [True,False]:
-			val = not self['visible'][key]
-		
-		self.settings['visible'][key] = val
-		
-		if key == 'psi_sli':
-			self.psi_axes.set_visible(self['visible']['psi_sli'])
-		elif key == 'op_box':
-			self.ch_axes.set_visible(self['visible']['op_box'])
-		elif key == 'suptitle':
-			self.fig._suptitle.set_visible(self['visible']['suptitle'])
-		elif key == 'title':
-			self.ax.legend_.set_visible(self['visible']['title'])
-		if self['visible']['op_box'] == False and self['visible']['psi_sli'] == False:
-			self.fig.subplots_adjust(bottom=0.11)
+		if 'slider_' in key:
+			self.sliders.set_visible(key=key,val=val)
+		else:
+			if val not in [True,False]:
+				val = not self['visible'][key]
+			self.settings['visible'][key] = val
+			if key == 'op_box':
+				self.ch_axes.set_visible(self['visible']['op_box'])
+			elif key == 'suptitle':
+				self.fig._suptitle.set_visible(self['visible']['suptitle'])
+			elif key == 'title':
+				self.ax.legend_.set_visible(self['visible']['title'])
 	
 	def set_options_fontsize(self, fontsize):
 		self.settings['fontsizes']['ch_box'] = fontsize
@@ -218,11 +205,10 @@ class plot_ideal(object):
 				self.settings['options'][i] = val
 	
 	def draw_fig(self, val = None):
-		for key, sli in self.sliders.items():
-			dim = self[key]['dimension_type']
-			if dim is not None:
+		for key, sli in self.sliders.sliders.items():
+			dim = self.sliders.settings[key]['dimension_type']
+			if dim in self.dims:
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-				self.settings[key]['id'] = sli.val
 		
 		if 'psin' in self['run']:
 			psiN = self['run']['psin']

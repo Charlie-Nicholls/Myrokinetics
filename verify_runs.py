@@ -110,7 +110,7 @@ class verify_scan(object):
 	def check_all(self):
 		for run in self.reader.get_all_runs():
 			if self.reader.get_run_id(run) is None:
-				self.save_errors['run'].add(run)
+				self.save_errors['run'].add(str(run))
 			else:
 				self.check_run(run)
 		self.print_verify()

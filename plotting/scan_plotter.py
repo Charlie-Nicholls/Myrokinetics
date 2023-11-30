@@ -93,14 +93,13 @@ class plot_scan(object):
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
 		
 		if self.sliders in [None,'seperate']:
-			slider_defaults = deepcopy(slider_settings)
-			slider_defaults['dims'] = self.dims
 			self.fig.subplots_adjust(bottom=0.15)
 			if self.sliders == 'seperate':
-				sl_ax = None
+				self.sliders = slider_axes(reader=self.reader)
 			else:
-				sl_ax = self.ax
-			self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=sl_ax)
+				slider_defaults = deepcopy(slider_settings)
+				slider_defaults['dims'] = self.dims
+				self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=self.ax)
 		self.sliders.add_plot(self)
 		
 		self.cmap = LinearSegmentedColormap('GnRd', self['cdict'])

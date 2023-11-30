@@ -97,14 +97,13 @@ class plot_diag(object):
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
 		
 		if self.sliders in [None,'seperate']:
-			slider_defaults = deepcopy(slider_settings)
-			slider_defaults['dims'] = self.dims
 			self.fig.subplots_adjust(bottom=0.15)
 			if self.sliders == 'seperate':
-				sl_ax = None
+				self.sliders = slider_axes(reader=self.reader)
 			else:
-				sl_ax = self.ax
-			self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=sl_ax)
+				slider_defaults = deepcopy(slider_settings)
+				slider_defaults['dims'] = self.dims
+				self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=self.ax)
 		self.sliders.add_plot(self)
 				
 		self.set_normalisation(self['normalisation'])
@@ -174,6 +173,9 @@ class plot_diag(object):
 		self.ax.cla()
 		run=self['run']
 		run_id = self.reader.get_run_id(run)
+		if run_id is None:
+			print(f"Data not found for {run}")
+			return
 		title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.2g} | " for x in self.reader.inputs.dim_order])[:-3]
 		self.ax.set_title(title,fontsize=self['fontsizes']['title'])
 		

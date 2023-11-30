@@ -683,7 +683,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
-			         			existing_inputs.append([x for x in f if x.isdigit()])
+		         			existing_inputs.append([x for x in f if x.isdigit()])
 					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
 					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
 					group_key = run_data['attributes']['id']

@@ -81,8 +81,8 @@ class myro_read(object):
 				return None
 			if key in self.data['gyro'][run_id].keys():
 				return self.data['gyro'][run_id][key]
-			elif 'group_key' in self.data['gyro'][run_id].keys() and key in self.data['gyro']['group'][self.data['gyro'][run_id]['group_key']].keys():
-				return self.data['gyro']['group'][self.data['gyro'][run_id]['group_key']][key]
+			elif 'group_key' in self.data['gyro'][run_id].keys() and key in self.data['group'][self.data['gyro'][run_id]['group_key']].keys():
+				return self.data['group'][self.data['gyro'][run_id]['group_key']][key]
 			elif key in ['data','all']:
 				return self.data['gyro'][run_id]
 			elif key in ['nt']:
@@ -454,7 +454,7 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} Scan"
 		return Plotters['Scan'](reader = self, settings = settings, sliders = sliders)
 		
-	def plot_kxky(self, settings = {}, init = None):
+	def plot_kxky(self, settings = {}, init = None, sliders = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -465,9 +465,9 @@ class myro_read(object):
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} kxky"
-		return Plotters['kxky'](reader = self, settings = settings)
+		return Plotters['kxky'](reader = self, settings = settings, sliders = sliders)
 	
-	def plot_ql(self, settings = {}, init = None):
+	def plot_ql(self, settings = {}, init = None, sliders = None):
 		if self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
@@ -480,7 +480,7 @@ class myro_read(object):
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} QuasiLinear"
-		return Plotters['2D'](reader = self, settings = settings)
+		return Plotters['2D'](reader = self, settings = settings, sliders = sliders)
 	
 	def plot_ideal(self, settings = {}, init = None):
 		if init is not None:
@@ -675,48 +675,51 @@ class myro_read(object):
 				new_dim_order.append(dim)
 		for i, dim in enumerate(new_dim_order):
 			in_dict = {'type': dim}
+			opt = opt2 = None
 			if dim in self.dimensions:	
 				vals = set(self.dimensions[dim].values)
 				opt = self.dimensions[dim].option
-			else:
-				vals = set(self.singe_parameters[dim].values)
-				opt = self.dimensions[dim].option
+			elif dim in self.single_parameters:
+				vals = set(self.single_parameters[dim].values)
+				opt = self.single_parameters[dim].option
 			if dim in myro.dimensions:	
 				vals = list(vals.union(set(myro.dimensions[dim].values)))
-				opt2 = self.dimensions[dim].option
-			else:
-				vals = list(vals.union(set(myro.singe_parameters[dim].values)))
-				opt2 = self.dimensions[dim].option
+				opt2 = myro.dimensions[dim].option
+			elif dim in myro.single_parameters:
+				vals = list(vals.union(set(myro.single_parameters[dim].values)))
+				opt2 = myro.single_parameters[dim].option
 			vals.sort()
 			in_dict['values'] = vals
-			if opt != opt2:
+			if opt is not None and opt2 is not NOne and opt != opt2:
 				print(f"Warning: option for {dim} differs between scans; {opt} vs {opt2}")
 			in_dict['option'] = opt
 			inputs_nml[f'dimension_{i}'] = in_dict
 		new_inputs = scan_inputs(input_dict = inputs_nml)
-		new_inputs.inputs.check_inputs()
-		new_inputs.inputs.load_dimensions()
+		new_inputs.check_inputs()
+		new_inputs.load_dimensions()
 		for dim in new_inputs.dimensions:
 			if dim not in self.data['_gyro_keys']:
 				self.data['_gyro_keys'][dim] = {}
 			for val in new_inputs.dimensions[dim].values:
 				if val not in self.data['_gyro_keys'][dim]:
-					self.data['_gyro_keys'][dim] = set()
+					self.data['_gyro_keys'][dim][val] = set()
 		for dim in new_inputs.dimensions:
 			if dim in self.single_parameters:
 				for rid, run in self.data['gyro'].items():
-					self.data['gyro'][rid][dim] = self.single_parameters.values[0]
-					self.data['_gyro_keys'][dim][self.single_parameters.values[0]].add(rid)
+					self.data['gyro'][rid][dim] = self.single_parameters[dim].values[0]
+					self.data['_gyro_keys'][dim][self.single_parameters[dim].values[0]].add(rid)
 			if dim in myro.single_parameters:
 				for rid, run in myro.data['gyro'].items():
-					myro.data['gyro'][rid][dim] = myro.single_parameters.values[0]
+					myro.data['gyro'][rid][dim] = myro.single_parameters[dim].values[0]
 		for rid, run in myro.data['gyro'].items():
 			self.data['gyro'][rid] = run
 			for dim in new_inputs.dimensions:
-				self.data['_gyro_runs'][dim][run[dim]].add(rid)
+				self.data['_gyro_keys'][dim][run[dim]].add(rid)
+		self.data['group'].update(myro.data['group'])
 		self.inputs = new_inputs
 		self.dimensions = self.inputs.dimensions
 		self.single_parameters = self.inputs.single_parameters
+		self._verify_run()
 		
 	'''
 	def _return_mf_set(self, psi_id, ky_id, mf = None, mferr = None, mfmax = None, mfmin = None, smin_id = None, smax_id = None, bmin_id = None, bmax_id = None):
