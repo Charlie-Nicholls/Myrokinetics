@@ -15,7 +15,7 @@ class verify_scan(object):
 			self._nwrite = 50 #Pyro Default
 		self.bad_runs = {'nstep': set(), 'nan': set(), 'phi': set(), 'apar': set(), 'bpar': set(), 'epar': set(), 'order': set(), 'negative': set()}
 		self.convergence = {'converged': set(), 'converged_fit': set(), 'unconverged_stable': set(), 'unconverged': set(), 'uncalculated': set()}
-		self.save_errors = {'omega': set(), 'phi2': set(), 't': set(), 'phi': set(), 'apar': set(), 'bpar': set(), 'epar': set()}
+		self.save_errors = {'run': set(), 'omega': set(), 'phi2': set(), 't': set(), 'phi': set(), 'apar': set(), 'bpar': set(), 'epar': set()}
 		self.nts = {}
 		self.check_all()
 	
@@ -109,7 +109,10 @@ class verify_scan(object):
 
 	def check_all(self):
 		for run in self.reader.get_all_runs():
-			self.check_run(run)
+			if self.reader.get_run_id(run) is None:
+				self.save_errors['run'].add(str(run))
+			else:
+				self.check_run(run)
 		self.print_verify()
 		
 	def check_run(self, run):

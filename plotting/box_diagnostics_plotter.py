@@ -2,25 +2,30 @@ from numpy import real, imag, array, pi
 from matplotlib.pyplot import *
 from matplotlib.widgets import Slider
 from copy import deepcopy
+from .slider_ax import slider_axes
 
 default_settings = {"suptitle": None,
 		"var": 'phi',
-		"slider_1": {"dimension_type": None, "id": 0},
-		"slider_2": {"dimension_type": None, "id": 0},
-		"slider_3": {"dimension_type": None, "id": 0},
-		"slider_4": {"dimension_type": None, "id": 0},
 		"run": {},
 		"normalisation": "True",
 		"fontsizes": {"legend": 10,"ch_box": 8,"axis": 11,"title": 13,"suptitle": 20, "verify": 8},
-		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "suptitle": True, "title": True, "legend": True, 'absolute': True, 'real': True, 'imag': True, 'divider': True},
+		"visible": {"suptitle": True, "title": True, "legend": True, 'absolute': True, 'real': True, 'imag': True, 'divider': True},
 		"colours": {"real": 'r', "imag": 'b', "absolute": 'k', "divider": 'g'},
 }
 
+slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
+		"slider_2": {"axis": [0.25, 0.05, 0.5, 0.03]},
+		"slider_3": {"axis": [0.92, 0.2, 0.03, 0.5], "orientation": 'vertical'}, 
+		"slider_4": {"axis": [0.96, 0.2, 0.03, 0.5], "orientation": 'vertical'},
+		"dims": None,
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": True, "slider_4": True, "slider_5": False, "slider_6": False, "slider_7": False, "slider_8": False, "slider_9": False},
+}
+
 class plot_box_diag(object):
-	def __init__(self, reader, settings = {}):
+	def __init__(self, reader, settings = {}, sliders = None):
 		self.reader = reader
 		self.verify = reader.verify
-		
+		self.sliders = sliders
 		self.settings = {}
 		defaults = deepcopy(default_settings)
 		for key in settings:
@@ -70,39 +75,19 @@ class plot_box_diag(object):
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 
-		self.dims = self.reader.inputs.dim_order
-		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
-		unused_dims = [x for x in self.dims if x not in used_dims]
-		slider_keys = [x for x in self.settings if 'slider_' in x]
-		empty_sliders = [x for x in slider_keys if self.settings[x]['dimension_type'] is None]
-		for sli, key in enumerate(empty_sliders):
-			if len(unused_dims) > sli:
-				self.settings[key]['dimension_type'] = unused_dims[sli]
-				used_dims.append(unused_dims[sli])
-			else:
-				self.settings[key]['dimension_type'] = None
-				self.settings['visible'][key] = False
-				
+		self.dims = self.reader.inputs.dim_order		
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
 		
-		self._slider_axes = {'slider_1': axes([0.25, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
-		'slider_2': axes([0.25, 0.05, 0.5, 0.03],visible=self['visible']['slider_2']),
-		'slider_3': axes([0.92, 0.2, 0.03, 0.5],visible=self['visible']['slider_3']),
-		'slider_4': axes([0.96, 0.2, 0.03, 0.5],visible=self['visible']['slider_4']),
-		}
-		self.sliders = {}
-		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
-			dim = self.reader.dimensions[self.settings[key]['dimension_type']]
-			if key in ['slider_1','slider_2']:
-				orient = 'horizontal'
-			elif key in ['slider_3','slider_4']:
-				orient = 'vertical'
-			self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index", 0, len(dim)-1, valinit = self[key]['id'], valstep = 1, orientation = orient)
-			self.sliders[key].on_changed(self.draw_fig)
-			self.set_visible(key,val=self['visible'][key])
-			if orient == 'vertical':
-				self.sliders[key].label.set_rotation(90)
+		if self.sliders in [None,'seperate']:
+			self.fig.subplots_adjust(bottom=0.15)
+			if self.sliders == 'seperate':
+				self.sliders = slider_axes(reader=self.reader)
+			else:
+				slider_defaults = deepcopy(slider_settings)
+				slider_defaults['dims'] = self.dims
+				self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=self.ax)
+		self.sliders.add_plot(self)
 				
 		self.set_normalisation(self['normalisation'])
 		
@@ -110,50 +95,23 @@ class plot_box_diag(object):
 		show()
 		self.draw_fig()
 	
-	def set_slider(self, slider_num, dimension_type, visible = True):
-		if dimension_type not in self.dims:
-			print(f"ERROR: invalid dimension type, valid: {self.dims}")
-			return
-		key = f"slider_{slider_num}"
-		self.settings[key]['dimension_type'] = dimension_type
-		self.settings[key]['id'] = 0
-		dim = self.reader.dimensions[dimension_type]
-		self.sliders[key].ax.remove()
-		self._slider_axes[key] = axes(slider_axes[key])
-		if key in ['slider_1','slider_2']:
-			orient = 'horizontal'
-		elif key in ['slider_3','slider_4']:
-			orient = 'vertical'
-		self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index", 0, len(dim)-1, valinit = 0, valstep = 1, orientation = orient)
-		self.sliders[key].on_changed(self.draw_fig)
-		if orient == 'vertical':
-			self.sliders[key].label.set_rotation(90)
-		self.set_visible(key,val=visible)
-		self.draw_fig()
+	def set_slider(self, num = None, key = None, dimension_type = None):
+		self.sliders.set_slider(num = num, key = key, dimension_type = dimension_type)
 	
 	def set_visible(self, key, val = None):
-		if key not in self['visible']:
-			print(f"ERROR: key not found, valid keys: {self.settings['visible'].keys()}")
+		if key not in self['visible'] and key not in self.sliders['visible']:
+			print(f"ERROR: key not found, valid keys: {list(self['visible'].keys())} {list(self.sliders['visible'].keys())}")
 			return
-		if val not in [True,False]:
-			val = not self['visible'][key]
-		
-		self.settings['visible'][key] = val
-		
 		if 'slider_' in key:
-			self._slider_axes[key].set_visible(self['visible'][key])
-			
-			if self['visible']['slider_1'] == False and self['visible']['slider_2'] == False:
-				self.fig.subplots_adjust(bottom=0.11)
-			elif self['visible']['slider_2'] == False: 
-				self.fig.subplots_adjust(bottom=0.13)
-			else:
-				self.fig.subplots_adjust(bottom=0.15)
-		
-		elif key == 'suptitle':
-			self.fig._suptitle.set_visible(self['visible']['suptitle'])
-		elif key == 'title':
-			self.ax.legend_.set_visible(self['visible']['title'])
+			self.sliders.set_visible(key=key,val=val)
+		else:
+			if val not in [True,False]:
+				val = not self['visible'][key]
+			self.settings['visible'][key] = val
+			if key == 'suptitle':
+				self.fig._suptitle.set_visible(self['visible']['suptitle'])
+			elif key == 'title':
+				self.ax.legend_.set_visible(self['visible']['title'])
 		self.draw_fig()
 	
 	def set_options_fontsize(self, fontsize):
@@ -184,13 +142,12 @@ class plot_box_diag(object):
 		self.draw_fig()
 		
 	def draw_fig(self, val = None):
-		self.ax.cla()
-		for key, sli in self.sliders.items():
-			dim = self[key]['dimension_type']
-			if dim is not None:
-				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-				self.settings[key]['id'] = sli.val		
+		for key, sli in self.sliders.sliders.items():
+			dim = self.sliders.settings[key]['dimension_type']
+			if dim in self.dims:
+				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]	
 		
+		self.ax.cla()
 		run = self['run']
 		ky_id = self.reader.dimensions['ky'].values.index(self.reader('ky',run))
 		if ky_id != 0:

@@ -5,27 +5,33 @@ from matplotlib.widgets import Slider, CheckButtons, TextBox
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import RegularGridInterpolator
 from copy import deepcopy
+from .slider_ax import slider_axes
 
 default_settings = {"suptitle": None,
 		"eqbm_style": "title",
 		"contour_type": 0,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
-		"slider_1": {"dimension_type": None, "id": 0},
-		"slider_2": {"dimension_type": None, "id": 0},
 		"z_slider": {"scale": 100, "max": None},
 		"run": {},
 		"options": [False,False,True,True,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
-		"visible": {"slider_1": True, "slider_2": True, "z_slider": True, "op_box": True, "suptitle": True, "title": True},
+		"visible": {"z_slider": True, "op_box": True, "suptitle": True, "title": True},
 		"cdict": {"red": ((0.0, 1, 1),(1.0, 0.8, 0.8)),
 			"green": ((0.0, 1, 1),(1.0, 0.0, 0.0)),
 			"blue": ((0.0, 1, 1),(1.0, 0.0, 0.0))},
 }
 
+slider_settings = {"slider_1": {"axis": [0.15, 0.01, 0.5, 0.03]},
+		"slider_2": {"axis": [0.15, 0.05, 0.5, 0.03]},
+		"dims": None,
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": False, "slider_4": False, "slider_5": False, "slider_6": False, "slider_7": False, "slider_8": False, "slider_9": False},
+}
+
 class plot_2d(object):
-	def __init__(self, reader, settings = {}):	
+	def __init__(self, reader, settings = {}, sliders = None):	
 		self.reader = reader
+		self.sliders = slider
 		if self.reader['quasilinear'] is None:
 			print("Error: No QuasiLinear Data")
 			return
@@ -75,21 +81,18 @@ class plot_2d(object):
 		self._load_z_axis(self['z_axis_type'])
 		
 		self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type'],self['z_axis_type']]]
-		
-		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
-		unused_dims = [x for x in self.dims if x not in used_dims]
-		slider_keys = [x for x in self.settings if 'slider_' in x]
-		empty_sliders = [x for x in slider_keys if self.settings[x]['dimension_type'] is None]
-		for sli, key in enumerate(empty_sliders):
-			if len(unused_dims) > sli:
-				self.settings[key]['dimension_type'] = unused_dims[sli]
-				used_dims.append(unused_dims[sli])
-			else:
-				self.settings[key]['dimension_type'] = None
-				self.settings['visible'][key] = False
-			
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
+		
+		if self.sliders in [None,'seperate']:
+			self.fig.subplots_adjust(bottom=0.15)
+			if self.sliders == 'seperate':
+				self.sliders = slider_axes(reader=self.reader)
+			else:
+				slider_defaults = deepcopy(slider_settings)
+				slider_defaults['dims'] = self.dims
+				self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=self.ax)
+		self.sliders.add_plot(self)
 
 		self.cmap = LinearSegmentedColormap('WhRd', self.settings['cdict'])
 		blank_norm = Normalize(vmin=-1,vmax=1)
@@ -100,25 +103,11 @@ class plot_2d(object):
 		self.options.on_clicked(self.draw_fig)
 		self.set_options_fontsize(self['fontsizes']['ch_box'])
 		
-		self._slider_axes = {'slider_1': axes([0.15, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
-			'slider_2': axes([0.15, 0.05, 0.5, 0.03],visible=self['visible']['slider_2']),
-		}
-		self.sliders = {}
-		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
-			dim = self.reader.dimensions[self.settings[key]['dimension_type']]
-			self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = self[key]['id'], valstep = 1)
-			self.sliders[key].on_changed(self.draw_fig)
 		
+		self._sliders = {}
 		self.z_axes = axes([0.9, 0.13, 0.01, 0.73],visible=self['visible']['z_slider'])
-		self.sliders['z_slider'] = Slider(self.z_axes, 'Scale', 0, 100, valinit = self['z_slider']['scale'], valstep = 1, orientation = 'vertical')
-		self.sliders['z_slider'].on_changed(self.draw_fig)
-			
-		if not self['visible']['slider_1'] and not self['visible']['slider_2']:
-			self.fig.subplots_adjust(bottom=0.11)
-		elif not self['visible']['slider_2']: 
-			self.fig.subplots_adjust(bottom=0.13)
-		else:
-			self.fig.subplots_adjust(bottom=0.15)
+		self._sliders['z_slider'] = Slider(self.z_axes, 'Scale', 0, 100, valinit = self['z_slider']['scale'], valstep = 1, orientation = 'vertical')
+		self._sliders['z_slider'].on_changed(self.draw_fig)
 			
 		zs = [x for x in self.reader.data['quasilinear'].values() if str(x) not in ['-inf','inf','nan']]
 		self._z_max = max(zs,default=1)
@@ -129,17 +118,8 @@ class plot_2d(object):
 			self.set_z_max(self.settings['z_slider']['max'])
 		show()
 	
-	def set_slider(self, slider_num, dimension_type, visible = True):
-		if dimension_type not in self.dims:
-			print(f"ERROR: invalid dimension type, valid: {self.dims}")
-			return
-		key = f"slider_{slider_num}"
-		self.settings[key]['dimension_type'] = dimension_type
-		self.settings[key]['id'] = 0
-		dim = self.reader.dimensions[dimension_type]
-		self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = 0, valstep = 1)
-		self.set_visible(key,val=visible)
-		self.draw_fig()
+	def set_slider(self, num = None, key = None, dimension_type = None):
+		self.sliders.set_slider(num = num, key = key, dimension_type = dimension_type)
 		
 	def _load_x_axis(self, axis_type):
 		if axis_type not in ['beta_prime','alpha']:
@@ -218,28 +198,23 @@ class plot_2d(object):
 	
 	def set_visible(self, key, val = None):
 		if key not in self['visible']:
-			print(f"ERROR: key not found, valid keys {self.settings['visible'].keys()}")
+			print(f"ERROR: key not found, valid keys: {list(self['visible'].keys())} {list(self.sliders['visible'].keys())}")
 			return
-		if val not in [True,False]:
-			val = not self['visible'][key]
-		
-		self.settings['visible'][key] = val
 		
 		if 'slider_' in key:
-			self._slider_axes[key].set_visible(self['visible'][key])
-			if self['visible']['slider_1'] == True:	
-				self.fig.subplots_adjust(bottom=0.15)
-			elif self['visible']['slider_1'] == False:
-				self.fig.subplots_adjust(bottom=0.11)
-				
-		elif key == 'z_slider':
-			self.z_axes.set_visible(self['visible']['z_slider'])
-		elif key == 'op_box':
-			self.ch_axes.set_visible(self['visible']['op_box'])
-		elif key == 'suptitle':
-			self.fig._suptitle.set_visible(self['visible']['suptitle'])
-		elif key == 'title':
-			self.ax.legend_.set_visible(self['visible']['title'])
+			self.sliders.set_visible(key=key,val=val)	
+		else:
+			if val not in [True,False]:
+				val = not self['visible'][key]
+			self.settings['visible'][key] = val
+			if key == 'z_slider':
+				self.z_axes.set_visible(self['visible']['z_slider'])
+			elif key == 'op_box':
+				self.ch_axes.set_visible(self['visible']['op_box'])
+			elif key == 'suptitle':
+				self.fig._suptitle.set_visible(self['visible']['suptitle'])
+			elif key == 'title':
+				self.ax.legend_.set_visible(self['visible']['title'])
 			
 	def set_options_fontsize(self, fontsize):
 		self.settings['fontsizes']['cbox'] = fontsize
@@ -307,12 +282,10 @@ class plot_2d(object):
 
 	def draw_fig(self, val = None):
 		handles = []
-		for key in [x for x in self.sliders.keys() if x != 'z_slider']:
-			sli = self.sliders[key]
-			dim = self[key]['dimension_type']
-			if dim is not None:
+		for key in self.sliders.sliders:
+			dim = self.sliders.settings[key]['dimension_type']
+			if dim in self.dims:
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-				self.settings[key]['id'] = sli.val
 				handles.append(Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions[dim].axis_label} = {self.settings['run'][dim]}",visible = False))
 		
 		if 'psin' in self['run']:
@@ -345,19 +318,19 @@ class plot_2d(object):
 		self.z_axis = z
 		
 		if self['z_slider']['max']:
-			z_max = self.sliders['z_slider'].val * self['z_slider']['max']/100
+			z_max = self._sliders['z_slider'].val * self['z_slider']['max']/100
 		elif status[2]:
-			z_max = self.sliders['z_slider'].val * self._z_max/100
+			z_max = self._sliders['z_slider'].val * self._z_max/100
 		else:
 			try:
-				z_max = self.sliders['z_slider'].val * amax(abs(array(z)[isfinite(z)]))/100
+				z_max = self._sliders['z_slider'].val * amax(abs(array(z)[isfinite(z)]))/100
 				if z_max < 10e-10:
 					z_max = 10e-10
 			except:
 				z_max = 1
 		
 		norm = Normalize(vmin=0,vmax=z_max)	
-		self.settings['z_slider']['scale'] = self.sliders['z_slider'].val
+		self.settings['z_slider']['scale'] = self._sliders['z_slider'].val
 		self.cbar.update_normal(ScalarMappable(norm = norm, cmap = self.cmap))
 		if self['contour_type'] == 1:
 			self.ax.contourf(x_axis,y_axis,z, cmap = self.cmap, norm = norm)

@@ -4,6 +4,7 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
 from matplotlib.colors import LinearSegmentedColormap
 from copy import deepcopy
+from .slider_ax import slider_axes
 
 default_settings = {"suptitle": None,
 		"eqbm_style": "title",
@@ -12,8 +13,6 @@ default_settings = {"suptitle": None,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
 		"z_axis_type": "growth_rate",
-		"slider_1": {"dimension_type": None, "id": 0},
-		"slider_2": {"dimension_type": None, "id": 0},
 		"gr_slider": {"scale": 100, "max": None},
 		"mf_slider": {"scale": 100, "max": None},
 		"run": {},
@@ -26,11 +25,18 @@ default_settings = {"suptitle": None,
 			'blue': ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.0, 0.0))},
 }
 
+slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
+		"slider_2": {"axis": [0.25, 0.05, 0.5, 0.03]},
+		"dims": None,
+		"visible": {"slider_1": True, "slider_2": True, "slider_3": False, "slider_4": False, "slider_5": False, "slider_6": False, "slider_7": False, "slider_8": False, "slider_9": False},
+}
+
 class plot_scan(object):
-	def __init__(self, reader = None, settings = {}):
+	def __init__(self, reader = None, settings = {}, sliders = None):
 		self.reader = reader
 		self.verify = reader.verify
 		self.data = reader.data['gyro']
+		self.sliders = sliders
 		if self.data is None:
 			print("Error: No Gyrokinetic Data")
 			return
@@ -83,20 +89,18 @@ class plot_scan(object):
 		else:
 			self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type'],'ky','theta0']]
 		
-		used_dims = [self.settings[key]['dimension_type'] for key in self.settings.keys() if 'slider_' in key]
-		unused_dims = [x for x in self.dims if x not in used_dims]
-		slider_keys = [x for x in self.settings if 'slider_' in x]
-		empty_sliders = [x for x in slider_keys if self.settings[x]['dimension_type'] is None]
-		for sli, key in enumerate(empty_sliders):
-			if len(unused_dims) > sli:
-				self.settings[key]['dimension_type'] = unused_dims[sli]
-				used_dims.append(unused_dims[sli])
-			else:
-				self.settings[key]['dimension_type'] = None
-				self.settings['visible'][key] = False
-			
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
+		
+		if self.sliders in [None,'seperate']:
+			self.fig.subplots_adjust(bottom=0.15)
+			if self.sliders == 'seperate':
+				self.sliders = slider_axes(reader=self.reader)
+			else:
+				slider_defaults = deepcopy(slider_settings)
+				slider_defaults['dims'] = self.dims
+				self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=self.ax)
+		self.sliders.add_plot(self)
 		
 		self.cmap = LinearSegmentedColormap('GnRd', self['cdict'])
 		blank_norm = Normalize(vmin=-1,vmax=1)
@@ -115,32 +119,18 @@ class plot_scan(object):
 		self.vroptions = CheckButtons(self.vr_axes, self._vr_options, self['vr_options'])
 		self.vroptions.on_clicked(self.draw_fig)
 		
-		self._slider_axes = {'slider_1': axes([0.15, 0.01, 0.5, 0.03],visible=self['visible']['slider_1']),
-			'slider_2': axes([0.15, 0.05, 0.5, 0.03],visible=self['visible']['slider_2']),
-		}
-		self.sliders = {}
-		for key in [x for x in self._slider_axes.keys() if self.settings[x]['dimension_type'] is not None]:
-			dim = self.reader.dimensions[self.settings[key]['dimension_type']]
-			self.sliders[key] = Slider(self._slider_axes[key], f"{dim.axis_label} index:", 0, len(dim)-1, valinit = self[key]['id'], valstep = 1)
-			self.sliders[key].on_changed(self.draw_fig)
 		
+		self._sliders = {}
 		self.gr_axes = axes([0.93, 0.15, 0.01, 0.73])
-		self.sliders['gr_slider'] = Slider(self.gr_axes, 'GR', 0, 100, valinit = self['gr_slider']['scale'], valstep = 1, orientation = 'vertical')
-		self.sliders['gr_slider'].on_changed(self.draw_fig)
+		self._sliders['gr_slider'] = Slider(self.gr_axes, 'GR', 0, 100, valinit = self['gr_slider']['scale'], valstep = 1, orientation = 'vertical')
+		self._sliders['gr_slider'].on_changed(self.draw_fig)
 		
 		self.mf_axes = axes([0.97, 0.15, 0.01, 0.73])
-		self.sliders['mf_slider'] = Slider(self.mf_axes, 'MF', 0, 100, valinit = self['mf_slider']['scale'], valstep = 1, orientation = 'vertical')
-		self.sliders['mf_slider'].on_changed(self.draw_fig)
-		
-		if not self['visible']['slider_1'] and not self['visible']['slider_2'] and not self['visible']['vr_box']:
-			self.fig.subplots_adjust(bottom=0.11)
-		elif not self['visible']['slider_2'] and not self['visible']['vr_box']: 
-			self.fig.subplots_adjust(bottom=0.13)
-		else:
-			self.fig.subplots_adjust(bottom=0.15)
+		self._sliders['mf_slider'] = Slider(self.mf_axes, 'MF', 0, 100, valinit = self['mf_slider']['scale'], valstep = 1, orientation = 'vertical')
+		self._sliders['mf_slider'].on_changed(self.draw_fig)
 
 		mfs = []
-		for run in self.get_all_runs():
+		for run in self.reader.get_all_runs():
 			val = self.reader('mode_frequency',run)
 			if str(val) not in ['-inf','inf','nan']:
 				mfs.append(val)
@@ -148,6 +138,9 @@ class plot_scan(object):
 		self.draw_fig()
 		ion()
 		show()
+	
+	def set_slider(self, num = None, key = None, dimension_type = None):
+		self.sliders.set_slider(num = num, key = key, dimension_type = dimension_type)
 	
 	def _load_x_axis(self, axis_type):
 		if axis_type not in ['beta_prime','alpha']:
@@ -223,32 +216,29 @@ class plot_scan(object):
 		self.draw_fig()
 	
 	def set_visible(self, key, val = None):
-		if key not in self['visible']:
-			print(f"ERROR: key not found, valid keys {self.settings['visible'].keys()}")
+		if key not in self['visible'] and key not in self.sliders['visible']:
+			print(f"ERROR: key not found, valid keys: {list(self['visible'].keys())} {list(self.sliders['visible'].keys())}")
 			return
-		if val not in [True,False]:
-			val = not self['visible'][key]
-		
-		self.settings['visible'][key] = val
-		
 		if 'slider_' in key:
-			self._slider_axes[key].set_visible(self['visible'][key])
-		elif key == 'op_box':
-			self.ch_axes.set_visible(self['visible']['op_box'])
-		elif key == 'vr_box':
-			self.vr_axes.set_visible(self['visible']['vr_box'])
-		elif key == 'suptitle':
-			self.fig._suptitle.set_visible(self['visible']['suptitle'])
-		elif key == 'title':
-			self.ax.legend_.set_visible(self['visible']['title'])
-			
-		if not self['visible']['slider_1'] and not self['visible']['slider_2'] and not self['visible']['vr_box']:
-			self.fig.subplots_adjust(bottom=0.11)
-		elif not self['visible']['slider_2'] and not self['visible']['vr_box']: 
-			self.fig.subplots_adjust(bottom=0.13)
+			self.sliders.set_visible(key=key,val=val)
 		else:
-			self.fig.subplots_adjust(bottom=0.15)
-			
+			if val not in [True,False]:
+				val = not self['visible'][key]
+			self.settings['visible'][key] = val
+			if key == 'op_box':
+				self.ch_axes.set_visible(self['visible']['op_box'])
+			elif key == 'vr_box':
+				self.vr_axes.set_visible(self['visible']['vr_box'])
+			elif key == 'suptitle':
+				self.fig._suptitle.set_visible(self['visible']['suptitle'])
+			elif key == 'title':
+				self.ax.legend_.set_visible(self['visible']['title'])
+			elif key == 'gr_slider':
+				self.gr_axes.set_visible(self['visible']['gr_slider'])
+			elif key == 'mf_slider':
+				self.mf_axes.set_visible(self['visible']['mf_slider'])
+		self.draw_fig()				
+
 	def set_options_fontsize(self, fontsize):
 		self.settings['fontsizes']['ch_box'] = fontsize
 		self.settings['fontsizes']['vr_box'] = fontsize
@@ -344,12 +334,10 @@ class plot_scan(object):
 	
 	def draw_fig(self, val = None):
 		handles = []
-		for key in [x for x in self.sliders.keys() if x not in ['gr_slider','mf_slider']]:
-			sli = self.sliders[key]
-			dim = self[key]['dimension_type']
-			if dim is not None:
+		for key, sli in self.sliders.sliders.items():
+			dim = self.sliders.settings[key]['dimension_type']
+			if dim in self.dims:
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-				self.settings[key]['id'] = sli.val
 				handles.append(Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions[dim].axis_label} = {self.settings['run'][dim]}",visible = False))
 		
 		if 'psin' in self['run']:
@@ -393,7 +381,7 @@ class plot_scan(object):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
-				run_ids.append(run_id)
+				run_ids.append(self.reader.get_run_id(run))
 				z_type = self['z_axis_type']
 				if not self['aky'] and z_type == 'growth_rate':
 					z_type = 'abs_gr'
@@ -407,18 +395,18 @@ class plot_scan(object):
 		self.ax[0].set_title(self._z_axis_label,fontsize=self['fontsizes']['title'])
 		
 		if self['gr_slider']['max']:
-			grmax = self.sliders['gr_slider'].val * self['gr_slider']['max']/100
+			grmax = self._sliders['gr_slider'].val * self['gr_slider']['max']/100
 		elif status[1]:
-			grmax = self.sliders['gr_slider'].val * self._z_max/100
+			grmax = self._sliders['gr_slider'].val * self._z_max/100
 		else:
 			try:
-				grmax = self.sliders['gr_slider'].val * amax(abs(array(z_gr)[isfinite(z_gr)]))/100
+				grmax = self._sliders['gr_slider'].val * amax(abs(array(z_gr)[isfinite(z_gr)]))/100
 				if grmax < 10e-10:
 					grmax = 10e-10
 			except:
 				grmax = 1
 		norm_gr = Normalize(vmin=-grmax,vmax=grmax)
-		self.settings['gr_slider']['scale'] = self.sliders['gr_slider'].val
+		self.settings['gr_slider']['scale'] = self._sliders['gr_slider'].val
 		self.cbar_gr.update_normal(ScalarMappable(norm = norm_gr, cmap = self.cmap))
 		if self['contour_type'] == 1:
 			self.ax[0].contourf(x_axis, y_axis, z_gr, cmap = self.cmap, norm=norm_gr)
@@ -426,18 +414,18 @@ class plot_scan(object):
 			self.ax[0].pcolormesh(x_axis, y_axis, z_gr, cmap = self.cmap, norm=norm_gr)
 		
 		if self['mf_slider']['max']:
-			mfmax = self.sliders['mf_slider'].val * self['mf_slider']['max']/100
+			mfmax = self._sliders['mf_slider'].val * self['mf_slider']['max']/100
 		elif status[1]:
-			mfmax = self.sliders['mf_slider'].val * self._mf_max/100
+			mfmax = self._sliders['mf_slider'].val * self._mf_max/100
 		else:
 			try:
-				mfmax = self.sliders['mf_slider'].val * amax(abs(array(z_mf)[isfinite(z_mf)]))/100
+				mfmax = self._sliders['mf_slider'].val * amax(abs(array(z_mf)[isfinite(z_mf)]))/100
 				if mfmax == 0:
 					mfmax = 10e-10
 			except:
 				mfmax = 1
 		norm_mf = Normalize(vmin=-mfmax,vmax=mfmax)
-		self.settings['mf_slider']['scale'] = self.sliders['mf_slider'].val
+		self.settings['mf_slider']['scale'] = self._sliders['mf_slider'].val
 		self.cbar_mf.update_normal(ScalarMappable(norm = norm_mf))
 		self.ax[1].pcolormesh(x_axis, y_axis, z_mf, norm = norm_mf)
 		

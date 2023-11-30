@@ -683,7 +683,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
-			         			existing_inputs.append([x for x in f if x.isdigit()])
+		         			existing_inputs.append([x for x in f if x.isdigit()])
 					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
 					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
 					group_key = run_data['attributes']['id']
@@ -691,15 +691,15 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 					for key in group_keys:
 						gyro_data['group'][group_key][key] = None
 					for xi, kx in enumerate(run_data['kx']):
-						kxs.add(kx)
 						for yi, ky in enumerate(run_data['ky']):
-							kys.add(ky)
 							run_key = str(uuid4())
 							gyro_data[run_key] = deepcopy(run)
 							for key in run:
 								gyro_keys[key][run[key]].add(run_key)
 							gyro_data[run_key]['group_key'] = group_key
 							if self.inputs['grid_option'] == 'box':
+								kxs.add(kx)
+								kys.add(ky)
 								if ky not in gyro_keys['ky']:
 									gyro_keys['ky'][ky] = set()
 								if kx not in gyro_keys['kx']:

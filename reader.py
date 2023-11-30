@@ -81,8 +81,8 @@ class myro_read(object):
 				return None
 			if key in self.data['gyro'][run_id].keys():
 				return self.data['gyro'][run_id][key]
-			elif 'group_key' in self.data['gyro'][run_id].keys() and key in self.data['gyro']['group'][self.data['gyro'][run_id]['group_key']].keys():
-				return self.data['gyro']['group'][self.data['gyro'][run_id]['group_key']][key]
+			elif 'group_key' in self.data['gyro'][run_id].keys() and key in self.data['group'][self.data['gyro'][run_id]['group_key']].keys():
+				return self.data['group'][self.data['gyro'][run_id]['group_key']][key]
 			elif key in ['data','all']:
 				return self.data['gyro'][run_id]
 			elif key in ['nt']:
@@ -139,7 +139,7 @@ class myro_read(object):
 	
 	def get_run_list(self, run, keys = '_gyro_keys'):
 		if run == {}:
-			return list(self.data['gyro'].keys())
+			return [x for x in self.data['gyro'].keys() if x != 'group']
 		idlist = []
 		for key, val in run.items():
 			if key in self.data[keys] and val in self.data[keys][key]:
@@ -308,7 +308,7 @@ class myro_read(object):
 			return
 		self.verify = verify_scan(reader = self)
 		self.data['gyro'] = self.verify.scan
-		self.calculate_gr()
+		#self.calculate_gr()
 	
 	def get_all_runs(self, excludeDimensions = []):
 		dim_order = [x for x in self.inputs.dim_order if x not in excludeDimensions]
@@ -366,9 +366,8 @@ class myro_read(object):
 			for val in dim.values:
 				abs_gr_keys[dim.name][val] = []
 				norm_gr_keys[dim.name][val] = []
-		for runs in self.get_all_runs(excludeDimensions = ['ky']):
+		for runs in self.get_all_runs(excludeDimensions = ['ky','theta0']):
 			run_ids = self.get_run_list(runs)
-		
 			abs_grs = []
 			norm_grs = []
 			for run_id in run_ids:
@@ -390,7 +389,10 @@ class myro_read(object):
 				self.data['gyro'][run_id]['growth_rate_norm'] = norm_gr
 			
 			if len([x for x in abs_grs if isfinite(x)]) == 0:
-				abs_id = run_ids[0]
+				if len(run_ids) == 0:
+					abs_id = None
+				else:
+					abs_id = run_ids[0]
 			else:
 				abs_gr = max([x for x in abs_grs if isfinite(x)])
 				abs_id = run_ids[abs_grs.index(abs_gr)]
@@ -422,11 +424,22 @@ class myro_read(object):
 		for 
 			alpha_axis_ideal.append([abs(x)*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2 for x in self['beta_prime_axis_ideal'][p]])
 	'''
+	
+	def make_slider_axes(self, settings = {}, init = None):
+		if init is not None:
+			init = list(init)
+			for i, ini in enumerate(init):
+				if i < len(self.inputs.dim_order):
+					if f"slider_{i+1}" not in settings:
+						settings[f"slider_{i+1}"] = {}
+					settings[f"slider_{i+1}"]['id'] = ini
+					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
+		return Plotters['Sliders'](reader = self, settings = settings)			
 		
 	def plot_aky(self, settings = {}, init = None):
-		return self.plot_scan(init = init, aky = True, settings = settings)
+		return self.plot_scan(init = init, aky = True, settings = settings, sliders = None)
 		
-	def plot_scan(self, settings = {}, init = None, aky = None):
+	def plot_scan(self, settings = {}, init = None, aky = None, sliders = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -439,9 +452,9 @@ class myro_read(object):
 			settings['aky'] = aky
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Scan"
-		return Plotters['Scan'](reader = self, settings = settings)
+		return Plotters['Scan'](reader = self, settings = settings, sliders = sliders)
 		
-	def plot_kxky(self, settings = {}, init = None):
+	def plot_kxky(self, settings = {}, init = None, sliders = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -452,9 +465,9 @@ class myro_read(object):
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} kxky"
-		return Plotters['kxky'](reader = self, settings = settings)
+		return Plotters['kxky'](reader = self, settings = settings, sliders = sliders)
 	
-	def plot_ql(self, settings = {}, init = None):
+	def plot_ql(self, settings = {}, init = None, sliders = None):
 		if self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
@@ -467,7 +480,7 @@ class myro_read(object):
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} QuasiLinear"
-		return Plotters['2D'](reader = self, settings = settings)
+		return Plotters['2D'](reader = self, settings = settings, sliders = sliders)
 	
 	def plot_ideal(self, settings = {}, init = None):
 		if init is not None:
@@ -482,31 +495,31 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} Ideal Ballooning"
 		return Plotters['Ideal'](reader = self, settings = settings)
 	
-	def plot_omega(self, settings = {}, init = None):
-		return self._plot_diag(var = 'omega', init = init, settings = settings)
+	def plot_omega(self, settings = {}, init = None, sliders = None):
+		return self._plot_diag(var = 'omega', init = init, settings = settings, sliders = sliders)
 	
-	def plot_phi(self, settings = {}, init = None):
-		return self._plot_diag(var = 'phi', init = init, absolute = absolute, settings = settings)
+	def plot_phi(self, settings = {}, init = None, sliders = None):
+		return self._plot_diag(var = 'phi', init = init, settings = settings, sliders = sliders)
 	
-	def plot_apar(self, settings = {}, init = None):
-		return self._plot_diag(var = 'apar', init = init, absolute = absolute, settings = settings)
+	def plot_apar(self, settings = {}, init = None, sliders = None):
+		return self._plot_diag(var = 'apar', init = init, settings = settings, sliders = sliders)
 		
-	def plot_bpar(self, settings = {}, init = None):
-		return self._plot_diag(var = 'bpar', init = init, absolute = absolute, settings = settings)
+	def plot_bpar(self, settings = {}, init = None, sliders = None):
+		return self._plot_diag(var = 'bpar', init = init, settings = settings, sliders = sliders)
 		
-	def plot_epar(self, settings = {}, init = None):
-		return self._plot_diag(var = 'epar', init = init, absolute = absolute, settings = settings)
+	def plot_epar(self, settings = {}, init = None, sliders = None):
+		return self._plot_diag(var = 'epar', init = init, settings = settings, sliders = sliders)
 		
-	def plot_phi2(self, settings = {}, init = None):
-		return self._plot_diag(var = 'phi2', init = init, settings = settings)
+	def plot_phi2(self, settings = {}, init = None, sliders = None):
+		return self._plot_diag(var = 'phi2', init = init, settings = settings, sliders = sliders)
 	
-	def plot_phi2_avg(self, settings = {}, init = None):
-		return self._plot_diag(var = 'phi2_avg', init = init, settings = settings)
+	def plot_phi2_avg(self, settings = {}, init = None, sliders = None):
+		return self._plot_diag(var = 'phi2_avg', init = init, settings = settings, sliders = sliders)
 		
-	def plot_jacob(self, settings = {}, init = None):
-		return self._plot_diag(var = 'jacob', init = init, settings = settings)
+	def plot_jacob(self, settings = {}, init = None, sliders = None):
+		return self._plot_diag(var = 'jacob', init = init, settings = settings, sliders = sliders)
 	
-	def _plot_diag(self, settings = {}, init = None, var = None):
+	def _plot_diag(self, settings = {}, init = None, var = None, sliders = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -519,7 +532,7 @@ class myro_read(object):
 			settings['var'] = var
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
-		return Plotters['Diag'](reader = self, settings = settings)
+		return Plotters['Diag'](reader = self, settings = settings, sliders = sliders)
 	
 	def plot_box_phi(self, settings = {}, init = None):
 		return self._plot_box_diag(var = 'phi', init = init, settings = settings)
@@ -573,7 +586,7 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} {var}"
 		return Plotters['Theta'](reader = self, settings = settings)
 		
-	def plot_slice(self,  settings = {}, x_dim = None, y_dim = None, init = None, limit = None):
+	def plot_slice(self,  settings = {}, x_dim = None, y_dim = None, init = None, limit = None, sliders = None):
 		if y_dim in ['quasilinear','ql_norm'] and self['ql'] is None:
 			self.calculate_ql()
 		if init is not None:
@@ -589,7 +602,7 @@ class myro_read(object):
 			settings['y_axis_type'] = y_dim
 		if limit is not None:
 			settings['limit'] = limit
-		return Plotters['Slice'](reader = self, settings = settings)
+		return Plotters['Slice'](reader = self, settings = settings, sliders = sliders)
 	
 	def plot_eq(self):
 		if not self.eqbm:
@@ -662,48 +675,51 @@ class myro_read(object):
 				new_dim_order.append(dim)
 		for i, dim in enumerate(new_dim_order):
 			in_dict = {'type': dim}
+			opt = opt2 = None
 			if dim in self.dimensions:	
 				vals = set(self.dimensions[dim].values)
 				opt = self.dimensions[dim].option
-			else:
-				vals = set(self.singe_parameters[dim].values)
-				opt = self.dimensions[dim].option
+			elif dim in self.single_parameters:
+				vals = set(self.single_parameters[dim].values)
+				opt = self.single_parameters[dim].option
 			if dim in myro.dimensions:	
 				vals = list(vals.union(set(myro.dimensions[dim].values)))
-				opt2 = self.dimensions[dim].option
-			else:
-				vals = list(vals.union(set(myro.singe_parameters[dim].values)))
-				opt2 = self.dimensions[dim].option
+				opt2 = myro.dimensions[dim].option
+			elif dim in myro.single_parameters:
+				vals = list(vals.union(set(myro.single_parameters[dim].values)))
+				opt2 = myro.single_parameters[dim].option
 			vals.sort()
 			in_dict['values'] = vals
-			if opt != opt2:
+			if opt is not None and opt2 is not NOne and opt != opt2:
 				print(f"Warning: option for {dim} differs between scans; {opt} vs {opt2}")
 			in_dict['option'] = opt
 			inputs_nml[f'dimension_{i}'] = in_dict
 		new_inputs = scan_inputs(input_dict = inputs_nml)
-		new_inputs.inputs.check_inputs()
-		new_inputs.inputs.load_dimensions()
+		new_inputs.check_inputs()
+		new_inputs.load_dimensions()
 		for dim in new_inputs.dimensions:
 			if dim not in self.data['_gyro_keys']:
 				self.data['_gyro_keys'][dim] = {}
 			for val in new_inputs.dimensions[dim].values:
 				if val not in self.data['_gyro_keys'][dim]:
-					self.data['_gyro_keys'][dim] = set()
+					self.data['_gyro_keys'][dim][val] = set()
 		for dim in new_inputs.dimensions:
 			if dim in self.single_parameters:
 				for rid, run in self.data['gyro'].items():
-					self.data['gyro'][rid][dim] = self.single_parameters.values[0]
-					self.data['_gyro_keys'][dim][self.single_parameters.values[0]].add(rid)
+					self.data['gyro'][rid][dim] = self.single_parameters[dim].values[0]
+					self.data['_gyro_keys'][dim][self.single_parameters[dim].values[0]].add(rid)
 			if dim in myro.single_parameters:
 				for rid, run in myro.data['gyro'].items():
-					myro.data['gyro'][rid][dim] = myro.single_parameters.values[0]
+					myro.data['gyro'][rid][dim] = myro.single_parameters[dim].values[0]
 		for rid, run in myro.data['gyro'].items():
 			self.data['gyro'][rid] = run
 			for dim in new_inputs.dimensions:
-				self.data['_gyro_runs'][dim][run[dim]].add(rid)
+				self.data['_gyro_keys'][dim][run[dim]].add(rid)
+		self.data['group'].update(myro.data['group'])
 		self.inputs = new_inputs
 		self.dimensions = self.inputs.dimensions
 		self.single_parameters = self.inputs.single_parameters
+		self._verify_run()
 		
 	'''
 	def _return_mf_set(self, psi_id, ky_id, mf = None, mferr = None, mfmax = None, mfmin = None, smin_id = None, smax_id = None, bmin_id = None, bmax_id = None):
