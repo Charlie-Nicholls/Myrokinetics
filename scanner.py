@@ -658,7 +658,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		
 		if self['gyro']:
 			gyro_data = {}
-			gyro_data['group'] = {}
+			group_data = {}
 			only = set({'omega','kx','ky'})
 			if not QuickSave:
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
@@ -687,9 +687,9 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
 					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
 					group_key = run_data['attributes']['id']
-					gyro_data['group'][group_key] = {}
+					group_data[group_key] = {}
 					for key in group_keys:
-						gyro_data['group'][group_key][key] = None
+						group_data[group_key][key] = None
 					for xi, kx in enumerate(run_data['kx']):
 						for yi, ky in enumerate(run_data['ky']):
 							run_key = str(uuid4())
@@ -738,9 +738,9 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 											else:
 												gyro_data[run_key]['parity'] = 0
 									elif key in ['t','theta', 'gds2', 'jacob']:
-										gyro_data['group'][group_key][key] = key_data.tolist()
+										group_data[group_key][key] = key_data.tolist()
 									elif key in ['phi2']:
-										gyro_data['group'][group_key]['phi2_avg'] = key_data.tolist()
+										group_data[group_key]['phi2_avg'] = key_data.tolist()
 									elif key in ['ql_metric_by_mode']:
 										gyro_data[run_key]['ql_metric'] = key_data[-1,yi,xi]
 									elif key in ['phi2_by_mode']:
@@ -826,6 +826,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		
 		data = {'gyro': gyro_data,
 			'ideal': ideal_data,
+			'group': group_data,
 			'equilibrium': equilibrium,
 			'_gyro_keys': gyro_keys,
 			'_ideal_keys': ideal_keys,
