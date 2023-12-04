@@ -1,7 +1,7 @@
-from numpy import transpose, array, amax, amin, isfinite, linspace, where, full, nan, diff
-from matplotlib.pyplot import *
+from numpy import transpose, array, amax, amin, isfinite, full, nan, diff
+from matplotlib.pyplot import subplots, Normalize, colorbar, axes, ion, show, Line2D
 from matplotlib.cm import ScalarMappable
-from matplotlib.widgets import Slider, CheckButtons, TextBox
+from matplotlib.widgets import Slider, CheckButtons
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import RegularGridInterpolator
 from copy import deepcopy
@@ -31,7 +31,7 @@ slider_settings = {"slider_1": {"axis": [0.15, 0.01, 0.5, 0.03]},
 class plot_2d(object):
 	def __init__(self, reader, settings = {}, sliders = None):	
 		self.reader = reader
-		self.sliders = slider
+		self.sliders = sliders
 		if self.reader['quasilinear'] is None:
 			print("Error: No QuasiLinear Data")
 			return
@@ -123,7 +123,7 @@ class plot_2d(object):
 		
 	def _load_x_axis(self, axis_type):
 		if axis_type not in ['beta_prime','alpha']:
-			print(f"ERROR: axis_type not found, valid types ['beta_prime','alpha']")
+			print("ERROR: axis_type not found, valid types ['beta_prime','alpha']")
 			return
 			
 		self.settings['x_axis_type'] = axis_type
@@ -141,7 +141,7 @@ class plot_2d(object):
 	
 	def _load_y_axis(self, axis_type):
 		if axis_type not in ['shear','current']:
-			print(f"ERROR: axis_type not found, valid types ['shear','current']")
+			print("ERROR: axis_type not found, valid types ['shear','current']")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -158,7 +158,7 @@ class plot_2d(object):
 	
 	def _load_z_axis(self, axis_type):
 		if axis_type not in ['growth_rate','growth_rate_norm','mode_frequency','quasilinear','ql_norm','ql_metric']:
-			print(f"ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']")
+			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']")
 			return
 			
 		self.settings['z_axis_type'] = axis_type
@@ -282,7 +282,7 @@ class plot_2d(object):
 
 	def draw_fig(self, val = None):
 		handles = []
-		for key in self.sliders.sliders:
+		for key, sli in self.sliders.sliders.items():
 			dim = self.sliders.settings[key]['dimension_type']
 			if dim in self.dims:
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]

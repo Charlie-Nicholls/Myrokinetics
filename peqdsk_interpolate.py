@@ -1,5 +1,5 @@
 from .peqdsk_reader import peqdsk as readp
-from matplotlib.pyplot import *
+from matplotlib.pyplot import subplots, show
 from scipy.interpolate import InterpolatedUnivariateSpline, RectBivariateSpline
 from matplotlib.widgets import TextBox
 from numpy import linspace, array, diff, insert, zeros

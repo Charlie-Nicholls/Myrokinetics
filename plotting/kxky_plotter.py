@@ -1,7 +1,7 @@
-from numpy import transpose, array, amax, amin, isfinite, linspace, where, full, nan, diff
-from matplotlib.pyplot import *
+from numpy import transpose, array, amax, isfinite, full, nan
+from matplotlib.pyplot import subplots, ion, show, Normalize, colorbar, axes, Line2D
 from matplotlib.cm import ScalarMappable
-from matplotlib.widgets import Slider, CheckButtons
+from matplotlib.widgets import Slider
 from matplotlib.colors import LinearSegmentedColormap
 from copy import deepcopy
 from .slider_ax import slider_axes
@@ -115,7 +115,7 @@ class plot_kxky(object):
 	
 	def _load_x_axis(self, axis_type):
 		if axis_type not in ['ky','theta0','kx']:
-			print(f"ERROR: axis_type not found, valid types ['ky','theta0','kx']")
+			print("ERROR: axis_type not found, valid types ['ky','theta0','kx']")
 			return
 			
 		self.settings['x_axis_type'] = axis_type
@@ -137,7 +137,7 @@ class plot_kxky(object):
 	
 	def _load_y_axis(self, axis_type):
 		if axis_type not in ['ky','theta0','kx']:
-			print(f"ERROR: axis_type not found, valid types ['ky','theta0','kx']")
+			print("ERROR: axis_type not found, valid types ['ky','theta0','kx']")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -158,7 +158,7 @@ class plot_kxky(object):
 	
 	def _load_z_axis(self, axis_type):
 		if axis_type not in ['growth_rate','growth_rate_norm','ql_norm']:
-			print(f"ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm']")
+			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm']")
 			return
 			
 		self.settings['z_axis_type'] = axis_type
@@ -257,11 +257,6 @@ class plot_kxky(object):
 			if dim in self.dims:
 				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
 				handles.append(Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions[dim].axis_label} = {self.settings['run'][dim]}",visible = False))
-		
-		if 'psin' in self['run']:
-			psiN = self['run']['psin']
-		else:
-			psiN = self.reader.single_parameters['psin'].values[0]
 		
 		x_axis = list(self.x_axis)
 		y_axis = list(self.y_axis)

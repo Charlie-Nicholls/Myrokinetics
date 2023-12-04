@@ -1,6 +1,6 @@
 from numpy import real, imag, log, polyfit, array, exp, amax
-from matplotlib.pyplot import *
-from matplotlib.widgets import Slider, CheckButtons, TextBox
+from matplotlib.pyplot import subplots, ion, show, axes
+from matplotlib.widgets import CheckButtons
 from scipy.stats import pearsonr
 from copy import deepcopy
 from .slider_ax import slider_axes

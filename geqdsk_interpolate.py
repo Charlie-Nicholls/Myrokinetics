@@ -1,9 +1,8 @@
 from .geqdsk_reader import geqdsk as readg
-from matplotlib.pyplot import *
+from matplotlib.pyplot import subplots, show
 from scipy.interpolate import RectBivariateSpline, InterpolatedUnivariateSpline, RegularGridInterpolator
 from matplotlib.widgets import TextBox
-from numpy import linspace, zeros, diff, insert, zeros
-from pyrokinetics import Pyro
+from numpy import linspace, zeros
 
 class geqdsk_interpolator(object):
 	def __init__(self, file1 = None, file2 = None):

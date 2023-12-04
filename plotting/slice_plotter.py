@@ -1,6 +1,5 @@
-from matplotlib.pyplot import *
-from matplotlib.widgets import Slider
-from numpy import array, full, nan
+from matplotlib.pyplot import subplots, ion, show, Line2D
+from numpy import full, nan
 from copy import deepcopy
 from .slider_ax import slider_axes
 
@@ -111,7 +110,7 @@ class plot_slice(object):
 	
 	def _load_y_axis(self, axis_type):
 		if axis_type not in ['quasilinear','growth_rate','growth_rate_norm','ql_norm','mode_frequency']:
-			print(f"ERROR: axis_type not found, valid types ['quasilinear','growth_rate','growth_rate_norm',ql_norm,mode_frequency]")
+			print("ERROR: axis_type not found, valid types ['quasilinear','growth_rate','growth_rate_norm',ql_norm,mode_frequency]")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -248,4 +247,3 @@ class plot_slice(object):
 		self.ax.legend_.set_visible(self['visible']['title'])
 		
 		self.fig.canvas.draw_idle()
-
