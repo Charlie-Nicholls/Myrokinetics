@@ -1,6 +1,5 @@
-from matplotlib.pyplot import *
+from matplotlib.pyplot import subplots, axes, ion, show
 from matplotlib.widgets import Slider
-from numpy import array, full, nan
 from copy import deepcopy
 
 default_settings = {"slider_1": {"dimension_type": None, "id": 0, "axis": [0.2,0.9,0.7,0.05], "orientation": 'horizontal'},
@@ -88,7 +87,7 @@ class slider_axes(object):
 		if num is None and key is None:
 			print("ERROR: num or key must be given")
 		if key is None:	
-			key = f"slider_{slider_num}"
+			key = f"slider_{num}"
 		self.settings[key]['dimension_type'] = dimension_type
 		self.settings[key]['id'] = 0
 		dim = self.reader.dimensions[dimension_type]
@@ -108,7 +107,7 @@ class slider_axes(object):
 		if num is None and key is None:
 			print("ERROR: num or key must be given")
 		if key is None:	
-			key = f"slider_{slider_num}"
+			key = f"slider_{num}"
 		self.settings[key]['dimension_type'] = None
 		self.settings[key]['id'] = 0
 		self.set_visible(key,False)

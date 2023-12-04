@@ -1,6 +1,5 @@
 from numpy import real, imag, array, pi
-from matplotlib.pyplot import *
-from matplotlib.widgets import Slider
+from matplotlib.pyplot import subplots, ion, show
 from copy import deepcopy
 from .slider_ax import slider_axes
 

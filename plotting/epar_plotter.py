@@ -1,5 +1,5 @@
 from numpy import amin, amax
-from matplotlib.pyplot import *
+from matplotlib.pyplot import subplots, show, subplots_adjust, axes, Normalize, colorbar
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
 
@@ -52,7 +52,6 @@ def plot_epar(data = None, inputs = None):
 	
 	fig, ax = subplots()
 	subplots_adjust(bottom=0.15)
-	fig.suptitle(scan['info']['run_name'])
 
 	slaxes = axes([0.15, 0.03, 0.5, 0.03])
 	slider = slider = Slider(slaxes, 'psiN index:', 0, len(psiNs)-1, valinit = 0, valstep = 1)

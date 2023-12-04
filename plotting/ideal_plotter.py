@@ -1,8 +1,7 @@
-from numpy import *
-from matplotlib.pyplot import *
+from numpy import amin, amax
+from matplotlib.pyplot import subplots, ion, show, axes, Line2D
 import matplotlib.patches as pt
-from matplotlib.widgets import Slider, CheckButtons
-from time import sleep
+from matplotlib.widgets import CheckButtons
 from copy import deepcopy
 from .slider_ax import slider_axes
 
@@ -99,7 +98,7 @@ class plot_ideal(object):
 	
 	def _load_x_axis(self, axis_type):
 		if axis_type not in ['beta_prime','alpha']:
-			print(f"ERROR: axis_type not found, valid types ['beta_prime','alpha']")
+			print("ERROR: axis_type not found, valid types ['beta_prime','alpha']")
 			return
 			
 		self.settings['x_axis_type'] = axis_type
@@ -118,7 +117,7 @@ class plot_ideal(object):
 	
 	def _load_y_axis(self, axis_type):
 		if axis_type not in ['shear','current']:
-			print(f"ERROR: axis_type not found, valid types ['shear','current']")
+			print("ERROR: axis_type not found, valid types ['shear','current']")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -215,7 +214,6 @@ class plot_ideal(object):
 		else:
 			psiN = self.reader.single_parameters['psin'].values[0]
 		run_id = self.reader.get_run_id(run=self['run'],keys='_ideal_keys')
-		data = self.reader.data['ideal'][run_id]
 		
 		x_axis = self.reader.data['ideal'][run_id][self['x_axis_type']]
 		y_axis = self.reader.data['ideal'][run_id][self['y_axis_type']]

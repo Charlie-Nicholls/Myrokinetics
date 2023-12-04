@@ -245,8 +245,6 @@ class vnewk(dimension):
 
 	def edit_nml(self, nml, val):
 		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
-			spec_type = nml[key]['type']
-			spec_z = nml[key]['z']
 			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
 				nml[key]['vnewk'] = val
 			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
@@ -273,8 +271,6 @@ class tprim(dimension):
 
 	def edit_nml(self, nml, val):
 		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
-			spec_type = nml[key]['type']
-			spec_z = nml[key]['z']
 			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
 				nml[key]['tprim'] = val
 			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
@@ -301,8 +297,6 @@ class fprim(dimension):
 
 	def edit_nml(self, nml, val):
 		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
-			spec_type = nml[key]['type']
-			spec_z = nml[key]['z']
 			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
 				nml[key]['fprim'] = val
 			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
@@ -331,8 +325,6 @@ class mass(dimension):
 
 	def edit_nml(self, nml, val):
 		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
-			spec_type = nml[key]['type']
-			spec_z = nml[key]['z']
 			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
 				nml[key]['mass'] = val
 			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:

@@ -1,6 +1,6 @@
 from numpy import linspace, pi, zeros, real, imag
 from scipy.interpolate import InterpolatedUnivariateSpline
-from matplotlib.pyplot import *
+from matplotlib.pyplot import figure, subplots, ion, show
 from copy import deepcopy
 from .slider_ax import slider_axes
 

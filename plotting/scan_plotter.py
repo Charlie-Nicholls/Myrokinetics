@@ -1,5 +1,5 @@
-from numpy import transpose, array, amax, amin, isfinite, linspace, where, full, nan, diff
-from matplotlib.pyplot import *
+from numpy import transpose, array, amax, isfinite, full, nan, diff
+from matplotlib.pyplot import subplots, ion, show, Normalize, colorbar, axes, Line2D
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
 from matplotlib.colors import LinearSegmentedColormap
@@ -144,7 +144,7 @@ class plot_scan(object):
 	
 	def _load_x_axis(self, axis_type):
 		if axis_type not in ['beta_prime','alpha']:
-			print(f"ERROR: axis_type not found, valid types ['beta_prime','alpha']")
+			print("ERROR: axis_type not found, valid types ['beta_prime','alpha']")
 			return
 			
 		self.settings['x_axis_type'] = axis_type
@@ -165,7 +165,7 @@ class plot_scan(object):
 	
 	def _load_y_axis(self, axis_type):
 		if axis_type not in ['shear','current']:
-			print(f"ERROR: axis_type not found, valid types ['shear','current']")
+			print("ERROR: axis_type not found, valid types ['shear','current']")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -182,7 +182,7 @@ class plot_scan(object):
 	
 	def _load_z_axis(self, axis_type):
 		if axis_type not in ['growth_rate','growth_rate_norm','ql_norm']:
-			print(f"ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm']")
+			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm']")
 			return
 		if axis_type == 'ql_norm' and not self['aky']:
 			print("ERROR: ql_norm axis type only allowed on seperate ky plots")
