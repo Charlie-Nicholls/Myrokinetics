@@ -1,4 +1,4 @@
-from numpy import shape, array, nonzero, imag, real, nan, amax, polyfit, log, inf, full, sign, log10
+from numpy import imag, real, nan, polyfit, log, log10
 
 class verify_scan(object):
 	

@@ -1,5 +1,5 @@
 import os
-from numpy import load, savez, array, nan, full, isfinite
+from numpy import load, savez, nan, isfinite
 from .plotting import Plotters
 from .verify_runs import verify_scan
 from .inputs import scan_inputs
@@ -357,7 +357,6 @@ class myro_read(object):
 		self.data['_quasilinear_keys'] = ql_keys
 		
 	def calculate_gr(self):
-		from uuid import uuid4
 		abs_gr_keys = {}
 		norm_gr_keys = {}
 		for dim in [x for x in self.dimensions.values() if x.name not in ['ky','theta0']]:
@@ -597,7 +596,7 @@ class myro_read(object):
 						settings[f"slider_{i+1}"] = {}
 					settings[f"slider_{i+1}"]['id'] = ini
 		if x_dim is not None:
-			settings['x_axis_type'] = slice_dim
+			settings['x_axis_type'] = x_dim
 		if y_dim is not None:
 			settings['y_axis_type'] = y_dim
 		if limit is not None:
@@ -690,7 +689,7 @@ class myro_read(object):
 				opt2 = myro.single_parameters[dim].option
 			vals.sort()
 			in_dict['values'] = vals
-			if opt is not None and opt2 is not NOne and opt != opt2:
+			if opt is not None and opt2 is not None and opt != opt2:
 				print(f"Warning: option for {dim} differs between scans; {opt} vs {opt2}")
 			in_dict['option'] = opt
 			inputs_nml[f'dimension_{i}'] = in_dict

@@ -1,10 +1,9 @@
 import os
-from numpy import full, real, imag, array, loadtxt, transpose, savez
+from numpy import real, imag, array, loadtxt, transpose, savez, nan
 from .ncdf2dict import ncdf2dict as readnc
 from .equilibrium import equilibrium
 from .templates import systems
 from .inputs import scan_inputs
-import f90nml
 import glob
 from uuid import uuid4
 from copy import deepcopy
@@ -159,7 +158,6 @@ class myro_scan(object):
 	
 	def run_jobs(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
-			cwd = os.getcwd()
 			compile_modules = systems[self['system']]['modules']
 			sbatch = "#!/bin/bash"
 			for key, val in self.inputs['sbatch'].items():
@@ -286,7 +284,6 @@ wait""")
 	
 	def run_ideal_jobs(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
-			cwd = os.getcwd()
 			compile_modules = systems[self['system']]['modules']
 			sbatch = "#!/bin/bash"
 			for key, val in self.inputs['sbatch'].items():
@@ -322,7 +319,7 @@ wait""")
 			for n in range(n_par):
 				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
 				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_ideal_{n}")
-				sbatch_n = sbatch_n.replace(f"--cpus-per-task={self.inputs['sbatch']['cpus-per-task']}",f"--cpus-per-task=1")
+				sbatch_n = sbatch_n.replace(f"--cpus-per-task={self.inputs['sbatch']['cpus-per-task']}","--cpus-per-task=1")
 				filename = f"ideal_{n}"
 				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
 				pyth.write(f"""import os, sys
@@ -374,7 +371,7 @@ python {self.inputs['data_path']}/submit_files/{filename}.py $SLURM_ARRAY_TASK_I
 				self._ideal_input_files.remove(input_list[i])
 			for n in range(n_par):
 				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
-				sbatch_n = sbatch_n.replace(f"#SBATCH --nodes = {self.inputs['sbatch']['nodes']}",f"#SBATCH --nodes = 1")
+				sbatch_n = sbatch_n.replace(f"#SBATCH --nodes = {self.inputs['sbatch']['nodes']}","#SBATCH --nodes = 1")
 				filename = f"ideal_{n}"
 				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
 				pyth.write(f"""import os
@@ -658,7 +655,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		
 		if self['gyro']:
 			gyro_data = {}
-			gyro_data['group'] = {}
+			group_data = {}
 			only = set({'omega','kx','ky'})
 			if not QuickSave:
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
@@ -687,9 +684,9 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
 					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
 					group_key = run_data['attributes']['id']
-					gyro_data['group'][group_key] = {}
+					group_data[group_key] = {}
 					for key in group_keys:
-						gyro_data['group'][group_key][key] = None
+						group_data[group_key][key] = None
 					for xi, kx in enumerate(run_data['kx']):
 						for yi, ky in enumerate(run_data['ky']):
 							run_key = str(uuid4())
@@ -738,17 +735,15 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 											else:
 												gyro_data[run_key]['parity'] = 0
 									elif key in ['t','theta', 'gds2', 'jacob']:
-										gyro_data['group'][group_key][key] = key_data.tolist()
+										group_data[group_key][key] = key_data.tolist()
 									elif key in ['phi2']:
-										gyro_data['group'][group_key]['phi2_avg'] = key_data.tolist()
+										group_data[group_key]['phi2_avg'] = key_data.tolist()
 									elif key in ['ql_metric_by_mode']:
 										gyro_data[run_key]['ql_metric'] = key_data[-1,yi,xi]
 									elif key in ['phi2_by_mode']:
 										gyro_data[run_key]['phi2'] = key_data[:,yi,xi]
 									elif key in ['epar']:
 										epar_path = f"{sub_dir}/itteration_{itt}.epar"
-								
-										bpar = key_data['bpar'][yi,xi,:]
 										epar_data = loadtxt(epar_path)
 										epar = []
 										for l in range(len(epar_data[:,3])):
@@ -802,7 +797,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 					ideal_keys[key][run[key]].add(run_id)
 				ideal_data[run_id] = {}
 				try:
-					sub_dir = get_ideal_run_directory(run)
+					sub_dir = self.get_ideal_run_directory(run)
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
 						existing_inputs.append([x for x in f if x.isdigit()])
@@ -826,6 +821,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		
 		data = {'gyro': gyro_data,
 			'ideal': ideal_data,
+			'group': group_data,
 			'equilibrium': equilibrium,
 			'_gyro_keys': gyro_keys,
 			'_ideal_keys': ideal_keys,
