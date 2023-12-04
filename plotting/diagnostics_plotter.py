@@ -130,7 +130,7 @@ class plot_diag(object):
 			elif key == 'suptitle':
 				self.fig._suptitle.set_visible(self['visible']['suptitle'])
 			elif key == 'title':
-				self.ax.legend_.set_visible(self['visible']['title'])
+				self.ax.title.set_visible(self['visible']['title'])
 		self.draw_fig()
 	
 	def set_options_fontsize(self, fontsize):
@@ -177,7 +177,7 @@ class plot_diag(object):
 			print(f"Data not found for {run}")
 			return
 		title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.2g} | " for x in self.reader.inputs.dim_order])[:-3]
-		self.ax.set_title(title,fontsize=self['fontsizes']['title'])
+		self.ax.set_title(title,fontsize=self['fontsizes']['title'],visible=self['visible']['title'])
 		
 		if self['var'] == 'omega':
 			if self.reader('omega',run) is None or self.reader('t',run) is None:
