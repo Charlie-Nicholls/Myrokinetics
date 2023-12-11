@@ -25,8 +25,8 @@ default_settings = {"suptitle": None,
 			'blue': ((0.0, 0.0, 0.0),(0.5, 1, 1),(1.0, 0.0, 0.0))},
 }
 
-slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
-		"slider_2": {"axis": [0.25, 0.05, 0.5, 0.03]},
+slider_settings = {"slider_1": {"axis": [0.15, 0.01, 0.5, 0.03]},
+		"slider_2": {"axis": [0.15, 0.05, 0.5, 0.03]},
 		"dims": None,
 		"visible": {"slider_1": True, "slider_2": True, "slider_3": False, "slider_4": False, "slider_5": False, "slider_6": False, "slider_7": False, "slider_8": False, "slider_9": False},
 }
@@ -371,8 +371,13 @@ class plot_scan(object):
 		#self.ax[1].set_ylim(amin(self.y_axis),amax(self.y_axis))
 		#self.ax[1].set_xlim(amin(self.x_axis),amax(self.x_axis))
 		
-		
-		
+		z_type = self['z_axis_type']
+		if self['aky']:
+			key = '_gyro_keys'
+		elif z_type == 'growth_rate':
+			key = '_abs_gr_keys'
+		elif z_type == 'growth_rate_norm':
+			key = '_norm_gr_keys'
 		z_gr = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
 		z_mf = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
 		run_ids = []
@@ -381,8 +386,9 @@ class plot_scan(object):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
-				run_ids.append(self.reader.get_run_id(run))
-				z_type = self['z_axis_type']
+				run_id = self.reader.get_run_id(run,keys=key)
+				run_ids.append(run_id)
+				run = self.reader.get_run_from_id(run_id)
 				if not self['aky'] and z_type == 'growth_rate':
 					z_type = 'abs_gr'
 				elif not self['aky'] and z_type == 'growth_rate_norm':
