@@ -216,7 +216,9 @@ if __name__ == '__main__':
 which gs2
 gs2 --build-config
 
-python {self.inputs['data_path']}/submit_files/{filename}.py $SLURM_ARRAY_TASK_ID""")
+python {self.inputs['data_path']}/submit_files/{filename}.py $SLURM_ARRAY_TASK_ID &
+
+wait""")
 				if n_par > n_sim and n + n_sim < n_par:
 					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
 				jobfile.close()
