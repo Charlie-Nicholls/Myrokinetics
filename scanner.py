@@ -182,7 +182,7 @@ class myro_scan(object):
 			input_lists = {}
 			for n in range(n_par):
 				input_lists[n] = []
-			if n_jobs == None or n_jobs*n_par > len(self._ideal_input_files):
+			if n_jobs is None or n_jobs*n_par > len(self._input_files):
 				total_jobs = len(self._input_files)
 			else:
 				total_jobs = n_jobs*n_par
@@ -234,7 +234,7 @@ python {self.inputs['data_path']}/submit_files/{filename}.py $SLURM_ARRAY_TASK_I
 			input_lists = {}
 			for n in range(n_par):
 				input_lists[n] = []
-			if n_jobs == None or n_jobs*n_par > len(self._input_files):
+			if n_jobs is None or n_jobs*n_par > len(self._input_files):
 				total_jobs = len(self._input_files)
 			else:
 				total_jobs = n_jobs*n_par
@@ -306,7 +306,7 @@ wait""")
 			input_lists = {}
 			for n in range(n_par):
 				input_lists[n] = []
-			if n_jobs == None or n_jobs*n_par > len(self._ideal_input_files):
+			if n_jobs is None or n_jobs*n_par > len(self._ideal_input_files):
 				total_jobs = len(self._ideal_input_files)
 			else:
 				total_jobs = n_jobs*n_par
@@ -359,7 +359,7 @@ python {self.inputs['data_path']}/submit_files/{filename}.py $SLURM_ARRAY_TASK_I
 			input_lists = {}
 			for n in range(n_par):
 				input_lists[n] = []
-			if n_jobs == None or n_jobs*n_par > len(self._ideal_input_files):
+			if n_jobs is None or n_jobs*n_par > len(self._ideal_input_files):
 				total_jobs = len(self._ideal_input_files)
 			else:
 				total_jobs = n_jobs*n_par
