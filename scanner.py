@@ -183,16 +183,16 @@ class myro_scan(object):
 			for n in range(n_par):
 				input_lists[n] = []
 			if n_jobs == None or n_jobs*n_par > len(self._ideal_input_files):
-				total_jobs = len(self._ideal_input_files)
+				total_jobs = len(self._input_files)
 			else:
 				total_jobs = n_jobs*n_par
-			input_list = list(self._ideal_input_files)
+			input_list = list(self._input_files)
 			for i in range(total_jobs):
 				input_lists[i%n_par].append(input_list[i])
 				self._ideal_input_files.remove(input_list[i])
 			for n in range(n_par):
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_ideal_{n}")
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_{n}")
 				filename = f"gyro_{n}"
 				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
 				pyth.write(f"""import os, sys
