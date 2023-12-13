@@ -118,7 +118,7 @@ class equilibrium(object):
 			directory = self.inputs.inputs['files']['template_path']
 		if directory == "./":
 			directory = os.getcwd()
-		self.inputs.inputs['template_path'] = directory
+		self.inputs.inputs['files']['template_path'] = directory
 		
 		if not self.eq_data:
 			self.load_geqdsk(directory = directory)
