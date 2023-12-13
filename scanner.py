@@ -189,7 +189,7 @@ class myro_scan(object):
 			input_list = list(self._input_files)
 			for i in range(total_jobs):
 				input_lists[i%n_par].append(input_list[i])
-				self._ideal_input_files.remove(input_list[i])
+				self._input_files.remove(input_list[i])
 			for n in range(n_par):
 				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
 				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_{n}")
