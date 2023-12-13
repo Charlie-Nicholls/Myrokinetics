@@ -203,7 +203,7 @@ if __name__ == '__main__':
 	slurm_id = int(sys.argv[1])
 	input_file = input_files[slurm_id]
 	os.system(f"echo \\\"Input: {{input_file}}\\\"")
-	os.system(f"srun --ntasks={self.inputs['sbatch']['cpus-per-task']} \\\"{{input_file}}\\\"")
+	os.system(f"srun --ntasks={self.inputs['sbatch']['cpus-per-task']} gs2 \\\"{{input_file}}\\\"")
 	if os.path.exists(f\"{{input_file[:-3]}}.out.nc\"):
 		os.system(f"touch \\\"{{input_file[:-3]}}.fin\\\"")""")
 				pyth.close()
