@@ -211,6 +211,7 @@ which gs2
 gs2 --build-config
 
 INFILE=$(awk "NR==$SLURM_ARRAY_TASK_ID" gyro_{n}.txt)
+echo $INFILE
 gs2 $INFILE.in
 touch $INFILE.fin""")
 				jobfile.close()
@@ -220,6 +221,7 @@ touch $INFILE.fin""")
 #SBATCH --partition=nodes
 #SBATCH --time=00:00:30
 #SBATCH --ntasks=1
+#SBATCH --mem=10MB
 #SBATCH --cpus-per-task=1
 #SBATCH --nodes=1
 #SBATCH --account={self.inputs['sbatch']['account']}
