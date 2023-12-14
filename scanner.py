@@ -220,7 +220,6 @@ touch $INFILE.fin""")
 				submit.write(f"ID_{n}=$(sbatch --parsable \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")")
 			if n_par > n_sim:
 				for n in range(n_sim, n_par):
-					job_ids[n] = os.system(f"sbatch --parsable  \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
 					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")")
 			submit.close()
 			os.system("./{self.inputs['data_path']}/submit_files/submit.sh")
