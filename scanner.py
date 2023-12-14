@@ -212,9 +212,9 @@ gs2 --build-config
 
 INFILE=$(sed -n "$SLURM_ARRAY_TASK_IDp" gyro_{n}.txt)
 echo $INFILE
-gs2 "${INFILE}.in"
-if test -f "${INFILE}.out.nc"; then
-	touch "${INFILE}.fin"
+gs2 "${{INFILE}}.in"
+if test -f "${{INFILE}}.out.nc"; then
+	touch "${{INFILE}}.fin"
 fi""")
 				jobfile.close()
 			submit = open(f"{self.inputs['data_path']}/submit_files/submit.job",'w')
