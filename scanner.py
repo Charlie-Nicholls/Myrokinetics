@@ -214,15 +214,25 @@ INFILE=$(awk "NR==$SLURM_ARRAY_TASK_ID" gyro_{n}.txt)
 gs2 $INFILE.in
 touch $INFILE.fin""")
 				jobfile.close()
-			submit = open(f"{self.inputs['data_path']}/submit_files/submit.sh",'w')
-			submit.write("#!/bin/bash\n")
+			submit = open(f"{self.inputs['data_path']}/submit_files/submit.job",'w')
+			submit.write("""#!/bin/bash
+#SBATCH --job-name=submit
+#SBATCH --partition=nodes
+#SBATCH --time=00:00:30
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=1
+#SBATCH --nodes=1
+#SBATCH --account={self.inputs['sbatch']['account']}
+#SBATCH --output={self.inputs['data_path']}/submit_files/submit.slurm
+
+""")
 			for n in range(n_sim):
 				submit.write(f"ID_{n}=$(sbatch --parsable \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")\n")
 			if n_par > n_sim:
 				for n in range(n_sim, n_par):
 					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")\n")
 			submit.close()
-			os.system(f"./{self.inputs['data_path']}/submit_files/submit.sh")
+			os.system(f"sbatch {self.inputs['data_path']}/submit_files/submit.job")
 		if self['system'] == 'archer2':
 			if n_par is None:
 				n_par = 1
