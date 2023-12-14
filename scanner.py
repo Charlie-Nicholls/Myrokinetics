@@ -210,7 +210,7 @@ class myro_scan(object):
 which gs2
 gs2 --build-config
 
-INFILE=$(awk "NR==$\{SLURM_ARRAY_TASK_ID\}" gyro_{n}.txt)
+INFILE=$(awk "NR==$SLURM_ARRAY_TASK_ID" gyro_{n}.txt)
 gs2 $INFILE.in
 touch $INFILE.fin""")
 			job_ids = [None]*n_par
