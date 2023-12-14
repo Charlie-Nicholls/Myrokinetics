@@ -213,12 +213,17 @@ gs2 --build-config
 INFILE=$(awk "NR==$SLURM_ARRAY_TASK_ID" gyro_{n}.txt)
 gs2 $INFILE.in
 touch $INFILE.fin""")
-			job_ids = [None]*n_par
+				jobfile.close()
+			submit = open(f"{self.inputs['data_path']}/submit_files/submit.sh",'w')
+			submit.write("#!/bin/bash")
 			for n in range(n_sim):
-				job_ids[n] = os.system(f"sbatch --parsable \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
+				submit.write(f"ID_{n}=$(sbatch --parsable \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")")
 			if n_par > n_sim:
 				for n in range(n_sim, n_par):
-					job_ids[n] = os.system(f"sbatch --parsable --dependency=afterany:{job_ids[n-n_sim]} \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
+					job_ids[n] = os.system(f"sbatch --parsable  \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
+					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")")
+			submit.close()
+			os.system("./{self.inputs['data_path']}/submit_files/submit.sh")
 		if self['system'] == 'archer2':
 			if n_par is None:
 				n_par = 1
