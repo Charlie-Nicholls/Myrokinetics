@@ -215,14 +215,14 @@ gs2 $INFILE.in
 touch $INFILE.fin""")
 				jobfile.close()
 			submit = open(f"{self.inputs['data_path']}/submit_files/submit.sh",'w')
-			submit.write("#!/bin/bash")
+			submit.write("#!/bin/bash\n")
 			for n in range(n_sim):
-				submit.write(f"ID_{n}=$(sbatch --parsable \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")")
+				submit.write(f"ID_{n}=$(sbatch --parsable \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")\n")
 			if n_par > n_sim:
 				for n in range(n_sim, n_par):
-					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")")
+					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")\n")
 			submit.close()
-			os.system("./{self.inputs['data_path']}/submit_files/submit.sh")
+			os.system(f"./{self.inputs['data_path']}/submit_files/submit.sh")
 		if self['system'] == 'archer2':
 			if n_par is None:
 				n_par = 1
