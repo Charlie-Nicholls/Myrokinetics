@@ -203,17 +203,19 @@ class myro_scan(object):
 				inlist.close()
 				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
 				jobfile.write(f"""{sbatch_n}
-#SBATCH --array=0-{len(input_lists[n])}
+#SBATCH --array=1-{len(input_lists[n])}
 
 {compile_modules}
 
 which gs2
 gs2 --build-config
 
-INFILE=$(awk "NR==$SLURM_ARRAY_TASK_ID" gyro_{n}.txt)
+INFILE=$(sed -n "$SLURM_ARRAY_TASK_IDp" gyro_{n}.txt)
 echo $INFILE
-gs2 $INFILE.in
-touch $INFILE.fin""")
+gs2 "${INFILE}.in"
+if test -f "${INFILE}.out.nc"; then
+	touch "${INFILE}.fin"
+fi""")
 				jobfile.close()
 			submit = open(f"{self.inputs['data_path']}/submit_files/submit.job",'w')
 			submit.write(f"""#!/bin/bash
