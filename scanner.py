@@ -199,7 +199,7 @@ class myro_scan(object):
 				filename = f"gyro_{n}"
 				inlist = open(f"{self.inputs['data_path']}/submit_files/{filename}.txt",'w')
 				for infile in input_lists[n]:
-					inlist.write(infile[:-3])
+					inlist.write(f"{infile[:-3]}\n")
 				inlist.close()
 				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
 				jobfile.write(f"""{sbatch_n}
@@ -215,7 +215,7 @@ gs2 $INFILE.in
 touch $INFILE.fin""")
 				jobfile.close()
 			submit = open(f"{self.inputs['data_path']}/submit_files/submit.job",'w')
-			submit.write("""#!/bin/bash
+			submit.write(f"""#!/bin/bash
 #SBATCH --job-name=submit
 #SBATCH --partition=nodes
 #SBATCH --time=00:00:30
