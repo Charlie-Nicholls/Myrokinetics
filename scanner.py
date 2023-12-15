@@ -210,8 +210,8 @@ class myro_scan(object):
 which gs2
 gs2 --build-config
 
-INFILE=$(sed -n "$SLURM_ARRAY_TASK_IDp" gyro_{n}.txt)
-echo $INFILE
+INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" gyro_{n}.txt)
+echo "${{INFILE}}.in"
 gs2 "${{INFILE}}.in"
 if test -f "${{INFILE}}.out.nc"; then
 	touch "${{INFILE}}.fin"
