@@ -1,4 +1,4 @@
-from numpy import real, imag, array, pi
+from numpy import real, imag, array, pi, amax
 from matplotlib.pyplot import subplots, ion, show
 from copy import deepcopy
 from .slider_ax import slider_axes
@@ -6,7 +6,7 @@ from .slider_ax import slider_axes
 default_settings = {"suptitle": None,
 		"var": 'phi',
 		"run": {},
-		"normalisation": "True",
+		"normalisation": "highest",
 		"fontsizes": {"legend": 10,"ch_box": 8,"axis": 11,"title": 13,"suptitle": 20, "verify": 8},
 		"visible": {"suptitle": True, "title": True, "legend": True, 'absolute': True, 'real': True, 'imag': True, 'divider': True},
 		"colours": {"real": 'r', "imag": 'b', "absolute": 'k', "divider": 'g'},
@@ -137,7 +137,11 @@ class plot_box_diag(object):
 		self.fig.suptitle(title,fontsize=self.settings['fontsizes']['suptitle'])
 	
 	def set_normalisation(self, norm):
-		self.settings['normalisation'] = norm
+		if norm.lower() not in ['none','highest','phi','apar','bpar','epar']:
+			print("ERROR: invalid normalisation, allowed: ['none','highest','phi','apar','bpar','epar']")
+			return
+			
+		self.settings['normalisation'] = norm.lower()
 		self.draw_fig()
 		
 	def draw_fig(self, val = None):
@@ -188,9 +192,22 @@ class plot_box_diag(object):
 			elif self['var'] == 'epar':
 				ylabel = "$E_{\parallel}$"
 			
-			if self['normalisation'] == True:
-				norm = max(field)
-				ylabel += f" / max({ylabel})"
+			if self['normalisation'] == 'highest':
+					norms = []
+					for kxid in kx_list:
+						run['kx'] = self.reader.dimensions['kx'].values[kxid]
+						norm = max([amax([abs(i) for i in self.reader(x,run)]) for x in [y for y in ['phi','apar','bpar','epar'] if (self.reader(y,run) is not None)]])
+						norms.append(norm)
+					norm = max(norms)
+					ylabel += " / max($\phi,A_{\parallel},B_{\parallel},E_{\parallel}$)"
+			elif self['normalisation'] in ['phi','apar','bpar','epar']:
+				norms = []
+				for kxid in kx_list:
+					run['kx'] = self.reader.dimensions['kx'].values[kxid]
+					norm = amax([abs(i) for i in self.reader(self['normalisation'],run)])
+					norms.append(norm)
+				norm = max(norms)
+				ylabel += f" / max({self['normalisation']})"
 			else:
 				norm = 1
 			field_norm = array(field)/norm

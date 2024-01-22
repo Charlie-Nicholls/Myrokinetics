@@ -107,7 +107,7 @@ class myro_read(object):
 			return self.data['quasilinear']
 			
 		elif self.dimensions and key in self.dimensions:
-			return self.dimensions.values
+			return self.dimensions[key].values
 		
 		elif self.verify and key in self.verify._all_keys():
 			return self.verify[key]
@@ -161,7 +161,7 @@ class myro_read(object):
 	def print_info(self):
 		for key, val in self.inputs['info'].items():
         		print(f"{key} = {val}")
-		
+
 	def _print_file(self, filetype = ''):
 		if self.files is None:
 			print("ERROR: No files found")
@@ -268,7 +268,7 @@ class myro_read(object):
 				return False
 		try:
 			self.data = data_in['data'].item()
-			possible_data = ['gyro','ideal','equilibrium','_gyro_keys','_ideal_keys','quasilinear']
+			possible_data = ['gyro','ideal','equilibrium','_gyro_keys','_ideal_keys','_phi2_by_kx','_phi2_by_ky','quasilinear']
 			for key in [x for x in possible_data if x not in self.data.keys()]:
 				self.data[key] = None
 		except:
@@ -306,9 +306,11 @@ class myro_read(object):
 	def _verify_run(self):
 		if not self['Gyro']:
 			return
+		if self.inputs['non_linear'] == True:
+				return
 		self.verify = verify_scan(reader = self)
 		self.data['gyro'] = self.verify.scan
-		#self.calculate_gr()
+		self.calculate_gr()
 	
 	def get_all_runs(self, excludeDimensions = []):
 		dim_order = [x for x in self.inputs.dim_order if x not in excludeDimensions]
@@ -602,6 +604,32 @@ class myro_read(object):
 		if limit is not None:
 			settings['limit'] = limit
 		return Plotters['Slice'](reader = self, settings = settings, sliders = sliders)
+
+	def plot_phi2_by_mode(self, settings = {}):
+		if self['grid_option'] != 'box':
+			print("ERROR: Only available for grid_option = box")
+			return
+		return Plotters['NL_Phi2'](reader = self, settings = settings)
+
+	def plot_phi2_by_kx(self, settings = {}):
+		if self['grid_option'] != 'box':
+			print("ERROR: Only available for grid_option = box")
+			return
+		settings['y_axis_type'] = 'phi2_by_kx'
+		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
+	
+	def plot_phi2_by_ky(self, settings = {}):
+		if self['grid_option'] != 'box':
+			print("ERROR: Only available for grid_option = box")
+			return
+		settings['y_axis_type'] = 'phi2_by_ky'
+		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
+
+	def plot_hflux(self, settings = {}):
+		if not self['non_linear']:
+			print("ERROR: Only available for non-linear runs")
+			return
+		return Plotters['NL_Hflux'](reader = self, settings = settings)
 	
 	def plot_eq(self):
 		if not self.eqbm:

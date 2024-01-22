@@ -8,6 +8,7 @@ from .slice_plotter import plot_slice
 from .kxky_plotter import plot_kxky
 from .box_diagnostics_plotter import plot_box_diag
 from .slider_ax import slider_axes
+from .nonlinear_plotter import plot_phi2_by_mode, plot_hflux, plot_nl_phi2
 
 Plotters = {}
 Plotters["Scan"] = plot_scan
@@ -20,5 +21,8 @@ Plotters["Slice"] = plot_slice
 Plotters["kxky"] = plot_kxky
 Plotters["Box_Diag"] = plot_box_diag
 Plotters["Sliders"] = slider_axes
+Plotters["NL_Phi2"] = plot_phi2_by_mode
+Plotters["NL_Hflux"] = plot_hflux
+Plotters["NL_Phi2_by_k"] = plot_nl_phi2
 
 __all__ = ["Plotters"]
