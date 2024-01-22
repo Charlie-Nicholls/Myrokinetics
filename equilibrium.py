@@ -121,9 +121,9 @@ class equilibrium(object):
 		self.inputs.inputs['files']['template_path'] = directory
 		
 		if not self.eq_data:
-			self.load_geqdsk(directory = directory)
+			self.load_geqdsk()
 		if not self.kin_data:
-			self.load_kinetics(directory = directory)
+			self.load_kinetics()
 		
 		self._template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
 
