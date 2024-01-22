@@ -5,7 +5,7 @@ class peqdsk(object):
 	def __init__(self, filename = None, directory = "./"):
 		import os.path
 		self.filename = os.path.join(directory, filename)
-		self.data = self.read(filename)
+		self.data = self.read(self.filename)
 		
 	def __getitem__(self, key):
         	return self.data[key]
