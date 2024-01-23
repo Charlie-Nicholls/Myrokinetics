@@ -68,7 +68,7 @@ archer2_save_sbatch = {
 	'ntasks': 1,
 	'mem': '1gb',
 	'output': 'save_out.slurm',
-	'account': 'e281',
+	'account': 'e281-ypimcf',
 	'partition': 'serial',
 	'qos': 'serial',
 	}
