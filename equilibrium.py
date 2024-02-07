@@ -229,9 +229,9 @@ class equilibrium(object):
 			nml['fields_knobs']['dumb_response'] = True
 			nml['fields_knobs']['response_dir'] = "./response"
 			nml['init_g_knobs']['restart_dir'] = "./restart"
-			nml['gs2_diagnostic_knobs']['nc_sync_freq'] = 1
-			if nml['gs2_diagnostic_knobs']['nsave'] > 1000:
-				nml['gs2_diagnostic_knobs']['nsave'] = 10
+			nml['gs2_diagnostics_knobs']['nc_sync_freq'] = 1
+			if nml['gs2_diagnostics_knobs']['nsave'] > 1000:
+				nml['gs2_diagnostics_knobs']['nsave'] = 10
 			if 'avail_cpu_time' not in nml['knobs'].keys():
 				h, m, s = self.inputs['sbatch']['time'].split(':')
 				nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
