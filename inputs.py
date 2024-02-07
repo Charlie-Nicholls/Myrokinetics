@@ -241,6 +241,9 @@ class scan_inputs(object):
 					self.inputs[key]['values'] = self.inputs[key]['values'][:-1]
 			if not self.inputs[key]['type']:
 				print(f"ERROR: {key} has no type, valid types: {dim_lookup['_list']}")
+			
+			if self.inputs['non_linear'] == True:
+				self.inputs.inputs['grid_option'] = 'box'
 	
 	def check_scan(self):
 		valid = True
