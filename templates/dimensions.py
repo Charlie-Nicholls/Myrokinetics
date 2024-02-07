@@ -353,6 +353,8 @@ class nx(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
+		if 'kt_grids_box_parameters' not in nml.keys():
+			nml['kt_grids_box_parameters'] = {}
 		nml['kt_grids_box_parameters']['nx'] = val
 		return nml
 
@@ -374,6 +376,8 @@ class ny(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
+		if 'kt_grids_box_parameters' not in nml.keys():
+			nml['kt_grids_box_parameters'] = {}
 		nml['kt_grids_box_parameters']['ny'] = val
 		return nml
 
@@ -392,6 +396,8 @@ class y0(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
+		if 'kt_grids_box_parameters' not in nml.keys():
+			nml['kt_grids_box_parameters'] = {}
 		nml['kt_grids_box_parameters']['y0'] = val
 		return nml
 
@@ -413,6 +419,8 @@ class jtwist(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
+		if 'kt_grids_box_parameters' not in nml.keys():
+			nml['kt_grids_box_parameters'] = {}
 		nml['kt_grids_box_parameters']['jtwist'] = val
 		return nml
 
