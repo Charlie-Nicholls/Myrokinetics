@@ -307,7 +307,7 @@ class scan_inputs(object):
 				print("ERROR: shear dimension must be given for ideal scan")
 				valid = False
 			
-		if self['non_linear'] == True and len(self.dimensions) == 0:
+		if self['non_linear'] == True and len(self.dimensions) > 0:
 			print("ERROR: dimensional scans not currently allowed for Nonlinear runs")
 			valid = False
 
