@@ -177,11 +177,13 @@ class plot_box_diag(object):
 				theta += list(2*pi*i+array(self.reader('theta',run)))
 			theta = list(array(theta)-(len(kx_list)-1)*pi)
 			
-			title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.2g} | " for x in [y for y in self.reader.inputs.dim_order if y != 'kx']])
-			kxs = [f"{self.reader.dimensions['kx'].values[i]:.2g}" for i in kx_list]
-			title += "kx: "
-			title += "".join([f"{kx}, " for kx in kxs])[:-2]
-			self.ax.set_title(title,fontsize=self['fontsizes']['title'])
+			
+			if self['visible']['title']:
+				title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.2g} | " for x in [y for y in self.reader.inputs.dim_order if y != 'kx']])
+				kxs = [f"{self.reader.dimensions['kx'].values[i]:.2g}" for i in kx_list]
+				title += f"{self.reader.dimensions['kx'].axis_label}: "
+				title += "".join([f"{kx}, " for kx in kxs])[:-2]
+				self.ax.set_title(title,fontsize=self['fontsizes']['title'])
 			
 			if self['var'] == 'phi':
 				ylabel = "$\phi$"
@@ -211,18 +213,21 @@ class plot_box_diag(object):
 			else:
 				norm = 1
 			field_norm = array(field)/norm
-			if self['visible']['real']:
-				self.ax.plot(theta,real(field_norm),color=self['colours']['real'],label="real")
-			if self['visible']['imag']:
-				self.ax.plot(theta,imag(field_norm),color=self['colours']['imag'],label="imaginary")
-			if self['visible']['absolute']:
-				self.ax.plot(theta,[abs(x) for x in field_norm],color=self['colours']['absolute'],linestyle='--',label="absolute")
+			abs_line_style = 'solid'
 			if self['visible']['divider']:
 				vls = [min(theta) + 2*pi*(i+1) for i in range(len(kx_list)-1)]
 				ylim = self.ax.get_ylim()
-				self.ax.vlines(vls,ylim[0],ylim[1],color=self['colours']['divider'],linestyle='--')
-				
-			self.ax.legend(loc=0)
+				self.ax.vlines(vls,ylim[0],ylim[1],color=self['colours']['divider'],linestyle='dotted')
+			if self['visible']['real']:
+				abs_line_style = 'dashed'
+				self.ax.plot(theta,real(field_norm),color=self['colours']['real'],label="real")
+			if self['visible']['imag']:
+				abs_line_style = 'dashed'
+				self.ax.plot(theta,imag(field_norm),color=self['colours']['imag'],label="imaginary")
+			if self['visible']['absolute']:
+				self.ax.plot(theta,[abs(x) for x in field_norm],color=self['colours']['absolute'],linestyle=abs_line_style,label="absolute")
+			if self['visible']['legend']:
+				self.ax.legend(loc=0)
 				
 			self.ax.set_xlabel("Ballooning Angle",fontsize=self['fontsizes']['axis'])
 			self.ax.set_ylabel(ylabel,fontsize=self['fontsizes']['axis'])

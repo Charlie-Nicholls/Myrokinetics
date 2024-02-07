@@ -618,10 +618,11 @@ class myro_read(object):
 		settings['y_axis_type'] = 'phi2_by_kx'
 		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
 	
-	def plot_phi2_by_ky(self, settings = {}):
+	def plot_phi2_by_ky(self, plot_type = 'mesh', settings = {}):
 		if self['grid_option'] != 'box':
 			print("ERROR: Only available for grid_option = box")
 			return
+		settings['plot_type'] = plot_type
 		settings['y_axis_type'] = 'phi2_by_ky'
 		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
 
@@ -630,6 +631,12 @@ class myro_read(object):
 			print("ERROR: Only available for non-linear runs")
 			return
 		return Plotters['NL_Hflux'](reader = self, settings = settings)
+	
+	def plot_zonality(self, settings = {}):
+		if not self['non_linear']:
+			print("ERROR: Only available for non-linear runs")
+			return
+		return Plotters['NL_Zonality'](reader = self, settings = settings)
 	
 	def plot_eq(self):
 		if not self.eqbm:

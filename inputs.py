@@ -21,7 +21,7 @@ possible_keys = {
 	'gyro': ['gyro'],
 	'system': ['system','sys','server'],
 	'grid_option': ['grid_option', 'grid'],
-	'non_linear': ['non_linear','nl','nonlin','non_lin'],
+	'non_linear': ['non_linear','nl','nonlin','non_lin','nonlinear'],
 	'fixed_delt': ['fixed_delt','delt','delt','fix_delt'],
 	'epar': ['epar','write_epar'],
 	'num_shear_ideal': ['num_shat_ideal','n_shat_ideal','shat_ideal_num','shat_ideal_n','ideal_shat_n','idea_shat_num','num_shear_ideal','n_shear_ideal','shear_ideal_num','shear_ideal_n','ideal_shear_n','idea_shear_num'],
@@ -106,7 +106,7 @@ class scan_inputs(object):
 							return self.inputs[pkey][sskey]
 		
 		if self.dimensions:
-			if key in ['order','dim_oder','dimension_order','dimensions_order']:
+			if key in ['order','dim_order','dimension_order','dimensions_order']:
 				return self.dim_order
 			for dim in self.dimensions:
 				for skey in self.dimensions[dim].possible_keys:
@@ -269,7 +269,7 @@ class scan_inputs(object):
 				valid = False
 			if not self['fixed_delt']:
 				print("grid_option == box runs can only use fixed_delt == True")
-				self.inputs['fixed_delt'] = True
+				self.inputs['knobs']['fixed_delt'] = True
 		
 		if self['grid_option'] == 'single':
 			if 'ny' in self.dimensions or 'ny' in self.single_parameters:
@@ -278,10 +278,10 @@ class scan_inputs(object):
 			if 'nx' in self.dimensions or 'nx' in self.single_parameters:
 				print("ERROR: nx dimension is not compatible with grid_option == single: use ky")
 				valid = False
-			if 'y0' in self.dimensions or 'nx' in self.single_parameters:
+			if 'y0' in self.dimensions or 'y0' in self.single_parameters:
 				print("ERROR: nx dimension is not compatible with grid_option == single")
 				valid = False
-			if 'jtwist' in self.dimensions or 'nx' in self.single_parameters:
+			if 'jtwist' in self.dimensions or 'jtwist' in self.single_parameters:
 				print("ERROR: nx dimension is not compatible with grid_option == single")
 				valid = False
 		
@@ -306,6 +306,10 @@ class scan_inputs(object):
 			if 'shear' not in self.dimensions:
 				print("ERROR: shear dimension must be given for ideal scan")
 				valid = False
+			
+		if self['non_linear'] == True and len(self.dimensions) == 0:
+			print("ERROR: dimensional scans not currently allowed for Nonlinear runs")
+			valid = False
 
 		return valid
 		

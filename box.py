@@ -11,7 +11,9 @@ def convert_box_to_myro(filename = None, run_data = None, directory = "./", inpu
 	group_data = {}
 	only = set({'omega','ky','kx'})
 	if not QuickSave:
-		only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode','heat_flux_tot', 'phi2_by_kx', 'phi2_by_ky'})
+		only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode', 'phi2_by_kx', 'phi2_by_ky'})
+	if inputs['non_linear']:
+		only = only | set({'heat_flux_tot'})
 	data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
 	group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot']
 	

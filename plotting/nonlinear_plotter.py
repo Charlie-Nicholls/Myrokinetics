@@ -2,6 +2,7 @@ from matplotlib.pyplot import show, ion, subplots, axes, colorbar, Normalize
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider
 from numpy import log, nan, zeros, array
+from numpy import sum as np_sum
 
 class plot_nl_phi2:
 	def __init__(self, reader, settings = {}):
@@ -140,9 +141,39 @@ class plot_hflux:
 		self.ax.cla()
 		self.x = self.reader('t',self['run'])
 		self.y = self.reader('heat_flux_tot',self['run'])
-		self.y = [y for yi, y in enumerate(self.y) if self.x[yi] not in [None,nan]]
-		self.x = [x for x in self.x if x not in [None,nan]]
 		self.ax.plot(self.x,self.y)
 		self.ax.set_xlabel(f"Time ({len(self.x)} steps)")
 		self.ax.set_ylabel("Heat Flux")
 		self.ax.set_yscale('log')
+
+class plot_zonality:
+	def __init__(self, reader, settings = {}):
+		self.reader = reader
+		self.settings = {}
+		self.settings['run'] = self.reader.get_all_runs()[0]
+		for key, val in settings.items():
+			if key in self.settings:
+				self.settings[key] = val
+		self.open_plot()
+
+	def __getitem__(self, key):
+		if key in self.settings:
+			return self.settings[key]
+		else:
+			print(f"ERROR: {key} not found")
+
+	def open_plot(self):
+		self.fig, self.ax = subplots(figsize=(8.8,5.8))
+		ion()
+		show()
+		self.draw_fig()
+	
+	def draw_fig(self):
+		self.ax.cla()
+		self.x = self.reader('t',self['run'])
+		self.y = self.reader.data['_phi2_by_ky'][0]/np_sum(self.reader.data['_phi2_by_ky'][1:],axis=0)
+		self.y = [y for yi, y in enumerate(self.y) if self.x[yi] not in [None,nan]]
+		self.x = [x for x in self.x if x not in [None,nan]]
+		self.ax.plot(self.x,self.y)
+		self.ax.set_xlabel(f"Time ({len(self.x)} steps)")
+		self.ax.set_ylabel("Zonality")

@@ -275,6 +275,16 @@ class plot_diag(object):
 						self.ax.text(0.01,0.99,f"GR: {self.reader('growth_rate',run):+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
 						self.ax.set_xlabel(f"Time ({len(t)} steps) | nt = {nt}")
 						self.ax.legend(loc=1,fontsize=self['fontsizes']['legend'])
+				
+				if self['var'] == 'phi2' and self.options.get_status()[0] and self.reader.inputs['non_lin']:
+					lt = int(4/(t[1]-t[0]))
+					ut = int(6/(t[1]-t[0])) + 1
+					fit = polyfit(t[lt:ut],log(phi2[lt:ut]),1)
+					fitgr = fit[0]/2
+					pr = pearsonr(t[lt:ut],log(phi2[lt:ut]))
+					
+					self.ax.plot(t[lt:ut],exp(array(t[lt:ut])*fit[0] + fit[1]),'r',label=f"GR = {fitgr:+.2e}\nR = {pr[0]:.4f}")
+					self.ax.legend(loc=1,fontsize=self['fontsizes']['legend'])
 		
 		if self.verify is not None and self['visible']['verify']:
 			bad = []
