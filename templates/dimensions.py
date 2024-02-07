@@ -416,4 +416,24 @@ class jtwist(dimension):
 		nml['kt_grids_box_parameters']['jtwist'] = val
 		return nml
 
+class cfl(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['cfl']
+	axis_label = 'cfl'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([(x < 0 or x > 1) for x in values]):
+			print("Error: cfl values outside the allowed range (0<=x<=1)")
+			values = [x for x in values if (0<=x<=1)]
+		return values
+
+	def edit_nml(self, nml, val):
+		if 'nonlinear_terms_knobs' not in nml.keys():
+			nml['nonlinear_terms_knobs'] = {}
+		nml['nonlinear_terms_knobs']['cfl'] = val
+		return nml
+
 dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist]

@@ -27,8 +27,8 @@ class myro_scan(object):
 		if key == "inputs":
 			self.inputs()
 		else:
-        		return self.inputs[key]
-        
+			return self.inputs[key]
+		
 	def __len__(self):
 		if self.dimensions is None:
 			return None
@@ -38,8 +38,8 @@ class myro_scan(object):
 		return tot
 
 	def print_inputs(self):
-        	self.inputs.print_inputs()
-        	
+		self.inputs.print_inputs()
+
 	def keys(self):
 		return self.inputs.keys()
 	
@@ -173,6 +173,7 @@ class myro_scan(object):
 					os.system(f"mpirun -np 8 gs2 \"{input_file}\"")
 					self._input_files.remove(input_file)
 					n_jobs -= 1
+		
 		elif self['system'] == 'viking':
 			if n_par is None:
 				n_par = 1
@@ -237,31 +238,33 @@ fi""")
 					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")\n")
 			submit.close()
 			os.system(f"sbatch {self.inputs['data_path']}/submit_files/submit.job")
+
 		if self['system'] == 'archer2':
-			if n_par is None:
-				n_par = 1
-			if n_sim is None:
-				n_sim = n_par if n_par < 8 else 8
-			if n_sim > 8:
-				print("Archer supports a maximum of n_sim = 8")
-				n_sim = 8
-			os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
-			input_lists = {}
-			for n in range(n_par):
-				input_lists[n] = []
-			if n_jobs is None or n_jobs*n_par > len(self._input_files):
-				total_jobs = len(self._input_files)
-			else:
-				total_jobs = n_jobs*n_par
-			input_list = list(self._input_files)
-			for i in range(total_jobs):
-				input_lists[i%n_par].append(input_list[i])
-				self._input_files.remove(input_list[i])
-			for n in range(n_par):
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
-				filename = f"gyro_{n}"
-				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
-				pyth.write(f"""import os
+			if self.inputs['non_linear'] == False:
+				if n_par is None:
+					n_par = 1
+				if n_sim is None:
+					n_sim = n_par if n_par < 8 else 8
+				if n_sim > 8:
+					print("Archer supports a maximum of n_sim = 8")
+					n_sim = 8
+				os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
+				input_lists = {}
+				for n in range(n_par):
+					input_lists[n] = []
+				if n_jobs is None or n_jobs*n_par > len(self._input_files):
+					total_jobs = len(self._input_files)
+				else:
+					total_jobs = n_jobs*n_par
+				input_list = list(self._input_files)
+				for i in range(total_jobs):
+					input_lists[i%n_par].append(input_list[i])
+					self._input_files.remove(input_list[i])
+				for n in range(n_par):
+					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
+					filename = f"gyro_{n}"
+					pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
+					pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
 
@@ -277,9 +280,9 @@ def start_run(run):
 		start_run(run)
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
-				pyth.close()
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
-				jobfile.write(f"""{sbatch_n}
+					pyth.close()
+					jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
+					jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
 
@@ -289,12 +292,28 @@ gs2 --build-config
 python {self.inputs['data_path']}/submit_files/{filename}.py &
 
 wait""")
-				if n_par > n_sim and n + n_sim < n_par:
-					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
+					if n_par > n_sim and n + n_sim < n_par:
+						jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
+					jobfile.close()
+				for n in range(n_sim):
+					os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
+			if self.inputs['non_linear'] == True:
+				os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
+				if self.inputs['sbatch']['cpus-per-task'] > 1:
+					compile_modules += f"\nexport OMP_NUM_THREADS={self.inputs['sbatch']['cpus-per-task']}"
+				ntasks = self.inputs['sbatch']['ntasks'] if 'ntasks' in self.inputs['sbatch'] else self.inputs['sbatch']['nodes']*self.inputs['sbatch']['ntasks-per-node']
+				jobfile = open(f"{self.inputs['data_path']}/submit_files/submit.job",'w')
+				jobfile.write(f"""{sbatch_n}
+
+{compile_modules}
+
+which gs2
+gs2 --build-config
+
+srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={self.inputs['sbatch']['cpus-per-task']} gs2 {self._input_files[0]}""")
 				jobfile.close()
-			for n in range(n_sim):
-				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
-	
+				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/submit.job\"")
+
 	def run_ideal_jobs(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
 			compile_modules = systems[self['system']]['modules']
@@ -497,12 +516,13 @@ wait""")
 			runs = check['gyro_incomplete']
 		else:
 			runs = specificRuns
-		
-		
-			
+	
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
+			if self.inputs['grid_option'] == 'box':
+				os.makedirs(sub_dir+'reponse/',exist_ok=True)
+				os.makedirs(sub_dir+'restart/',exist_ok=True)
 			existing_inputs = [] 
 			for f in glob.glob(r'itteration_*.in'):
 				existing_inputs.append([x for x in f if x.isdigit()])
@@ -693,7 +713,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				try:
 					existing_inputs = [] 
 					for f in glob.glob(r'itteration_*.in'):
-		         			existing_inputs.append([x for x in f if x.isdigit()])
+						existing_inputs.append([x for x in f if x.isdigit()])
 					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
 					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
 					group_key = run_data['attributes']['id']
@@ -774,7 +794,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			if self.inputs['grid_option'] == 'box':
 				existing_dim_keys = []
 				for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
-	         			existing_dim_keys.append([x for x in key if x.isdigit()])
+					existing_dim_keys.append([x for x in key if x.isdigit()])
 				dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
 				kxs = list(kxs)
 				kxs.sort()

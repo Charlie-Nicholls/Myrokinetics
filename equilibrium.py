@@ -187,7 +187,10 @@ class equilibrium(object):
 		self.pyro.load_local(psi_n=psiN)
 		self.pyro.update_gk_code()
 		nml = deepcopy(self.pyro.gk_input.data)
-		
+
+		for dim_name, dim in self.inputs.single_parameters.items():
+			nml = dim.single_edit_nml(nml)
+
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
         
 		nml['theta_grid_parameters']['qinp'] = abs(nml['theta_grid_parameters']['qinp'])
@@ -223,6 +226,28 @@ class equilibrium(object):
 				nml['kt_grids_box_parameters'] = {'nx': 50, 'ny': 50, 'y0': -0.05, 'jtwist': 1}
 			if 'kt_grids_single_parameters' in nml:
 				del(nml['kt_grids_single_parameters'])
+			nml['fields_knobs']['dumb_response'] = True
+			nml['fields_knobs']['response_dir'] = "./response"
+			nml['init_g_knobs']['restart_dir'] = "./restart"
+			nml['gs2_diagnostic_knobs']['nc_sync_freq'] = 1
+			if nml['gs2_diagnostic_knobs']['nsave'] > 1000:
+				nml['gs2_diagnostic_knobs']['nsave'] = 10
+			if 'avail_cpu_time' not in nml['knobs'].keys():
+				h, m, s = self.inputs['sbatch']['time'].split(':')
+				nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
+			if 'margin_cpu_time' not in nml['knobs'].keys():
+				nml['knobs']['margin_cpu_time'] = 2400
+			
+		if self.inputs['non_linear'] == True:
+			if 'nonlinear_terms_knobs' not in nml.keys():
+				nml['nonlinear_terms_knobs'] = {}
+			nml['nonlinear_mode'] = 'on'
+			if 'cfl' not in nml['nonlinear_terms_knobs'].keys():
+				nml['nonlinear_terms_knobs']['cfl']	= 0.5
+			if self.inputs['split_nonlinear'] == True:
+				nml['nonlinear_terms_knobs']['split_nonlinear'] = True
+				if 'split_nonlinear_terms_knobs' not in nml.keys():
+					nml['split_nonlinear_terms_knobs'] = {'show_statistics': True}
 		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
@@ -251,6 +276,11 @@ class equilibrium(object):
 
 		nml['knobs']['wstar_units'] = False
 		
+
+
+		for dim_name, dim in self.inputs.single_parameters.items():
+			nml = dim.single_edit_nml(nml)
+
 		self.surface_namelists[psiN] = nml
 		
 		return deepcopy(self.surface_namelists[psiN])

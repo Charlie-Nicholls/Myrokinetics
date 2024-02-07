@@ -156,11 +156,11 @@ class myro_read(object):
 				return None
         		
 	def print_inputs(self):
-        	self.inputs.print_inputs()
+		self.inputs.print_inputs()
 
 	def print_info(self):
 		for key, val in self.inputs['info'].items():
-        		print(f"{key} = {val}")
+			print(f"{key} = {val}")
 
 	def _print_file(self, filetype = ''):
 		if self.files is None:
@@ -315,7 +315,7 @@ class myro_read(object):
 	def get_all_runs(self, excludeDimensions = []):
 		dim_order = [x for x in self.inputs.dim_order if x not in excludeDimensions]
 		if len(dim_order) == 0:
-		 	return [{}]
+			return [{}]
 		def loop(n,variables={},runs=[]):
 			dim = self.dimensions[dim_order[len(dim_order)-n]]
 			for val in dim.values:
