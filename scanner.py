@@ -471,20 +471,21 @@ wait""")
 			nml.write(f"{sub_dir}/{filename}.in", force=True)
 			self._ideal_input_files.add(f"{sub_dir}/{filename}.in")
 	
-	def get_all_runs(self):
+	def get_all_runs(self, excludeDimensions = []):
+		dim_order = [x for x in self.inputs.dim_order if x not in excludeDimensions]
+		if len(dim_order) == 0:
+			return [{}]
 		def loop(n,variables={},runs=[]):
-			if n == 0:
-				return [{}]
-			dim = self.dimensions[self.inputs.dim_order[len(self.dimensions)-n]]
+			dim = self.dimensions[dim_order[len(dim_order)-n]]
 			for val in dim.values:
 				variables[dim.name] = val
 				if n>1:
 					loop(n=n-1,variables=variables)
 				else:
 					runs.append(variables.copy())
-			if n == len(self.dimensions):
+			if n == len(dim_order):
 				return runs
-		return loop(n=len(self.dimensions))
+		return loop(n=len(dim_order))
 	
 	def get_all_ideal_runs(self):
 		runs = []
@@ -586,8 +587,9 @@ wait""")
 		
 		unfinished_gyro = []
 		finished_gyro = []
+		all_runs = self.get_all_runs() if self.inputs['grid_option'] == False else self.get_all_runs(excludeDimensions=['kx','ky'])
 		if gyro:
-			for run in self.get_all_runs():
+			for run in all_runs:
 				sub_dir = self.get_run_directory(run)
 				if self['system'] != 'archer2' and os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
 					finished_gyro.append(run)
@@ -697,20 +699,25 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
 			#if self.inputs['epar']:
 				#only = only | set({'epar'}) NOT CURRENTLY WORKING
+			if self.inputs['grid_option'] == 'box':
+				only = only | set({'phi2_by_kx', 'phi2_by_ky'})
+			if self.inputs['non_linear'] == True:
+				only = only | set({'heat_flux_tot'})
 			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
-			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob']
+			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx', 'phi2_by_ky']
 			gyro_keys = {}
 			for dim in self.dimensions.values():
 				gyro_keys[dim.name] = {}
 				for val in dim.values:
 					gyro_keys[dim.name][val] = set()
+			
 			if self.inputs['grid_option'] == 'box':
 				kxs = set()
 				kys = set()
 				gyro_keys['ky'] = {}
 				gyro_keys['kx'] = {}
 			
-			runs = self.get_all_runs()
+			runs = self.get_all_runs() if self.inputs['grid_option'] == False else self.get_all_runs(excludeDimensions=['kx','ky'])
 			for run in runs:
 				sub_dir = self.get_run_directory(run)
 				try:
@@ -770,7 +777,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 												gyro_data[run_key]['parity'] = -1
 											else:
 												gyro_data[run_key]['parity'] = 0
-									elif key in ['t','theta', 'gds2', 'jacob']:
+									elif key in ['t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']:
 										group_data[group_key][key] = key_data.tolist()
 									elif key in ['phi2']:
 										group_data[group_key]['phi2_avg'] = key_data.tolist()
