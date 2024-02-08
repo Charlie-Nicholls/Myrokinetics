@@ -541,7 +541,7 @@ wait""")
 			self._input_files.add(f"{sub_dir}/{filename}.in")
 	
 	def get_run_directory(self, run):
-		dims = self.inputs.dim_order self.inputs['grid_option'] == False else [x for x in self.inputs.dim_order if x not in ['kx','ky']]
+		dims = self.inputs.dim_order if self.inputs['grid_option'] == False else [x for x in self.inputs.dim_order if x not in ['kx','ky']]
 		sub_dir = f"{self.inputs['data_path']}/gyro_files/" + "/".join([f"{name} = {run[name]:.4g}" for name in dims])
 		return sub_dir
 	
