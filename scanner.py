@@ -283,7 +283,7 @@ def start_run(run):
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 					pyth.close()
 					jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
-					jobfile.write(f"""{sbatch_n}
+					jobfile.write(f"""{sbatch}
 
 {compile_modules}
 
