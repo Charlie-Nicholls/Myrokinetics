@@ -241,7 +241,7 @@ class equilibrium(object):
 		if self.inputs['non_linear'] == True:
 			if 'nonlinear_terms_knobs' not in nml.keys():
 				nml['nonlinear_terms_knobs'] = {}
-			nml['nonlinear_mode'] = 'on'
+			nml['nonlinear_terms_knobs']['nonlinear_mode'] = 'on'
 			if 'cfl' not in nml['nonlinear_terms_knobs'].keys():
 				nml['nonlinear_terms_knobs']['cfl']	= 0.5
 			if self.inputs['split_nonlinear'] == True:
@@ -276,8 +276,6 @@ class equilibrium(object):
 
 		nml['knobs']['wstar_units'] = False
 		
-
-
 		for dim_name, dim in self.inputs.single_parameters.items():
 			nml = dim.single_edit_nml(nml)
 

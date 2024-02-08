@@ -155,6 +155,7 @@ class myro_scan(object):
 	
 	def clear_jobs(self):
 		self._input_files = set()
+		self._ideal_input_files = set()
 	
 	def run_jobs(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
@@ -441,6 +442,7 @@ wait""")
 				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/ideal_{n}.job\"")
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
+		self._ideal_input_files = set()
 		if checkSetup:
 			if not self.check_setup():
 				return
@@ -504,6 +506,7 @@ wait""")
 		return runs
 				
 	def make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None, group_runs = None):
+		self._input_files = set()
 		if checkSetup:
 			if not self.check_setup():
 				return
