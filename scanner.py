@@ -525,7 +525,7 @@ wait""")
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
 			if self.inputs['grid_option'] == 'box':
-				os.makedirs(sub_dir+'reponse/',exist_ok=True)
+				os.makedirs(sub_dir+'response/',exist_ok=True)
 				os.makedirs(sub_dir+'restart/',exist_ok=True)
 			existing_inputs = [] 
 			for f in glob.glob(r'itteration_*.in'):
@@ -541,7 +541,8 @@ wait""")
 			self._input_files.add(f"{sub_dir}/{filename}.in")
 	
 	def get_run_directory(self, run):
-		sub_dir = f"{self.inputs['data_path']}/gyro_files/" + "/".join([f"{name} = {run[name]:.4g}" for name in self.inputs.dim_order])
+		dims = self.inputs.dim_order self.inputs['grid_option'] == False else [x for x in self.inputs.dim_order if x not in ['kx','ky']]
+		sub_dir = f"{self.inputs['data_path']}/gyro_files/" + "/".join([f"{name} = {run[name]:.4g}" for name in dims])
 		return sub_dir
 	
 	def get_ideal_run_directory(self, run):
