@@ -441,6 +441,30 @@ wait""")
 			for n in range(n_sim):
 				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/ideal_{n}.job\"")
 	
+	def restart_run(self, run = {}, itt = None):
+		import f90nml
+		if self.inputs['grid_option'] != 'box':
+			print("ERROR: restart_run only supported for grid_option = True")
+			return
+		if run not in self.get_all_runs(excludeDimensions['kx','ky']):
+			print("ERROR: run not found")
+			return
+		file_dir = self.get_run_directory(run)
+		if itt is None:
+			itt = self['itteration']
+			if not os.path.exists(f"{file_dir}/itteration_{itt}"):
+				print(f"ERROR: itteration {itt} not found, please specify itt")
+				return
+		nml = f90nml.read(f"{file_dir}/itteration_{itt}")
+		nml['knobs']['delt_option'] = 'check_restart'
+		h, m, s = self.inputs['sbatch']['time'].split(':')
+		nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
+		nml['knobs']['margin_cpu_time'] = 2400
+		nml['init_g_knobs']['ginit_option'] = 'many'
+		nml['gs2_diagnostics_knobs']['append_old'] = True
+		self._input_files.add(f"{file_dir}/itteration_{itt}")
+		self.run_jobs()
+	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
 		self._ideal_input_files = set()
 		if checkSetup:
@@ -543,7 +567,7 @@ wait""")
 	def get_run_directory(self, run):
 		dims = self.inputs.dim_order if self.inputs['grid_option'] == False else [x for x in self.inputs.dim_order if x not in ['kx','ky']]
 		sub_dir = f"{self.inputs['data_path']}/gyro_files/" + "/".join([f"{name} = {run[name]:.4g}" for name in dims])
-		return sub_dir
+		return sub_dirz	
 	
 	def get_ideal_run_directory(self, run):
 		if 'psin' not in run and 'psin' not in self.single_parameters:
