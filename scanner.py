@@ -283,7 +283,7 @@ def start_run(run):
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 					pyth.close()
 					jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
-					jobfile.write(f"""{sbatch}
+					jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
 
@@ -304,7 +304,7 @@ wait""")
 					compile_modules += f"\nexport OMP_NUM_THREADS={self.inputs['sbatch']['cpus-per-task']}"
 				ntasks = self.inputs['sbatch']['ntasks'] if 'ntasks' in self.inputs['sbatch'] else self.inputs['sbatch']['nodes']*self.inputs['sbatch']['ntasks-per-node']
 				jobfile = open(f"{self.inputs['data_path']}/submit_files/submit.job",'w')
-				jobfile.write(f"""{sbatch_n}
+				jobfile.write(f"""{sbatch}
 
 {compile_modules}
 
