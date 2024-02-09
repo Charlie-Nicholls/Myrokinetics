@@ -243,7 +243,7 @@ class scan_inputs(object):
 				print(f"ERROR: {key} has no type, valid types: {dim_lookup['_list']}")
 			
 			if self['non_linear'] == True:
-				self.inputs['kt_grids_knobs']['grid_option'] = 'box'
+				self.inputs['grid_option'] = 'box'
 	
 	def check_scan(self):
 		valid = True
