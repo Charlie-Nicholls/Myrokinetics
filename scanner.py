@@ -311,7 +311,10 @@ wait""")
 which gs2
 gs2 --build-config
 
-srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={self.inputs['sbatch']['cpus-per-task']} gs2 {list(self._input_files)[0]}""")
+srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={self.inputs['sbatch']['cpus-per-task']} gs2 {list(self._input_files)[0]}
+if test -f \"{list(self._input_files)[0][:-2]}.out.nc\"; then
+	touch \"{list(self._input_files)[0][:-2]}.fin\"
+fi""")
 				jobfile.close()
 				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/submit.job\"")
 
@@ -562,7 +565,7 @@ wait""")
 			else:
 				filename = f"itteration_{itt}"
 				
-			self._input_files.add(f"{sub_dir}/{filename}.in")
+			self._input_files.add(f"{sub_dir}{filename}.in")
 	
 	def get_run_directory(self, run):
 		dims = self.inputs.dim_order if self.inputs['grid_option'] == False else [x for x in self.inputs.dim_order if x not in ['kx','ky']]
