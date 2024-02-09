@@ -455,7 +455,7 @@ wait""")
 		file_dir = self.get_run_directory(run)
 		if itt is None:
 			itt = self['itteration']
-			if not os.path.exists(f"{file_dir}/itteration_{itt}"):
+			if not os.path.exists(f"{file_dir}/itteration_{itt}.out.nc"):
 				print(f"ERROR: itteration {itt} not found, please specify itt")
 				return
 		nml = f90nml.read(f"{file_dir}/itteration_{itt}")
