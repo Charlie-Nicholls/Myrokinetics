@@ -458,14 +458,14 @@ wait""")
 			if not os.path.exists(f"{file_dir}/itteration_{itt}.out.nc"):
 				print(f"ERROR: itteration {itt} not found, please specify itt")
 				return
-		nml = f90nml.read(f"{file_dir}/itteration_{itt}")
+		nml = f90nml.read(f"{file_dir}/itteration_{itt}.in")
 		nml['knobs']['delt_option'] = 'check_restart'
 		h, m, s = self.inputs['sbatch']['time'].split(':')
 		nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
 		nml['knobs']['margin_cpu_time'] = 2400
 		nml['init_g_knobs']['ginit_option'] = 'many'
 		nml['gs2_diagnostics_knobs']['append_old'] = True
-		self._input_files.add(f"{file_dir}/itteration_{itt}")
+		self._input_files.add(f"{file_dir}/itteration_{itt}.in")
 		self.run_jobs()
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
