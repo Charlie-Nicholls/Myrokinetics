@@ -248,7 +248,7 @@ class equilibrium(object):
 				nml['nonlinear_terms_knobs']['split_nonlinear'] = True
 				if 'split_nonlinear_terms_knobs' not in nml.keys():
 					nml['split_nonlinear_terms_knobs'] = {'show_statistics': True}
-			if 'nperiod' not in self.dimensions and 'nperiod' not in self.single_parameters:
+			if 'nperiod' not in self.inputs.dimensions and 'nperiod' not in self.inputs.single_parameters:
 					nml['theta_grid_parameters']['nperiod'] = 1
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
