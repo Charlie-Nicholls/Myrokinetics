@@ -449,7 +449,7 @@ wait""")
 		if self.inputs['grid_option'] != 'box':
 			print("ERROR: restart_run only supported for grid_option = True")
 			return
-		if run not in self.get_all_runs(excludeDimensions['kx','ky']):
+		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
@@ -570,7 +570,7 @@ wait""")
 	def get_run_directory(self, run):
 		dims = self.inputs.dim_order if self.inputs['grid_option'] == False else [x for x in self.inputs.dim_order if x not in ['kx','ky']]
 		sub_dir = f"{self.inputs['data_path']}/gyro_files/" + "/".join([f"{name} = {run[name]:.4g}" for name in dims])
-		return sub_dirz	
+		return sub_dir
 	
 	def get_ideal_run_directory(self, run):
 		if 'psin' not in run and 'psin' not in self.single_parameters:
