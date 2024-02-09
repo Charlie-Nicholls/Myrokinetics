@@ -15,7 +15,7 @@ def convert_box_to_myro(filename = None, run_data = None, directory = "./", inpu
 	if inputs['non_linear']:
 		only = only | set({'heat_flux_tot'})
 	data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
-	group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot']
+	group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx', 'phi2_by_ky']
 	
 	if run_data == None:
 		run_data = readnc(f"{directory}/{filename}.out.nc",only=only)
@@ -43,9 +43,6 @@ def convert_box_to_myro(filename = None, run_data = None, directory = "./", inpu
 		gyro_keys[dim.name] = {}
 		for val in dim.values:
 			gyro_keys[dim.name][val] = set()
-	
-	phi2_by_ky = [None]*len(run_data['ky'])
-	phi2_by_kx = [None]*len(run_data['kx'])
 
 	for yi, ky in enumerate(run_data['ky']):
 		for xi, kx in enumerate(run_data['kx']):
@@ -60,52 +57,53 @@ def convert_box_to_myro(filename = None, run_data = None, directory = "./", inpu
 			for key in data_keys:
 				gyro_data[run_key][key] = None
 
-			phi2_by_kx[dimensions['kx'].values.index(kx)] = run_data['phi2_by_kx'][:,xi].tolist()
-			phi2_by_ky[dimensions['ky'].values.index(ky)] = run_data['phi2_by_ky'][:,yi].tolist()
-
 			for key in only:
-				key_data = run_data[key]				
-				if key == 'omega':
-					om = key_data[-1,yi,xi]
-					if type(om) != complex:
-						om = key_data[-2,yi,xi]
-					gyro_data[run_key]['growth_rate'] = imag(om)
-					gyro_data[run_key]['mode_frequency'] = real(om)
-					gyro_data[run_key]['omega'] = key_data[:,yi,xi].tolist()
-				elif key in ['phi','apar','bpar']:
-					gyro_data[run_key][key] = key_data[yi,xi,:].tolist()
-					if key == 'phi':
-						try:
-							symsum = sum(abs(key_data[yi,xi,:] + key_data[yi,xi,::-1]))/sum(abs(key_data[yi,xi,:]))
-						except:
-							symsum = 1
-						if  symsum > 1.5:
-							gyro_data[run_key]['parity'] = 1
-						elif symsum < 0.5:
-							gyro_data[run_key]['parity'] = -1
-						else:
-							gyro_data[run_key]['parity'] = 0
+				try:
+					key_data = run_data[key]				
+					if key == 'omega':
+						om = key_data[-1,yi,xi]
+						if type(om) != complex:
+							om = key_data[-2,yi,xi]
+						gyro_data[run_key]['growth_rate'] = imag(om)
+						gyro_data[run_key]['mode_frequency'] = real(om)
+						gyro_data[run_key]['omega'] = key_data[:,yi,xi].tolist()
+					elif key in ['phi','apar','bpar']:
+						gyro_data[run_key][key] = key_data[yi,xi,:].tolist()
+						if key == 'phi':
+							try:
+								symsum = sum(abs(key_data[yi,xi,:] + key_data[yi,xi,::-1]))/sum(abs(key_data[yi,xi,:]))
+							except:
+								symsum = 1
+							if  symsum > 1.5:
+								gyro_data[run_key]['parity'] = 1
+							elif symsum < 0.5:
+								gyro_data[run_key]['parity'] = -1
+							else:
+								gyro_data[run_key]['parity'] = 0
+					
+					elif key in ['ql_metric_by_mode']:
+						gyro_data[run_key]['ql_metric'] = key_data[-1,yi,xi]
+					elif key in ['phi2_by_mode']:
+						gyro_data[run_key]['phi2'] = key_data[:,yi,xi]
+					elif key in ['t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx', 'phi2_by_ky']:
+						group_data[group_key][key] = key_data.tolist()
+					elif key in ['phi2']:
+						group_data[group_key]['phi2_avg'] = key_data.tolist()
+					
+					'''
+					elif key in ['epar']:
+						epar_path = f"{sub_dir}/itteration_{itt}.epar"
 				
-				elif key in ['ql_metric_by_mode']:
-					gyro_data[run_key]['ql_metric'] = key_data[-1,yi,xi]
-				elif key in ['phi2_by_mode']:
-					gyro_data[run_key]['phi2'] = key_data[:,yi,xi]
-				elif key in ['t','theta', 'gds2', 'jacob','heat_flux_tot']:
-					group_data[group_key][key] = key_data.tolist()
-				elif key in ['phi2']:
-					group_data[group_key]['phi2_avg'] = key_data.tolist()
-				'''
-				elif key in ['epar']:
-					epar_path = f"{sub_dir}/itteration_{itt}.epar"
-			
-					bpar = key_data['bpar'][yi,xi,:]
-					epar_data = loadtxt(epar_path)
-					epar = []
-					for l in range(len(epar_data[:,3])):
-						epar.append(complex(epar_data[l,3],epar_data[l,4]))
-					epar = array(epar)
-					gyro_data[run_key]['epar'] = epar
-				'''
+						bpar = key_data['bpar'][yi,xi,:]
+						epar_data = loadtxt(epar_path)
+						epar = []
+						for l in range(len(epar_data[:,3])):
+							epar.append(complex(epar_data[l,3],epar_data[l,4]))
+						epar = array(epar)
+						gyro_data[run_key]['epar'] = epar
+					''' 
+				except:
+						pass
 
 		data = {'gyro': gyro_data,
 		'ideal': None,
@@ -113,8 +111,6 @@ def convert_box_to_myro(filename = None, run_data = None, directory = "./", inpu
 		'equilibrium': equilibrium,
 		'_gyro_keys': gyro_keys,
 		'_ideal_keys': None,
-		'_phi2_by_kx': phi2_by_kx,
-		'_phi2_by_ky': phi2_by_ky,
 		}
 	
 	file_lines = None

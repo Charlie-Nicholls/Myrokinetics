@@ -20,7 +20,7 @@ class plot_nl_phi2:
 		else:
 			print(f"ERROR: {key} not found")
 
-	def open_plot(self, val = None):
+	def open_plot(self):
 		self.fig, self.ax = subplots(figsize=(8.8,5.8))
 		if 'ky' in self['y_axis_type']:
 			var = 'ky'
@@ -47,7 +47,7 @@ class plot_nl_phi2:
 		elif 'kx' in self['y_axis_type']:
 			var = 'kx'
 		self.x = self.reader('t',self['run'])
-		phi2 = self.reader.data[f"_{self['y_axis_type']}"]
+		phi2 = self.reader(self['y_axis_type'],self['run'])
 		if self['plot_type'] == 'single':
 			sl_id = self.slider.val
 			sl = self.reader[var][sl_id]
@@ -171,7 +171,7 @@ class plot_zonality:
 	def draw_fig(self):
 		self.ax.cla()
 		self.x = self.reader('t',self['run'])
-		self.y = self.reader.data['_phi2_by_ky'][0]/np_sum(self.reader.data['_phi2_by_ky'][1:],axis=0)
+		self.y = self.reader('phi2_by_ky',self['run'])[0]/np_sum(self.reader('phi2_by_ky',self['run'])[1:],axis=0)
 		self.y = [y for yi, y in enumerate(self.y) if self.x[yi] not in [None,nan]]
 		self.x = [x for x in self.x if x not in [None,nan]]
 		self.ax.plot(self.x,self.y)

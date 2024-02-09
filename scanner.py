@@ -463,6 +463,7 @@ wait""")
 		h, m, s = self.inputs['sbatch']['time'].split(':')
 		nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
 		nml['knobs']['margin_cpu_time'] = 2400
+		nml['knobs']['delt_option'] = 'check_restart'
 		nml['init_g_knobs']['ginit_option'] = 'many'
 		nml['gs2_diagnostics_knobs']['append_old'] = True
 		self._input_files.add(f"{file_dir}/itteration_{itt}.in")
