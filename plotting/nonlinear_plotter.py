@@ -47,7 +47,7 @@ class plot_nl_phi2:
 		elif 'kx' in self['y_axis_type']:
 			var = 'kx'
 		self.x = self.reader('t',self['run'])
-		phi2 = self.reader(self['y_axis_type'],self['run'])
+		phi2 = array(self.reader(self['y_axis_type'],self['run'])).T
 		if self['plot_type'] == 'single':
 			sl_id = self.slider.val
 			sl = self.reader[var][sl_id]
