@@ -188,9 +188,8 @@ class equilibrium(object):
 		self.pyro.update_gk_code()
 		nml = deepcopy(self.pyro.gk_input.data)
 
-		for dim_name, dim in self.inputs.single_parameters.items():
+		for dim in self.inputs.single_parameters.values():
 			nml = dim.single_edit_nml(nml)
-
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
         
 		nml['theta_grid_parameters']['qinp'] = abs(nml['theta_grid_parameters']['qinp'])
@@ -249,7 +248,8 @@ class equilibrium(object):
 				nml['nonlinear_terms_knobs']['split_nonlinear'] = True
 				if 'split_nonlinear_terms_knobs' not in nml.keys():
 					nml['split_nonlinear_terms_knobs'] = {'show_statistics': True}
-		
+			if 'nperiod' not in self.dimensions and 'nperiod' not in self.single_parameters:
+					nml['theta_grid_parameters']['nperiod'] = 1
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
 			nml['theta_grid_eik_knobs']['local_eq'] = True
