@@ -466,6 +466,7 @@ wait""")
 		nml['knobs']['delt_option'] = 'check_restart'
 		nml['init_g_knobs']['ginit_option'] = 'many'
 		nml['gs2_diagnostics_knobs']['append_old'] = True
+		nml.write(f"{file_dir}/itteration_{itt}.in",force=True)
 		self._input_files.add(f"{file_dir}/itteration_{itt}.in")
 		self.run_jobs()
 	
