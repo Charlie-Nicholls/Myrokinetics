@@ -201,10 +201,12 @@ class equilibrium(object):
 			nml[spec]['tprim'] = nml[spec]['tprim']*mul
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		
-		#Set bakdif to 0 for Electormagnetic Runs as a default
-		nml['dist_fn_species_knobs_1']['bakdif'] = 0
-		nml['dist_fn_species_knobs_2']['bakdif'] = 0
-		nml['dist_fn_species_knobs_3']['bakdif'] = 0
+		
+		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+			#Set bakdif to 0 for Electormagnetic Runs as a default
+			nml[spec]['bakdif'] = 0
+			#Force Uprim to 0, reccommendation by David
+			nml[spec]['uprim'] = 0
 		
 		nml['dist_fn_knobs']['g_exb'] = 0
 		nml['theta_grid_eik_knobs']['equal_arc'] = False
