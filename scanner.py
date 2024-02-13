@@ -564,8 +564,6 @@ wait""")
 			if itt < self.inputs['itteration']:
 				filename = f"itteration_{self.inputs['itteration']}"
 				subnml = self.eqbm.get_gyro_input(run = run)
-				subnml['init_g_knobs']['restart_dir'] = sub_dir+'restart/'
-				subnml['fields_knobs']['response_dir'] = sub_dir+'response/'
 				subnml.write(f"{sub_dir}/{filename}.in", force=True)
 			else:
 				filename = f"itteration_{itt}"

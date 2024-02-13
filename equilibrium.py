@@ -226,8 +226,8 @@ class equilibrium(object):
 			if 'kt_grids_single_parameters' in nml:
 				del(nml['kt_grids_single_parameters'])
 			nml['fields_knobs']['dump_response'] = True
-			nml['fields_knobs']['response_dir'] = "./response"
-			nml['init_g_knobs']['restart_dir'] = "./restart"
+			nml['fields_knobs']['response_dir'] = "response"
+			nml['init_g_knobs']['restart_dir'] = "restart"
 			nml['gs2_diagnostics_knobs']['save_for_restart'] = True
 			nml['gs2_diagnostics_knobs']['nc_sync_freq'] = 1
 			if nml['gs2_diagnostics_knobs']['nsave'] > 1000:
