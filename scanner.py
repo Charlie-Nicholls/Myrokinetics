@@ -555,8 +555,8 @@ wait""")
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
 			if self.inputs['grid_option'] == 'box':
-				os.makedirs(sub_dir+'response/',exist_ok=True)
-				os.makedirs(sub_dir+'restart/',exist_ok=True)
+				os.makedirs(sub_dir+'/response',exist_ok=True)
+				os.makedirs(sub_dir+'/restart',exist_ok=True)
 			existing_inputs = [] 
 			for f in glob.glob(r'itteration_*.in'):
 				existing_inputs.append([x for x in f if x.isdigit()])
