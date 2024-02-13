@@ -207,6 +207,13 @@ class equilibrium(object):
 			nml[spec]['bakdif'] = 0
 			#Force Uprim to 0, reccommendation by David
 			nml[spec]['uprim'] = 0
+			#TEMPORARY UNTIL I UPDATE GS2
+			if 'bakdif' in nml[spec].keys():
+				del(nml[spec]['bakdif'])
+		#TEMPORARY UNTIL I UPDATE GS2
+		if 'normalisations_knobs' in nml.keys():
+			if 'qref' in nml['normalisations_knobs'].keys():
+				del(nml['normalisations_knobs']['qref'])
 		
 		nml['dist_fn_knobs']['g_exb'] = 0
 		nml['theta_grid_eik_knobs']['equal_arc'] = False
