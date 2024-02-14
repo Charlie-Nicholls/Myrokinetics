@@ -948,7 +948,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				print("ERROR: submit file not found")
 		slines = sfile.readlines()
 		for line in slines:
-			print(line)
+			print(line, end='')
 
 	def print_ideal_submit_file(self, n = 0):
 		if os.path.exists(f"{self['data_path']}/submit_files/ideal_0.job"):
@@ -966,7 +966,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			print("ERROR: slurm file not found")
 		slines = sfile.readlines()
 		for line in slines:
-			print(line)
+			print(line, end='')
 
 	'''
 	def rerun(self, runs = None, nml = None, directory = None, group_runs = None):
