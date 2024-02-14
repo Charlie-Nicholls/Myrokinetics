@@ -21,8 +21,8 @@ possible_keys = {
 	'gyro': ['gyro'],
 	'system': ['system','sys','server'],
 	'grid_option': ['grid_option', 'grid'],
-	'non_linear': ['non_linear','nl','nonlin','non_lin','nonlinear'],
-	'split_nonlinear' : ['split_non_linear','split_nl','split_nonlin','split_non_lin','split_nonlinear'],
+	'nonlinear': ['nonlinear','non_linear','nl','nonlin','non_lin'],
+	'split_nonlinear' : ['split_nonlinear','split_non_linear','split_nl','split_nonlin','split_non_lin'],
 	'fixed_delt': ['fixed_delt','delt','delt','fix_delt'],
 	'epar': ['epar','write_epar'],
 	'num_shear_ideal': ['num_shat_ideal','n_shat_ideal','shat_ideal_num','shat_ideal_n','ideal_shat_n','idea_shat_num','num_shear_ideal','n_shear_ideal','shear_ideal_num','shear_ideal_n','ideal_shear_n','idea_shear_num'],
@@ -65,7 +65,7 @@ default_inputs = {'files': {
 	'miller': False,
 	'system': 'viking',
 	'grid_option': 'single',
-	'non_linear': False,
+	'nonlinear': False,
 	'split_nonlinear': True,
 	'fixed_delt': False,
 	'epar': False,
@@ -244,7 +244,7 @@ class scan_inputs(object):
 			if not self.inputs[key]['type']:
 				print(f"ERROR: {key} has no type, valid types: {dim_lookup['_list']}")
 			
-			if self['non_linear'] == True:
+			if self['nonlinear'] == True:
 				self.inputs['knobs']['grid_option'] = 'box'
 	
 	def check_scan(self):
@@ -313,11 +313,11 @@ class scan_inputs(object):
 			if 'shear' not in self.dimensions:
 				print("ERROR: shear dimension must be given for ideal scan")
 				valid = False
-			if self['non_linear'] == True:
+			if self['nonlinear'] == True:
 					print("ERROR: cannot run nonlinear and ideal simultaneously")
 					valid = False
 			
-		if self['non_linear'] == True and len(self.dimensions) > 0:
+		if self['nonlinear'] == True and len(self.dimensions) > 0:
 			print("ERROR: dimensional scans not currently allowed for Nonlinear runs")
 			valid = False
 
