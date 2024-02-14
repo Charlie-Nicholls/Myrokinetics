@@ -19,7 +19,9 @@ class myro_scan(object):
 		self.path = directory
 		self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
 		self._input_files = set()
+		self._jobs = set()
 		self._ideal_input_files = set()
+		self._ideal_jobs = set()
 		self.load_inputs(input_file = input_file, directory = directory)
 		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
 	
@@ -87,13 +89,16 @@ class myro_scan(object):
 		
 		if self['gyro']:
 			self.make_gyro_files(directory = run_path, group_runs = group_runs)
-			self.run_jobs(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
+			self.make_job_files(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
+			self.run_jobs()
 		if self['ideal']:
 			self.make_ideal_files(directory = run_path)
+			self.make_ideal_job_files(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
 			if self['gyro']:
 				print("Gyro scan currently running, use run_ideal_jobs when completed to run ideal scan")
 			else:
-				self.run_ideal_jobs(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
+				self.run_ideal_jobs()
+
 	
 	def check_setup(self, ideal = None, gyro = None):
 		if not self.inputs.check_scan():
@@ -157,7 +162,7 @@ class myro_scan(object):
 		self._input_files = set()
 		self._ideal_input_files = set()
 	
-	def run_jobs(self, n_jobs = None, n_par = None, n_sim = None):
+	def make_job_files(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
 			compile_modules = systems[self['system']]['modules']
 			sbatch = "#!/bin/bash"
@@ -238,7 +243,7 @@ fi""")
 				for n in range(n_sim, n_par):
 					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")\n")
 			submit.close()
-			os.system(f"sbatch {self.inputs['data_path']}/submit_files/submit.job")
+			self._jobs.add(f"{self.inputs['data_path']}/submit_files/submit.job")
 
 		if self['system'] == 'archer2':
 			if self.inputs['non_linear'] == False:
@@ -297,7 +302,7 @@ wait""")
 						jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
 					jobfile.close()
 				for n in range(n_sim):
-					os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\"")
+					self._jobs.add(f"{self.inputs['data_path']}/submit_files/gyro_{n}.job")
 			if self.inputs['non_linear'] == True:
 				os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
 				if self.inputs['sbatch']['cpus-per-task'] > 1:
@@ -316,9 +321,9 @@ if test -f \"{list(self._input_files)[0][:-3]}.out.nc\"; then
 	touch \"{list(self._input_files)[0][:-3]}.fin\"
 fi""")
 				jobfile.close()
-				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/submit.job\"")
+				self._jobs.add(f"{self.inputs['data_path']}/submit_files/submit.job")
 
-	def run_ideal_jobs(self, n_jobs = None, n_par = None, n_sim = None):
+	def make_ideal_job_files(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
 			compile_modules = systems[self['system']]['modules']
 			sbatch = "#!/bin/bash"
@@ -384,7 +389,7 @@ python {self.inputs['data_path']}/submit_files/{filename}.py $SLURM_ARRAY_TASK_I
 					#jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/ideal_{n+n_sim}.job")
 				jobfile.close()
 			for n in range(n_sim):
-				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/ideal_{n}.job\"")	
+				self._ideal_jobs.add(f"{self.inputs['data_path']}/submit_files/ideal_{n}.job")	
 		if self['system'] == 'archer2':
 			if n_par is None:
 				n_par = 1
@@ -442,7 +447,17 @@ wait""")
 					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/ideal_{n+n_sim}.job")
 				jobfile.close()
 			for n in range(n_sim):
-				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/ideal_{n}.job\"")
+				self._ideal_jobs.add(f"{self.inputs['data_path']}/submit_files/ideal_{n}.job")
+	
+	def run_jobs(self):
+		for job in self._jobs:
+			os.system(f"sbatch {job}")
+		self._jobs = set()
+	
+	def run_ideal_jobs(self):
+		for job in self._ideal_jobs:
+			os.system(f"sbatch {job}")
+		self._ideal_jobs = set()
 	
 	def restart_run(self, run = {}, itt = None):
 		import f90nml
@@ -906,6 +921,53 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
 	
+	def print_run_input(self, run = {}, itt = None):
+		import f90nml
+		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
+			print("ERROR: run not found")
+			return
+		file_dir = self.get_run_directory(run)
+		if itt is None:
+			itt = self['itteration']
+			if not os.path.exists(f"{file_dir}/itteration_{itt}.out.nc"):
+				print(f"ERROR: itteration {itt} not found, please specify itt")
+				return
+		nml = f90nml.read(f"{file_dir}/itteration_{itt}.in")
+		print(nml)
+	
+	def print_submit_file(self, n = 0):
+		if self.inputs['nonlinear'] == True:
+			if os.path.exists(f"{self['data_path']}/submit_files/submit.job"):
+				sfile = open(f"{self['data_path']}/submit_files/submit.job")
+			else:
+				print("ERROR: submit file not found")
+		else:
+			if os.path.exists(f"{self['data_path']}/submit_files/gyro_{n}}.job"):
+				sfile = open(f"{self['data_path']}/submit_files/gyro_{n}.job")
+			else:
+				print("ERROR: submit file not found")
+		slines = sfile.readlines()
+		for line in slines:
+			print(line)
+
+	def print_ideal_submit_file(self, n = 0):
+		if os.path.exists(f"{self['data_path']}/submit_files/ideal_0.job"):
+			sfile = open(f"{self['data_path']}/submit_files/ideal_0.job")
+		else:
+			print("ERROR: submit file not found")
+		slines = sfile.readlines()
+		for line in slines:
+			print(line)
+	
+	def print_slurm(self):
+		if os.path.exists(f"{self['data_path']}/submit_files/{self.inputs['sbatch']['output']}"):
+			sfile = open(f"{self['data_path']}/submit_files/{self.inputs['sbatch']['output']}")
+		else:
+			print("ERROR: slurm file not found")
+		slines = sfile.readlines()
+		for line in slines:
+			print(line)
+
 	'''
 	def rerun(self, runs = None, nml = None, directory = None, group_runs = None):
 		if runs is None:
