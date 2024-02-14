@@ -35,31 +35,7 @@
 /
 
 &dimension_1
-    type = 'psiN'
-    values = ,
-    min = ,
-    max = ,
-    num = ,
-/
-
-&dimension_2
-    type = 'beta_prime'
-    values = ,
-    min = ,
-    max = ,
-    num = ,
-/
-
-&dimension_3
-    type = 'shear'
-    values = ,
-    min = ,
-    max = ,
-    num = ,
-/
-
-&dimension_4
-    type = 'ky'
+    type = ''
     values = ,
     min = ,
     max = ,

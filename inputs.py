@@ -34,6 +34,7 @@ possible_keys = {
 	'run_date': ['run_date','date','time','datetime','timedate'],
 	'data_path': ['data_path'],
 	'itteration': ['itteration','itt'],
+	'description': ['description','desc','notes'],
 	},
 	'dimension_n': {
 	'type': ['type'],
@@ -77,6 +78,7 @@ default_inputs = {'files': {
 	'run_date': None,
 	'data_path': None,
 	'itteration': 0,
+	'description': '',
 	},
 	'single_parameters': {},
 	}
@@ -428,7 +430,7 @@ class scan_inputs(object):
 		if doPrint:
 			print(f"Created {filename} at {directory}")
 			
-	def write_default_input(self, filename = None, directory = "./", doPrint = True):
+	def write_blank_input(self, filename = None, directory = "./", doPrint = True):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
