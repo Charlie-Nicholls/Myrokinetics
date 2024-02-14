@@ -942,7 +942,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			else:
 				print("ERROR: submit file not found")
 		else:
-			if os.path.exists(f"{self['data_path']}/submit_files/gyro_{n}}.job"):
+			if os.path.exists(f"{self['data_path']}/submit_files/gyro_{n}.job"):
 				sfile = open(f"{self['data_path']}/submit_files/gyro_{n}.job")
 			else:
 				print("ERROR: submit file not found")
