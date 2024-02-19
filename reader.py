@@ -306,7 +306,7 @@ class myro_read(object):
 	def _verify_run(self):
 		if not self['Gyro']:
 			return
-		if self.inputs['non_linear'] == True:
+		if self.inputs['nonlinear'] == True:
 				return
 		self.verify = verify_scan(reader = self)
 		self.data['gyro'] = self.verify.scan
@@ -627,13 +627,13 @@ class myro_read(object):
 		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
 
 	def plot_hflux(self, settings = {}):
-		if not self['non_linear']:
+		if not self['nonlinear']:
 			print("ERROR: Only available for non-linear runs")
 			return
 		return Plotters['NL_Hflux'](reader = self, settings = settings)
 	
 	def plot_zonality(self, settings = {}):
-		if not self['non_linear']:
+		if not self['nonlinear']:
 			print("ERROR: Only available for non-linear runs")
 			return
 		return Plotters['NL_Zonality'](reader = self, settings = settings)

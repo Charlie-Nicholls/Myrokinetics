@@ -173,11 +173,29 @@ class scan_inputs(object):
 			for skey in defaults[key]:
 				if skey not in self.inputs[key]:
 					self.inputs[key][skey] = defaults[key][skey]
+					
+		
 		for key in ['knobs','files','info']:
-			for skey in self.inputs[key]:
-				if skey not in possible_keys[key]:
+			toDelete = []
+			toReplace = []
+			for skey in self.inputs[key].keys():
+				if skey not in default_inputs[key].keys():
+					toDelete.append(skey)
+					found = False
+					for pkey in possible_keys[key].keys():
+						if skey in possible_keys[key][pkey]:
+							toReplace.append(pkey)
+							found = True
+					if not found:
+						toReplace.append(None)
+						
+			for old_key, new_key in zip(toDelete,toReplace):
+				if new_key is not None:
+					self.inputs[key][new_key] = deepcopy(self.inputs[key][old_key])
+				else:
 					print(f"ERROR: {skey} is not a valid {key} input")
-					del(self.inputs[key][skey])
+				del(self.inputs[key][old_key])
+			
 		if self.inputs['files']['input_name'] is None and self.input_name:
 			self.inputs['files']['input_name'] = self.input_name
 		if self.inputs['files']['input_path'] is None and self.inputs['files']['input_name']:
