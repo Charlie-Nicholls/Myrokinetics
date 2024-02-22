@@ -7,7 +7,7 @@ from numpy import sum as np_sum
 class plot_nl_phi2:
 	def __init__(self, reader, settings = {}):
 		self.reader = reader
-		self.settings = {'y_axis_type': 'phi2_by_ky', 'plot_type': 'mesh'}
+		self.settings = {'y_axis_type': 'phi2_by_ky', 'plot_type': 'group'}
 		self.settings['run'] = self.reader.get_all_runs()[0]
 		for key, val in settings.items():
 			if key in self.settings:
