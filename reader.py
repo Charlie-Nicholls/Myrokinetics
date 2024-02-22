@@ -535,19 +535,19 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} {var}"
 		return Plotters['Diag'](reader = self, settings = settings, sliders = sliders)
 	
-	def plot_box_phi(self, settings = {}, init = None):
-		return self._plot_box_diag(var = 'phi', init = init, settings = settings)
+	def plot_box_phi(self, settings = {}, init = None, sliders = None):
+		return self._plot_box_diag(var = 'phi', init = init, settings = settings, sliders = sliders)
 	
-	def plot_box_apar(self, settings = {}, init = None):
-		return self._plot_box_diag(var = 'apar', init = init, settings = settings)
+	def plot_box_apar(self, settings = {}, init = None, sliders = None):
+		return self._plot_box_diag(var = 'apar', init = init, settings = settings, sliders = sliders)
 		
-	def plot_box_bpar(self, settings = {}, init = None):
-		return self._plot_box_diag(var = 'bpar', init = init, settings = settings)
+	def plot_box_bpar(self, settings = {}, init = None, sliders = None):
+		return self._plot_box_diag(var = 'bpar', init = init, settings = settings, sliders = sliders)
 		
-	def plot_box_epar(self, settings = {}, init = None):
-		return self._plot_box_diag(var = 'epar', init = init, settings = settings)
+	def plot_box_epar(self, settings = {}, init = None, sliders = None):
+		return self._plot_box_diag(var = 'epar', init = init, settings = settings, sliders = sliders)
 	
-	def _plot_box_diag(self, settings = {}, init = None, var = None):
+	def _plot_box_diag(self, settings = {}, init = None, var = None, sliders = None):
 		if self.inputs['grid_option'] != 'box':
 			print("ERROR: box plot only used for flux tube runs [inputs -> grid_option = box]")
 			return
@@ -563,12 +563,12 @@ class myro_read(object):
 			settings['var'] = var
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
-		return Plotters['Box_Diag'](reader = self, settings = settings)
+		return Plotters['Box_Diag'](reader = self, settings = settings, sliders = sliders)
 	
 	#def plot_epar_scan(self):
 		#Plotters['Epar'](data = self.run['data'], inputs = self.inputs)
 	
-	def plot_theta(self, settings = {}, init = None, var = None, periods = None, polar = None):
+	def plot_theta(self, settings = {}, init = None, var = None, periods = None, polar = None, sliders = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -585,7 +585,7 @@ class myro_read(object):
 			settings['polar'] = polar
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
-		return Plotters['Theta'](reader = self, settings = settings)
+		return Plotters['Theta'](reader = self, settings = settings, sliders = sliders)
 		
 	def plot_slice(self,  settings = {}, x_dim = None, y_dim = None, init = None, limit = None, sliders = None):
 		if y_dim in ['quasilinear','ql_norm'] and self['ql'] is None:
