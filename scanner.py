@@ -484,6 +484,7 @@ wait""")
 		nml['gs2_diagnostics_knobs']['append_old'] = True
 		nml.write(f"{file_dir}/itteration_{itt}.in",force=True)
 		self._input_files.add(f"{file_dir}/itteration_{itt}.in")
+		self.make_job_files()
 		self.run_jobs()
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
