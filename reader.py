@@ -611,14 +611,15 @@ class myro_read(object):
 			return
 		return Plotters['NL_Phi2'](reader = self, settings = settings)
 
-	def plot_phi2_by_kx(self, settings = {}):
+	def plot_phi2_by_kx(self, plot_type = 'group', settings = {}):
 		if self['grid_option'] != 'box':
 			print("ERROR: Only available for grid_option = box")
 			return
+		settings['plot_type'] = plot_type
 		settings['y_axis_type'] = 'phi2_by_kx'
 		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
 	
-	def plot_phi2_by_ky(self, plot_type = 'mesh', settings = {}):
+	def plot_phi2_by_ky(self, plot_type = 'group', settings = {}):
 		if self['grid_option'] != 'box':
 			print("ERROR: Only available for grid_option = box")
 			return
