@@ -929,7 +929,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		file_dir = self.get_run_directory(run)
 		if itt is None:
 			itt = self['itteration']
-			if not os.path.exists(f"{file_dir}/itteration_{itt}.out.nc"):
+			if not os.path.exists(f"{file_dir}/itteration_{itt}.in"):
 				print(f"ERROR: itteration {itt} not found, please specify itt")
 				return
 		nml = f90nml.read(f"{file_dir}/itteration_{itt}.in")
