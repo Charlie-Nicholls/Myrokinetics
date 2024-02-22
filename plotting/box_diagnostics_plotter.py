@@ -174,9 +174,11 @@ class plot_box_diag(object):
 				run = deepcopy(self['run'])
 				run['kx'] = self.reader.dimensions['kx'].values[kxid]
 				field += self.reader(self['var'],run)
-				theta += list(2*pi*i+array(self.reader('theta',run)))
-			theta = list(array(theta)-(len(kx_list)-1)*pi)
-			
+				th = array(self.reader('theta',run))
+				th_width = max(th)
+				th_new = th_width + th
+				theta += list(max(th_new)*(i+1) + th_new)
+			theta = list(array(theta)-max(theta)/2)
 			
 			if self['visible']['title']:
 				title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.2g} | " for x in [y for y in self.reader.inputs.dim_order if y != 'kx']])
@@ -214,10 +216,6 @@ class plot_box_diag(object):
 				norm = 1
 			field_norm = array(field)/norm
 			abs_line_style = 'solid'
-			if self['visible']['divider']:
-				vls = [min(theta) + 2*pi*(i+1) for i in range(len(kx_list)-1)]
-				ylim = self.ax.get_ylim()
-				self.ax.vlines(vls,ylim[0],ylim[1],color=self['colours']['divider'],linestyle='dotted')
 			if self['visible']['real']:
 				abs_line_style = 'dashed'
 				self.ax.plot(theta,real(field_norm),color=self['colours']['real'],label="real")
@@ -228,6 +226,10 @@ class plot_box_diag(object):
 				self.ax.plot(theta,[abs(x) for x in field_norm],color=self['colours']['absolute'],linestyle=abs_line_style,label="absolute")
 			if self['visible']['legend']:
 				self.ax.legend(loc=0)
+			if self['visible']['divider']:
+				vls = [min(theta) + 2*th_width*(i+1) for i in range(len(kx_list)-1)]
+				ylim = self.ax.get_ylim()
+				self.ax.vlines(vls,ylim[0],ylim[1],color=self['colours']['divider'],linestyle='dotted')
 				
 			self.ax.set_xlabel("Ballooning Angle",fontsize=self['fontsizes']['axis'])
 			self.ax.set_ylabel(ylabel,fontsize=self['fontsizes']['axis'])
