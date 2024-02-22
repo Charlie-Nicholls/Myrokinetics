@@ -27,6 +27,7 @@ possible_keys = {
 	'epar': ['epar','write_epar'],
 	'num_shear_ideal': ['num_shat_ideal','n_shat_ideal','shat_ideal_num','shat_ideal_n','ideal_shat_n','idea_shat_num','num_shear_ideal','n_shear_ideal','shear_ideal_num','shear_ideal_n','ideal_shear_n','idea_shear_num'],
 	'num_beta_ideal': ['num_beta_ideal','n_beta_ideal','beta_ideal_num','beta_ideal_n','ideal_beta_n','idea_beta_num','num_beta_prime_ideal','n_beta_prime_ideal','beta_prime_ideal_num','beta_prime_ideal_n','ideal_beta_prime_n','ideal_beta_prime_num'],
+	'force_zero_fs': ['force_zero_fs','force_zero_flow_shear','force_0_fs','force_0_flow_shear']
 	},
 	'info': {
 	'run_name': ['run_name','name'],
@@ -71,6 +72,7 @@ default_inputs = {'files': {
 	'epar': False,
 	'num_shear_ideal': None,
 	'num_beta_ideal': None,
+	'force_zero_fs': True,
 	},
 	'info': {
 	'run_name': None,

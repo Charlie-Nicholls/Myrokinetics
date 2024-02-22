@@ -218,7 +218,9 @@ class equilibrium(object):
 		if 'ngauss' in nml['le_grids_knobs'] and 'npassing' in nml['le_grids_knobs']:
 			del(nml['le_grids_knobs']['ngauss'])
 		
-		nml['dist_fn_knobs']['g_exb'] = 0
+		if self.inputs['force_zero_fs']:
+			nml['dist_fn_knobs']['g_exb'] = 0
+			
 		nml['theta_grid_eik_knobs']['equal_arc'] = False
 		nml['init_g_knobs']['ginit_option'] = 'random_sine'
 		
