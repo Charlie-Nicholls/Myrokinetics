@@ -968,6 +968,35 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		slines = sfile.readlines()
 		for line in slines:
 			print(line, end='')
+	
+	def run_ingen(self, run = {}, itt = None):
+		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
+			print("ERROR: run not found")
+			return
+		file_dir = self.get_run_directory(run)
+		if itt is None:
+			itt = self['itteration']
+			if not os.path.exists(f"{file_dir}/itteration_{itt}.in"):
+				print(f"ERROR: itteration {itt} not found, please specify itt")
+				return
+		os.system(f"ingen {file_dir}/itteration_{itt}.in")
+		self.print_ingen(run = run, itt = itt)
+	
+	def print_ingen(self, run = {}, itt = None):
+		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
+			print("ERROR: run not found")
+			return
+		file_dir = self.get_run_directory(run)
+		if itt is None:
+			itt = self['itteration']
+			if os.path.exists(f"{file_dir}/itteration_{itt}.report"):
+				sfile = open(f"{file_dir}/itteration_{itt}.report")
+			else:
+				print(f"ERROR: itteration {itt} report not found, please specify itt and make sure ingen has been run")
+				return
+		slines = sfile.readlines()
+		for line in slines:
+			print(line, end='')
 
 	'''
 	def rerun(self, runs = None, nml = None, directory = None, group_runs = None):
