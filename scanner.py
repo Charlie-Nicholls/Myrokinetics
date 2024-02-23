@@ -948,6 +948,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			else:
 				print("ERROR: submit file not found")
 		slines = sfile.readlines()
+		sfile.close()
 		for line in slines:
 			print(line, end='')
 
@@ -957,6 +958,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		else:
 			print("ERROR: submit file not found")
 		slines = sfile.readlines()
+		sfile.close()
 		for line in slines:
 			print(line)
 	
@@ -966,8 +968,10 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		else:
 			print("ERROR: slurm file not found")
 		slines = sfile.readlines()
+		sfile.close()
 		for line in slines:
 			print(line, end='')
+		
 	
 	def run_ingen(self, run = {}, itt = None):
 		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
@@ -995,6 +999,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				print(f"ERROR: itteration {itt} report not found, please specify itt and make sure ingen has been run")
 				return
 		slines = sfile.readlines()
+		sfile.close()
 		for line in slines:
 			print(line, end='')
 
