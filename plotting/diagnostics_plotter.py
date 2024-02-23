@@ -105,9 +105,10 @@ class plot_diag(object):
 				slider_defaults['dims'] = self.dims
 				self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=self.ax)
 		self.sliders.add_plot(self)
-				
-		self.set_normalisation(self['normalisation'])
-		
+						
+		self._tmin = 4
+		self._tmax = 6
+
 		ion()
 		show()
 		self.draw_fig()
@@ -276,9 +277,9 @@ class plot_diag(object):
 						self.ax.set_xlabel(f"Time ({len(t)} steps) | nt = {nt}")
 						self.ax.legend(loc=1,fontsize=self['fontsizes']['legend'])
 				
-				if self['var'] == 'phi2' and self.options.get_status()[0] and self.reader.inputs['non_lin']:
-					lt = int(4/(t[1]-t[0]))
-					ut = int(6/(t[1]-t[0])) + 1
+				if self['var'] == 'phi2' and self.options.get_status()[0] and self.reader.inputs['nonlin']:
+					lt = int(self._tmin/(t[1]-t[0]))
+					ut = int(self._tmax/(t[1]-t[0])) + 1
 					fit = polyfit(t[lt:ut],log(phi2[lt:ut]),1)
 					fitgr = fit[0]/2
 					pr = pearsonr(t[lt:ut],log(phi2[lt:ut]))

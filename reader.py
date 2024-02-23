@@ -617,6 +617,8 @@ class myro_read(object):
 			return
 		settings['plot_type'] = plot_type
 		settings['y_axis_type'] = 'phi2_by_kx'
+		if 'title' not in settings:
+			settings['suptitle'] = f"{self['run_name']}"
 		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
 	
 	def plot_phi2_by_ky(self, plot_type = 'group', settings = {}):
@@ -625,6 +627,8 @@ class myro_read(object):
 			return
 		settings['plot_type'] = plot_type
 		settings['y_axis_type'] = 'phi2_by_ky'
+		if 'title' not in settings:
+			settings['suptitle'] = f"{self['run_name']}"
 		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
 
 	def plot_hflux(self, settings = {}):
