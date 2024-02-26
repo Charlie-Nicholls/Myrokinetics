@@ -947,6 +947,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				sfile = open(f"{self['data_path']}/submit_files/gyro_{n}.job")
 			else:
 				print("ERROR: submit file not found")
+				return
 		slines = sfile.readlines()
 		sfile.close()
 		for line in slines:
@@ -957,6 +958,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			sfile = open(f"{self['data_path']}/submit_files/ideal_0.job")
 		else:
 			print("ERROR: submit file not found")
+			return
 		slines = sfile.readlines()
 		sfile.close()
 		for line in slines:
@@ -967,6 +969,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			sfile = open(f"{self['data_path']}/submit_files/{self.inputs['sbatch']['output']}")
 		else:
 			print("ERROR: slurm file not found")
+			return
 		slines = sfile.readlines()
 		sfile.close()
 		for line in slines:
