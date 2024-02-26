@@ -930,51 +930,54 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		file_dir = self.get_run_directory(run)
 		if itt is None:
 			itt = self['itteration']
-			if not os.path.exists(f"{file_dir}/itteration_{itt}.in"):
-				print(f"ERROR: itteration {itt} not found, please specify itt")
+			filepath = f"{file_dir}/itteration_{itt}.in"
+			if not os.path.exists(filepath):
+				print(f"ERROR: input \"{filepath}\" not found, please specify itt and ensure make files has been run")
 				return
-		nml = f90nml.read(f"{file_dir}/itteration_{itt}.in")
+		nml = f90nml.read(filepath)
 		print(nml)
 	
 	def print_submit_file(self, n = 0):
+		filepath = f"{self['data_path']}/submit_files/"
 		if self.inputs['nonlinear'] == True:
-			if os.path.exists(f"{self['data_path']}/submit_files/submit.job"):
-				sfile = open(f"{self['data_path']}/submit_files/submit.job")
-			else:
-				print("ERROR: submit file not found")
+			filepath += "submit.job"
 		else:
-			if os.path.exists(f"{self['data_path']}/submit_files/gyro_{n}.job"):
-				sfile = open(f"{self['data_path']}/submit_files/gyro_{n}.job")
-			else:
-				print("ERROR: submit file not found")
-				return
+			filepath += f"gyro_{n}.job"
+		if os.path.exists(filepath):
+			sfile = open(filepath)
+		else:
+			print(f"ERROR: submit file \"{filepath}\" not found")
+			return
 		slines = sfile.readlines()
 		sfile.close()
 		for line in slines:
 			print(line, end='')
 
 	def print_ideal_submit_file(self, n = 0):
-		if os.path.exists(f"{self['data_path']}/submit_files/ideal_0.job"):
-			sfile = open(f"{self['data_path']}/submit_files/ideal_0.job")
+		filepath = f"{self['data_path']}/submit_files/ideal_{n}.job"
+		if os.path.exists(filepath):
+			sfile = open(filepath)
 		else:
-			print("ERROR: submit file not found")
+			print(f"ERROR: submit file \"{filepath}\" not found")
 			return
 		slines = sfile.readlines()
 		sfile.close()
 		for line in slines:
 			print(line)
 	
-	def print_slurm(self):
-		if os.path.exists(f"{self['data_path']}/submit_files/{self.inputs['sbatch']['output']}"):
-			sfile = open(f"{self['data_path']}/submit_files/{self.inputs['sbatch']['output']}")
+	def print_slurm(self, n = 0):
+		filepath = f"{self['data_path']}/submit_files/{self.inputs['sbatch']['output']}"
+		if not self.inputs['nonlinear']:
+			filepath += f"_{n}"
+		if os.path.exists(filepath):
+			sfile = open(filepath)
 		else:
-			print("ERROR: slurm file not found")
+			print(f"ERROR: slurm file \"{filepath}\" not found")
 			return
 		slines = sfile.readlines()
 		sfile.close()
 		for line in slines:
 			print(line, end='')
-		
 	
 	def run_ingen(self, run = {}, itt = None):
 		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
@@ -983,10 +986,11 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		file_dir = self.get_run_directory(run)
 		if itt is None:
 			itt = self['itteration']
-			if not os.path.exists(f"{file_dir}/itteration_{itt}.in"):
-				print(f"ERROR: itteration {itt} not found, please specify itt")
+			filepath = f"{file_dir}/itteration_{itt}.in"
+			if not os.path.exists(filepath):
+				print(f"ERROR: input \"{filepath}\" not found")
 				return
-		os.system(f"ingen {file_dir}/itteration_{itt}.in")
+		os.system(filepath)
 		self.print_ingen(run = run, itt = itt)
 	
 	def print_ingen(self, run = {}, itt = None):
@@ -996,10 +1000,11 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		file_dir = self.get_run_directory(run)
 		if itt is None:
 			itt = self['itteration']
-			if os.path.exists(f"{file_dir}/itteration_{itt}.report"):
-				sfile = open(f"{file_dir}/itteration_{itt}.report")
+			filepath = f"{file_dir}/itteration_{itt}.report"
+			if os.path.exists(filepath):
+				sfile = open(filepath)
 			else:
-				print(f"ERROR: itteration {itt} report not found, please specify itt and make sure ingen has been run")
+				print(f"ERROR: report \"{filepath}\" not found, please specify itt and ensure ingen has been run")
 				return
 		slines = sfile.readlines()
 		sfile.close()
