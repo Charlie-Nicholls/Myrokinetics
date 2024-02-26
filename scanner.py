@@ -276,14 +276,17 @@ from time import sleep
 
 input_files = {input_lists[n]}
 
-def start_run(run):
-	os.system(f"echo \\\"Input: {{run}}\\\"")
-	os.system(f"srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
-	if os.path.exists(f\"{{run[:-3]}}.out.nc\"):
-		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
+def start_run(run, run_attempt = 1):
+	if run_attempt > 3:
+		os.system(f"echo \\\"Input: {{run}}\\\"")
+		os.system(f"srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
+		if os.path.exists(f\"{{run[:-3]}}.out.nc\"):
+			os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
+		else:
+			sleep(60)
+			start_run(run, run_attempt = run_attempt+1)
 	else:
-		sleep(60)
-		start_run(run)
+		print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 					pyth.close()
@@ -421,14 +424,17 @@ from time import sleep
 
 input_files = {input_lists[n]}
 
-def start_run(run):
-	os.system(f"echo \\\"Ideal Input: {{run}}\\\"")
-	os.system(f"srun --nodes=1 --ntasks=1 ideal_ball \\\"{{run}}\\\"")
-	if os.path.exists(f\"{{run[:-3]}}.ballstab_2d\"):
-		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
+def start_run(run, run_attempt = 1):
+	if run_attempt > 3:
+		os.system(f"echo \\\"Ideal Input: {{run}}\\\"")
+		os.system(f"srun --nodes=1 --ntasks=1 ideal_ball \\\"{{run}}\\\"")
+		if os.path.exists(f\"{{run[:-3]}}.ballstab_2d\"):
+			os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
+		else:
+			sleep(60)
+			start_run(run, run_attempt = run_attempt+1)
 	else:
-		sleep(60)
-		start_run(run)
+		print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
 Parallel(n_jobs={self.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(run) for run in input_files)""")
 				pyth.close()
