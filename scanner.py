@@ -1001,11 +1001,11 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		if itt is None:
 			itt = self['itteration']
 			filepath = f"{file_dir}/itteration_{itt}.report"
-			if os.path.exists(filepath):
-				sfile = open(filepath)
-			else:
-				print(f"ERROR: report \"{filepath}\" not found, please specify itt and ensure ingen has been run")
-				return
+		if os.path.exists(filepath):
+			sfile = open(filepath)
+		else:
+			print(f"ERROR: report \"{filepath}\" not found, please specify itt and ensure ingen has been run")
+			return
 		slines = sfile.readlines()
 		sfile.close()
 		for line in slines:
