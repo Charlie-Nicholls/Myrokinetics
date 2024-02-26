@@ -201,7 +201,6 @@ class equilibrium(object):
 			nml[spec]['tprim'] = nml[spec]['tprim']*mul
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		
-		
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 			#Set bakdif to 0 for Electormagnetic Runs as a default
 			nml[spec]['bakdif'] = 0
@@ -223,6 +222,7 @@ class equilibrium(object):
 			
 		nml['theta_grid_eik_knobs']['equal_arc'] = False
 		nml['init_g_knobs']['ginit_option'] = 'random_sine'
+		nml['dist_fn_knobs']['mach'] = 0
 		
 		if self.inputs['grid_option'] == 'single':
 			nml['kt_grids_knobs']['grid_option'] = 'single'
