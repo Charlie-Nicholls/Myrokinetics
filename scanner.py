@@ -1000,7 +1000,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		file_dir = self.get_run_directory(run)
 		if itt is None:
 			itt = self['itteration']
-			filepath = f"{file_dir}/itteration_{itt}.report"
+		filepath = f"{file_dir}/itteration_{itt}.report"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
