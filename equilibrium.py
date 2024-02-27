@@ -251,7 +251,9 @@ class equilibrium(object):
 				nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
 			if 'margin_cpu_time' not in nml['knobs'].keys():
 				nml['knobs']['margin_cpu_time'] = 2400
-			
+			if 'nperiod' not in self.inputs.dimensions and 'nperiod' not in self.inputs.single_parameters:
+					nml['theta_grid_parameters']['nperiod'] = 1
+						
 		if self.inputs['non_linear'] == True:
 			if 'nonlinear_terms_knobs' not in nml.keys():
 				nml['nonlinear_terms_knobs'] = {}
@@ -262,8 +264,7 @@ class equilibrium(object):
 				nml['nonlinear_terms_knobs']['split_nonlinear'] = True
 				if 'split_nonlinear_terms_knobs' not in nml.keys():
 					nml['split_nonlinear_terms_knobs'] = {'show_statistics': True}
-			if 'nperiod' not in self.inputs.dimensions and 'nperiod' not in self.inputs.single_parameters:
-					nml['theta_grid_parameters']['nperiod'] = 1
+			
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['iflux'] = 0
 			nml['theta_grid_eik_knobs']['local_eq'] = True
