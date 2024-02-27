@@ -1016,7 +1016,22 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		sfile.close()
 		for line in slines:
 			print(line, end='')
-
+			
+	def load_run_out(self, run = {}, itt = None):
+		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
+			print("ERROR: run not found")
+			return
+		file_dir = self.get_run_directory(run)
+		if itt is None:
+			itt = self['itteration']
+		filepath = f"{file_dir}/itteration_{itt}.out.nc"
+		if os.path.exists(filepath):
+			sfile = readnc(filepath)
+		else:
+			print(f"ERROR: report \"{filepath}\" not found, please specify itt and ensure simulation has run")
+			return
+		return sfile
+		
 	'''
 	def rerun(self, runs = None, nml = None, directory = None, group_runs = None):
 		if runs is None:
