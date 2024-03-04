@@ -5,10 +5,12 @@ from .templates import template_dir, gs2_template
 from copy import deepcopy
 
 class equilibrium(object):
-	def __init__(self, inputs, directory = None):
+	def __init__(self, inputs = None, directory = None):
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
+		if inputs is None:
+			inputs = scan_inputs()
 		self.load_inputs(inputs)
 		self.eq_data = self.kin_data = self.pyro = self._eq_lines = self._kin_lines = self.beta_prime_profile = self.shear_profile = None
 		self.surface_namelists = {}
@@ -74,10 +76,10 @@ class equilibrium(object):
 			self._kin_lines = kfile.readlines()
 			
 		if kinetics_type is not None:
-			self.inputs['kinetics_type'] = kinetics_type
+			self.inputs.inputs['kinetics_type'] = kinetics_type
 		if self.inputs['kinetics_type'] is None:
 			print("Warning: kinetics_type Not Given, trying PEQDSK")
-			self.inputs['kinetics_type'] = "PEQDSK"
+			self.inputs.inputs['kinetics_type'] = "PEQDSK"
 		
 		if self.inputs['kinetics_type'].upper() == "SCENE":
 			import xarray as xr

@@ -89,9 +89,11 @@ class scan_inputs(object):
 	def __init__(self, input_file = None, directory = "./", input_dict = None):
 		if directory == "./":
 			directory = os.getcwd()
+		if input_file is None:
+			input_file = inputs_template
+			directory = template_dir
 		self.path = directory
 		self.input_name = input_file
-		
 		self.inputs = self.dimensions = self.dim_order = None
 		if input_file is not None:
 			self.load_inputs()
@@ -142,7 +144,7 @@ class scan_inputs(object):
 			sh[dim_id] = len(self.dimensions[dim_type])
 		return sh
 	
-	def load_inputs(self, filename = None, directory = "./"):
+	def load_inputs(self, filename = None, directory = None):
 		if self.input_name is None and filename is None:
 			filename = input("Input File Name: ")
 			if "." not in filename:
@@ -151,6 +153,11 @@ class scan_inputs(object):
 			if "." not in filename:
 				filename = filename + ".in"
 			self.input_name = filename
+		
+		if directory is None and self.path is None:
+			directory = os.getcwd()
+		elif directory is None:
+			directory = self.path
 
 		self.inputs = f90nml.read(f"{directory}/{self.input_name}")
 		self.check_inputs()

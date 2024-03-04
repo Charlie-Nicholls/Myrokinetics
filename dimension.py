@@ -1,9 +1,10 @@
 class dimension(object):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		try:
-			iter(values)
-		except:
-			values = [values]
+		if values is not None:
+			try:
+				iter(values)
+			except:
+				values = [values]
 		self.values = list(values)
 		self.option = None
 		self.edit_dimension(values = values, mini = mini, maxi = maxi, num = num, option = option)
