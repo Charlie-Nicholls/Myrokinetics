@@ -458,8 +458,11 @@ wait""")
 				self._ideal_jobs.add(f"{self.inputs['data_path']}/submit_files/ideal_{n}.job")
 	
 	def run_jobs(self):
+		cwd = os.getcwd()
+		os.chdir(f"{self.inputs['data_path']}/submit_files")
 		for job in self._jobs:
 			os.system(f"sbatch {job}")
+		os.chdir(cwd)
 		self._jobs = set()
 	
 	def run_ideal_jobs(self):
