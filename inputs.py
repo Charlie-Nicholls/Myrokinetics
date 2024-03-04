@@ -334,10 +334,10 @@ class scan_inputs(object):
 			elif self['num_beta_ideal'] is None:
 				print("ERROR: num_beta_ideal is None")
 				valid = False
-			if 'beta_prime' not in self.dimensions and 'beta_prime' not in self.single_parameters:
+			if 'beta_prime' not in self.dimensions:
 				print("ERROR: beta_prime dimension must be given for ideal scan")
 				valid = False
-			if 'shear' not in self.dimensions and 'shear' not in self.single_parameters:
+			if 'shear' not in self.dimensions:
 				print("ERROR: shear dimension must be given for ideal scan")
 				valid = False
 			if self['nonlinear'] == True:
