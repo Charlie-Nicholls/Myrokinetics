@@ -255,7 +255,9 @@ class equilibrium(object):
 				nml['knobs']['margin_cpu_time'] = 2400
 			if 'nperiod' not in self.inputs.dimensions and 'nperiod' not in self.inputs.single_parameters:
 					nml['theta_grid_parameters']['nperiod'] = 1
-						
+		else:
+			print("ERROR: grid_option is invalid, valid: ['single','box']	
+					
 		if self.inputs['non_linear'] == True:
 			if 'nonlinear_terms_knobs' not in nml.keys():
 				nml['nonlinear_terms_knobs'] = {}

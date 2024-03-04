@@ -642,7 +642,7 @@ wait""")
 		
 		unfinished_gyro = []
 		finished_gyro = []
-		all_runs = self.get_all_runs() if self.inputs['grid_option'] == False else self.get_all_runs(excludeDimensions=['kx','ky'])
+		all_runs = self.get_all_runs() if self.inputs['grid_option'] == 'single' else self.get_all_runs(excludeDimensions=['kx','ky'])
 		if gyro:
 			for run in all_runs:
 				sub_dir = self.get_run_directory(run)
