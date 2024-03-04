@@ -5,7 +5,7 @@ class dimension(object):
 				iter(values)
 			except:
 				values = [values]
-		self.values = list(values)
+			self.values = list(values)
 		self.option = None
 		self.edit_dimension(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
@@ -89,15 +89,14 @@ class dimension(object):
 		elif values is None and any([mini is None, maxi is None, num is None]):
 			print(f"ERROR: too many {self.name} values are None")
 			return
-		else:
-			if type(values) in [int,float]:
-				self.values = [values]
-
-			if values is None:
-				vals = []
-				for i in range(num):
-					vals.append((maxi - mini)*i/(num-1) + mini)
-				self.values = vals
+		elif values is None:
+			vals = []
+			for i in range(num):
+				vals.append((maxi - mini)*i/(num-1) + mini)
+			self.values = vals
+		
+		if type(values) in [int,float]:
+			self.values = [values]
 				
 		if self.values is not None:
 			self.values.sort()
