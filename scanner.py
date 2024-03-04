@@ -209,10 +209,10 @@ class myro_scan(object):
 					inlist.write(f"{infile[:-3]}\n")
 				inlist.close()
 				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
-				jobfile.write(f"""{sbatch_n}
-#SBATCH --array=1-{len(input_lists[n])}
-
-{compile_modules}
+				jobfile.write(f"{sbatch_n}")
+				if {len(input_lists[n])} > 1:
+					jobfile.write(f"#SBATCH --array=1-{len(input_lists[n])}")
+				jobfile.write(f"""{compile_modules}
 
 which gs2
 gs2 --build-config
