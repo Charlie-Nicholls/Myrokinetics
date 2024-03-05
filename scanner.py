@@ -466,8 +466,11 @@ wait""")
 		self._jobs = set()
 	
 	def run_ideal_jobs(self):
+		cwd = os.getcwd()
+		os.chdir(f"{self.inputs['data_path']}/submit_files")
 		for job in self._ideal_jobs:
 			os.system(f"sbatch {job}")
+		os.chdir(cwd)
 		self._ideal_jobs = set()
 	
 	def restart_run(self, run = {}, itt = None):
@@ -777,7 +780,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				gyro_keys['ky'] = {}
 				gyro_keys['kx'] = {}
 			
-			runs = self.get_all_runs() if self.inputs['grid_option'] == False else self.get_all_runs(excludeDimensions=['kx','ky'])
+			runs = self.get_all_runs() if self.inputs['grid_option'] == 'single' else self.get_all_runs(excludeDimensions=['kx','ky'])
 			for run in runs:
 				sub_dir = self.get_run_directory(run)
 				try:
