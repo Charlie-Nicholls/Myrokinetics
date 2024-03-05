@@ -73,7 +73,7 @@ class myro_scan(object):
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
 		self.inputs.write_scan_input(filename = filename, directory = directory, doPrint = doPrint)
 	
-	def run_scan(self, n_jobs = None, n_par = None, n_sim = None, gyro = None, ideal = None, directory = None, group_runs = None):
+	def run_scan(self, n_jobs = None, n_par = None, n_sim = None, gyro = None, ideal = None, directory = None, specificRuns = None):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
@@ -88,7 +88,7 @@ class myro_scan(object):
 			os.mkdir(run_path)
 		
 		if self['gyro']:
-			self.make_gyro_files(directory = run_path, group_runs = group_runs)
+			self.make_gyro_files(directory = run_path, specificRuns = specificRuns)
 			self.make_job_files(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
 			self.run_jobs()
 		if self['ideal']:
@@ -566,7 +566,7 @@ wait""")
 				runs.append({'psin': psiN, 'theta0': theta0})
 		return runs
 				
-	def make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None, group_runs = None):
+	def make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None):
 		self._input_files = set()
 		if checkSetup:
 			if not self.check_setup():
