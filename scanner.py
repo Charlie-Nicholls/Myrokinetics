@@ -105,7 +105,7 @@ class myro_scan(object):
 		if ideal:
 			self.make_ideal_files(directory = run_path)
 			self.make_ideal_job_files(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
-			if self['gyro']:
+			if gyro:
 				print("Gyro scan currently running, use run_ideal_jobs when completed to run ideal scan")
 			else:
 				self.run_ideal_jobs()
