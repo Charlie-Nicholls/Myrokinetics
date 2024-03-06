@@ -111,10 +111,15 @@ class myro_scan(object):
 				self.run_ideal_jobs()
 
 	
-	def check_setup(self):
+	def check_setup(self, gyro = None, ideal = None):
 		if not self.inputs.check_scan():
 			return False
-	
+		
+		if gyro is None:
+			gyro = self['gyro']
+		if ideal is None:
+			ideal = self['ideal']
+		
 		self.inputs.create_run_info()
 
 		if not self.inputs['eq_name'] or not self.inputs['kin_name']:
