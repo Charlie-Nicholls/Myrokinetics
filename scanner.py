@@ -203,8 +203,8 @@ class myro_scan(object):
 				self._input_files.remove(input_list[i])
 			for n in range(n_par):
 				os.makedirs(f"{self.inputs['data_path']}/submit_files/gyro_{n}",exist_ok=True)
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"gyro_{n}/{self.inputs['sbatch']['output']}_$SLURM_ARRAY_TASK_ID")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"gyro_{n}/{self.inputs['sbatch']['error']}_$SLURM_ARRAY_TASK_ID")
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"gyro_{n}/{self.inputs['sbatch']['output']}")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"gyro_{n}/{self.inputs['sbatch']['error']}")
 				filename = f"gyro_{n}"
 				inlist = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.txt",'w')
 				for infile in input_lists[n]:
@@ -213,7 +213,9 @@ class myro_scan(object):
 				jobfile = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.job",'w')
 				jobfile.write(f"{sbatch_n}")
 				if len(input_lists[n]) > 1:
-					jobfile.write(f"#SBATCH --array=1-{len(input_lists[n])}\n")
+					jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
+					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_${{SLURM_ARRAY_TASK_ID}}")
+					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_${{SLURM_ARRAY_TASK_ID}}")
 				jobfile.write(f"""
 {compile_modules}
 
@@ -366,8 +368,8 @@ fi""")
 				self._ideal_input_files.remove(input_list[i])
 			for n in range(n_par):
 				os.makedirs(f"{self.inputs['data_path']}/submit_files/ideal_{n}",exist_ok=True)
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"ideal_{n}/{self.inputs['sbatch']['output']}_$SLURM_ARRAY_TASK_ID")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"ideal_{n}/{self.inputs['sbatch']['error']}_$SLURM_ARRAY_TASK_ID")
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"ideal_{n}/{self.inputs['sbatch']['output']}_${{SLURM_ARRAY_TASK_ID}}")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"ideal_{n}/{self.inputs['sbatch']['error']}_${{SLURM_ARRAY_TASK_ID}}")
 				sbatch_n = sbatch_n.replace(f"--cpus-per-task={self.inputs['sbatch']['cpus-per-task']}","--cpus-per-task=1")
 				filename = f"ideal_{n}"
 				inlist = open(f"{self.inputs['data_path']}/submit_files/ideal_{n}/{filename}.txt",'w')
@@ -377,7 +379,9 @@ fi""")
 				jobfile = open(f"{self.inputs['data_path']}/submit_files/ideal_{n}/{filename}.job",'w')
 				jobfile.write(f"{sbatch_n}")
 				if len(input_lists[n]) > 1:
-					jobfile.write(f"#SBATCH --array=1-{len(input_lists[n])}\n")
+					jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
+					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}", f"ideal_{n}/{self.inputs['sbatch']['output']}_${{SLURM_ARRAY_TASK_ID}}")
+					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}", f"{self.inputs['sbatch']['error']}_${{SLURM_ARRAY_TASK_ID}}")
 				jobfile.write(f"""
 {compile_modules}
 
@@ -978,9 +982,27 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			print(line)
 	
 	def print_slurm(self, n = 0):
-		filepath = f"{self['data_path']}/submit_files/{self.inputs['sbatch']['output']}"
-		if not self.inputs['nonlinear']:
-			filepath += f"_{n}"
+		filepath = f"{self['data_path']}/submit_files/"
+		if self.inputs['nonlinear']:
+			filepath += f"{self.inputs['sbatch']['output']}_{n}"
+		else:
+			filepath += f"gyro_{n}/{self.inputs['sbatch']['output']}"
+		if os.path.exists(filepath):
+			sfile = open(filepath)
+		else:
+			print(f"ERROR: slurm file \"{filepath}\" not found")
+			return
+		slines = sfile.readlines()
+		sfile.close()
+		for line in slines:
+			print(line, end='')
+		
+	def print_ideal_slurm(self, n = 0):
+		filepath = f"{self['data_path']}/submit_files/"
+		if self.inputs['nonlinear']:
+			filepath += f"{self.inputs['sbatch']['output']}_{n}"
+		else:
+			filepath += f"ideal_{n}/{self.inputs['sbatch']['output']}"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
