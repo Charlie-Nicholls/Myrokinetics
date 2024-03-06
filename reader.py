@@ -1,5 +1,5 @@
 import os
-from numpy import load, savez, nan, isfinite
+from numpy import load, savez, nan, isfinite, array
 from .plotting import Plotters
 from .verify_runs import verify_scan
 from .inputs import scan_inputs
@@ -60,13 +60,22 @@ class myro_read(object):
 				for idx, i in enumerate(ids):
 					run[dim_order[idx]] = self.dimensions[dim_order[idx]].values[i]
 			run_id = self.get_run_id(run, keys = f'_{key}_keys')
+			if run_id is None:
+				for dim, val in run.items():
+					if val not in self.dimensions.keys():
+						run[dim] = self.dimensions[dim].values[abs(array(self.dimensions[dim].values) - val).argmin()]
+						print(f"{dim} = {val} not found, using closest value of {dim} = {run['dim']}")
+				run_id = self.get_run_id(run, keys = f'_{key}_keys')
+				if run_id is None:
+					print(f"ERROR: run {run} Not Found")
+					return None
 			if key == 'quasilinear':
 				return self.data['quasilinear'][run_id]
 			elif key == 'abs_gr':
 				return self.data['gyro'][run_id]['growth_rate']
 			elif key == 'norm_gr':
 				return self.data['gyro'][run_id]['growth_rate']/self.data['gyro'][run_id]['ky']**2
-		
+
 		else:
 			
 			if run is None:
@@ -78,7 +87,29 @@ class myro_read(object):
 					run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]
 			run_id = self.get_run_id(run)
 			if run_id is None:
-				return None
+				for dim, val in run.items():
+					if val not in self.dimensions.keys():
+						run[dim] = self.dimensions[dim].values[abs(array(self.dimensions[dim].values) - val).argmin()]
+						print(f"{dim} = {val} not found, using closest value of {dim} = {run[dim]}")
+				run_id = self.get_run_id(run)
+				if run_id is None:
+					print(f"ERROR: run {run} Not Found")
+					return None
+			if len(run) != len(self.dimensions):
+					id_set = {}
+					id_list = self.get_run_list(run)
+					for sid in id_list:
+						id_set.add(self.data['gyro'][sid]['group_key'])
+					if len(id_set) == 1:
+						if key in self.data['gyro']['group_keys'][list(id_set)[0]]:
+							return self.data['gyro']['group_keys'][list(id_set)[0]][key]
+						else:
+							print(f"ERROR: either run wrong length or group key {key} not found")
+							return None
+					else:
+						print(f"ERROR: len(run) must be length {len(self.dimensions)}")
+						return None
+
 			if key in self.data['gyro'][run_id].keys():
 				return self.data['gyro'][run_id][key]
 			elif 'group_key' in self.data['gyro'][run_id].keys() and key in self.data['group'][self.data['gyro'][run_id]['group_key']].keys():
@@ -106,8 +137,11 @@ class myro_read(object):
 		elif key in ["ql", "quasi linear", "quasi_linear"]:
 			return self.data['quasilinear']
 			
-		elif self.dimensions and key in self.dimensions:
+		elif self.dimensions and key in self.dimensions.keys():
 			return self.dimensions[key].values
+
+		elif self.single_parameters and key in self.single_parameters.keys():
+			return self.single_parameters[key].values[0]
 		
 		elif self.verify and key in self.verify._all_keys():
 			return self.verify[key]
