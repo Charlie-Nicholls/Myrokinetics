@@ -81,7 +81,7 @@ class myro_scan(object):
 		
 		if gyro is None:
 			gyro = self['gyro']
-		if type(gyro) == bool:	
+		if type(gyro) != bool:	
 			print("ERROR: gyro must be boolean")
 			return
 		if ideal is None:
