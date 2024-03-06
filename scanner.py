@@ -203,8 +203,8 @@ class myro_scan(object):
 				self._input_files.remove(input_list[i])
 			for n in range(n_par):
 				os.makedirs(f"{self.inputs['data_path']}/submit_files/gyro_{n}",exist_ok=True)
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"gyro_{n}/{self.inputs['sbatch']['output']}")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"gyro_{n}/{self.inputs['sbatch']['error']}")
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"gyro_{n}/{self.inputs['sbatch']['output']}_0")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"gyro_{n}/{self.inputs['sbatch']['error']}_0")
 				filename = f"gyro_{n}"
 				inlist = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.txt",'w')
 				for infile in input_lists[n]:
@@ -214,8 +214,8 @@ class myro_scan(object):
 				jobfile.write(f"{sbatch_n}")
 				if len(input_lists[n]) > 1:
 					jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
-					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_%a")
-					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_%a")
+					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}_0",f"{self.inputs['sbatch']['output']}_%a")
+					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}_0",f"{self.inputs['sbatch']['error']}_%a")
 				jobfile.write(f"""
 {compile_modules}
 
@@ -368,8 +368,8 @@ fi""")
 				self._ideal_input_files.remove(input_list[i])
 			for n in range(n_par):
 				os.makedirs(f"{self.inputs['data_path']}/submit_files/ideal_{n}",exist_ok=True)
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"ideal_{n}/{self.inputs['sbatch']['output']}")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"ideal_{n}/{self.inputs['sbatch']['error']}")
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"ideal_{n}/{self.inputs['sbatch']['output']}_0")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"ideal_{n}/{self.inputs['sbatch']['error']}_0")
 				sbatch_n = sbatch_n.replace(f"--cpus-per-task={self.inputs['sbatch']['cpus-per-task']}","--cpus-per-task=1")
 				filename = f"ideal_{n}"
 				inlist = open(f"{self.inputs['data_path']}/submit_files/ideal_{n}/{filename}.txt",'w')
@@ -380,8 +380,8 @@ fi""")
 				jobfile.write(f"{sbatch_n}")
 				if len(input_lists[n]) > 1:
 					jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
-					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}", f"{self.inputs['sbatch']['output']}_%a")
-					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}", f"{self.inputs['sbatch']['error']}_%a")
+					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}_0", f"{self.inputs['sbatch']['output']}_%a")
+					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}_0", f"{self.inputs['sbatch']['error']}_%a")
 				jobfile.write(f"""
 {compile_modules}
 
@@ -981,12 +981,12 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		for line in slines:
 			print(line)
 	
-	def print_slurm(self, n = 0):
+	def print_slurm(self, n = 0, id = 0):
 		filepath = f"{self['data_path']}/submit_files/"
 		if self.inputs['nonlinear']:
 			filepath += f"{self.inputs['sbatch']['output']}_{n}"
 		else:
-			filepath += f"gyro_{n}/{self.inputs['sbatch']['output']}"
+			filepath += f"gyro_{n}/{self.inputs['sbatch']['output']}_{id}"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
@@ -1002,7 +1002,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		if self.inputs['nonlinear']:
 			filepath += f"{self.inputs['sbatch']['output']}_{n}"
 		else:
-			filepath += f"ideal_{n}/{self.inputs['sbatch']['output']}"
+			filepath += f"ideal_{n}/{self.inputs['sbatch']['output']}_{id}"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
