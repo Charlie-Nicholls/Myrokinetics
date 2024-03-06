@@ -224,7 +224,7 @@ class myro_scan(object):
 which gs2
 gs2 --build-config
 
-INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" gyro_{n}.txt)
+INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {self.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.txt)
 echo "${{INFILE}}.in"
 gs2 "${{INFILE}}.in"
 if test -f "${{INFILE}}.out.nc"; then
@@ -392,10 +392,10 @@ fi""")
 which gs2
 gs2 --build-config
 
-INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" ideal_{n}.txt)
+INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {self.inputs['data_path']}/submit_files/ideal_{n}/ideal_{n}.txt)
 echo "${{INFILE}}.in"
 ideal_ball "${{INFILE}}.in"
-if test -f "${{INFILE}}.out.nc"; then
+if test -f "${{INFILE}}.ballstab_2d"; then
 	touch "${{INFILE}}.fin"
 fi""")
 				jobfile.close()
