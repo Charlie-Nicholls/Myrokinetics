@@ -981,12 +981,12 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		for line in slines:
 			print(line)
 	
-	def print_slurm(self, n = 0, id = 0):
+	def print_slurm(self, n = 0, i = 0):
 		filepath = f"{self['data_path']}/submit_files/"
 		if self.inputs['nonlinear']:
 			filepath += f"{self.inputs['sbatch']['output']}_{n}"
 		else:
-			filepath += f"gyro_{n}/{self.inputs['sbatch']['output']}_{id}"
+			filepath += f"gyro_{n}/{self.inputs['sbatch']['output']}_{i}"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
@@ -997,12 +997,12 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		for line in slines:
 			print(line, end='')
 		
-	def print_ideal_slurm(self, n = 0):
+	def print_ideal_slurm(self, n = 0, i = 0):
 		filepath = f"{self['data_path']}/submit_files/"
 		if self.inputs['nonlinear']:
 			filepath += f"{self.inputs['sbatch']['output']}_{n}"
 		else:
-			filepath += f"ideal_{n}/{self.inputs['sbatch']['output']}_{id}"
+			filepath += f"ideal_{n}/{self.inputs['sbatch']['output']}_{i}"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
