@@ -981,7 +981,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		for line in slines:
 			print(line)
 	
-	def print_slurm(self, n = 0, i = 0):
+	def print_slurm(self, n = 0, i = 1):
 		filepath = f"{self['data_path']}/submit_files/"
 		if self.inputs['nonlinear']:
 			filepath += f"{self.inputs['sbatch']['output']}_{n}"
@@ -997,7 +997,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		for line in slines:
 			print(line, end='')
 		
-	def print_ideal_slurm(self, n = 0, i = 0):
+	def print_ideal_slurm(self, n = 0, i = 1):
 		filepath = f"{self['data_path']}/submit_files/"
 		if self.inputs['nonlinear']:
 			filepath += f"{self.inputs['sbatch']['output']}_{n}"
