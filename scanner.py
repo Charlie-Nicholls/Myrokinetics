@@ -390,7 +390,7 @@ gs2 --build-config
 
 INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" ideal_{n}.txt)
 echo "${{INFILE}}.in"
-gs2 "${{INFILE}}.in"
+ideal_ball "${{INFILE}}.in"
 if test -f "${{INFILE}}.out.nc"; then
 	touch "${{INFILE}}.fin"
 fi""")
