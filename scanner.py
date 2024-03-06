@@ -202,14 +202,15 @@ class myro_scan(object):
 				input_lists[i%n_par].append(input_list[i])
 				self._input_files.remove(input_list[i])
 			for n in range(n_par):
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_{n}")
+				os.makedirs(f"{self.inputs['data_path']}/submit_files/gyro_{n}",exist_ok=True)
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"gyro_{n}/{self.inputs['sbatch']['output']}_$SLURM_ARRAY_TASK_ID")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"gyro_{n}/{self.inputs['sbatch']['error']}_$SLURM_ARRAY_TASK_ID")
 				filename = f"gyro_{n}"
-				inlist = open(f"{self.inputs['data_path']}/submit_files/{filename}.txt",'w')
+				inlist = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.txt",'w')
 				for infile in input_lists[n]:
 					inlist.write(f"{infile[:-3]}\n")
 				inlist.close()
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
+				jobfile = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.job",'w')
 				jobfile.write(f"{sbatch_n}")
 				if len(input_lists[n]) > 1:
 					jobfile.write(f"#SBATCH --array=1-{len(input_lists[n])}\n")
@@ -230,6 +231,7 @@ fi""")
 			submit.write(f"""#!/bin/bash
 #SBATCH --job-name=submit
 #SBATCH --partition=nodes
+#SBATCH --qos=short
 #SBATCH --time=00:00:30
 #SBATCH --ntasks=1
 #SBATCH --mem=10MB
@@ -240,10 +242,10 @@ fi""")
 
 """)
 			for n in range(n_sim):
-				submit.write(f"ID_{n}=$(sbatch --parsable \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")\n")
+				submit.write(f"ID_{n}=$(sbatch --parsable \"{self.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.job\")\n")
 			if n_par > n_sim:
 				for n in range(n_sim, n_par):
-					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}.job\")\n")
+					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.job\")\n")
 			submit.close()
 			self._jobs.add(f"{self.inputs['data_path']}/submit_files/submit.job")
 
@@ -363,24 +365,16 @@ fi""")
 				input_lists[i%n_par].append(input_list[i])
 				self._ideal_input_files.remove(input_list[i])
 			for n in range(n_par):
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{self.inputs['sbatch']['error']}_ideal_{n}")
+				os.makedirs(f"{self.inputs['data_path']}/submit_files/ideal_{n}",exist_ok=True)
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"ideal_{n}/{self.inputs['sbatch']['output']}_$SLURM_ARRAY_TASK_ID")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"ideal_{n}/{self.inputs['sbatch']['error']}_$SLURM_ARRAY_TASK_ID")
 				sbatch_n = sbatch_n.replace(f"--cpus-per-task={self.inputs['sbatch']['cpus-per-task']}","--cpus-per-task=1")
 				filename = f"ideal_{n}"
-				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
-				pyth.write(f"""import os, sys
-				
-input_files = {input_lists[n]}
-
-if __name__ == '__main__':
-	slurm_id = int(sys.argv[1])
-	input_file = input_files[slurm_id]
-	os.system(f"echo \\\"Ideal Input: {{input_file}}\\\"")
-	os.system(f"srun ideal_ball \\\"{{input_file}}\\\"")
-	if os.path.exists(f\"{{input_file[:-3]}}.ballstab2d\"):
-		os.system(f"touch \\\"{{input_file[:-3]}}.fin\\\"")""")
-				pyth.close()
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
+				inlist = open(f"{self.inputs['data_path']}/submit_files/ideal_{n}/{filename}.txt",'w')
+				for infile in input_lists[n]:
+					inlist.write(f"{infile[:-3]}\n")
+				inlist.close()
+				jobfile = open(f"{self.inputs['data_path']}/submit_files/ideal_{n}/{filename}.job",'w')
 				jobfile.write(f"{sbatch_n}")
 				if len(input_lists[n]) > 1:
 					jobfile.write(f"#SBATCH --array=1-{len(input_lists[n])}\n")
@@ -390,12 +384,15 @@ if __name__ == '__main__':
 which gs2
 gs2 --build-config
 
-python {self.inputs['data_path']}/submit_files/{filename}.py $SLURM_ARRAY_TASK_ID""")
-				#if n_par > n_sim and n + n_sim < n_par:
-					#jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/ideal_{n+n_sim}.job")
+INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" ideal_{n}.txt)
+echo "${{INFILE}}.in"
+gs2 "${{INFILE}}.in"
+if test -f "${{INFILE}}.out.nc"; then
+	touch "${{INFILE}}.fin"
+fi""")
 				jobfile.close()
 			for n in range(n_sim):
-				self._ideal_jobs.add(f"{self.inputs['data_path']}/submit_files/ideal_{n}.job")	
+				self._ideal_jobs.add(f"{self.inputs['data_path']}/submit_files/ideal_{n}/ideal_{n}.job")	
 		if self['system'] == 'archer2':
 			if n_par is None:
 				n_par = 1
@@ -957,7 +954,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		if self.inputs['nonlinear'] == True:
 			filepath += "submit.job"
 		else:
-			filepath += f"gyro_{n}.job"
+			filepath += f"gyro_{n}/gyro_{n}.job"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
@@ -969,7 +966,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			print(line, end='')
 
 	def print_ideal_submit_file(self, n = 0):
-		filepath = f"{self['data_path']}/submit_files/ideal_{n}.job"
+		filepath = f"{self['data_path']}/submit_files/ideal_{n}/ideal_{n}.job"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
