@@ -79,7 +79,18 @@ class myro_scan(object):
 		elif directory is None:
 			directory = self.path
 		
-		if not self.check_setup(ideal = ideal, gyro = gyro):
+		if gyro is None:
+			gyro = self['gyro']
+		if type(gyro) == bool:	
+			print("ERROR: gyro must be boolean")
+			return
+		if ideal is None:
+			ideal = self['ideal']
+		if type(ideal) != bool:
+			print("ERROR: ideal must be boolean")
+			return
+		
+		if not self.check_setup():
 			return
 			
 		run_path = self.inputs['data_path']
@@ -87,11 +98,11 @@ class myro_scan(object):
 		if not os.path.exists(run_path):
 			os.mkdir(run_path)
 		
-		if self['gyro']:
+		if gyro:
 			self.make_gyro_files(directory = run_path, specificRuns = specificRuns)
 			self.make_job_files(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
 			self.run_jobs()
-		if self['ideal']:
+		if ideal:
 			self.make_ideal_files(directory = run_path)
 			self.make_ideal_job_files(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
 			if self['gyro']:
@@ -100,25 +111,10 @@ class myro_scan(object):
 				self.run_ideal_jobs()
 
 	
-	def check_setup(self, ideal = None, gyro = None):
+	def check_setup(self):
 		if not self.inputs.check_scan():
 			return False
-		
-		if gyro is None:
-			gyro = self['gyro']
-		elif type(gyro) == bool:	
-			self.inputs['gyro'] = gyro
-		else:
-			print("ERROR: gyro must be boolean")
-			return False
-		if ideal is None:
-			ideal = self['ideal']
-		elif type(ideal) == bool:
-			self.inputs['ideal'] = ideal
-		else:
-			print("ERROR: ideal must be boolean")
-			return False
-			
+	
 		self.inputs.create_run_info()
 
 		if not self.inputs['eq_name'] or not self.inputs['kin_name']:

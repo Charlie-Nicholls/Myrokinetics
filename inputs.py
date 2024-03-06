@@ -89,7 +89,7 @@ class scan_inputs(object):
 	def __init__(self, input_file = None, directory = "./", input_dict = None):
 		if directory == "./":
 			directory = os.getcwd()
-		if input_file is None:
+		if input_file is None and input_dict is None:
 			input_file = inputs_template
 			directory = template_dir
 		self.path = directory
