@@ -210,12 +210,12 @@ class myro_scan(object):
 				for infile in input_lists[n]:
 					inlist.write(f"{infile[:-3]}\n")
 				inlist.close()
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.job",'w')
-				jobfile.write(f"{sbatch_n}")
 				if len(input_lists[n]) > 1:
 					jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
 					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}_0",f"{self.inputs['sbatch']['output']}_%a")
 					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}_0",f"{self.inputs['sbatch']['error']}_%a")
+				jobfile = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.job",'w')
+				jobfile.write(f"{sbatch_n}")
 				jobfile.write(f"""
 {compile_modules}
 
@@ -376,12 +376,12 @@ fi""")
 				for infile in input_lists[n]:
 					inlist.write(f"{infile[:-3]}\n")
 				inlist.close()
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/ideal_{n}/{filename}.job",'w')
-				jobfile.write(f"{sbatch_n}")
 				if len(input_lists[n]) > 1:
 					jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
 					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}_0", f"{self.inputs['sbatch']['output']}_%a")
 					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}_0", f"{self.inputs['sbatch']['error']}_%a")
+				jobfile = open(f"{self.inputs['data_path']}/submit_files/ideal_{n}/{filename}.job",'w')
+				jobfile.write(f"{sbatch_n}")
 				jobfile.write(f"""
 {compile_modules}
 
