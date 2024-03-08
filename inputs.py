@@ -232,9 +232,9 @@ class scan_inputs(object):
 				if skey not in self.inputs['sbatch']:
 					if skey == 'job-name':
 						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0]
-					if skey == 'output':
+					elif skey == 'output':
 						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0] + ".slurm"
-					if skey == 'error':
+					elif skey == 'error':
 						self.inputs['sbatch'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0] + ".err"
 					else:
 						self.inputs['sbatch'][skey] = sbatch[skey]
@@ -246,8 +246,6 @@ class scan_inputs(object):
 				if skey not in self.inputs['sbatch_save']:
 					if skey == 'job-name':
 						self.inputs['sbatch_save'][skey] = self.inputs['files']['input_name'].split('/')[-1].split('.')[0]
-					if skey == 'output':
-						self.inputs['sbatch_save'][skey] = "save_out.slurm"
 					else:
 						self.inputs['sbatch_save'][skey] = sbatch_save[skey]
 					
