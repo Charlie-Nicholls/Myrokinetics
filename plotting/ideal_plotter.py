@@ -226,15 +226,19 @@ class plot_ideal(object):
 		self.ax.set_ylabel(self._y_axis_label,fontsize=self['fontsizes']['axis'])
 		self.ax.set_xlabel(self._x_axis_label,fontsize=self['fontsizes']['axis'])
 		
-		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions['psin'].axis_label} = {psiN}",visible = False)
-		theta0_line = None
-		if 'theta0' in self['run']:
-			t0_axis = r'$\theta_{0}$'
-			Line2D([0,1],[0.5,0.5],color='k',label=f"{t0_axis} = {self['run']['theta0']}",visible = False)
 		ideal_line = None
 		eqbm_line = None
 		s_patch = None
 		u_patch = None
+		t0_line = None
+		psi_line = None
+		
+		psi_label = self.reader.dimensions['psin'].axis_label if 'psin' in self.reader.dimensions else self.reader.single_parameters['psin'].axis_label
+		psi_line = Line2D([0,1],[0.5,0.5],color='k',label=f"{psi_label} = {psiN}",visible = False)
+		
+		if 'theta0' in self['run']:
+			t0_label = self.reader.dimensions['theta0'].axis_label if 'theta0' in self.reader.dimensions else self.reader.single_parameters['theta0'].axis_label
+			t0_line = Line2D([0,1],[0.5,0.5],color='k',label=f"{t0_label} = {self['run']['theta0']}",visible = False)
 		
 		status = self.options.get_status()
 		if status[0]:
@@ -263,7 +267,7 @@ class plot_ideal(object):
 				s_patch = pt.Patch(color=self['colours']['stable'], label='Stable')
 				u_patch = pt.Patch(color=self['colours']['unstable'], label='Unstable')
 				
-		handles = [line for line in [psi_line,theta0_line,eqbm_line,ideal_line,s_patch,u_patch] if line is not None]
+		handles = [line for line in [psi_line,t0_line,eqbm_line,ideal_line,s_patch,u_patch] if line is not None]
 		self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
 		self.ax.legend_.set_visible(self['visible']['title'])
 		
