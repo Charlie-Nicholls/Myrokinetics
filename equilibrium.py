@@ -428,11 +428,13 @@ class equilibrium(object):
 			
 		return nml
 	
-	def write_nml(self, nml, filename):
+	def write_nml(self, nml, filename = None):
 		if self.inputs['gk_code'] == 'GS2':
+			if filename is None:
+				filename = "itteration_0.in"
 			nml.write(filename, force=True)
 		elif self.inputs['gk_code'] == 'CGYRO':
-			with open(filename, "w") as f:
+			with open("input.cgyro", "w") as f:
 				for key, value in nml.items():
 					f.write( f"{key} = {value}\n")
 		else:
