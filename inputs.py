@@ -1,7 +1,7 @@
 import os
 import f90nml
 from copy import deepcopy, copy
-from .templates import dim_lookup, template_dir, gs2_template, inputs_template, systems
+from .templates import dim_lookup_gs2, dim_lookup_cgyro, template_dir, gs2_template, inputs_template, systems
 
 possible_keys = {
 	'files': {
@@ -16,6 +16,7 @@ possible_keys = {
 	'input_path': ['input_path','input_dir','input_directory'],
 	},
 	'knobs': {
+	'gk_code': ['gk_code','code','gyrokinetic_code'],
 	'miller': ['miller','mill'],
 	'ideal': ['ideal'],
 	'gyro': ['gyro'],
@@ -61,6 +62,7 @@ default_inputs = {'files': {
 	'input_path': None,
 	},
 	'knobs': {
+	'gk_code': 'GS2',
 	'gyro': True,
 	'ideal': True,
 	'miller': False,
@@ -183,7 +185,6 @@ class scan_inputs(object):
 				if skey not in self.inputs[key]:
 					self.inputs[key][skey] = defaults[key][skey]
 					
-		
 		for key in ['knobs','files','info']:
 			toDelete = []
 			toReplace = []
@@ -204,7 +205,16 @@ class scan_inputs(object):
 				else:
 					print(f"ERROR: {skey} is not a valid {key} input")
 				del(self.inputs[key][old_key])
-			
+		
+		self.inputs['knobs']['gk_code'] = self.inputs['knobs']['gk_code'].upper()
+		if self.inputs['gk_code'] not in ['GS2','CGYRO']:
+			print("ERROR: gk_code must be GS2 or CGYRO. Setting to GS2")
+			self.inputs['knobs']['gk_code'] = defaults['knobs']['gk_code']
+		elif self.inputs['gk_code'] == 'GS2':
+			self.dim_lookup = dim_lookup_gs2
+		elif self.inputs['gk_code'] == 'CGYRO':
+			self.dim_lookup = dim_lookup_cgyro
+
 		if self.inputs['files']['input_name'] is None and self.input_name:
 			self.inputs['files']['input_name'] = self.input_name
 		if self.inputs['files']['input_path'] is None and self.inputs['files']['input_name']:
@@ -250,8 +260,8 @@ class scan_inputs(object):
 						self.inputs['sbatch_save'][skey] = sbatch_save[skey]
 					
 		for key in self.inputs['single_parameters']:
-			if key not in dim_lookup:
-				print(f"ERROR: {key} is not a valid parameter, valid parameters: {dim_lookup['_list']}")
+			if key not in self.dim_lookup:
+				print(f"ERROR: {key} is not a valid parameter, valid parameters: {self.dim_lookup['_list']}")
 				del(self.inputs['single_parameters'][key])
 		for key in [x for x in self.inputs if 'dimension_' in x]:
 			for skey in self.inputs[key]:
@@ -267,7 +277,7 @@ class scan_inputs(object):
 				if self.inputs[key]['values'][-1] == ']':
 					self.inputs[key]['values'] = self.inputs[key]['values'][:-1]
 			if not self.inputs[key]['type']:
-				print(f"ERROR: {key} has no type, valid types: {dim_lookup['_list']}")
+				print(f"ERROR: {key} has no type, valid types: {self.dim_lookup['_list']}")
 			
 			if self['nonlinear'] == True:
 				self.inputs['knobs']['grid_option'] = 'box'
@@ -345,7 +355,15 @@ class scan_inputs(object):
 		if self['nonlinear'] == True and len(self.dimensions) > 0:
 			print("ERROR: dimensional scans not currently allowed for Nonlinear runs")
 			valid = False
-
+		
+		if self['gk_code'] != 'GS2' and self['ideal'] is True:
+			print("ERROR: Ideal runs can only be performed on GS2")
+			valid = False
+		
+		if self['gk_code'] == 'CGYRO' and self['system'] != 'ARCHER2':
+			print("ERROR: CGYRO can currently only be run on ARCHER2")
+			valid = False
+			
 		return valid
 		
 	def create_run_info(self):
@@ -389,10 +407,10 @@ class scan_inputs(object):
 		for key in [x for x in self.inputs.keys() if 'dimension_' in x]:
 			dim_type = self.inputs[key]['type']
 			dim_type = dim_type.lower()
-			if dim_type and dim_type not in dim_lookup['_full_list']:
-				print(f"ERROR: {dim_type} not a valid dimension. Valid = {dim_lookup['_list']}")
+			if dim_type and dim_type not in self.dim_lookup['_full_list']:
+				print(f"ERROR: {dim_type} not a valid dimension. Valid = {self.dim_lookup['_list']}")
 			elif dim_type:
-				dim = dim_lookup[dim_type](values=self.inputs[key]['values'],mini=self.inputs[key]['min'],maxi=self.inputs[key]['max'],num=self.inputs[key]['num'],option=self.inputs[key]['option'])
+				dim = self.dim_lookup[dim_type](values=self.inputs[key]['values'],mini=self.inputs[key]['min'],maxi=self.inputs[key]['max'],num=self.inputs[key]['num'],option=self.inputs[key]['option'])
 				if dim.name in dimensions:
 					print(f"ERROR: {dim_type} defined multiple times")
 				else:
@@ -403,14 +421,14 @@ class scan_inputs(object):
 					
 		if 'single_parameters' in self.inputs.keys():
 			for dim_type in self.inputs['single_parameters']:
-				if dim_type not in dim_lookup['_full_list']:
-					print(f"ERROR: {dim_type} not a valid parameter. Must be a dimension, valid = {dim_lookup['_list'].keys()}")
+				if dim_type not in self.dim_lookup['_full_list']:
+					print(f"ERROR: {dim_type} not a valid parameter. Must be a dimension, valid = {self.dim_lookup['_list'].keys()}")
 				elif dim_type in dimensions:
 					print(f"ERROR: {dim_type} defined multiple times. As single parameter and dimension")
 				elif dim_type in single_parameters:
 					print(f"ERROR: {dim_type} defined multiple times.")
 				else:
-					dim = dim_lookup[dim_type](values=self.inputs['single_parameters'][dim_type])
+					dim = self.dim_lookup[dim_type](values=self.inputs['single_parameters'][dim_type])
 					single_parameters[dim.name] = dim
 		
 		for key in [x for x in self.inputs if 'dimension_' in x]:

@@ -163,9 +163,18 @@ class myro_scan(object):
 		self._input_files = set()
 		self._ideal_input_files = set()
 	
+	_code_lines = {'GS2': {'ypi_server': 'mpirun -np 8 gs2 \"{input_file}\"',
+						'viking': 'gs2 "${{INFILE}}.in"',
+						'archer2': 'f"srun --nodes={self.inputs["sbatch"]["nodes"]} --ntasks={self.inputs["sbatch"]["ntasks-per-node"]} gs2 \\\"{{run}}\\\""'},
+					'CGYRO': {'ypi_server': None,
+						'viking': None,
+						'archer2': 'f"srun --nodes={self.inputs["sbatch"]["nodes"]} {{run}}/cgyro -e "{{run}}" -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p "{{run}}" >& {{run}}/cgyro.out'}
+
+	}
+
 	def make_job_files(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
-			compile_modules = systems[self['system']]['modules']
+			compile_modules = systems[self['system']]['modules'][self['gk_code']]
 			sbatch = "#!/bin/bash"
 			for key, val in self.inputs['sbatch'].items():
 				if key == 'output' and '/' not in val:
@@ -220,9 +229,6 @@ class myro_scan(object):
 					jobfile.write(f"{sbatch_n}")
 				jobfile.write(f"""
 {compile_modules}
-
-which gs2
-gs2 --build-config
 
 INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {self.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.txt)
 echo "${{INFILE}}.in"
@@ -287,7 +293,7 @@ input_files = {input_lists[n]}
 def start_run(run, run_attempt = 1):
 	if run_attempt <= 3:
 		os.system(f"echo \\\"Input: {{run}}\\\"")
-		os.system(f"srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={self.inputs['sbatch']['ntasks-per-node']} gs2 \\\"{{run}}\\\"")
+		os.system({self._code_lines[self.inputs['gk_code']]['archer2']})
 		if os.path.exists(f\"{{run[:-3]}}.out.nc\"):
 			os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
 		else:
@@ -302,9 +308,6 @@ Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for ru
 					jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
-
-which gs2
-gs2 --build-config
 
 python {self.inputs['data_path']}/submit_files/{filename}.py &
 
@@ -600,11 +603,15 @@ wait""")
 			if itt < self.inputs['itteration']:
 				filename = f"itteration_{self.inputs['itteration']}"
 				subnml = self.eqbm.get_gyro_input(run = run)
-				subnml.write(f"{sub_dir}/{filename}.in", force=True)
+				self.eqbm.write_nml(subnml, f"{sub_dir}/{filename}.in")
 			else:
 				filename = f"itteration_{itt}"
-				
-			self._input_files.add(f"{sub_dir}/{filename}.in")
+			
+			if self.inputs['gk_code'] == 'GS2':
+				self._input_files.add(f"{sub_dir}/{filename}.in")
+			elif self.inputs['gk_code'] == 'CGYRO':
+				self._input_files.add(f"{sub_dir}")
+
 	
 	def get_run_directory(self, run):
 		dims = self.inputs.dim_order if self.inputs['grid_option'] == 'single' else [x for x in self.inputs.dim_order if x not in ['kx','ky']]

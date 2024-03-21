@@ -136,8 +136,8 @@ class equilibrium(object):
 		 	kinetics_file = Path(self.inputs['kin_path']) / self.inputs['kin_name'],
 		 	kinetics_type = kin_type,
 		 	gk_file = Path(self.inputs['template_path']) / self.inputs['template_name'],
+			gk_code = self.inputs['gk_code']
 		 	)
-		self.pyro.gk_code = "GS2"
 		
 	def load_inputs(self, inputs):
 		self.surface_namelists = {}
@@ -186,6 +186,15 @@ class equilibrium(object):
 		if self.pyro is None:
 			self.load_pyro()
 
+		if self.inputs['gk_code'] == 'GS2':
+			return self._get_surface_input_gs2(psiN)
+		elif self.inputs['gk_code'] == 'CGYRO':
+			return self._get_surface_input_cgyro(psiN)
+		else:
+			print("ERROR: gk_code not found")
+			return None
+
+	def _get_surface_input_gs2(self, psiN):
 		self.pyro.load_local(psi_n=psiN)
 		self.pyro.update_gk_code()
 		nml = deepcopy(self.pyro.gk_input.data)
@@ -302,8 +311,40 @@ class equilibrium(object):
 		self.surface_namelists[psiN] = nml
 		
 		return deepcopy(self.surface_namelists[psiN])
-				
+
+	def _get_surface_input_cgyro(self, psiN):
+		self.pyro.load_local(psi_n=psiN)
+		self.pyro.update_gk_code()
+		nml = deepcopy(self.pyro.gk_input.data)
+
+		for dim in self.inputs.single_parameters.values():
+			nml = dim.single_edit_nml(nml)
+					
+		if self.inputs['non_linear'] == True:
+			nml['NONLINEAR_FLAG'] = 1
+		else:
+			nml['NONLINEAR_FLAG'] = 0
+		
+		nml['DELTA_T_METHOD'] = 1
+		nml['EQUILIBRIUM_MODEL'] = 2
+		
+		#for dim in self.inputs.single_parameters.values():
+		#	nml = dim.single_edit_nml(nml)
+
+		self.surface_namelists[psiN] = nml
+		
+		return deepcopy(self.surface_namelists[psiN])
+
 	def get_gyro_input(self, run = None, indexes = None, namelist_diff = {}):
+		if self.inputs['gk_code'] == 'GS2':
+			return self._get_gyro_input_gs2(run = run, indexes = indexes, namelist_diff = namelist_diff)
+		if self.inputs['gk_code'] == 'CGYRO':
+			return self._get_gyro_input_cgyro(run = run, indexes = indexes, namelist_diff = namelist_diff)
+		else:
+			print("ERROR: gk_code not found")
+			return None
+
+	def _get_gyro_input_gs2(self, run = None, indexes = None, namelist_diff = {}):
 		if run is None and indexes is None:
 			print("ERROR: Either indexes or run must be given")
 			return None
@@ -344,7 +385,59 @@ class equilibrium(object):
 				nml[key][skey] = namelist_diff[key][skey]
 			
 		return nml
+
+	def _get_gyro_input_cgyro(self, run = None, indexes = None, namelist_diff = {}):
+		if run is None and indexes is None:
+			print("ERROR: Either indexes or run must be given")
+			return None
 		
+		if run is None:
+			if len(indexes) != len(self.inputs.dimensions):
+				print(f"ERROR: indexes must be of length {len(self.dimensions)}, {[self.inputs.dim_order]}")
+				return None
+			run = {}
+			for i, dim in zip(indexes,self.inputs.dimensions.values()):
+				run[dim.name] = dim.values[i]
+		
+		if 'psin' in run:	
+			psiN = run['psin']
+		elif 'psin' in self.inputs.single_parameters:
+			psiN = self.inputs.single_parameters['psin'].values[0]
+		else:
+			print("ERROR: psiN not defined")
+			return None
+			
+		nml = self.get_surface_input(psiN)
+		
+		if self.inputs['knobs']['fixed_delt'] == False:
+			ky = nml['kt_grids_single_parameters']['aky']
+			delt = 0.04/ky
+			if delt > 0.01:
+				delt = 0.01
+			nml['knobs']['delt'] = delt
+		
+		for dim_name, dim in self.inputs.dimensions.items():
+			nml = dim.edit_nml(nml=nml,val=run[dim_name])
+			
+		for dim_name, dim in self.inputs.single_parameters.items():
+			nml = dim.single_edit_nml(nml)
+		
+		for key in namelist_diff.keys():
+			for skey in namelist_diff[key].keys():
+				nml[key][skey] = namelist_diff[key][skey]
+			
+		return nml
+	
+	def write_nml(self, nml, filename):
+		if self.inputs['gk_code'] == 'GS2':
+			nml.write(filename, force=True)
+		elif self.inputs['gk_code'] == 'CGYRO':
+			with open(filename, "w") as f:
+				for key, value in nml.items():
+					f.write( f"{key} = {value}\n")
+		else:
+			print(f"ERROR: gk_code {self.inputs['gk_code']} not found")
+
 	def make_profiles(self):
 		from scipy.interpolate import InterpolatedUnivariateSpline
 		from numpy import linspace

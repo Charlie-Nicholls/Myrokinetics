@@ -708,7 +708,9 @@ class myro_read(object):
 
 		if filename is None:
 			filename = f"itteration_{self.inputs['itteration']}.in"
-		
+		if self.inputs['gk_code'] == 'CGYRO':
+			filename = "inputs.cgyro"
+
 		if run is None:
 			if len(indexes) != len(self.inputs.dimensions):
 				print(f"ERROR: indexes must be of length {len(self.dimensions)}, {[self.inputs.dim_order]}")
@@ -731,7 +733,7 @@ class myro_read(object):
 		if not nml:
 			return
 		
-		nml.write(os.path.join(directory,filename), force=True)
+		self.eqbm.write(nml, os.path.join(directory,filename))
 		print(f"Created {filename} at {directory}")
 	
 	def merge_myro(self, myro):
