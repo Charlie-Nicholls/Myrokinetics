@@ -405,42 +405,43 @@ class myro_read(object):
 			run_ids = self.get_run_list(runs)
 			abs_grs = []
 			norm_grs = []
-			for run_id in run_ids:
-				abs_grs.append(self.data['gyro'][run_id]['growth_rate'])
-				if 'ky' in self.data['gyro'][run_id]:
-					ky = self.data['gyro'][run_id]['ky']
-				elif 'ky' in self.single_parameters:
-					ky = self.single_parameters['ky'].values[0]
-				else:
-					ky = nan
-				if ky == 0:
-					if self.data['gyro'][run_id]['growth_rate'] == 0:
-						norm_gr = 0
+			if run_ids is not None:
+				for run_id in run_ids:
+					abs_grs.append(self.data['gyro'][run_id]['growth_rate'])
+					if 'ky' in self.data['gyro'][run_id]:
+						ky = self.data['gyro'][run_id]['ky']
+					elif 'ky' in self.single_parameters:
+						ky = self.single_parameters['ky'].values[0]
 					else:
-						norm_gr = nan
-				else:
-					norm_gr = self.data['gyro'][run_id]['growth_rate']/(ky**2)
-				norm_grs.append(norm_gr)
-				self.data['gyro'][run_id]['growth_rate_norm'] = norm_gr
+						ky = nan
+					if ky == 0:
+						if self.data['gyro'][run_id]['growth_rate'] == 0:
+							norm_gr = 0
+						else:
+							norm_gr = nan
+					else:
+						norm_gr = self.data['gyro'][run_id]['growth_rate']/(ky**2)
+					norm_grs.append(norm_gr)
+					self.data['gyro'][run_id]['growth_rate_norm'] = norm_gr
 			
-			if len([x for x in abs_grs if isfinite(x)]) == 0:
-				if len(run_ids) == 0:
-					abs_id = None
+				if len([x for x in abs_grs if isfinite(x)]) == 0:
+					if len(run_ids) == 0:
+						abs_id = None
+					else:
+						abs_id = run_ids[0]
 				else:
-					abs_id = run_ids[0]
-			else:
-				abs_gr = max([x for x in abs_grs if isfinite(x)])
-				abs_id = run_ids[abs_grs.index(abs_gr)]
-			if len([x for x in norm_grs if isfinite(x)]) == 0:
-				norm_id = run_ids[0]
-			else:
-				norm_gr = max([x for x in norm_grs if isfinite(x)])
-				norm_id = run_ids[norm_grs.index(norm_gr)]
+					abs_gr = max([x for x in abs_grs if isfinite(x)])
+					abs_id = run_ids[abs_grs.index(abs_gr)]
+				if len([x for x in norm_grs if isfinite(x)]) == 0:
+					norm_id = run_ids[0]
+				else:
+					norm_gr = max([x for x in norm_grs if isfinite(x)])
+					norm_id = run_ids[norm_grs.index(norm_gr)]
 
-			for dim_name, val in [(x, y) for x, y in self.data['gyro'][abs_id].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
-				abs_gr_keys[dim_name][val].append(abs_id)
-			for dim_name, val in [(x, y) for x, y in self.data['gyro'][norm_id].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
-				norm_gr_keys[dim_name][val].append(norm_id)
+				for dim_name, val in [(x, y) for x, y in self.data['gyro'][abs_id].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
+					abs_gr_keys[dim_name][val].append(abs_id)
+				for dim_name, val in [(x, y) for x, y in self.data['gyro'][norm_id].items() if (x in self.dimensions and x not in ['ky','theta0'])]:
+					norm_gr_keys[dim_name][val].append(norm_id)
 		
 		self.data['_abs_gr_keys'] = abs_gr_keys
 		self.data['_norm_gr_keys'] = norm_gr_keys
