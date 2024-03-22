@@ -210,9 +210,9 @@ class scan_inputs(object):
 		if self['gk_code'] not in ['GS2','CGYRO']:
 			print("ERROR: gk_code must be GS2 or CGYRO. Setting to GS2")
 			self.inputs['knobs']['gk_code'] = defaults['knobs']['gk_code']
-		elif self.inputs['gk_code'] == 'GS2':
+		elif self['gk_code'] == 'GS2':
 			self.dim_lookup = dim_lookup_gs2
-		elif self.inputs['gk_code'] == 'CGYRO':
+		elif self['gk_code'] == 'CGYRO':
 			self.dim_lookup = dim_lookup_cgyro
 
 		if self.inputs['files']['input_name'] is None and self.input_name:
@@ -221,9 +221,9 @@ class scan_inputs(object):
 			self.inputs['files']['input_path'] = self.path
 		
 		if not self.inputs['files']['template_name']:
-			if self.inputs['gk_code'] == 'GS2':
+			if self['gk_code'] == 'GS2':
 				self.inputs['files']['template_name'] = gs2_template
-			elif self.inputs['gk_code'] == 'CGYRO':
+			elif self['gk_code'] == 'CGYRO':
 				self.inputs['files']['template_name'] = cgyro_template
 			self.inputs['files']['template_path'] = template_dir
 		for key in ['eq','kin']:
