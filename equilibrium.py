@@ -109,7 +109,7 @@ class equilibrium(object):
 		elif self.inputs['template_name'] is None:
 			if self.inputs['gk_code'] == 'GS2':
 				self.inputs.inputs['files']['template_name'] = gs2_template
-			elif self.inputs['gk_code'] == 'CGYRO'
+			elif self.inputs['gk_code'] == 'CGYRO':
 				self.inputs.inputs['files']['template_name'] = cgyro_template
 			self.inputs.inputs['files']['template_path'] = template_dir
 		
