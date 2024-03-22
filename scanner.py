@@ -168,7 +168,7 @@ class myro_scan(object):
 						'archer2': 'f"srun --nodes={self.inputs["sbatch"]["nodes"]} --ntasks={self.inputs["sbatch"]["ntasks-per-node"]} gs2 \\\"{{run}}\\\""'},
 					'CGYRO': {'ypi_server': None,
 						'viking': None,
-						'archer2': 'f"srun --nodes={self.inputs["sbatch"]["nodes"]} {{run}}/cgyro -e "{{run}}" -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p "{{run}}" >& {{run}}/cgyro.out'}
+						'archer2': 'f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e "{{run}}" -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p "{{run}}"'}
 
 	}
 
@@ -241,7 +241,6 @@ fi""")
 			submit.write(f"""#!/bin/bash
 #SBATCH --job-name=submit
 #SBATCH --partition=nodes
-#SBATCH --qos=short
 #SBATCH --time=00:00:30
 #SBATCH --ntasks=1
 #SBATCH --mem=10MB
@@ -955,14 +954,21 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
-		if itt is None:
-			itt = self['itteration']
-			filepath = f"{file_dir}/itteration_{itt}.in"
-			if not os.path.exists(filepath):
-				print(f"ERROR: input \"{filepath}\" not found, please specify itt and ensure make files has been run")
-				return
-		nml = f90nml.read(filepath)
-		print(nml)
+		if self.inputs['gk_code'] == 'GS2':
+			if itt is None:
+				itt = self['itteration']
+				filepath = f"{file_dir}/itteration_{itt}.in"
+				if not os.path.exists(filepath):
+					print(f"ERROR: input \"{filepath}\" not found, please specify itt and ensure make files has been run")
+					return
+			nml = f90nml.read(filepath)
+			print(nml)
+		elif self.inputs['gk_code'] == 'CGYRO':
+				with open(f"{file_dir}/input.cgyro") as f:
+					lines = f.readlines()
+					for line in lines:
+						print(line)
+		
 	
 	def print_submit_file(self, n = 0):
 		filepath = f"{self['data_path']}/submit_files/"
@@ -1025,27 +1031,50 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			print(line, end='')
 	
 	def run_ingen(self, run = {}, itt = None):
-		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
+		if run not in self.get_all_runs():
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
-		if itt is None:
-			itt = self['itteration']
-			filepath = f"{file_dir}/itteration_{itt}.in"
-			if not os.path.exists(filepath):
-				print(f"ERROR: input \"{filepath}\" not found")
-				return
-		os.system(filepath)
-		self.print_ingen(run = run, itt = itt)
+		if self.inputs['gk_code'] == 'GS2':
+			if itt is None:
+				itt = self['itteration']
+				filepath = f"{file_dir}/itteration_{itt}.in"
+				if not os.path.exists(filepath):
+					print(f"ERROR: input \"{filepath}\" not found")
+					return
+			os.system(filepath)
+			self.print_ingen(run = run, itt = itt)
+		elif self.inputs['gk_code'] == 'CGYRO' and self.inputs['system'] == 'archer2':
+			f = open(f"{file_dir}/ingen.job")
+			f.write(f"""#!/bin/bash
+#SBATCH --time=00:00:30
+#SBATCH --job-name=ingen
+#SBATCH --nodes=1
+#SBATCH --output=ingen.slurm
+#SBATCH --account={self.inputs['sbatch_save']['account']}
+#SBATCH --partition=standard
+#SBATCH --qos=short
+#SBATCH --distribution=block:block
+#SBATCH --hint=nomultithread
+
+{systems[self['system']]['modules']['archer2']}
+
+cgyro -i "./" >& ingen.out
+""")
+			f.close()
+			os.system(f"sbatch {file_dir}/ingen.job")
 	
 	def print_ingen(self, run = {}, itt = None):
-		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
+		if run not in self.get_all_runs():
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
-		if itt is None:
-			itt = self['itteration']
-		filepath = f"{file_dir}/itteration_{itt}.report"
+		if self.inputs['gk_code'] == 'GS2':
+			if itt is None:
+				itt = self['itteration']
+			filepath = f"{file_dir}/itteration_{itt}.report"
+		elif self.inputs['gk_code'] == 'CGYRO':
+			filepath = f"{file_dir}/ingen.out"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
@@ -1057,7 +1086,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			print(line, end='')
 			
 	def load_run_out(self, run = {}, itt = None):
-		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
+		if run not in self.get_all_runs():
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
