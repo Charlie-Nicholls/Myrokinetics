@@ -207,7 +207,7 @@ class scan_inputs(object):
 				del(self.inputs[key][old_key])
 		
 		self.inputs['knobs']['gk_code'] = self.inputs['knobs']['gk_code'].upper()
-		if self.inputs['gk_code'] not in ['GS2','CGYRO']:
+		if self['gk_code'] not in ['GS2','CGYRO']:
 			print("ERROR: gk_code must be GS2 or CGYRO. Setting to GS2")
 			self.inputs['knobs']['gk_code'] = defaults['knobs']['gk_code']
 		elif self.inputs['gk_code'] == 'GS2':
