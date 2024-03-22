@@ -328,6 +328,10 @@ class equilibrium(object):
 		else:
 			nml['NONLINEAR_FLAG'] = 0
 		
+		if self.inputs['grid_option'] == 'single':
+			nml['N_TOROIDAL'] = 1
+			nml['N_RADIAL'] = 1
+		
 		nml['DELTA_T_METHOD'] = 1
 		nml['EQUILIBRIUM_MODEL'] = 2
 		
