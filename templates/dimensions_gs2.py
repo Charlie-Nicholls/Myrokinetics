@@ -147,6 +147,9 @@ class nperiod(dimension):
 		if any([x <= 0 for x in values]):
 			print("Error: nperiod values outside allowed range (x>0)")
 			values = [x for x in values if (x>0)]
+		if any([x != int(x) for x in values]):
+			print("Error: nperiod values must be integers")
+			values = [x for x in values if (x==int(x))]
 		return values
 
 	def edit_nml(self, nml, val):
@@ -165,6 +168,9 @@ class ntheta(dimension):
 		if any([x <= 0 for x in values]):
 			print("Error: ntheta values outside allowed range (x>0)")
 			values = [x for x in values if (x>0)]
+		if any([x != int(x) for x in values]):
+			print("Error: ntheta values must be integers")
+			values = [x for x in values if (x==int(x))]
 		return values
 
 	def edit_nml(self, nml, val):
@@ -211,7 +217,7 @@ class fexpr(dimension):
 
 class delt(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = None)
 
 	name_keys = ['delt']
 	axis_label = 'delt'

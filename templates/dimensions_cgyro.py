@@ -39,6 +39,7 @@ class psiN(dimension):
 class beta_prime(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+		print("BETA PRIME NOT YET IMPLIMENTED")
 
 	name_keys = ['beta_prime','betap','bp','beta_p','b_p']
 	axis_label = r'$\beta^{\prime}$'
@@ -50,6 +51,7 @@ class beta_prime(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
+		'''
 		nml['theta_grid_eik_knobs']['beta_prime_input'] = -1*abs(val)
 
 		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
@@ -58,6 +60,7 @@ class beta_prime(dimension):
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 			nml[spec]['tprim'] = nml[spec]['tprim']*mul
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul
+		'''
 
 		return nml
 
@@ -65,7 +68,7 @@ class shear(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
-	name_keys = ['shear','shat','s_hat','sh']
+	name_keys = ['shear','shat','s_hat','sh','s']
 	axis_label = r'$\hat{s}$'
 	valid_options = []
 	
@@ -76,7 +79,7 @@ class shear(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['theta_grid_eik_knobs']['s_hat_input'] = val
+		nml['s'] = val
 		return nml
 
 class ky(dimension):
@@ -94,252 +97,35 @@ class ky(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['kt_grids_single_parameters']['aky'] = val
-		return nml
-
-class theta0(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['theta0','theta','t0']
-	axis_label = r'$\theta_{0}$'
-	valid_options = []
-
-	def sub_validate(self, values):
-		from numpy import pi
-		if any([x < -pi or x > pi for x in values]):
-			print("Error: theta0 values outside allowed range (-pi<=x<=pi)")
-			values = [x for x in values if (-pi<=x<=pi)]
-		return values
-
-	def edit_nml(self, nml, val):
-		nml['kt_grids_single_parameters']['theta0'] = val
-		if 'akx' in nml['kt_grids_single_parameters']:
-			del(nml['kt_grids_single_parameters']['akx'])
-		return nml
-
-class kx(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['kx','akx','kx_rho0']
-	axis_label = r'$k_{x}\rho_{0}$'
-	valid_options = []
-
-	def sub_validate(self, values):
-		return values
-
-	def edit_nml(self, nml, val):
-		nml['kt_grids_single_parameters']['akx'] = val
-		if 'theta0' in nml['kt_grids_single_parameters']:
-			del(nml['kt_grids_single_parameters']['theta0'])
-		return nml
-
-class nperiod(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['nperiod']
-	axis_label = 'nperiod'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([x <= 0 for x in values]):
-			print("Error: nperiod values outside allowed range (x>0)")
-			values = [x for x in values if (x>0)]
-		return values
-
-	def edit_nml(self, nml, val):
-		nml['theta_grid_parameters']['nperiod'] = val
+		nml['KY'] = val
 		return nml
 
 class ntheta(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
-	name_keys = ['ntheta']
+	name_keys = ['ntheta','n_theta','num_theta']
 	axis_label = 'ntheta'
 	valid_options = []
 
 	def sub_validate(self, values):
 		if any([x <= 0 for x in values]):
-			print("Error: ntheta values outside allowed range (x>0)")
+			print("Error: ntheta values outside the allowed range (x>0)")
 			values = [x for x in values if (x>0)]
+		if any([x != int(x) for x in values]):
+			print("Error: ntheta values must be integers")
+			values = [x for x in values if (x==int(x))]
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['theta_grid_parameters']['ntheta'] = val
-		return nml
-
-class bakdif(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['bakdif']
-	axis_label = 'bakdif'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([x < 0 for x in values]):
-			print("Error: bakdif values outside allowed range (x>=0)")
-			values = [x for x in values if (x>0)]
-		return values
-
-	def edit_nml(self, nml, val):
-		for key in [x for x in nml.keys() if 'dist_fn_species_knobs_' in x]:
-			nml[key]['bakdif'] = val
-		return nml
-		
-class fexpr(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['fexpr']
-	axis_label = 'fexpr'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([x < 0 or x > 1 for x in values]):
-			print("Error: fexpr values outside allowed range (0<=x<=1)")
-			values = [x for x in values if (0<=x<=1)]
-		return values
-
-	def edit_nml(self, nml, val):
-		for key in [x for x in nml.keys() if 'dist_fn_species_knobs_' in x]:
-			nml[key]['fexpr'] = val
-		return nml
-
-class delt(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num)
-
-	name_keys = ['delt']
-	axis_label = 'delt'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([x <= 0 for x in values]):
-			print("Error: delt values outside allowed range (x>0)")
-			values = [x for x in values if (x>0)]
-		return values
-
-	def edit_nml(self, nml, val):
-		nml['knobs']['delt'] = val
-		return nml
-
-class vnewk(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		if self.option is None:
-			self.option = 'all'
-
-	name_keys = ['vnewk']
-	axis_label = 'vnewk'
-	valid_options = ['all','electron','ion','deuterium','tritium','impurity']
-
-	def sub_validate(self, values):
-		if any([x < 0 for x in values]):
-			print("Error: delt values outside allowed range (x>=0)")
-			values = [x for x in values if (x>=0)]
-		return values
-
-	def edit_nml(self, nml, val):
-		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
-			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
-				nml[key]['vnewk'] = val
-			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
-				nml[key]['vnewk'] = val
-			elif nml[key]['type'] == 'ion' and nml[key]['z'] == 1 and self.option in ['all','ion','tritium']:
-				nml[key]['vnewk'] = val
-			elif nml[key]['type'] == 'ion' and self.option in ['all','impurity']:
-				nml[key]['vnewk'] = val
-		return nml
-
-class tprim(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		print("Warning: tprim dimension does not adjust beta_prime or fprim for consistency")
-		if self.option is None:
-			self.option = 'all'
-
-	name_keys = ['tprim']
-	axis_label = 'tprim'
-	valid_options = ['all','electron','ion','deuterium','tritium','impurity']
-
-	def sub_validate(self, values):
-		return values
-
-	def edit_nml(self, nml, val):
-		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
-			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
-				nml[key]['tprim'] = val
-			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
-				nml[key]['tprim'] = val
-			elif nml[key]['type'] == 'ion' and nml[key]['z'] == 1 and self.option in ['all','ion','tritium']:
-				nml[key]['tprim'] = val
-			elif nml[key]['type'] == 'ion' and self.option in ['all','impurity']:
-				nml[key]['tprim'] = val
-		return nml
-
-class fprim(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		print("Warning: fprim dimension does not adjust beta_prime or tprim for consistency")
-		if self.option is None:
-			self.option = 'all'
-
-	name_keys = ['fprim']
-	axis_label = 'fprim'
-	valid_options = ['all','electron','ion','deuterium','tritium','impurity']
-
-	def sub_validate(self, values):
-		return values
-
-	def edit_nml(self, nml, val):
-		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
-			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
-				nml[key]['fprim'] = val
-			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
-				nml[key]['fprim'] = val
-			elif nml[key]['type'] == 'ion' and nml[key]['z'] == 1 and self.option in ['all','ion','tritium']:
-				nml[key]['fprim'] = val
-			elif nml[key]['type'] == 'ion' and self.option in ['all','impurity']:
-				nml[key]['fprim'] = val
-		return nml
-
-class mass(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		if self.option is None:
-			self.option = 'electron'
-
-	name_keys = ['mass']
-	axis_label = 'mass'
-	valid_options = ['all','electron','ion','deuterium','tritium','impurity']
-
-	def sub_validate(self, values):
-		if any([x <= 0 for x in values]):
-			print("Error: mass values outside allowed range (x>0)")
-			values = [x for x in values if (x>0)]
-		return values
-
-	def edit_nml(self, nml, val):
-		for key in [x for x in nml.keys() if 'species_parameters_' in x]:
-			if nml[key]['type'] == 'electron' and self.option in ['all','electron']:
-				nml[key]['mass'] = val
-			elif nml[key]['type'] == 'ion' and nml[key]['mass'] == 1 and self.option in ['all','ion','deuterium']:
-				nml[key]['mass'] = val
-			elif nml[key]['type'] == 'ion' and nml[key]['z'] == 1 and self.option in ['all','ion','tritium']:
-				nml[key]['mass'] = val
-			elif nml[key]['type'] == 'ion' and self.option in ['all','impurity']:
-				nml[key]['mass'] = val
+		nml['N_THETA'] = val
 		return nml
 
 class nx(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
-	name_keys = ['nx']
+	name_keys = ['nx','n_radial','nradial','num_radial']
 	axis_label = 'nx'
 	valid_options = []
 
@@ -353,16 +139,14 @@ class nx(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		if 'kt_grids_box_parameters' not in nml.keys():
-			nml['kt_grids_box_parameters'] = {}
-		nml['kt_grids_box_parameters']['nx'] = val
+		nml['N_RADIAL'] = val
 		return nml
 
 class ny(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
-	name_keys = ['ny']
+	name_keys = ['ny','n_toroidal','ntoroidal','num_toroidal']
 	axis_label = 'ny'
 	valid_options = []
 
@@ -376,72 +160,25 @@ class ny(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		if 'kt_grids_box_parameters' not in nml.keys():
-			nml['kt_grids_box_parameters'] = {}
-		nml['kt_grids_box_parameters']['ny'] = val
+		nml['N_TOROIDAL'] = val
 		return nml
 
-class y0(dimension):
+class delt(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = None)
 
-	name_keys = ['y0']
-	axis_label = 'y0'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([x == 0 for x in values]):
-			print("Error: y0 values outside the allowed range (x!=0)")
-			values = [x for x in values if (x!=0)]
-		return values
-
-	def edit_nml(self, nml, val):
-		if 'kt_grids_box_parameters' not in nml.keys():
-			nml['kt_grids_box_parameters'] = {}
-		nml['kt_grids_box_parameters']['y0'] = val
-		return nml
-
-class jtwist(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['jtwist']
-	axis_label = 'jtwist'
+	name_keys = ['delt','DELTA_T','DELTA']
+	axis_label = 'delt'
 	valid_options = []
 
 	def sub_validate(self, values):
 		if any([x <= 0 for x in values]):
-			print("Error: jtwist values outside the allowed range (x>0)")
+			print("Error: delt values outside allowed range (x>0)")
 			values = [x for x in values if (x>0)]
-		if any([x != int(x) for x in values]):
-			print("Error: jtwist values must be integers")
-			values = [x for x in values if (x==int(x))]
 		return values
 
 	def edit_nml(self, nml, val):
-		if 'kt_grids_box_parameters' not in nml.keys():
-			nml['kt_grids_box_parameters'] = {}
-		nml['kt_grids_box_parameters']['jtwist'] = val
+		nml['DELTA_T'] = val
 		return nml
 
-class cfl(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['cfl']
-	axis_label = 'cfl'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([(x < 0 or x > 1) for x in values]):
-			print("Error: cfl values outside the allowed range (0<=x<=1)")
-			values = [x for x in values if (0<=x<=1)]
-		return values
-
-	def edit_nml(self, nml, val):
-		if 'nonlinear_terms_knobs' not in nml.keys():
-			nml['nonlinear_terms_knobs'] = {}
-		nml['nonlinear_terms_knobs']['cfl'] = val
-		return nml
-
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl]
+dimensions_list = [psiN,beta_prime,shear,ky,ntheta,nx,ny,delt]
