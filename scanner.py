@@ -109,7 +109,6 @@ class myro_scan(object):
 				print("Gyro scan currently running, use run_ideal_jobs when completed to run ideal scan")
 			else:
 				self.run_ideal_jobs()
-
 	
 	def check_setup(self, gyro = None, ideal = None):
 		if not self.inputs.check_scan():
@@ -162,15 +161,6 @@ class myro_scan(object):
 	def clear_jobs(self):
 		self._input_files = set()
 		self._ideal_input_files = set()
-	
-	_code_lines = {'GS2': {'ypi_server': 'mpirun -np 8 gs2 \"{input_file}\"',
-						'viking': 'gs2 "${{INFILE}}.in"',
-						'archer2': 'f"srun --nodes={self.inputs["sbatch"]["nodes"]} --ntasks={self.inputs["sbatch"]["ntasks-per-node"]} gs2 \\\"{{run}}\\\""'},
-					'CGYRO': {'ypi_server': None,
-						'viking': None,
-						'archer2': 'f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e "{{run}}" -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p "{{run}}"'}
-
-	}
 
 	def make_job_files(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
@@ -282,6 +272,10 @@ fi""")
 				for n in range(n_par):
 					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
 					filename = f"gyro_{n}"
+					if self.inputs['gk_code'] == 'GS2':
+						srun = f'f"srun --nodes={self.inputs["sbatch"]["nodes"]} --ntasks={self.inputs["sbatch"]["ntasks-per-node"]} gs2 \"{{run}}\""'
+					elif self.inputs['gk_code'] == 'CGYRO':
+						srun = f'f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e \"{{run}}\" -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p \"{{run}}\""'
 					pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
 					pyth.write(f"""import os
 from joblib import Parallel, delayed
@@ -292,7 +286,7 @@ input_files = {input_lists[n]}
 def start_run(run, run_attempt = 1):
 	if run_attempt <= 3:
 		os.system(f"echo \\\"Input: {{run}}\\\"")
-		os.system({self._code_lines[self.inputs['gk_code']]['archer2']})
+		os.system({srun})
 		if os.path.exists(f\"{{run[:-3]}}.out.nc\"):
 			os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
 		else:
@@ -1007,8 +1001,10 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		filepath = f"{self['data_path']}/submit_files/"
 		if self.inputs['nonlinear']:
 			filepath += f"{self.inputs['sbatch']['output']}_{n}"
-		else:
+		elif self.inputs['system'] == 'viking':
 			filepath += f"gyro_{n}/{self.inputs['sbatch']['output']}_{i}"
+		elif self.inputs['system'] == 'archer2':
+			filepath += f"{self.inputs['sbatch']['output']}_{n}"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:

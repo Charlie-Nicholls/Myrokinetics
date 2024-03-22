@@ -56,7 +56,6 @@ export GACODE_PLATFORM=ARCHER2
 export GACODE_ROOT=/work/e281/e281/cnicholls/gacode
 . $GACODE_ROOT/shared/bin/gacode_setup
 ulimit -s unlimited
-export PATH=${PATH}:/work/e281/e281/cnicholls/gs2/bin
 source /work/e281/e281/cnicholls/pythenv/bin/activate
 which cgyro
 cgyro -h"""
