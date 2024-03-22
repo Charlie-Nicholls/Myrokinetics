@@ -363,8 +363,8 @@ class scan_inputs(object):
 			print("ERROR: Ideal runs can only be performed on GS2")
 			valid = False
 		
-		if self['gk_code'] == 'CGYRO' and self['system'] != 'ARCHER2':
-			print("ERROR: CGYRO can currently only be run on ARCHER2")
+		if self['gk_code'] == 'CGYRO' and self['system'] != 'archer2':
+			print("ERROR: CGYRO can currently only be run on archer2")
 			valid = False
 			
 		return valid
