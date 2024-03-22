@@ -273,9 +273,9 @@ fi""")
 					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
 					filename = f"gyro_{n}"
 					if self.inputs['gk_code'] == 'GS2':
-						srun = f'f"srun --nodes={self.inputs["sbatch"]["nodes"]} --ntasks={self.inputs["sbatch"]["ntasks-per-node"]} gs2 \"{{run}}\""'
+						srun = f'f"srun --nodes={self.inputs["sbatch"]["nodes"]} --ntasks={self.inputs["sbatch"]["ntasks-per-node"]} gs2 \\\"{{run}}\\\""'
 					elif self.inputs['gk_code'] == 'CGYRO':
-						srun = f'f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e \"{{run}}\" -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p \"{{run}}\""'
+						srun = f'f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e \\\"{{run}}\\\" -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p \\\"{{run}}\\\""'
 					pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
 					pyth.write(f"""import os
 from joblib import Parallel, delayed
