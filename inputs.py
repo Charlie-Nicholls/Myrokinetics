@@ -1,7 +1,7 @@
 import os
 import f90nml
 from copy import deepcopy, copy
-from .templates import dim_lookup_gs2, dim_lookup_cgyro, template_dir, gs2_template, inputs_template, systems
+from .templates import dim_lookup_gs2, dim_lookup_cgyro, template_dir, gs2_template, cgyro_template, inputs_template, systems
 
 possible_keys = {
 	'files': {
@@ -221,7 +221,10 @@ class scan_inputs(object):
 			self.inputs['files']['input_path'] = self.path
 		
 		if not self.inputs['files']['template_name']:
-			self.inputs['files']['template_name'] = gs2_template
+			if self.inputs['gk_code'] == 'GS2':
+				self.inputs['files']['template_name'] = gs2_template
+			elif self.inputs['gk_code'] == 'CGYRO':
+				self.inputs['files']['template_name'] = cgyro_template
 			self.inputs['files']['template_path'] = template_dir
 		for key in ['eq','kin']:
 			if not self.inputs['files'][f'{key}_name']:

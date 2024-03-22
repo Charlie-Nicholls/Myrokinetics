@@ -24,7 +24,8 @@ template_dir.resolve()
 template_dir = str(template_dir)
 
 gs2_template = "template.gs2"
+cgyro_template = "template.cgyro"
 
 inputs_template = "default_input.in"
 
-__all__ = ['dim_lookup_gs2','dim_lookup_cgyro','template_dir','gs2_template','systems','inputs_template']
+__all__ = ['dim_lookup_gs2','dim_lookup_cgyro','template_dir','gs2_template','cgyro_template','systems','inputs_template']

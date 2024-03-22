@@ -1,7 +1,7 @@
 import os
 import f90nml
 from .inputs import scan_inputs
-from .templates import template_dir, gs2_template
+from .templates import template_dir, gs2_template, cgyro_template
 from copy import deepcopy
 
 class equilibrium(object):
@@ -107,7 +107,10 @@ class equilibrium(object):
 			self.inputs.inputs['files']['template_name'] = template_file
 			self.inputs.check_inputs()
 		elif self.inputs['template_name'] is None:
-			self.inputs.inputs['files']['template_name'] = gs2_template
+			if self.inputs['gk_code'] == 'GS2':
+				self.inputs.inputs['files']['template_name'] = gs2_template
+			elif self.inputs['gk_code'] == 'CGYRO'
+				self.inputs.inputs['files']['template_name'] = cgyro_template
 			self.inputs.inputs['files']['template_path'] = template_dir
 		
 		if directory is None:
