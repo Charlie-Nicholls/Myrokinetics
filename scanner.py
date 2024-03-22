@@ -592,25 +592,30 @@ wait""")
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
-			if self.inputs['grid_option'] == 'box':
+			if self.inputs['grid_option'] == 'box' and self.inputs['gk_code'] == 'GS2':
 				os.makedirs(sub_dir+'/response',exist_ok=True)
 				os.makedirs(sub_dir+'/restart',exist_ok=True)
-			existing_inputs = [] 
-			for f in glob.glob(r'itteration_*.in'):
-				existing_inputs.append([x for x in f if x.isdigit()])
-			itt = max([eval("".join(x)) for x in existing_inputs],default=-1)
-			if itt < self.inputs['itteration']:
-				filename = f"itteration_{self.inputs['itteration']}"
+			skip = False
+			if self.inputs['gk_code'] == 'GS2':
+				existing_inputs = [] 
+				for f in glob.glob(r'itteration_*.in'):
+					existing_inputs.append([x for x in f if x.isdigit()])
+				itt = max([eval("".join(x)) for x in existing_inputs],default=-1)
+				filename = f"itteration_{self.inputs['itteration']}.in"
+				if itt >= self.inputs['itteration']:
+					skip = True
+			elif self.inputs['gk_code'] == 'CGYRO':
+				filename = "input.cgyro"
+				if os.path.exists(f"{sub_dir}/input.cgyro"):
+					skip = True
+			if not skip:
 				subnml = self.eqbm.get_gyro_input(run = run)
-				self.eqbm.write_nml(subnml, f"{sub_dir}/{filename}.in")
-			else:
-				filename = f"itteration_{itt}"
+				self.eqbm.write_nml(subnml, directory = sub_dir, filename = filename)
 			
 			if self.inputs['gk_code'] == 'GS2':
-				self._input_files.add(f"{sub_dir}/{filename}.in")
+				self._input_files.add(f"{sub_dir}/{filename}")
 			elif self.inputs['gk_code'] == 'CGYRO':
 				self._input_files.add(f"{sub_dir}")
-
 	
 	def get_run_directory(self, run):
 		dims = self.inputs.dim_order if self.inputs['grid_option'] == 'single' else [x for x in self.inputs.dim_order if x not in ['kx','ky']]

@@ -435,13 +435,13 @@ class equilibrium(object):
 			
 		return nml
 	
-	def write_nml(self, nml, filename = None):
+	def write_nml(self, nml, directory = ".", filename = None):
 		if self.inputs['gk_code'] == 'GS2':
 			if filename is None:
 				filename = "itteration_0.in"
-			nml.write(filename, force=True)
+			nml.write(f"{directory}/{filename}", force=True)
 		elif self.inputs['gk_code'] == 'CGYRO':
-			with open("input.cgyro", "w") as f:
+			with open(f"{directory}/input.cgyro", "w") as f:
 				for key, value in nml.items():
 					f.write( f"{key} = {value}\n")
 		else:
