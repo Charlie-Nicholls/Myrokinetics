@@ -1083,7 +1083,10 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 cgyro -i "./" >& ingen.out
 """)
 			f.close()
+			cwd = os.getcwd()
+			os.chdir(file_dir)
 			os.system(f"sbatch {file_dir}/ingen.job")
+			os.chdir(cwd)
 	
 	def print_ingen(self, run = {}, itt = None):
 		if run not in self.get_all_runs():
