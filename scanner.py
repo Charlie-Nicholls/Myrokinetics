@@ -305,7 +305,7 @@ def start_run(run, run_attempt = 1):
 		os.system(f"echo \\\"Input: {{run}}\\\"")
 		cwd = os.getcwd()
 		os.chdir(f"{{run}}")
-		os.system(f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e . -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p .")
+		os.system(f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e . -n {self.inputs["sbatch"]["nodes"]*self.inputs["sbatch"]["ntasks-per-node"]} -nomp 1 -numa 8 -mpinuma 16 -p .")
 		os.chdir(f"{{cwd}}")
 		if os.path.exists(f"{{run}}/out.cgyro.info"):
 			os.system(f"touch {{run}}/out.cgyro.fin")
