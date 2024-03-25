@@ -272,12 +272,9 @@ fi""")
 				for n in range(n_par):
 					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
 					filename = f"gyro_{n}"
-					if self.inputs['gk_code'] == 'GS2':
-						srun = f'f"srun --nodes={self.inputs["sbatch"]["nodes"]} --ntasks={self.inputs["sbatch"]["ntasks-per-node"]} gs2 \\\\\\\"{{run}}\\\\\\\""'
-					elif self.inputs['gk_code'] == 'CGYRO':
-						srun = f'f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e \\\\\\\"{{run}}\\\\\\\" -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p \\\\\\\"{{run}}\\\\\\\""'
 					pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
-					pyth.write(f"""import os
+					if self.inputs['gk_code'] == 'GS2':
+						pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
 
@@ -286,9 +283,32 @@ input_files = {input_lists[n]}
 def start_run(run, run_attempt = 1):
 	if run_attempt <= 3:
 		os.system(f"echo \\\"Input: {{run}}\\\"")
-		os.system({srun})
-		if os.path.exists(f\"{{run[:-3]}}.out.nc\"):
+		os.system(f"srun --nodes={self.inputs["sbatch"]["nodes"]} --ntasks={self.inputs["sbatch"]["ntasks-per-node"]} gs2 \\\"{{run}}\\\"")
+		if os.path.exists(f"\\\"{{run[:-3]}}.out.nc\\\"'):
 			os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
+		else:
+			sleep(60)
+			start_run(run, run_attempt = run_attempt+1)
+	else:
+		print(f"ERROR: {{run}} took too many attempts to start, skipping")
+
+Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
+					elif self.inputs['gk_code'] == 'CGYRO':
+						pyth.write(f"""import os
+from joblib import Parallel, delayed
+from time import sleep
+
+input_files = {input_lists[n]}
+
+def start_run(run, run_attempt = 1):
+	if run_attempt <= 3:
+		os.system(f"echo \\\"Input: {{run}}\\\"")
+		cwd = os.getcwd()
+		os.chdir(f"{{run}}\\\"")
+		os.system(f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e . -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p .")
+		os.chdir(f"\\\"{{cwd}}\\\"")
+		if os.path.exists(f"\\\"{{run}}/out.cgyro.info\\\""):
+			os.system(f"touch \\\"{{run}}/out.cgyro.fin\\\"")
 		else:
 			sleep(60)
 			start_run(run, run_attempt = run_attempt+1)
@@ -613,7 +633,7 @@ wait""")
 	
 	def get_run_directory(self, run):
 		dims = self.inputs.dim_order if self.inputs['grid_option'] == 'single' else [x for x in self.inputs.dim_order if x not in ['kx','ky']]
-		dir_list = [f"{name} = {run[name]:.4g}" for name in dims]
+		dir_list = [f"{name}={run[name]:.4g}" for name in dims]
 		dir_list.insert(0,f"{self.inputs['data_path']}/gyro_files")
 		sub_dir = "/".join(dir_list)
 		return sub_dir
@@ -632,7 +652,7 @@ wait""")
 			print("ERROR: theta0 not given")
 			return None
 		
-		sub_dir = f"{self.inputs['data_path']}/ideal_files/" + "/".join([f"{name} = {run[name]:.4g}" for name in ['psin','theta0']])
+		sub_dir = f"{self.inputs['data_path']}/ideal_files/" + "/".join([f"{name}={run[name]:.4g}" for name in ['psin','theta0']])
 		return sub_dir
 	
 	def update_itteration(self):
