@@ -304,11 +304,11 @@ def start_run(run, run_attempt = 1):
 	if run_attempt <= 3:
 		os.system(f"echo \\\"Input: {{run}}\\\"")
 		cwd = os.getcwd()
-		os.chdir(f"\\\"{{run}}\\\"")
+		os.chdir(f"{{run}}")
 		os.system(f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e . -n {self.inputs["sbatch"]["nodes"]} -nomp 1 -numa 8 -mpinuma 16 -p .")
-		os.chdir(f"\\\"{{cwd}}\\\"")
-		if os.path.exists(f"\\\"{{run}}/out.cgyro.info\\\""):
-			os.system(f"touch \\\"{{run}}/out.cgyro.fin\\\"")
+		os.chdir(f"{{cwd}}")
+		if os.path.exists(f"{{run}}/out.cgyro.info"):
+			os.system(f"touch {{run}}/out.cgyro.fin")
 		else:
 			sleep(60)
 			start_run(run, run_attempt = run_attempt+1)
@@ -1066,7 +1066,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			os.system(filepath)
 			self.print_ingen(run = run, itt = itt)
 		elif self.inputs['gk_code'] == 'CGYRO' and self.inputs['system'] == 'archer2':
-			f = open(f"{file_dir}/ingen.job")
+			f = open(f"{file_dir}/ingen.job",'w')
 			f.write(f"""#!/bin/bash
 #SBATCH --time=00:00:30
 #SBATCH --job-name=ingen
