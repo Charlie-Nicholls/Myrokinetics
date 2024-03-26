@@ -1,13 +1,13 @@
 from numpy import array, trapz, nan, log10, floor, append
 
-def avg_kperp2_f(run,f):
-	ky = run['ky']
+def avg_kperp2_f(run, reader, f):
+	ky = reader('ky',run)
 	ky2 = ky**2
-	gds2 = array(run['gds2'])
-	J = array(run['jacob'])
-	theta = array(run['theta'])
+	gds2 = array(reader('gds2',run))
+	J = array(reader('jacob',run))
+	theta = array(reader('theta',run))
 	
-	df = abs(array(run[f]))
+	df = abs(array(reader(f,run)))
 	#Sometimes the magnitude of df is such that squaring the value takes it out of python's size limit for floats, but since we're integrating df2 on top&bottom we can just scale it and this change cancels itself out
 	df = df/10**floor(log10(max(df)))
 	df2 = df**2
@@ -20,19 +20,19 @@ def avg_kperp2_f(run,f):
 	
 	return top/bottom
 
-def QL(run_ids,gyro_data, returnlist = False):
+def QL(run_ids, reader, returnlist = False):
 	try:
 		errors = []
 		for run_id in run_ids:
-			run = gyro_data[run_id]
-			if run['phi'] is None or run['apar'] is None or run['bpar'] is None or str(run['growth_rate']) in ['None','nan','inf','-inf'] or str(run['ky']) in ['None','nan','inf','-inf']:
+			run = reader.get_run_from_id(run_id) 
+			if reader('phi',run) is None or reader('apar',run) is None or reader('bpar',run) is None or str(reader('growth_rate',run)) in ['None','nan','inf','-inf'] or str(reader('ky',run)) in ['None','nan','inf','-inf']:
 				errors.append(run_id)
 		run_ids = [x for x in run_ids if x not in errors]
 		
 		kys = []
 		lookup = {}
 		for run_id in run_ids:
-			ky = gyro_data[run_id]['ky']
+			ky = reader('ky',reader.get_run_from_id(run_id))
 			kys.append(ky)
 			lookup[ky] = run_id
 		kys.sort()
@@ -40,7 +40,8 @@ def QL(run_ids,gyro_data, returnlist = False):
 		grs = []
 		for ky in kys:
 			run_id = lookup[ky]
-			grs.append(gyro_data[run_id]['growth_rate'] if gyro_data[run_id]['growth_rate'] > 0 else 0)
+			run = reader.get_run_from_id(run_id) 
+			grs.append(reader('growth_rate',run) if reader('growth_rate',run) > 0 else 0)
 		
 		kp_phis = array(())
 		kp_apars = array(())
@@ -50,14 +51,14 @@ def QL(run_ids,gyro_data, returnlist = False):
 		max_bpars = array(())
 		for ky in kys:
 			run_id = lookup[ky]
-			run = gyro_data[run_id]
-			kp_phis = append(kp_phis,avg_kperp2_f(run, 'phi'))
-			kp_apars = append(kp_apars,avg_kperp2_f(run, 'apar'))
-			kp_bpars = append(kp_bpars,avg_kperp2_f(run, 'bpar'))
+			run = reader.get_run_from_id(run_id) 
+			kp_phis = append(kp_phis,avg_kperp2_f(run, reader, 'phi'))
+			kp_apars = append(kp_apars,avg_kperp2_f(run, reader, 'apar'))
+			kp_bpars = append(kp_bpars,avg_kperp2_f(run, reader, 'bpar'))
 
-			max_phis = append(max_phis,max(abs(array(run['phi']))))
-			max_apars = append(max_apars,max(abs(array(run['apar']))))
-			max_bpars = append(max_bpars,max(abs(array(run['bpar']))))
+			max_phis = append(max_phis,max(abs(array(reader('phi',run)))))
+			max_apars = append(max_apars,max(abs(array(reader('apar',run)))))
+			max_bpars = append(max_bpars,max(abs(array(reader('bpar',run)))))
 			
 		nruns = len(kys)
 		err = []

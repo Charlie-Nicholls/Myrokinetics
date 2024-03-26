@@ -116,14 +116,46 @@ class verify_scan(object):
 		self.print_verify()
 		
 	def check_run(self, run):
-		self.check_nan(run)
-		self.check_order(run)
-		self.check_convergence(run)
-		self.check_nstep(run)
-		self.check_phi(run)
-		self.check_apar(run)
-		self.check_bpar(run)
-		self.check_epar(run)
+		try:
+			self.check_nan(run)
+		except Exception as e:
+			print(f"Verification Error on {run}")
+			print(e)
+		try:
+			self.check_order(run)
+		except Exception as e:
+			print(f"Verification Error on {run}")
+			print(e)
+		try:
+			self.check_convergence(run)
+		except Exception as e:
+			print(f"Verification Error on {run}")
+			print(e)
+		try:
+			self.check_nstep(run)
+		except Exception as e:
+			print(f"Verification Error on {run}")
+			print(e)
+		try:
+			self.check_phi(run)
+		except Exception as e:
+			print(f"Verification Error on {run}")
+			print(e)
+		try:
+			self.check_apar(run)
+		except Exception as e:
+			print(f"Verification Error on {run}")
+			print(e)
+		try:
+			self.check_bpar(run)
+		except Exception as e:
+			print(f"Verification Error on {run}")
+			print(e)
+		try:
+			self.check_epar(run)
+		except Exception as e:
+			print(f"Verification Error on {run}")
+			print(e)
 
 	def check_nan(self, run):
 		omega = self.reader('omega',run)
@@ -157,6 +189,8 @@ class verify_scan(object):
 	def check_order(self, run):
 		phi2 = self.reader('phi2',run)
 		t = self.reader('t',run)
+		if len(t) < 2:
+			return
 		run_id = self.reader.get_run_id(run)
 		if any([x is None for x in [phi2,t]]):
 			self.convergence['uncalculated'].add(run_id)

@@ -283,7 +283,7 @@ input_files = {input_lists[n]}
 def start_run(run, run_attempt = 1):
 	if run_attempt <= 3:
 		os.system(f"echo \\\"Input: {{run}}\\\"")
-		os.system(f"srun --nodes={self.inputs["sbatch"]["nodes"]} --ntasks={self.inputs["sbatch"]["ntasks-per-node"]} gs2 \\\"{{run}}\\\"")
+		os.system(f"gs2 \\\"{{run}}\\\"")
 		if os.path.exists(f"\\\"{{run[:-3]}}.out.nc\\\"'):
 			os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
 		else:
@@ -305,7 +305,7 @@ def start_run(run, run_attempt = 1):
 		os.system(f"echo \\\"Input: {{run}}\\\"")
 		cwd = os.getcwd()
 		os.chdir(f"{{run}}")
-		os.system(f"srun --nodes={self.inputs["sbatch"]["nodes"]} $GACODE_ROOT/cgyro/bin/cgyro -e . -n {self.inputs["sbatch"]["nodes"]*self.inputs["sbatch"]["ntasks-per-node"]} -nomp 1 -numa 8 -mpinuma 16 -p .")
+		os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -e . -n {self.inputs["sbatch"]["nodes"]*self.inputs["sbatch"]["ntasks-per-node"]} -nomp 1 -numa 8 -mpinuma 16 -p .")
 		os.chdir(f"{{cwd}}")
 		if os.path.exists(f"{{run}}/out.cgyro.info"):
 			os.system(f"touch {{run}}/out.cgyro.fin")

@@ -62,9 +62,9 @@ class myro_read(object):
 			run_id = self.get_run_id(run, keys = f'_{key}_keys')
 			if run_id is None:
 				for dim, val in run.items():
-					if val not in self.dimensions.keys():
+					if val not in self.dimensions[dim].values:
 						run[dim] = self.dimensions[dim].values[abs(array(self.dimensions[dim].values) - val).argmin()]
-						print(f"{dim} = {val} not found, using closest value of {dim} = {run['dim']}")
+						print(f"{dim} = {val} not found, using closest value of {dim} = {run[dim]}")
 				run_id = self.get_run_id(run, keys = f'_{key}_keys')
 				if run_id is None:
 					print(f"ERROR: run {run} Not Found")
@@ -88,7 +88,7 @@ class myro_read(object):
 			run_id = self.get_run_id(run)
 			if run_id is None:
 				for dim, val in run.items():
-					if val not in self.dimensions.keys():
+					if val not in self.dimensions[dim].values:
 						run[dim] = self.dimensions[dim].values[abs(array(self.dimensions[dim].values) - val).argmin()]
 						print(f"{dim} = {val} not found, using closest value of {dim} = {run[dim]}")
 				run_id = self.get_run_id(run)
@@ -379,9 +379,9 @@ class myro_read(object):
 		for runs in self.get_all_runs(excludeDimensions = ['ky']):
 			run_ids = self.get_run_list(runs)
 			ql_key = str(uuid4())
-			for dim_name, val in [(x, y) for x, y in self.data['gyro'][run_ids[0]].items() if (x in self.dimensions and x not in ['ky'])]:
+			for dim_name, val in runs.items():
 				ql_keys[dim_name][val].append(ql_key)
-			ql, [ql_norms,kys] = QL(run_ids,self.data['gyro'], returnlist = True)
+			ql, [ql_norms,kys] = QL(run_ids,self, returnlist = True)
 			qls[ql_key] = ql
 			for run_id in run_ids:
 				if self.data['gyro'][run_id]['ky'] in kys:

@@ -12,6 +12,7 @@ default_settings = {"suptitle": None,
 		"contour_type": 0,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
+		"z_axis_type": "ql_metric",
 		"z_slider": {"scale": 100, "max": None},
 		"run": {},
 		"options": [False,False,True,True,False,False],
@@ -386,7 +387,7 @@ class plot_2d(object):
 				theta0 = self['run']['theta0']
 			else:
 				theta0 = self.reader.data['_ideal_keys']['theta0'].keys()[0]
-			run_id = self.reader.get_run_id(run={'psin': psiN,'theta0': theta0},key='_ideal_keys')
+			run_id = self.reader.get_run_id(run={'psin': psiN,'theta0': theta0}, keys='_ideal_keys')
 			if run_id is not None:
 				idata = self.reader.data['ideal'][run_id]
 				self.ax.contourf(idata[self['x_axis_type']], idata[self['y_axis_type']], idata['stabilities'], [0.01,0.99], colors = ('k'))
