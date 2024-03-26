@@ -272,7 +272,7 @@ fi""")
 				for n in range(n_par):
 					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
 					filename = f"gyro_{n}"
-					pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
+					pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 					if self.inputs['gk_code'] == 'GS2':
 						pyth.write(f"""import os
 from joblib import Parallel, delayed
@@ -317,19 +317,19 @@ def start_run(run, run_attempt = 1):
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 					pyth.close()
-					jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
+					jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
 					jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
 
-python {self.inputs['data_path']}/submit_files/{filename}.py &
+python {self.inputs['data_path']}/submit_files/{filename}/{filename}.py &
 
 wait""")
 					if n_par > n_sim and n + n_sim < n_par:
-						jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}.job")
+						jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}/gyro_{n+n_sim}.job")
 					jobfile.close()
 				for n in range(n_sim):
-					self._jobs.add(f"{self.inputs['data_path']}/submit_files/gyro_{n}.job")
+					self._jobs.add(f"{self.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.job")
 			if self.inputs['non_linear'] == True:
 				os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
 				if self.inputs['sbatch']['cpus-per-task'] > 1:
