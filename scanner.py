@@ -201,15 +201,15 @@ class myro_scan(object):
 				input_lists[i%n_par].append(input_list[i])
 				self._input_files.remove(input_list[i])
 			for n in range(n_par):
-				os.makedirs(f"{self.inputs['data_path']}/submit_files/gyro_{n}",exist_ok=True)
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"gyro_{n}/{self.inputs['sbatch']['output']}_0")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"gyro_{n}/{self.inputs['sbatch']['error']}_0")
 				filename = f"gyro_{n}"
+				os.makedirs(f"{self.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
+				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{filename}/{self.inputs['sbatch']['output']}_0")
+				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{filename}/{self.inputs['sbatch']['error']}_0")
 				inlist = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.txt",'w')
 				for infile in input_lists[n]:
 					inlist.write(f"{infile[:-3]}\n")
 				inlist.close()
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.job",'w')
+				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
 				if len(input_lists[n]) > 1:
 					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}_0",f"{self.inputs['sbatch']['output']}_%a")
 					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}_0",f"{self.inputs['sbatch']['error']}_%a")
@@ -270,8 +270,9 @@ fi""")
 					input_lists[i%n_par].append(input_list[i])
 					self._input_files.remove(input_list[i])
 				for n in range(n_par):
-					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
 					filename = f"gyro_{n}"
+					os.makedirs(f"{self.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
+					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
 					pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 					if self.inputs['gk_code'] == 'GS2':
 						pyth.write(f"""import os
