@@ -300,13 +300,23 @@ from joblib import Parallel, delayed
 from time import sleep
 
 input_files = {input_lists[n]}
+max_cores = {self.inputs["sbatch"]["nodes"]*self.inputs["sbatch"]["ntasks-per-node"]}
 
 def start_run(run, run_attempt = 1):
 	if run_attempt <= 3:
 		os.system(f"echo \\\"Input: {{run}}\\\"")
 		cwd = os.getcwd()
 		os.chdir(f"{{run}}")
-		os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -e . -n {self.inputs["sbatch"]["nodes"]*self.inputs["sbatch"]["ntasks-per-node"]} -nomp 1 -numa 8 -mpinuma 16 -p .")
+		if not os.path.exists("ingen.out"):
+			os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -i . &> ingen.out")
+		f = open("ingen.out")
+		lines = f.readlines()
+		n_poss = set()
+		for line in lines[3:]:
+			[n_poss.add(int(x)) for x in array(line.split(" "))[[x.isdigit() for x in line.split(" ")]]]
+		poss_cores = [x for x in n_poss if x <= max_cores]
+		cores = max(poss_cores)
+		os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -e . -n {{cores}} -nomp 1 -numa 8 -mpinuma 16 -p .")
 		os.chdir(f"{{cwd}}")
 		if os.path.exists(f"{{run}}/out.cgyro.info"):
 			os.system(f"touch {{run}}/out.cgyro.fin")
