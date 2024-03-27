@@ -272,7 +272,7 @@ fi""")
 				for n in range(n_par):
 					filename = f"gyro_{n}"
 					os.makedirs(f"{self.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
-					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_{n}")
+					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{filename}/{self.inputs['sbatch']['output']}_{n}")
 					pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 					if self.inputs['gk_code'] == 'GS2':
 						pyth.write(f"""import os
@@ -686,9 +686,13 @@ wait""")
 		if gyro:
 			for run in all_runs:
 				sub_dir = self.get_run_directory(run)
-				if self['system'] != 'archer2' and os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
+				if self['system'] in ['archer2','viking'] and self.inputs['gk_code'] == 'GS2' and os.path.exists(f"{sub_dir}/itteration_0.fin"):
 					finished_gyro.append(run)
-				elif self['system'] == 'archer2' and os.path.exists(f"{sub_dir}/itteration_0.fin"):
+				elif self['system'] == 'ypi_server' and self.inputs['gk_code'] == 'GS2' and os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
+					finished_gyro.append(run)
+				elif self['system'] in ['archer2','viking'] and self.inputs['gk_code'] == 'CGYRO' and os.path.exists(f"{sub_dir}/out.cgyro.fin"):
+					finished_gyro.append(run)
+				elif self['system'] == 'ypi_server' and self.inputs['gk_code'] == 'CGYRO' and os.path.exists(f"{sub_dir}/out.cgyro.info"):
 					finished_gyro.append(run)
 				else:
 					unfinished_gyro.append(run)
