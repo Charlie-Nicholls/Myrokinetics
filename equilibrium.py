@@ -145,7 +145,7 @@ class equilibrium(object):
 		 	gk_file = Path(self.inputs['template_path']) / self.inputs['template_name'],
 			gk_code = self.inputs['gk_code']
 		 	)
-		self.pyro.read_gk_file(Path(self.inputs['template_path']) / self.inputs['template_name']) #UNSURE WHY THIS IS REQUIRED BUT IT DIDN'T SEEM TO LOAD THE TEMPLATE PROPERLY WITHOUT
+		#PYRO DOES NOT SEEM TO LOAD GK FILE PROPERLY, AT LEAST FOR CGYRO, UNSURE WHY
 		
 		
 	def load_inputs(self, inputs):
@@ -340,6 +340,8 @@ class equilibrium(object):
 		
 		nml['DELTA_T_METHOD'] = 1
 		nml['EQUILIBRIUM_MODEL'] = 2
+		
+		nml['THETA_PLOT'] = 1 #TEMPORARY UNTIL I FIND A BETTER SOLUTION TO ENSURING ALWAYS A FACTOR OF NTHETA AND/OR THE TEMPLATE LOADING ISSUE WITH PYRO
 		
 		#for dim in self.inputs.single_parameters.values():
 		#	nml = dim.single_edit_nml(nml)
