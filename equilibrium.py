@@ -145,6 +145,8 @@ class equilibrium(object):
 		 	gk_file = Path(self.inputs['template_path']) / self.inputs['template_name'],
 			gk_code = self.inputs['gk_code']
 		 	)
+		self.pyro.read_gk_file(Path(self.inputs['template_path']) / self.inputs['template_name']) #UNSURE WHY THIS IS REQUIRED BUT IT DIDN'T SEEM TO LOAD THE TEMPLATE PROPERLY WITHOUT
+		
 		
 	def load_inputs(self, inputs):
 		self.surface_namelists = {}
