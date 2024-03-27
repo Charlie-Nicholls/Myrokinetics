@@ -298,6 +298,7 @@ Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for ru
 						pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
+from numpy import array
 
 input_files = {input_lists[n]}
 max_cores = {self.inputs["sbatch"]["nodes"]*self.inputs["sbatch"]["ntasks-per-node"]}
