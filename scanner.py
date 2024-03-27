@@ -1039,7 +1039,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		elif self.inputs['system'] == 'viking':
 			filepath += f"gyro_{n}/{self.inputs['sbatch']['output']}_{i}"
 		elif self.inputs['system'] == 'archer2':
-			filepath += f"{self.inputs['sbatch']['output']}_{n}"
+			filepath += f"gyro_{n}/{self.inputs['sbatch']['output']}_{n}"
 		if os.path.exists(filepath):
 			sfile = open(filepath)
 		else:
