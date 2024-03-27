@@ -130,7 +130,11 @@ class equilibrium(object):
 		if not self.kin_data:
 			self.load_kinetics()
 		
-		self._template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
+		if self.inputs['gk_code'] == 'GS2':
+			self._template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
+		elif self.inputs['gk_code'] == 'CGYRO':
+			with open(os.path.join(self.inputs['template_path'],self.inputs['template_name'])) as f:
+				self._template_lines = f.readines()
 
 		kin_type = 'pFile' if self.inputs['kinetics_type'].upper() == 'PEQDSK' else self.inputs['kinetics_type'].upper()
 		self.pyro = Pyro(
