@@ -318,7 +318,7 @@ def start_run(run, run_attempt = 1):
 		cores = max(poss_cores)
 		os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -e . -n {{cores}} -nomp 1 -numa 8 -mpinuma 16 -p .")
 		os.chdir(f"{{cwd}}")
-		if os.path.exists(f"{{run}}/out.cgyro.info"):
+		if os.path.exists(f"{{run}}/bin.cgyro.freq"):
 			os.system(f"touch {{run}}/out.cgyro.fin")
 		else:
 			sleep(60)
