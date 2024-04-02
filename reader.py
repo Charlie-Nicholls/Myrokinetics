@@ -817,7 +817,7 @@ class myro_read(object):
 		return runs
 	'''
 			
-	def _save_run_set(self, runs = None, filename = None):
+	def save_run_set(self, runs = None, filename = None):
 		if runs is None:
 			print("ERROR: runs not given")
 			return
@@ -825,12 +825,18 @@ class myro_read(object):
 			print("ERROR: filename not given")
 			return
 
+		if type(list(runs)[0]) == str:
+			new_runs = []
+			for run in runs:
+				new_runs.append(self.get_run_from_id(run))
+			runs = new_runs
+
 		f = open(filename, 'w')
-		for p,i,j,k in runs:
-			f.write(f"{p}_{i}_{j}_{k}\n")
+		for run in runs:
+			f.write(f"{run}\n")
 		f.close()
 		
-	def _load_run_set(self, filename = None):
+	def load_run_set(self, filename = None):
 		if filename is None:
 			print("ERROR: filename not given")
 			return
@@ -839,6 +845,6 @@ class myro_read(object):
 		with open(filename) as f:
 			lines = f.readlines()
 			for line in lines:
-				p,i,j,k = [eval(x) for x in line.strip("\n").split("_")]
-				runs.add((p,i,j,k))
+				run = eval(line.strip("\n"))
+				runs.add(run)
 		return runs
