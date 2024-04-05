@@ -1323,12 +1323,12 @@ cgyro -i "./" >& ingen.out
 			print("ERROR: filename not given")
 			return
 		
-		runs = set()		
+		runs = []		
 		with open(filename) as f:
 			lines = f.readlines()
 			for line in lines:
 				run = eval(line.strip("\n"))
-				runs.add(run)
+				runs.append(run)
 		return runs
 		
 	'''
