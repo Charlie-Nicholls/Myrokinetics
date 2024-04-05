@@ -335,14 +335,10 @@ class equilibrium(object):
 		else:
 			nml['NONLINEAR_FLAG'] = 0
 		
-		if self.inputs['grid_option'] == 'single':
-			nml['N_TOROIDAL'] = 1
-			nml['N_RADIAL'] = 1
-		
 		nml['DELTA_T_METHOD'] = 1
 		nml['EQUILIBRIUM_MODEL'] = 2
 		
-		nml['THETA_PLOT'] = 1 #TEMPORARY UNTIL I FIND A BETTER SOLUTION TO ENSURING ALWAYS A FACTOR OF NTHETA AND/OR THE TEMPLATE LOADING ISSUE WITH PYRO
+		nml['THETA_PLOT'] = nml['N_THETA'] #TEMPORARY UNTIL I FIND A BETTER SOLUTION TO ENSURING ALWAYS A FACTOR OF NTHETA AND/OR THE TEMPLATE LOADING ISSUE WITH PYRO
 		
 		#for dim in self.inputs.single_parameters.values():
 		#	nml = dim.single_edit_nml(nml)
