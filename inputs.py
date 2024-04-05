@@ -302,7 +302,7 @@ class scan_inputs(object):
 			print("ERROR: psiN must be specified as single parameter or scan dimension")
 			valid = False
 		
-		if self['grid_option'] == 'box':
+		if self['grid_option'] == 'box' and self['gk_code'] == 'GS2':
 			if 'ky' in self.dimensions or 'ky' in self.single_parameters:
 				print("ERROR: ky dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
 				valid = False

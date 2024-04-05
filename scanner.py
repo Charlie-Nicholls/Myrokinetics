@@ -1058,11 +1058,11 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				for val in dim.values:
 					gyro_keys[dim.name][val] = set()
 			
-			if self.inputs['grid_option'] == 'box':
-				kxs = set()
-				kys = set()
+			if 'ky' not in gyro_keys.keys():
 				gyro_keys['ky'] = {}
-				gyro_keys['kx'] = {}
+			kxs = set()
+			kys = set()
+			gyro_keys['kx'] = {}
 			
 			runs = self.get_all_runs() if self.inputs['grid_option'] == 'single' else self.get_all_runs(excludeDimensions=['kx','ky'])
 			for run in runs:
@@ -1081,15 +1081,16 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 							for key in run:
 								gyro_keys[key][run[key]].add(run_key)
 							gyro_data[run_key]['group_key'] = group_key
-							if self.inputs['grid_option'] == 'box':
-								kxs.add(kx)
-								kys.add(ky)
-								if ky not in gyro_keys['ky']:
-									gyro_keys['ky'][ky] = set()
-								if kx not in gyro_keys['kx']:
-									gyro_keys['kx'][kx] = set()
-								gyro_keys['ky'][ky].add(run_key)
-								gyro_keys['kx'][kx].add(run_key)
+	
+							kxs.add(kx)
+							kys.add(ky)
+							if ky not in gyro_keys['ky']:
+								gyro_keys['ky'][ky] = set()
+							if kx not in gyro_keys['kx']:
+								gyro_keys['kx'][kx] = set()
+							gyro_keys['ky'][ky].add(run_key)
+							gyro_keys['kx'][kx].add(run_key)
+
 							if 'kx' not in gyro_data[run_key]:
 								gyro_data[run_key]['kx'] = kx
 							if 'ky' not in gyro_data[run_key]:
@@ -1134,7 +1135,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 										
 				except Exception as e:
 					print(f"Save Error {sub_dir}: {e}")
-			if self.inputs['grid_option'] == 'box':
+			
 				existing_dim_keys = []
 				for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
 					existing_dim_keys.append([x for x in key if x.isdigit()])
@@ -1142,10 +1143,12 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				kxs = list(kxs)
 				kxs.sort()
 				self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
-				kys = list(kys)
-				kys.sort()
-				self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
+				if 'ky' not in self.dimensions:
+					kys = list(kys)
+					kys.sort()
+					self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
 				self.inputs.load_dimensions()
+
 		else:
 			gyro_data = None
 			gyro_keys = None
