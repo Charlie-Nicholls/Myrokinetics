@@ -747,13 +747,13 @@ wait""")
 	def quick_save(self, filename = None, directory = None, SlurmSave = False):
 		self.save_out(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = True)
 	
-	def save_out(self, filename = None, directory = None, SlurmSave = False, QuickSave = False):
+	def save_out(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
 		if self.inputs['gk_code'] == 'GS2':
-			self._save_out_gs2(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = QuickSave)
+			self._save_out_gs2(filename = filename, directory = directory, specificRuns = specificRuns, SlurmSave = SlurmSave, QuickSave = QuickSave)
 		elif self.inputs['gk_code'] == 'CGYRO':
-			self._save_out_cgyro(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = QuickSave)
+			self._save_out_cgyro(filename = filename, directory = directory, specificRuns = specificRuns, SlurmSave = SlurmSave, QuickSave = QuickSave)
 
-	def _save_out_gs2(self, filename = None, directory = None, SlurmSave = False, QuickSave = False):
+	def _save_out_gs2(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
 		if filename is None and self.inputs['run_name'] is None:
 			filename = input("Output File Name: ")
 			filename = filename.split(".")[0]
@@ -833,7 +833,11 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				gyro_keys['ky'] = {}
 				gyro_keys['kx'] = {}
 			
-			runs = self.get_all_runs() if self.inputs['grid_option'] == 'single' else self.get_all_runs(excludeDimensions=['kx','ky'])
+			if specificRuns:
+				runs = list(specificRuns)
+			else:
+				runs = self.get_all_runs() if self.inputs['grid_option'] != 'box' else self.get_all_runs(excludeDimensions=['kx','ky'])
+			
 			for run in runs:
 				sub_dir = self.get_run_directory(run)
 				try:
@@ -989,7 +993,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
 	
-	def _save_out_cgyro(self, filename = None, directory = None, SlurmSave = False, QuickSave = False):
+	def _save_out_cgyro(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
 		if filename is None and self.inputs['run_name'] is None:
 			filename = input("Output File Name: ")
 			filename = filename.split(".")[0]
@@ -1063,7 +1067,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			kys = set()
 			gyro_keys['kx'] = {}
 			
-			runs = self.get_all_runs() if self.inputs['grid_option'] == 'single' else self.get_all_runs(excludeDimensions=['kx','ky'])
+			runs = self.get_all_runs() if specificRuns is None else list(specificRuns)
 			for run in runs:
 				sub_dir = self.get_run_directory(run)
 				try:
