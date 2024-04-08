@@ -314,7 +314,7 @@ def start_run(run, run_attempt = 1):
 		lines = f.readlines()
 		n_poss = set()
 		for line in lines[3:]:
-			[n_poss.add(int(x)) for x in array(line.split(" "))[[x.isdigit() for x in line.split(" ")]]]
+			n_poss.add(int([x for x in line.split(" ") if x.isdigit()][0]))
 		poss_cores = [x for x in n_poss if x <= max_cores]
 		cores = max(poss_cores)
 		os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -e . -n {{cores}} -nomp 1 -numa 8 -mpinuma 16 -p .")
