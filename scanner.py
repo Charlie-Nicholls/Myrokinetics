@@ -749,9 +749,9 @@ wait""")
 	
 	def save_out(self, filename = None, directory = None, SlurmSave = False, QuickSave = False):
 		if self.inputs['gk_code'] == 'GS2':
-			self._save_out_gs2(self, filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = QuickSave)
-		if self.inputs['gk_code'] == 'CGYRO':
-			self._save_out_cgyro(self, filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = QuickSave)
+			self._save_out_gs2(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = QuickSave)
+		elif self.inputs['gk_code'] == 'CGYRO':
+			self._save_out_cgyro(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = QuickSave)
 
 	def _save_out_gs2(self, filename = None, directory = None, SlurmSave = False, QuickSave = False):
 		if filename is None and self.inputs['run_name'] is None:
