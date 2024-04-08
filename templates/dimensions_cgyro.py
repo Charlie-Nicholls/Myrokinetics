@@ -137,6 +137,7 @@ class ntheta(dimension):
 
 	def edit_nml(self, nml, val):
 		nml['N_THETA'] = val
+		nml['THETA_PLOT'] = val #Temporary?
 		return nml
 
 class nx(dimension):
