@@ -1107,11 +1107,11 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 								try:
 									key_data = run_data[key]
 									if key == 'growth_rate':
-										gyro_data[run_key]['growth_rate'] = key_data.data[-1]
+										gyro_data[run_key]['growth_rate'] = float(key_data[xi,yi,-1])
 									if key == 'mode_frequency':
-										gyro_data[run_key]['mode_frequency'] = key_data.data[-1]
+										gyro_data[run_key]['mode_frequency'] = float(key_data[xi,yi,-1])
 									elif key in ['phi','apar','bpar']:
-										gyro_data[run_key][key] = key_data.data[:,yi,xi,-1].tolist()
+										gyro_data[run_key][key] = array(key_data[:,yi,xi,-1]).tolist()
 										'''
 										if key == 'phi':
 											try:
@@ -1126,11 +1126,11 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 												gyro_data[run_key]['parity'] = 0
 										'''
 									elif key in ['time']:
-										group_data[group_key]['t'] = key_data.data.tolist()
+										group_data[group_key]['t'] = array(key_data).tolist()
 									elif key in ['theta']:
-										group_data[group_key][key] = key_data.data.tolist()
+										group_data[group_key][key] = array(key_data).tolist()
 									elif key in ['heat']:
-										group_data[group_key][key] = key_data.data[:,:,yi,:].tolist()
+										group_data[group_key][key] = array(key_data[:,:,yi,:]).tolist()
 								except Exception as e:
 									print(f"Save Error in {sub_dir}: {e}")
 									if key == 'growth_rate':
