@@ -644,7 +644,7 @@ wait""")
 				self._input_files.add(f"{sub_dir}")
 	
 	def get_run_directory(self, run):
-		dims = [x for x in self.inputs.dim_order if x not in ['kx','ky']] if (self.inputs['grid_option'] == 'single' and self.inputs['gk_code'] == 'GS2') else self.inputs.dim_order
+		dims = [x for x in self.inputs.dim_order if x not in ['kx','ky']] if (self.inputs['grid_option'] == 'box' and self.inputs['gk_code'] == 'GS2') else self.inputs.dim_order
 		dir_list = [f"{name}={run[name]:.4g}" for name in dims]
 		dir_list.insert(0,f"{self.inputs['data_path']}/gyro_files")
 		sub_dir = "/".join(dir_list)
@@ -798,7 +798,6 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			
 		if not self.check_setup():
 			return
-			
 		
 		psi_itt = self.single_parameters['psin'].values if 'psin' in self.single_parameters else self.dimensions['psin'].values
 		equilibrium = {}
