@@ -302,7 +302,7 @@ class myro_read(object):
 				return False
 		try:
 			self.data = data_in['data'].item()
-			possible_data = ['gyro','ideal','equilibrium','_gyro_keys','_ideal_keys','_phi2_by_kx','_phi2_by_ky','quasilinear']
+			possible_data = ['gyro','ideal','equilibrium','_gyro_keys','_ideal_keys','quasilinear']
 			for key in [x for x in possible_data if x not in self.data.keys()]:
 				self.data[key] = None
 		except:
