@@ -1072,68 +1072,74 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			runs = self.get_all_runs() if specificRuns is None else list(specificRuns)
 			for run in runs:
 				sub_dir = self.get_run_directory(run)
-				#try:
-				self.eqbm.pyro.load_gk_output(sub_dir)
-				run_data = self.eqbm.pyro.gk_output
-				group_key = run_data.attrs['object_uuid']
-				group_data[group_key] = {}
-				for key in group_keys:
-					group_data[group_key][key] = None
-				for xi, kx in enumerate(run_data['kx'].data):
-					for yi, ky in enumerate(run_data['ky'].data):
-						run_key = str(uuid4())
-						gyro_data[run_key] = deepcopy(run)
-						for key in run:
-							gyro_keys[key][run[key]].add(run_key)
-						gyro_data[run_key]['group_key'] = group_key
+				try:
+					self.eqbm.pyro.load_gk_output(sub_dir)
+					run_data = self.eqbm.pyro.gk_output
+					group_key = run_data.attrs['object_uuid']
+					group_data[group_key] = {}
+					for key in group_keys:
+						group_data[group_key][key] = None
+					for xi, kx in enumerate(run_data['kx'].data):
+						for yi, ky in enumerate(run_data['ky'].data):
+							run_key = str(uuid4())
+							gyro_data[run_key] = deepcopy(run)
+							for key in run:
+								gyro_keys[key][run[key]].add(run_key)
+							gyro_data[run_key]['group_key'] = group_key
+	
+							kxs.add(kx)
+							kys.add(ky)
+							if ky not in gyro_keys['ky']:
+								gyro_keys['ky'][ky] = set()
+							if kx not in gyro_keys['kx']:
+								gyro_keys['kx'][kx] = set()
+							gyro_keys['ky'][ky].add(run_key)
+							gyro_keys['kx'][kx].add(run_key)
 
-						kxs.add(kx)
-						kys.add(ky)
-						if ky not in gyro_keys['ky']:
-							gyro_keys['ky'][ky] = set()
-						if kx not in gyro_keys['kx']:
-							gyro_keys['kx'][kx] = set()
-						gyro_keys['ky'][ky].add(run_key)
-						gyro_keys['kx'][kx].add(run_key)
-
-						if 'kx' not in gyro_data[run_key]:
-							gyro_data[run_key]['kx'] = kx
-						if 'ky' not in gyro_data[run_key]:
-							gyro_data[run_key]['ky'] = ky
-						#gyro_data['nml_diffs'] = self.namelist_diffs[?]
-						for key in data_keys:
-							gyro_data[run_key][key] = None
-						for key in only:
-							#try:
-							key_data = run_data[key]
-							if key == 'growth_rate':
-								gyro_data[run_key]['growth_rate'] = key_data.data[-1]
-							if key == 'mode_frequency':
-								gyro_data[run_key]['mode_frequency'] = key_data.data[-1]
-							elif key in ['phi','apar','bpar']:
-								gyro_data[run_key][key] = key_data.data[:,yi,xi,-1].tolist()
-								'''
-								if key == 'phi':
-									try:
-										symsum = sum(abs(key_data[yi,xi,:] + key_data[yi,xi,::-1]))/sum(abs(key_data[yi,xi,:]))
-									except:
-										symsum = 1
-									if  symsum > 1.5:
-										gyro_data[run_key]['parity'] = 1
-									elif symsum < 0.5:
-										gyro_data[run_key]['parity'] = -1
-									else:
-										gyro_data[run_key]['parity'] = 0
-								'''
-							elif key in ['time']:
-								group_data[group_key]['t'] = key_data.data.tolist()
-							elif key in ['theta']:
-								group_data[group_key][key] = key_data.data.tolist()
-							elif key in ['heat']:
-								group_data[group_key][key] = key_data.data[:,:,yi,:].tolist()
-							
+							if 'kx' not in gyro_data[run_key]:
+								gyro_data[run_key]['kx'] = kx
+							if 'ky' not in gyro_data[run_key]:
+								gyro_data[run_key]['ky'] = ky
+							#gyro_data['nml_diffs'] = self.namelist_diffs[?]
+							for key in data_keys:
+								gyro_data[run_key][key] = None
+							for key in only:
+								try:
+									key_data = run_data[key]
+									if key == 'growth_rate':
+										gyro_data[run_key]['growth_rate'] = key_data.data[-1]
+									if key == 'mode_frequency':
+										gyro_data[run_key]['mode_frequency'] = key_data.data[-1]
+									elif key in ['phi','apar','bpar']:
+										gyro_data[run_key][key] = key_data.data[:,yi,xi,-1].tolist()
+										'''
+										if key == 'phi':
+											try:
+												symsum = sum(abs(key_data[yi,xi,:] + key_data[yi,xi,::-1]))/sum(abs(key_data[yi,xi,:]))
+											except:
+												symsum = 1
+											if  symsum > 1.5:
+												gyro_data[run_key]['parity'] = 1
+											elif symsum < 0.5:
+												gyro_data[run_key]['parity'] = -1
+											else:
+												gyro_data[run_key]['parity'] = 0
+										'''
+									elif key in ['time']:
+										group_data[group_key]['t'] = key_data.data.tolist()
+									elif key in ['theta']:
+										group_data[group_key][key] = key_data.data.tolist()
+									elif key in ['heat']:
+										group_data[group_key][key] = key_data.data[:,:,yi,:].tolist()
+								except Exception as e:
+									print(f"Save Error in {sub_dir}: {e}")
+									if key == 'growth_rate':
+										gyro_data[run_key]['growth_rate'] = nan
+									elif key == 'mode_frequency':
+										gyro_data[run_key]['mode_frequency'] = nan
 										
-				
+				except Exception as e:
+					print(f"Save Error {sub_dir}: {e}")
 			
 				existing_dim_keys = []
 				for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:

@@ -100,6 +100,41 @@ class ky(dimension):
 		nml['KY'] = val
 		return nml
 
+class kx(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['kx','akx','kx_rho0']
+	axis_label = r'$k_{x}\rho_{0}$'
+	valid_options = []
+
+	def sub_validate(self, values):
+		return values
+
+	def edit_nml(self, nml, val):
+		print("kx dimension only used for reading data in cgyro")
+		return nml
+
+class theta0(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['theta0','theta','t0']
+	axis_label = r'$\theta_{0}$'
+	valid_options = []
+
+	def sub_validate(self, values):
+		from numpy import pi
+		if any([x < -pi or x > pi for x in values]):
+			print("Error: theta0 values outside allowed range (-pi<=x<=pi)")
+			values = [x for x in values if (-pi<=x<=pi)]
+		return values
+
+	def edit_nml(self, nml, val):
+		from numpy import pi
+		nml['PX0'] = (val+pi)/2*pi
+		return nml
+
 class y0(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
@@ -200,4 +235,4 @@ class delt(dimension):
 		nml['DELTA_T'] = val
 		return nml
 
-dimensions_list = [psiN,beta_prime,shear,ky,y0,ntheta,nx,ny,delt]
+dimensions_list = [psiN,beta_prime,shear,ky,kx,theta0,y0,ntheta,nx,ny,delt]
