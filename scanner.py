@@ -1028,11 +1028,12 @@ python {self.inputs['data_path']}/submit_files/save_out.py""")
 			pyth = open(f"{self.inputs['data_path']}/submit_files/save_out.py",'w')
 			pyth.write(f"""from Myrokinetics import myro_scan
 from numpy import load
+specificRuns = {specificRuns}
 with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
 	nd = obj['name_diffs']
 	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
 	run.namelist_diffs = nd
-	run.save_out_cgyro(filename = \"{filename}\", directory = \"{directory}\",SlurmSave = True,QuickSave = {QuickSave})""")
+	run.save_out(filename = \"{filename}\", directory = \"{directory}\",specificRuns=specificRuns, SlurmSave = True,QuickSave = {QuickSave})""")
 			pyth.close()
 			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
 			return
