@@ -319,7 +319,7 @@ def start_run(run, run_attempt = 1):
 		cores = max(poss_cores)
 		os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -e . -n {{cores}} -nomp 1 -numa 8 -mpinuma 16 -p .")
 		os.chdir(f"{{cwd}}")
-		if os.path.exists(f"{{run}}/bin.cgyro.freq"):
+		if os.path.exists(f"{{run}}/out.cgyro.freq"):
 			os.system(f"touch {{run}}/out.cgyro.fin")
 		else:
 			sleep(60)
@@ -644,7 +644,7 @@ wait""")
 				self._input_files.add(f"{sub_dir}")
 	
 	def get_run_directory(self, run):
-		dims = self.inputs.dim_order if self.inputs['grid_option'] == 'single' else [x for x in self.inputs.dim_order if x not in ['kx','ky']]
+		dims = [x for x in self.inputs.dim_order if x not in ['kx','ky']] if (self.inputs['grid_option'] == 'single' and self.inputs['gk_code'] == 'GS2') else self.inputs.dim_order
 		dir_list = [f"{name}={run[name]:.4g}" for name in dims]
 		dir_list.insert(0,f"{self.inputs['data_path']}/gyro_files")
 		sub_dir = "/".join(dir_list)
