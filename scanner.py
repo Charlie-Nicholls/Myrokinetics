@@ -105,10 +105,7 @@ class myro_scan(object):
 		if ideal:
 			self.make_ideal_files(directory = run_path)
 			self.make_ideal_job_files(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
-			if gyro:
-				print("Gyro scan currently running, use run_ideal_jobs when completed to run ideal scan")
-			else:
-				self.run_ideal_jobs()
+			self.run_ideal_jobs()
 	
 	def check_setup(self, gyro = None, ideal = None):
 		if not self.inputs.check_scan():
@@ -1111,7 +1108,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 									if key == 'mode_frequency':
 										gyro_data[run_key]['mode_frequency'] = float(key_data[xi,yi,-1])
 									elif key in ['phi','apar','bpar']:
-										gyro_data[run_key][key] = array(key_data[:,yi,xi,-1]).tolist()
+										gyro_data[run_key][key] = array(key_data[:,xi,yi,-1]).tolist()
 										'''
 										if key == 'phi':
 											try:

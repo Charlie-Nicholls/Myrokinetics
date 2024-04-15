@@ -340,8 +340,10 @@ class myro_read(object):
 	def _verify_run(self):
 		if not self['Gyro']:
 			return
+		if self.inputs['gk_code'] == 'CGYRO':
+			return
 		if self.inputs['nonlinear'] == True:
-				return
+			return
 		self.verify = verify_scan(reader = self)
 		self.data['gyro'] = self.verify.scan
 		self.calculate_gr()

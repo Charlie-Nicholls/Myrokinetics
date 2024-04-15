@@ -392,6 +392,20 @@ class equilibrium(object):
 		for dim_name, dim in self.inputs.single_parameters.items():
 			nml = dim.single_edit_nml(nml)
 		
+		beta = nml['parameters']['beta'] if 'parameters' in nml.keys() else nml['knobs']['beta']
+		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*beta*-1
+
+		mul = beta_prim/bp_cal
+		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+			nml[spec]['tprim'] = nml[spec]['tprim']*mul
+			nml[spec]['fprim'] = nml[spec]['fprim']*mul
+		
+		for dim_name, dim in self.inputs.dimensions.items():
+			nml = dim.edit_nml(nml=nml,val=run[dim_name])
+			
+		for dim_name, dim in self.inputs.single_parameters.items():
+			nml = dim.single_edit_nml(nml)
+		
 		for key in namelist_diff.keys():
 			for skey in namelist_diff[key].keys():
 				nml[key][skey] = namelist_diff[key][skey]
