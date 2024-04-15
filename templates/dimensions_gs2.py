@@ -51,8 +51,9 @@ class beta_prime(dimension):
 
 	def edit_nml(self, nml, val):
 		nml['theta_grid_eik_knobs']['beta_prime_input'] = -1*abs(val)
-
-		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
+		
+		beta = nml['parameters']['beta'] if 'parameters' in nml.keys() else nml['knobs']['beta']
+		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*beta*-1
 
 		mul = -1*abs(val)/bp_cal
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
@@ -264,7 +265,7 @@ class vnewk(dimension):
 class tprim(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		print("Warning: tprim dimension does not adjust beta_prime or fprim for consistency")
+		print("WARNING: TPRIM AND FPRIM HAVE NOT BEEN TESTED FOR CONSISTENCY IN LATEST VERSION, PLEASE CHECK BEFORE USE")
 		if self.option is None:
 			self.option = 'all'
 
@@ -290,7 +291,7 @@ class tprim(dimension):
 class fprim(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		print("Warning: fprim dimension does not adjust beta_prime or tprim for consistency")
+		print("WARNING: TPRIM AND FPRIM HAVE NOT BEEN TESTED FOR CONSISTENCY IN LATEST VERSION, PLEASE CHECK BEFORE USE")
 		if self.option is None:
 			self.option = 'all'
 
