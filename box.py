@@ -202,7 +202,10 @@ def convert_cgyro_to_myro(filename, input_file, directory = "./", QuickSave = Fa
 
 	group_data[group_key]['t'] = array(run_data['time'].data).tolist()
 	group_data[group_key]['theta'] = array(run_data['theta']).tolist()
-	group_data[group_key]['heat_flux_tot'] = array(run_data['heat'][:,:,:,:]).tolist()
+	hflux = npsum(array(run_data['heat']),axis=0)
+	hflux = npsum(array(run_data['heat']),axis=0)
+	hflux = npsum(array(run_data['heat']),axis=0)
+	group_data[group_key]['heat_flux_tot'] = hflux.tolist()
 	phi2_by_ky = []
 	phi2_by_kx = []
 	for yi, ky in enumerate(kys):
@@ -211,8 +214,8 @@ def convert_cgyro_to_myro(filename, input_file, directory = "./", QuickSave = Fa
 	for xi, kx in enumerate(kxs):
 		sh = shape(phi2_by_mode[:,xi,:])
 		phi2_by_kx.append([x/sh[1] for x in npsum(phi2_by_mode[:,xi,:],axis=1)])
-		group_data[group_key]['phi2_by_ky'] = array(phi2_by_ky).T.tolist()
-		group_data[group_key]['phi2_by_kx'] = array(phi2_by_kx).T.tolist()
+	group_data[group_key]['phi2_by_ky'] = array(phi2_by_ky).T.tolist()
+	group_data[group_key]['phi2_by_kx'] = array(phi2_by_kx).T.tolist()
 
 	data = {'gyro': gyro_data,
 	'ideal': None,
