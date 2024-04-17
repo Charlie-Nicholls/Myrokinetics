@@ -386,7 +386,7 @@ class plot_2d(object):
 			if 'theta0' in self['run']:
 				theta0 = self['run']['theta0']
 			else:
-				theta0 = self.reader.data['_ideal_keys']['theta0'].keys()[0]
+				theta0 = list(self.reader.data['_ideal_keys']['theta0'].keys())[0]
 			run_id = self.reader.get_run_id(run={'psin': psiN,'theta0': theta0}, keys='_ideal_keys')
 			if run_id is not None:
 				idata = self.reader.data['ideal'][run_id]

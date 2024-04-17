@@ -110,7 +110,7 @@ class plot_slice(object):
 	
 	def _load_y_axis(self, axis_type):
 		if axis_type not in ['quasilinear','growth_rate','growth_rate_norm','ql_norm','mode_frequency']:
-			print("ERROR: axis_type not found, valid types ['quasilinear','growth_rate','growth_rate_norm',ql_norm,mode_frequency]")
+			print("ERROR: axis_type not found, valid types: 'quasilinear','growth_rate','growth_rate_norm','ql_norm','mode_frequency")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -228,13 +228,15 @@ class plot_slice(object):
 		
 		if self['visible']['eqbm']:
 			limits = self.ax.get_ylim()
+			low_lim = 0 if min(limits) > 0 else min(limits)
+			high_lim = max(limits) if max(limits) > 0 else 0
 			if 'psin' in self['run']:
 				psiN = self['run']['psin']
 			else:
 				psiN = self.reader.single_parameters['psin'].values[0]
 			if self['x_axis_type'] in self.reader.data['equilibrium'][psiN]:
 				eqbm_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
-				self.ax.vlines(eqbm_val,0,limits[1],self['colours']['eqbm'])
+				self.ax.vlines(eqbm_val,low_lim,high_lim,self['colours']['eqbm'])
 				handles.append(Line2D([0.5,0.5],[0,1],c=self['colours']['eqbm'],label = "Equillibrium"))
 		
 		if self['limit']:
