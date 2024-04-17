@@ -104,7 +104,10 @@ class myro_scan(object):
 			self.run_jobs()
 		if ideal:
 			self.make_ideal_files(directory = run_path)
-			self.make_ideal_job_files(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
+			if gyro:
+				self.make_ideal_job_files()
+			else:
+				self.make_ideal_job_files(n_jobs = n_jobs, n_par = n_par, n_sim = n_sim)
 			self.run_ideal_jobs()
 	
 	def check_setup(self, gyro = None, ideal = None):
@@ -361,7 +364,7 @@ fi""")
 
 	def make_ideal_job_files(self, n_jobs = None, n_par = None, n_sim = None):
 		if self['system'] in ['viking','archer2']:
-			compile_modules = systems[self['system']]['modules']
+			compile_modules = systems[self['system']]['modules'][self['gk_code']]
 			sbatch = "#!/bin/bash"
 			for key, val in self.inputs['sbatch'].items():
 				if key == 'output' and '/' not in val:
