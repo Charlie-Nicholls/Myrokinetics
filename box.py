@@ -160,6 +160,7 @@ def convert_cgyro_to_myro(filename, input_file, directory = "./", QuickSave = Fa
 			gyro_keys[dim.name][val] = set()
 
 	phi2_by_mode = zeros((len(run_data['time']),len(kxs),len(kys)))
+	phi2 = abs(run_data['phi'].integrate('theta'))**2
 
 	for yi, ky in enumerate(kys):
 		for xi, kx in enumerate(kxs):
@@ -194,11 +195,8 @@ def convert_cgyro_to_myro(filename, input_file, directory = "./", QuickSave = Fa
 						else:
 							gyro_data[run_key]['parity'] = 0
 					'''
-				
-			idx = where(run_data['theta'] == min(abs(run_data['theta'])))[0][0]
-			p2 = list(abs(array(run_data['phi'].data)[idx,xi,yi,:])**2)
-			phi2_by_mode[:,xi,yi] = p2
-			gyro_data[run_key]['phi2'] = p2
+			phi2_by_mode[:,xi,yi] = array(phi2[xi,yi,:]).tolist()
+			gyro_data[run_key]['phi2'] = array(phi2[xi,yi,:]).tolist()
 
 	group_data[group_key]['t'] = array(run_data['time'].data).tolist()
 	group_data[group_key]['theta'] = array(run_data['theta']).tolist()
