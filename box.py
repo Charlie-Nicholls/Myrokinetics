@@ -202,7 +202,7 @@ def convert_cgyro_to_myro(filename, input_file, directory = "./", QuickSave = Fa
 	group_data[group_key]['theta'] = array(run_data['theta']).tolist()
 	hflux = run_data['heat']
 	hflux = hflux.sum(dim=['species','field','ky'])
-	group_data[group_key]['heat_flux_tot'] = hflux.tolist()
+	group_data[group_key]['heat_flux_tot'] = array(hflux).tolist()
 	phi2_by_ky = []
 	phi2_by_kx = []
 	for yi, ky in enumerate(kys):
