@@ -289,8 +289,6 @@ class plot_diag(object):
 		
 		if self.verify is not None and self['visible']['verify']:
 			bad = []
-			if run_id in self.verify['nstep']:
-				bad.append('nstep')
 			if run_id in self.verify['nan']:
 				bad.append('nan')
 			if run_id in self.verify['unconv']:

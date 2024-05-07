@@ -451,4 +451,24 @@ class cfl(dimension):
 		nml['nonlinear_terms_knobs']['cfl'] = val
 		return nml
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl]
+class g_exb(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['g_exb','flow_shear','flowshear','fs','gexb']
+	axis_label = 'g_exb'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([(x < 0) for x in values]):
+			print("Error: g_exb values outside the allowed range (x>=0)")
+			values = [x for x in values if (x>=0)]
+		return values
+
+	def edit_nml(self, nml, val):
+		if 'dist_fn_knobs' not in nml.keys():
+			nml['dist_fn_knobs'] = {}
+		nml['dist_fn_knobs']['g_exb'] = val
+		return nml
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb]

@@ -352,9 +352,6 @@ wait""")
 
 {compile_modules}
 
-which gs2
-gs2 --build-config
-
 srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={self.inputs['sbatch']['cpus-per-task']} gs2 \"{list(self._input_files)[0]}\"
 if test -f \"{list(self._input_files)[0][:-3]}.out.nc\"; then
 	touch \"{list(self._input_files)[0][:-3]}.fin\"
