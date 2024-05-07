@@ -505,6 +505,10 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} kxky"
 		return Plotters['kxky'](reader = self, settings = settings, sliders = sliders)
 	
+	def plot_ql_by_ky(self, settings = {}, init = None, sliders = None):
+		settings['z_axis_type'] = 'ql_metric'
+		return self.plot_ql(settings=settings,init=init,sliders=sliders)
+
 	def plot_ql(self, settings = {}, init = None, sliders = None):
 		if self['ql'] is None:
 			self.calculate_ql()

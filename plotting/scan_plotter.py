@@ -15,6 +15,7 @@ default_settings = {"suptitle": None,
 		"z_axis_type": "growth_rate",
 		"gr_slider": {"scale": 100, "max": None},
 		"mf_slider": {"scale": 100, "max": None},
+		"parity_limits": [0.1, 0.9],
 		"run": {},
 		"options": [False,False,True,False],
 		"vr_options": [False,False,False,False,False],
@@ -56,7 +57,7 @@ class plot_scan(object):
 						self.settings[key][skey] = defaults[key][skey]
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
-		self._options = ["Show Parities","Global Colorbar","Show Equillibrium","Show Ideal"]
+		self._options = ["Show Phi Parity","Global Colorbar","Show Equillibrium","Show Ideal"]
 		self._vr_options = ["Show ID","Show Convergence","Show Bad nstep","Show bad fields","Show Omega -> nan"]
 		
 		if self['eqbm_style'] not in self._valid_eqbm_styles:
@@ -443,10 +444,10 @@ class plot_scan(object):
 			for run_id in run_ids:
 				run = self.data[run_id]
 				if 'parity' in run:
-					if run['parity'] == 1:
+					if run['parity'] <= self.settings['parity_limits'][0]:
 						sym_x.append(run[self['x_axis_type']])
 						sym_y.append(run[self['y_axis_type']])
-					elif run['parity'] == -1:
+					elif run['parity'] >= self.settings['parity_limits'][1]:
 						ant_x.append(run[self['x_axis_type']])
 						ant_y.append(run[self['y_axis_type']])
 			self.ax[0].plot(sym_x, sym_y, '+', color = 'purple', label = 'par')

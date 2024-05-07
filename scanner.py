@@ -1,5 +1,5 @@
 import os
-from numpy import real, imag, array, loadtxt, transpose, savez, nan, ceil
+from numpy import real, imag, array, loadtxt, transpose, savez, nan, ceil, trapz
 from .ncdf2dict import ncdf2dict as readnc
 from .equilibrium import equilibrium
 from .templates import systems
@@ -886,15 +886,12 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 										gyro_data[run_key][key] = key_data[yi,xi,:].tolist()
 										if key == 'phi':
 											try:
-												symsum = sum(abs(key_data[yi,xi,:] + key_data[yi,xi,::-1]))/sum(abs(key_data[yi,xi,:]))
+												absint = abs(trapz(key_data[yi,xi,:],run_data['theta']))
+												intabs = trapz(abs(key_data[yi,xi,:],run_data['theta']))
+												par = 1 - absint/intabs
+												gyro_data[run_key]['parity'] = par
 											except:
-												symsum = 1
-											if  symsum > 1.5:
-												gyro_data[run_key]['parity'] = 1
-											elif symsum < 0.5:
-												gyro_data[run_key]['parity'] = -1
-											else:
-												gyro_data[run_key]['parity'] = 0
+												gyro_data[run_key]['parity'] = None
 									elif key in ['t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']:
 										group_data[group_key][key] = key_data.tolist()
 									elif key in ['phi2']:
@@ -1108,20 +1105,15 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 									if key == 'mode_frequency':
 										gyro_data[run_key]['mode_frequency'] = float(key_data[xi,yi,-1])
 									elif key in ['phi','apar','bpar']:
-										gyro_data[run_key][key] = array(key_data[:,xi,yi,-1]).tolist()
-										'''
-										if key == 'phi':
-											try:
-												symsum = sum(abs(key_data[yi,xi,:] + key_data[yi,xi,::-1]))/sum(abs(key_data[yi,xi,:]))
-											except:
-												symsum = 1
-											if  symsum > 1.5:
-												gyro_data[run_key]['parity'] = 1
-											elif symsum < 0.5:
-												gyro_data[run_key]['parity'] = -1
-											else:
-												gyro_data[run_key]['parity'] = 0
-										'''
+										phi = array(key_data[:,xi,yi,-1])
+										gyro_data[run_key][key] = phi.tolist()
+										try:
+											absint = abs(trapz(phi,array(run_data['theta'])))
+											intabs = trapz(abs(phi,array(run_data['theta'])))
+											par = 1 - absint/intabs
+											gyro_data[run_key]['parity'] = par
+										except:
+											gyro_data[run_key]['parity'] = None
 									elif key in ['time']:
 										group_data[group_key]['t'] = array(key_data).tolist()
 									elif key in ['theta']:
