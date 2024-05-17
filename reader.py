@@ -701,6 +701,8 @@ class myro_read(object):
 			self.write_template_file(directory = directory)
 			
 		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
+		self.eqbm.load_kinetics(directory=directory)
+		self.eqbm.load_geqdsk(directory=directory)
 		self.eqbm.load_pyro(directory=directory)
 	
 	def write_gs2_input(self, indexes = None, run = None, filename = None, directory = None):
@@ -739,7 +741,7 @@ class myro_read(object):
 		if not nml:
 			return
 		
-		self.eqbm.write(nml, os.path.join(directory,filename))
+		self.eqbm.write_nml(nml, os.path.join(directory,filename))
 		print(f"Created {filename} at {directory}")
 	
 	def merge_myro(self, myro):

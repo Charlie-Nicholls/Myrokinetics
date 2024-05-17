@@ -443,7 +443,7 @@ class plot_scan(object):
 			ant_y = []
 			for run_id in run_ids:
 				run = self.data[run_id]
-				if 'parity' in run:
+				if 'parity' in run and run['parity'] is not None:
 					if run['parity'] <= self.settings['parity_limits'][0]:
 						sym_x.append(run[self['x_axis_type']])
 						sym_y.append(run[self['y_axis_type']])

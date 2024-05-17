@@ -76,14 +76,14 @@ class plot_2d(object):
 		self.fig, self.ax = subplots(figsize=(9,7))
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
-	
-		self._load_x_axis(self['x_axis_type'])
-		self._load_y_axis(self['y_axis_type'])
-		self._load_z_axis(self['z_axis_type'])
 		
 		self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type'],self['z_axis_type']]]
 		for dim in [x for x in self.dims if x not in self.settings['run']]:
 			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
+		
+		self._load_x_axis(self['x_axis_type'])
+		self._load_y_axis(self['y_axis_type'])
+		self._load_z_axis(self['z_axis_type'])
 		
 		if self.sliders in [None,'seperate']:
 			self.fig.subplots_adjust(bottom=0.15)

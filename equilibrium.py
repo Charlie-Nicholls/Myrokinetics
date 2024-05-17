@@ -247,12 +247,18 @@ class equilibrium(object):
 		nml['init_g_knobs']['ginit_option'] = 'random_sine'
 		nml['dist_fn_knobs']['mach'] = 0
 		
+		if 'avail_cpu_time' not in nml['knobs'].keys():
+				h, m, s = self.inputs['sbatch']['time'].split(':')
+				nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
+		
 		if self.inputs['grid_option'] == 'single':
 			nml['kt_grids_knobs']['grid_option'] = 'single'
 			if 'kt_grids_single_parameters' not in nml:
 				nml['kt_grids_single_parameters'] = {'aky': 0.1, 'theta0': 0}
 			if 'kt_grids_box_parameters' in nml:
 				del(nml['kt_grids_box_parameters'])
+			if 'margin_cpu_time' not in nml['knobs'].keys():
+				nml['knobs']['margin_cpu_time'] = 300
 		elif self.inputs['grid_option'] == 'box':
 			nml['kt_grids_knobs']['grid_option'] = 'box'
 			nml['dist_fn_knobs']['boundary_option'] = 'linked'
@@ -269,9 +275,6 @@ class equilibrium(object):
 			nml['gs2_diagnostics_knobs']['nc_sync_freq'] = 1
 			if nml['gs2_diagnostics_knobs']['nsave'] > 1000:
 				nml['gs2_diagnostics_knobs']['nsave'] = 10
-			if 'avail_cpu_time' not in nml['knobs'].keys():
-				h, m, s = self.inputs['sbatch']['time'].split(':')
-				nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
 			if 'margin_cpu_time' not in nml['knobs'].keys():
 				nml['knobs']['margin_cpu_time'] = 2400
 			if 'nperiod' not in self.inputs.dimensions and 'nperiod' not in self.inputs.single_parameters:
@@ -471,7 +474,7 @@ class equilibrium(object):
 		self.shear_profile = InterpolatedUnivariateSpline(psiNs,sh)
 	
 	def plot_eq(self):
-		from matplotlib.pyplot import subplots, show
+		from matplotlib.pyplot import subplots, show, ion
 		from numpy import linspace
 		if not self.beta_prime_profile or not self.shear_profile:
 			self.make_profiles()
@@ -481,6 +484,7 @@ class equilibrium(object):
 		bp = self.beta_prime_profile(psiNs)
 		sh = self.shear_profile(psiNs)
 		
+		ion()
 		ax[0].plot(psiNs, bp, 'b')
 		ax[0].invert_yaxis()
 		ax[1].plot(psiNs, sh, 'b')
@@ -491,20 +495,27 @@ class equilibrium(object):
 		show()
 	
 	def plot_kin(self):
-		from matplotlib.pyplot import subplots, show
+		from matplotlib.pyplot import subplots, show, ion
 
 		fig, ax = subplots(3,1)
 		psiNs = self.kin_data['psinorm']
 		ne = self.kin_data['ne']
 		te = self.kin_data['te']
+		ni = self.kin_data['ni']
+		ti = self.kin_data['ti']
 		
-		ax[2].plot(psiNs, ne, 'r')
-		ax[1].plot(psiNs, te, 'r')
-		ax[0].plot(psiNs, ne*te, 'r')
+		ion()
+		ax[2].plot(psiNs, ne, 'b')
+		ax[1].plot(psiNs, te, 'b')
+		ax[0].plot(psiNs, ne*te, 'b', label = "electron")
+		ax[2].plot(psiNs, ni, 'r')
+		ax[1].plot(psiNs, ti, 'r')
+		ax[0].plot(psiNs, ni*ti, 'r',label = "ion")
 		ax[2].set_xlabel("psiN")
 		ax[1].set_xlabel("psiN")
 		ax[0].set_xlabel("psiN")
 		ax[2].set_ylabel("Density ($10^{20}m^{-3}$)")
 		ax[1].set_ylabel("Temeperature (keV)")
 		ax[0].set_ylabel("Pressure ($10^{20}keV m^{-3}$)")
+		ax[0].legend()
 		show()
