@@ -1109,7 +1109,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 										gyro_data[run_key][key] = phi.tolist()
 										try:
 											absint = abs(trapz(phi,array(run_data['theta'])))
-											intabs = trapz(abs(phi,array(run_data['theta'])))
+											intabs = trapz(abs(phi),array(run_data['theta']))
 											par = 1 - absint/intabs
 											gyro_data[run_key]['parity'] = par
 										except:
