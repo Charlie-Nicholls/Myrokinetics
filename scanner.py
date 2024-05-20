@@ -887,7 +887,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 										if key == 'phi':
 											try:
 												absint = abs(trapz(key_data[yi,xi,:],run_data['theta']))
-												intabs = trapz(abs(key_data[yi,xi,:],run_data['theta']))
+												intabs = trapz(abs(key_data[yi,xi,:]),run_data['theta'])
 												par = 1 - absint/intabs #Equation taken from arXiv:2401.14260v1
 												gyro_data[run_key]['parity'] = par
 											except:
