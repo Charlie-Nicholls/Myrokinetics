@@ -15,6 +15,8 @@ default_settings = {"suptitle": None,
 		"z_axis_type": "quasilinear",
 		"z_slider": {"scale": 100, "max": None},
 		"run": {},
+		"contour_value": 'eqbm',
+		"contour_margin_per": 1,
 		"options": [False,False,True,True,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
 		"visible": {"z_slider": True, "op_box": True, "suptitle": True, "title": True},
@@ -38,7 +40,7 @@ class plot_2d(object):
 			return
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
-		self._options = ["Show ID","Global Axis Limits","Global Colourbar","Show Equillibrium","Show Ideal","Draw EQBM Contour"]
+		self._options = ["Show ID","Global Axis Limits","Global Colourbar","Show Equillibrium","Show Ideal","Draw Contour"]
 
 		self.settings = {}
 		defaults = deepcopy(default_settings)
@@ -280,6 +282,23 @@ class plot_2d(object):
 		self.settings['cdict'] = cdict
 		self.cmap = LinearSegmentedColormap('User', self.settings['cdict'])
 		self.draw_fig()
+	
+	def set_contour(self, cont_val):
+		if type(cont_val) == str:
+			self.settings['contour_value'] = 'eqbm'
+			self.draw_fig()
+		elif type(cont_val) in [float,int]:
+			self.settings['contour_value'] = cont_val
+			self.draw_fig()
+		else:
+			print("ERROR: invalid contour_value: valid = 'eqbm' or float/int value")
+	
+	def set_contour_margin(self, marg_val):
+		if 0 < marg_val <= 100:
+			self.settings['contour_margin_per'] = marg_val
+			self.draw_fig()
+		else:
+			print("ERROR: contour_margin_per must be > 0 and <= 100")
 
 	def draw_fig(self, val = None):
 		handles = []
@@ -344,7 +363,9 @@ class plot_2d(object):
 				print("ERRROR: eqbm point outside scan range")
 			else:
 				eqbm_val = grid((x_val,y_val))
-				self.ax.contourf(x_axis, y_axis, z, [eqbm_val-eqbm_val/100,eqbm_val+eqbm_val/100], colors = ('b'))
+				cont_val = eqbm_val if self['contour_value'] in ['eqbm','EQBM','equilibrium'] else self['contour_value']
+				self.ax.contourf(x_axis, y_axis, z, [cont_val-(cont_val*self['contour_margin_per'])/100,cont_val+(cont_val*self['contour_margin_per'])/100], colors = ('b'))
+				handles.append(Line2D([0,1],[0.5,0.5],color='b',label=f"QL = {cont_val:.2f}",visible = True))
 			
 		if status[0]:
 			xticks = [x+dx/2 for dx,x in zip(diff(x_axis),x_axis)]
