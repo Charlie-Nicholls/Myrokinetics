@@ -71,7 +71,7 @@ archer2_sbatch = {
 	'output': 'myro.slurm',
 	'ntasks-per-node': 128,
 	'cpus-per-task': 1,
-	'account': 'e281-ypimcf',
+	'account': 'e281',
 	'partition': 'standard',
 	'qos': 'standard',
 	'distribution': 'block:block',
