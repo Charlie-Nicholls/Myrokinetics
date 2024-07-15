@@ -432,7 +432,7 @@ class scan_inputs(object):
 				print(f"ERROR: {dim_type} not a valid dimension. Valid = {self.dim_lookup['_list']}")
 			elif dim_type:
 				if self['scan_format'] == 'point':
-					all_runs = self.load_run_set(os.path.join(self['point_path'],self['point_name']))
+					all_runs = self.reader.load_run_set(os.path.join(self['point_path'],self['point_name']))
 					vals = set()
 					for run in all_runs:
 						vals.add(run[dim_type])
