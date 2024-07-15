@@ -1,5 +1,5 @@
 import os
-from numpy import load, savez, nan, isfinite, array
+from numpy import load, savez, nan, isfinite, array, zeros
 from .plotting import Plotters
 from .verify_runs import verify_scan
 from .inputs import scan_inputs
@@ -393,6 +393,18 @@ class myro_read(object):
 			
 		self.data['quasilinear'] = qls
 		self.data['_quasilinear_keys'] = ql_keys
+	
+	def calculate_ql_fs(self, ge = 0.1):
+		if 'ql_fs' not in self.data.keys():
+			self.data['ql_fs'] = {}
+		from .quasilinear import cal_flow_shear_ql
+		from uuid import uuid4
+		ql_fs = zeros((len(self['beta_prime']),len(self['shear'])))
+		for bpi, bp in enumerate(self['beta_prime']):
+			for shi, sh in enumerate(self['shear']):
+				run = {'shear':sh,'beta_prime':bp}
+				ql_fs[bpi,shi] = cal_flow_shear_ql(reader=self, run=run, ge=ge)
+		self.data['ql_fs'][ge] = ql_fs
 		
 	def calculate_gr(self):
 		abs_gr_keys = {}
@@ -447,6 +459,25 @@ class myro_read(object):
 		
 		self.data['_abs_gr_keys'] = abs_gr_keys
 		self.data['_norm_gr_keys'] = norm_gr_keys
+	
+	def calculate_left_right(self):
+		for run in self.get_all_runs():
+			from numpy import trapz
+			#try:
+			phi = self('phi',run)
+			th = self('theta',run)
+			thL = [x for x in th if x < 0]
+			thR = [x for x in th if x > 0]
+			phiL = [phi[xi] for xi,x in enumerate(th) if x < 0]
+			phiR = [phi[xi] for xi,x in enumerate(th) if x > 0]
+			intL = trapz(abs(array(phiL)),thL)
+			intR = trapz(abs(array(phiR)),thR)
+			LR = (1 - intL/intR) if intR > intL else (intR/intL - 1)
+				
+			#except:
+			#	LR = nan
+			rid = self.get_run_id(run)
+			self.data['gyro'][rid]['left_right'] = LR
 	
 	'''
 	def calculate_alpha(self):
@@ -683,6 +714,12 @@ class myro_read(object):
 			print("ERROR: Only available for non-linear runs")
 			return
 		return Plotters['NL_Zonality'](reader = self, settings = settings)
+	
+	def plot_ql_fs(self, settings = {}):
+		if 'ql_fs' not in self.data.keys():
+			print("ERROR: calculate ql_fs for required fs values")
+			return
+		return Plotters['QL_FS'](reader = self, settings = settings)
 	
 	def plot_eq(self):
 		if not self.eqbm:

@@ -14,6 +14,8 @@ possible_keys = {
 	'template_path': ['template_path','template_dir','template_directory'],
 	'input_name': ['input_name','input','input_file'],
 	'input_path': ['input_path','input_dir','input_directory'],
+	'point_name': ['point_name','point','point_file'],
+	'point_path': ['point_path','point_dir','point_directory'],
 	},
 	'knobs': {
 	'gk_code': ['gk_code','code','gyrokinetic_code'],
@@ -28,7 +30,8 @@ possible_keys = {
 	'epar': ['epar','write_epar'],
 	'num_shear_ideal': ['num_shat_ideal','n_shat_ideal','shat_ideal_num','shat_ideal_n','ideal_shat_n','idea_shat_num','num_shear_ideal','n_shear_ideal','shear_ideal_num','shear_ideal_n','ideal_shear_n','idea_shear_num'],
 	'num_beta_ideal': ['num_beta_ideal','n_beta_ideal','beta_ideal_num','beta_ideal_n','ideal_beta_n','idea_beta_num','num_beta_prime_ideal','n_beta_prime_ideal','beta_prime_ideal_num','beta_prime_ideal_n','ideal_beta_prime_n','ideal_beta_prime_num'],
-	'force_zero_fs': ['force_zero_fs','force_zero_flow_shear','force_0_fs','force_0_flow_shear']
+	'force_zero_fs': ['force_zero_fs','force_zero_flow_shear','force_0_fs','force_0_flow_shear'],
+	'scan_format': ['scan_format','scan_type','scan','format'],
 	},
 	'info': {
 	'run_name': ['run_name','name'],
@@ -60,6 +63,8 @@ default_inputs = {'files': {
 	'template_path': None,
 	'input_name': None,
 	'input_path': None,
+	'point_name': None,
+	'point_path': None,
 	},
 	'knobs': {
 	'gk_code': 'GS2',
@@ -75,6 +80,7 @@ default_inputs = {'files': {
 	'num_shear_ideal': None,
 	'num_beta_ideal': None,
 	'force_zero_fs': True,
+	'scan_format': 'grid',
 	},
 	'info': {
 	'run_name': None,
@@ -226,6 +232,7 @@ class scan_inputs(object):
 			elif self['gk_code'] == 'CGYRO':
 				self.inputs['files']['template_name'] = cgyro_template
 			self.inputs['files']['template_path'] = template_dir
+		
 		for key in ['eq','kin']:
 			if not self.inputs['files'][f'{key}_name']:
 				print(f"ERROR: No {key} file given")
@@ -367,6 +374,17 @@ class scan_inputs(object):
 			print("ERROR: CGYRO can currently only be run on archer2")
 			valid = False
 			
+		if self['scan_format'] not in ['grid','point']:
+			print("ERROR: scan_format not valid, valid: ['grid','point']")
+			valid = False
+		if self['scan_format'] == 'point':
+			if self['point_name'] is None:
+				print("ERROR: point_name file must be given for scan_format == point")
+				valid = False
+			if self['point_path'] is None:
+				print("ERROR: point_name file must be given for scan_format == point")
+				valid = False
+			
 		return valid
 		
 	def create_run_info(self):
@@ -413,7 +431,14 @@ class scan_inputs(object):
 			if dim_type and dim_type not in self.dim_lookup['_full_list']:
 				print(f"ERROR: {dim_type} not a valid dimension. Valid = {self.dim_lookup['_list']}")
 			elif dim_type:
-				dim = self.dim_lookup[dim_type](values=self.inputs[key]['values'],mini=self.inputs[key]['min'],maxi=self.inputs[key]['max'],num=self.inputs[key]['num'],option=self.inputs[key]['option'])
+				if self['scan_format'] == 'point':
+					all_runs = self.load_run_set(os.path.join(self['point_path'],self['point_name']))
+					vals = set()
+					for run in all_runs:
+						vals.add(run[dim_type])
+					dim = self.dim_lookup[dim_type](values=vals,mini=min(vals),maxi=max(vals),num=len(vals),option=self.inputs[key]['option'])
+				else:
+					dim = self.dim_lookup[dim_type](values=self.inputs[key]['values'],mini=self.inputs[key]['min'],maxi=self.inputs[key]['max'],num=self.inputs[key]['num'],option=self.inputs[key]['option'])
 				if dim.name in dimensions:
 					print(f"ERROR: {dim_type} defined multiple times")
 				else:

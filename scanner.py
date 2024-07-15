@@ -34,9 +34,12 @@ class myro_scan(object):
 	def __len__(self):
 		if self.dimensions is None:
 			return None
-		tot = 1
-		for dim in self.dimensions.values():
-			tot *= len(dim)
+		if self.inputs['scan_format'] == 'grid':
+			tot = 1
+			for dim in self.dimensions.values():
+				tot *= len(dim)
+		elif self['scan_format'] == 'point':
+			return len(self.get_all_runs())
 		return tot
 
 	def print_inputs(self):
@@ -576,7 +579,10 @@ wait""")
 					runs.append(variables.copy())
 			if n == len(dim_order):
 				return runs
-		return loop(n=len(dim_order))
+		if self.inputs['scan_format'] == 'grid':
+			return loop(n=len(dim_order))
+		elif self.inputs['scan_format'] == 'point':
+			return self.load_run_set(os.path.join(self.inputs['point_path'],self.inputs['point_name']))
 	
 	def get_all_ideal_runs(self):
 		runs = []

@@ -1,4 +1,5 @@
 from numpy import array, trapz, nan, log10, floor, append
+from copy import copy
 
 def avg_kperp2_f(run, reader, f):
 	ky = reader('ky',run)
@@ -90,3 +91,30 @@ def QL(run_ids, reader, returnlist = False):
 			return nan, [[nan],[nan]]
 		else:
 			return nan
+
+def cal_flow_shear_ql(reader, run, ge):
+	kys = reader['ky']
+	thets = reader['theta0']
+	#Ignores -ve theta0, unsure if correct
+	thets = [x for x in thets if x >=0]
+	ql_ky = []
+	for ky in kys:
+		grs = []
+		ql_th0 = []
+		for th in thets:
+			rn = copy(run)
+			rn['theta0'] = th
+			rn['ky'] = ky
+			grs.append(reader('growth_rate',rn))
+			ql_th0.append(reader('ql_metric',rn))
+		gam = max(grs)
+		if gam > ge/10:
+			th_max = (ge / (run['shear'] * gam))
+		else:
+			ql_ky.append(0)
+			continue
+		ql_th0 = array(ql_th0)
+		thets = array(thets)
+		ql_ky.append(trapz(ql_th0[thets<=th_max],thets[thets<=th_max])/th_max)
+	ql = trapz(ql_ky,kys)
+	return ql
