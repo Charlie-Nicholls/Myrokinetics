@@ -550,3 +550,4 @@ class scan_inputs(object):
 			for line in lines:
 				run = eval(line.strip("\n"))
 				runs.append(run)
+		return runs
