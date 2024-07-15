@@ -432,7 +432,7 @@ class scan_inputs(object):
 				print(f"ERROR: {dim_type} not a valid dimension. Valid = {self.dim_lookup['_list']}")
 			elif dim_type:
 				if self['scan_format'] == 'point':
-					all_runs = self.reader.load_run_set(os.path.join(self['point_path'],self['point_name']))
+					all_runs = self.load_run_set(os.path.join(self['point_path'],self['point_name']))
 					vals = set()
 					for run in all_runs:
 						vals.add(run[dim_type])
@@ -519,3 +519,34 @@ class scan_inputs(object):
 		
 		if doPrint:
 			print(f"Created {filename} at {directory}")
+	
+	def save_run_set(self, runs = None, filename = None):
+		if runs is None:
+			print("ERROR: runs not given")
+			return
+		if filename is None:
+			print("ERROR: filename not given")
+			return
+
+		if type(list(runs)[0]) == str:
+			new_runs = []
+			for run in runs:
+				new_runs.append(self.get_run_from_id(run))
+			runs = new_runs
+
+		f = open(filename, 'w')
+		for run in runs:
+			f.write(f"{run}\n")
+		f.close()
+		
+	def load_run_set(self, filename = None):
+		if filename is None:
+			print("ERROR: filename not given")
+			return
+		
+		runs = []		
+		with open(filename) as f:
+			lines = f.readlines()
+			for line in lines:
+				run = eval(line.strip("\n"))
+				runs.append(run)
