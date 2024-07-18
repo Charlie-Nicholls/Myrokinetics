@@ -384,6 +384,9 @@ class scan_inputs(object):
 			if self['point_path'] is None:
 				print("ERROR: point_name file must be given for scan_format == point")
 				valid = False
+			if self['ideal'] == True:
+				print("ERROR: ideal must be false for point scans")
+				self.inputs['ideal'] = False
 			
 		return valid
 		
