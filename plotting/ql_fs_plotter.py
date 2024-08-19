@@ -12,12 +12,11 @@ default_settings = {"suptitle": None,
 		"contour_type": 0,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
-		"z_axis_type": "quasilinear",
+		"z_axis_type": "ql_fs",
 		"z_slider": {"scale": 100, "max": None},
 		"run": {},
 		"contour_value": 'eqbm',
 		"contour_margin_per": 1,
-		"alpha": False,
 		"options": [False,False,True,True,False,False],
 		"fontsizes": {"title": 13, "ch_box": 8,"axis": 17,"suptitle": 20},
 		"visible": {"z_slider": True, "op_box": True, "suptitle": True, "title": True},
@@ -26,18 +25,12 @@ default_settings = {"suptitle": None,
 			"blue": ((0.0, 1, 1),(1.0, 0.0, 0.0))},
 }
 
-slider_settings = {"slider_1": {"axis": [0.15, 0.01, 0.5, 0.03]},
-		"slider_2": {"axis": [0.15, 0.05, 0.5, 0.03]},
-		"dims": None,
-		"visible": {"slider_1": True, "slider_2": True, "slider_3": False, "slider_4": False, "slider_5": False, "slider_6": False, "slider_7": False, "slider_8": False, "slider_9": False},
-}
-
-class plot_2d(object):
+class plot_ql_fs(object):
 	def __init__(self, reader, settings = {}, sliders = None):	
 		self.reader = reader
 		self.sliders = sliders
-		if self.reader['quasilinear'] is None:
-			print("Error: No QuasiLinear Data")
+		if self.reader['ql_fs'] is None:
+			print("Error: No ql_fs Data")
 			return
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
@@ -72,7 +65,7 @@ class plot_2d(object):
 		
 	def save_plot(self, filename = None):
 		if filename is None:
-			filename = f"self['z_axis_type']_{self['slider_1']['id']}_{self['slider_2']['id']}"
+			filename = f"self['z_axis_type']"
 		self.fig.savefig(filename)
 		
 	def open_plot(self):
@@ -80,23 +73,13 @@ class plot_2d(object):
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 		
-		self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type'],self['z_axis_type']]]
-		for dim in [x for x in self.dims if x not in self.settings['run']]:
-			self.settings['run'][dim] = self.reader.dimensions[dim].values[0]
-		
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
-		self._load_z_axis(self['z_axis_type'])
 		
-		if self.sliders in [None,'seperate']:
-			self.fig.subplots_adjust(bottom=0.15)
-			if self.sliders == 'seperate':
-				self.sliders = slider_axes(reader=self.reader)
-			else:
-				slider_defaults = deepcopy(slider_settings)
-				slider_defaults['dims'] = self.dims
-				self.sliders = slider_axes(reader=self.reader,settings=slider_defaults,ax=self.ax)
-		self.sliders.add_plot(self)
+		self.ges = list(self.reader.data['ql_fs'].keys())
+		self.ges.sort()
+		self.slider = Slider(axes([0.15, 0.01, 0.5, 0.03]), f"flow shear index:", 0, len(self.ges)-1, valinit = 0, valstep = 1)
+		self.slider.on_changed(self.draw_fig)
 
 		self.cmap = LinearSegmentedColormap('WhRd', self.settings['cdict'])
 		blank_norm = Normalize(vmin=-1,vmax=1)
@@ -113,9 +96,6 @@ class plot_2d(object):
 		self._sliders['z_slider'] = Slider(self.z_axes, 'Scale', 0, 100, valinit = self['z_slider']['scale'], valstep = 1, orientation = 'vertical')
 		self._sliders['z_slider'].on_changed(self.draw_fig)
 			
-		zs = [x for x in self.reader.data['quasilinear'].values() if str(x) not in ['-inf','inf','nan']]
-		self._z_max = max(zs,default=1)
-		
 		ion()
 		self.draw_fig()
 		if self['z_slider']['max']:
@@ -126,13 +106,14 @@ class plot_2d(object):
 		self.sliders.set_slider(num = num, key = key, dimension_type = dimension_type)
 		
 	def _load_x_axis(self, axis_type):
-		if axis_type not in ['beta_prime']:
-			print("ERROR: axis_type not found, valid types ['beta_prime']")
+		if axis_type not in ['beta_prime','alpha']:
+			print("ERROR: axis_type not found, valid types ['beta_prime','alpha']")
 			return
 			
 		self.settings['x_axis_type'] = axis_type
 		
 		if axis_type in ['alpha']:
+			print("Not yet implimented")
 			self._x_axis_label = r'$\alpha$'
 		else:
 			self.x_axis = self.reader.dimensions['beta_prime'].values
@@ -140,11 +121,6 @@ class plot_2d(object):
 			
 	def set_x_axis_type(self, axis_type):
 		self._load_x_axis(axis_type)
-		self.draw_fig()
-	
-	def toggle_alpha(self):
-		self.settings['alpha'] = not self.settings['alpha']
-		self._x_axis_label = r'$\alpha$'
 		self.draw_fig()
 	
 	def _load_y_axis(self, axis_type):
@@ -162,42 +138,6 @@ class plot_2d(object):
 			
 	def set_y_axis_type(self, axis_type):
 		self._load_y_axis(axis_type)
-		self.draw_fig()
-	
-	def _load_z_axis(self, axis_type):
-		if axis_type not in ['growth_rate','growth_rate_norm','mode_frequency','quasilinear','ql_norm','ql_metric']:
-			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']")
-			return
-			
-		self.settings['z_axis_type'] = axis_type
-		zs = []
-		for run in self.reader.get_all_runs():
-			val = self.reader(self['z_axis_type'],run)
-			if str(val) not in ['-inf','inf','nan']:
-				zs.append(val)
-		self._z_max = max(zs,default=100)
-		
-		if axis_type in ['growth_rate']:
-			self._z_axis_label = r'$\gamma$'
-		elif axis_type in ['growth_rate_norm']:
-			self._z_axis_label = r'$\gamma/k_{y}^{2}$'
-		elif axis_type in ['mode_frequency']:
-			self._z_axis_label = "Mode Frequency"
-		elif axis_type in ['ql_norm']:
-			self._z_axis_label = "QL norm"
-		elif axis_type in ['ql_metric']:
-			self._z_axis_label = "QL norm (gs2)"
-		elif axis_type in ['quasilinear']:
-			self._z_axis_label = "Quasilinear Metric"
-			self.dims = [x for x in self.dims if x not in ['ky']]#&theta0
-			if 'ky' in self['run']:
-				self.settings['run'].pop('ky')
-			#remove ky sliders
-			#if 'theta0' in self['run']:
-				#self.settings['run'].pop('theta0')
-			
-	def set_z_axis_type(self, axis_type):
-		self._load_z_axis(axis_type)
 		self.draw_fig()
 	
 	def set_max(self, val = None):
@@ -307,25 +247,17 @@ class plot_2d(object):
 
 	def draw_fig(self, val = None):
 		handles = []
-		for key, sli in self.sliders.sliders.items():
-			dim = self.sliders.settings[key]['dimension_type']
-			if dim in self.dims:
-				self.settings['run'][dim] = self.reader.dimensions[dim].values[sli.val]
-				handles.append(Line2D([0,1],[0.5,0.5],color='k',label=f"{self.reader.dimensions[dim].axis_label} = {self.settings['run'][dim]}",visible = False))
+		handles.append(Line2D([0,1],[0.5,0.5],color='k',label=f"ge = {self.ges[self.slider.val]}",visible = False))
 		
 		if 'psin' in self['run']:
 			psiN = self['run']['psin']
 		else:
 			psiN = self.reader.single_parameters['psin'].values[0]
-		
-		if not self['alpha']:
-			x_axis = list(self.x_axis)
-			x_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
-		else:
-			x_axis = self.reader.data['_alpha'][psiN]
-			x_val = abs(self.reader.data['equilibrium'][psiN]['alpha'])
 				
+		x_axis = list(self.x_axis)
 		y_axis = list(self.y_axis)
+		
+		x_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
 		y_val = self.reader.data['equilibrium'][psiN][self['y_axis_type']]
 		
 		self.ax.cla()
@@ -336,15 +268,11 @@ class plot_2d(object):
 		status = self.options.get_status()
 		self.settings['options'] = status
 		
-		z = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
-		for x_id, x_value in enumerate(self.x_axis):
-			for y_id, y_value in enumerate(self.y_axis):
-				run = self['run'].copy()
-				run[self['x_axis_type']] = x_value
-				run[self['y_axis_type']] = y_value
-				z[x_id][y_id] = self.reader(self['z_axis_type'],run)
+		z = self.reader.data['ql_fs'][self.ges[self.slider.val]]
 		z = transpose(z)
+		self.z = z
 		self.z_axis = z
+		self._z_max = amax(z)
 		
 		if self['z_slider']['max']:
 			z_max = self._sliders['z_slider'].val * self['z_slider']['max']/100
@@ -420,8 +348,7 @@ class plot_2d(object):
 			run_id = self.reader.get_run_id(run={'psin': psiN,'theta0': theta0}, keys='_ideal_keys')
 			if run_id is not None:
 				idata = self.reader.data['ideal'][run_id]
-				x_axis_type = self['x_axis_type'] if not self['alpha'] else 'alpha'
-				self.ax.contourf(idata[x_axis_type], idata[self['y_axis_type']], idata['stabilities'], [0.01,0.99], colors = ('k'))
+				self.ax.contourf(idata[self['x_axis_type']], idata[self['y_axis_type']], idata['stabilities'], [0.01,0.99], colors = ('k'))
 				handles.append(Line2D([0,1],[0.5,0.5],color='k',label="Ideal Boundary"))
 			else:
 				self.ax.text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=self.ax.transAxes,color='k')

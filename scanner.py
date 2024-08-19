@@ -1217,7 +1217,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 	def print_slurm(self, n = 0, i = 1):
 		filepath = f"{self['data_path']}/submit_files/"
 		if self.inputs['nonlinear']:
-			filepath += f"{self.inputs['sbatch']['output']}_{n}"
+			filepath += f"{self.inputs['sbatch']['output']}"
 		elif self.inputs['system'] == 'viking':
 			filepath += f"gyro_{n}/{self.inputs['sbatch']['output']}_{i}"
 		elif self.inputs['system'] == 'archer2':

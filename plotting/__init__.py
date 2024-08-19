@@ -9,6 +9,7 @@ from .kxky_plotter import plot_kxky
 from .box_diagnostics_plotter import plot_box_diag
 from .slider_ax import slider_axes
 from .nonlinear_plotter import plot_phi2_by_mode, plot_hflux, plot_nl_phi2, plot_zonality
+from .ql_fs_plotter import plot_ql_fs
 
 Plotters = {}
 Plotters["Scan"] = plot_scan
@@ -25,5 +26,6 @@ Plotters["NL_Phi2"] = plot_phi2_by_mode
 Plotters["NL_Hflux"] = plot_hflux
 Plotters["NL_Phi2_by_k"] = plot_nl_phi2
 Plotters["NL_Zonality"] = plot_zonality
+Plotters["QL_FS"] = plot_ql_fs
 
 __all__ = ["Plotters"]

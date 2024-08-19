@@ -1,5 +1,6 @@
 from numpy import array, trapz, nan, log10, floor, append
 from copy import copy
+from scipy.interpolate import InterpolatedUnivariateSpline
 
 def avg_kperp2_f(run, reader, f):
 	ky = reader('ky',run)
@@ -98,23 +99,53 @@ def cal_flow_shear_ql(reader, run, ge):
 	#Ignores -ve theta0, unsure if correct
 	thets = [x for x in thets if x >=0]
 	ql_ky = []
+	th_maxs = []
 	for ky in kys:
+		#print(run, ky)
+		rn = copy(run)
+		rn['ky'] = ky
+		if reader.inputs['scan_format'] == 'point':
+			thets = set()
+			rids = reader.get_run_list(rn)
+			for rid in rids:
+				thets.add(reader.data['gyro'][rid]['theta0'])
+			thets = list(thets)
+			thets.sort()
 		grs = []
 		ql_th0 = []
+		subthets = []
 		for th in thets:
-			rn = copy(run)
 			rn['theta0'] = th
-			rn['ky'] = ky
-			grs.append(reader('growth_rate',rn))
-			ql_th0.append(reader('ql_metric',rn))
-		gam = max(grs)
-		if gam > ge/10:
-			th_max = (ge / (run['shear'] * gam))
-		else:
+			gr = reader('growth_rate',rn)
+			if str(gr) not in ['nan','inf','-inf','None']:
+				grs.append(gr)
+				ql_th0.append(reader('ql_metric',rn))
+				subthets.append(th)
+		if len(grs) == 0:
 			ql_ky.append(0)
 			continue
+		gam = max(grs)
+		if gam > ge/10:
+			if 'shear' in run:
+				shear = run['shear']
+			else:
+				shear = reader['shear'][0]
+			th_max = (ge / (shear * gam))
+			th_maxs.append(th_max)
+		else:
+			ql_ky.append(0)
+			th_maxs.append(0)
+			continue
+		spline = InterpolatedUnivariateSpline(subthets,ql_th0)
+		if th_max not in subthets:
+			ql_th0.append(spline(th_max))
+			subthets.append(th_max)
 		ql_th0 = array(ql_th0)
-		thets = array(thets)
-		ql_ky.append(trapz(ql_th0[thets<=th_max],thets[thets<=th_max])/th_max)
+		subthets = array(subthets)
+		ql_ky.append(trapz(ql_th0[subthets<=th_max],subthets[subthets<=th_max])/th_max)
 	ql = trapz(ql_ky,kys)
-	return ql
+	reader.data['_ql_fs'] = {}
+	reader.data['_ql_fs'][ge] = {}
+	reader.data['_ql_fs'][ge]['theta0_maxs'] = th_maxs
+	reader.data['_ql_fs'][ge]['ql_ky'] = ql_ky
+	return ql, ql_ky

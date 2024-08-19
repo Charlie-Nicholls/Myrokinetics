@@ -470,5 +470,23 @@ class g_exb(dimension):
 			nml['dist_fn_knobs'] = {}
 		nml['dist_fn_knobs']['g_exb'] = val
 		return nml
+	
+class q_inp(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb]
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['q_inp','safety_factor']
+	axis_label = 'q_inp'
+	valid_options = []
+
+	def sub_validate(self, values):
+		return values
+
+	def edit_nml(self, nml, val):
+		if 'theta_grid_parameters' not in nml.keys():
+			nml['theta_grid_parameters'] = {}
+		nml['theta_grid_parameters']['q_inp'] = val
+		return nml
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb,q_inp]

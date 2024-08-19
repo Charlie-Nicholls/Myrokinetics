@@ -11,6 +11,8 @@ default_settings = {"suptitle": None,
 		"run": {},
 		"limit": None,
 		"ref_line": {"x_axis": [], "y_axis": []},
+		"x_lim": [None, None],
+		"y_lim": [None, None],
 		"fontsizes": {"title": 13, "axis": 17,"suptitle": 20},
 		"visible": {"eqbm": True, "suptitle": True, "title": True, "ref_line": False},
 		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k'},
@@ -84,6 +86,8 @@ class plot_slice(object):
 
 		ion()
 		show()
+		self.temp = False
+		self.settings['visible']['ref_line'] = True
 		self.draw_fig()
 		
 	def set_slider(self, num = None, key = None, dimension_type = None):
@@ -109,8 +113,8 @@ class plot_slice(object):
 		self.draw_fig()
 	
 	def _load_y_axis(self, axis_type):
-		if axis_type not in ['quasilinear','growth_rate','growth_rate_norm','ql_norm','mode_frequency']:
-			print("ERROR: axis_type not found, valid types: 'quasilinear','growth_rate','growth_rate_norm','ql_norm','mode_frequency")
+		if axis_type not in ['quasilinear','growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']:
+			print("ERROR: axis_type not found, valid types: 'quasilinear','growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -123,7 +127,7 @@ class plot_slice(object):
 				self.settings['run'].pop('ky')
 			if 'theta0' in self['run']:
 				self.settings['run'].pop('theta0')
-		elif axis_type in ['growth_rate','growth_rate_norm','ql_norm','mode_frequency']:
+		elif axis_type in ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']:
 			self._y_key = '_gyro_keys'
 			if 'ky' in self.reader.dimensions and 'ky' not in self.dims:
 				self.dims.append('ky')
@@ -139,6 +143,8 @@ class plot_slice(object):
 				self._y_axis_label = "Growth Rate/$(k_{y}\\rho_{0})^{2}$"
 			elif axis_type == 'ql_norm':
 				self._y_axis_label = "QL Normalised Growth Rate"
+			elif axis_type == 'ql_metric':
+				self._y_axis_label = "Quasilinear Metric"
 			elif axis_type == 'mode_frequency':
 				self._y_axis_label = "Mode Frequency"
 		
@@ -158,10 +164,19 @@ class plot_slice(object):
 		self.ax.set_yscale(scale)
 		self.settings['yscale'] = scale
 	
-	def set_limit(self, limit):
-		limits = self.ax.get_ylim()
-		self.ax.set_ylim(limits[0],limit)
-		self.settings['limit'] = limit
+	def set_ylim(self, limit=[None,None]):
+		if type(limit) != list or len(limit) != 2:
+			print("ERROR: limit must be list of length 2 [lower,upper] (None for no limit)")
+			return
+		self.settings['y_lim'] = limit
+		self.draw_fig()
+		
+	def set_xlim(self, limit=[None,None]):
+		if type(limit) != list or len(limit) != 2:
+			print("ERROR: limit must be list of length 2 [lower,upper] (None for no limit)")
+			return
+		self.settings['x_lim'] = limit
+		self.draw_fig()
 	
 	def set_visible(self, key, val = None):
 		if key not in self['visible'] and key not in self.sliders['visible']:
@@ -210,6 +225,10 @@ class plot_slice(object):
 		self.ax.set_xlabel(self._x_axis_label,fontsize=self['fontsizes']['axis'])
 		
 		x_vals = self.reader.dimensions[self['x_axis_type']].values
+		if self['x_lim'][0] is not None:
+			x_vals = [x for x in x_vals if x >= self['x_lim'][0]]
+		if self['x_lim'][1] is not None:
+			x_vals = [x for x in x_vals if x <= self['x_lim'][1]]
 		y_vals = full((len(x_vals)),nan)
 		for x_id, x_value in enumerate(x_vals):
 			run = self['run'].copy()
@@ -223,8 +242,17 @@ class plot_slice(object):
 		self.ax.plot(self.x_axis,self.y_axis,'.',c=self['colours']['points'])
 		
 		if self['visible']['ref_line']:
-			self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],c=self['colours']['ref_line'])
-			self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],'.',c=self['colours']['ref_points'])
+			if self.temp:
+				ge = list(self.reader.data['_ql_fs'].keys())[-1]
+				kyid = self.reader['ky'].index(self['run']['ky'])
+				t0max = self.reader.data['_ql_fs'][ge]['theta0_maxs'][kyid]
+				self.settings['ref_line']['x_axis'] = [x for x in self.x_axis if x <= t0max]
+				self.settings['ref_line']['y_axis'] = [self.y_axis[xi] for xi, x in enumerate(self.settings['ref_line']['x_axis'])]
+				self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],c=self['colours']['ref_line'])
+				self.ax.vlines(t0max,min(self.y_axis),max(self.y_axis))
+			else:
+				self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],c=self['colours']['ref_line'])
+				self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],'.',c=self['colours']['ref_points'])
 		
 		if self['visible']['eqbm']:
 			limits = self.ax.get_ylim()
@@ -239,9 +267,13 @@ class plot_slice(object):
 				self.ax.vlines(eqbm_val,low_lim,high_lim,self['colours']['eqbm'])
 				handles.append(Line2D([0.5,0.5],[0,1],c=self['colours']['eqbm'],label = "Equillibrium"))
 		
-		if self['limit']:
-			limits = self.ax.get_ylim()
-			self.ax.set_ylim(limits[0],self['limit'])
+		if self['y_lim'] != [None,None]:
+			limits = list(self.ax.get_ylim())
+			if self['y_lim'][0] is not None:
+				limits[0] = self['y_lim'][0]
+			if self['y_lim'][1] is not None:
+				limits[1] = self['y_lim'][1]
+			self.ax.set_ylim(limits[0],limits[1])
 		self.ax.set_xscale(self['xscale'])
 		self.ax.set_yscale(self['yscale'])
 		

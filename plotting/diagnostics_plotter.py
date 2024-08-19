@@ -177,7 +177,7 @@ class plot_diag(object):
 		if run_id is None:
 			print(f"Data not found for {run}")
 			return
-		title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.2g} | " for x in self.reader.inputs.dim_order])[:-3]
+		title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.3g} | " for x in self.reader.inputs.dim_order])[:-3]
 		self.ax.set_title(title,fontsize=self['fontsizes']['title'],visible=self['visible']['title'])
 		
 		if self['var'] == 'omega':

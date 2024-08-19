@@ -13,6 +13,7 @@ default_settings = {"suptitle": None,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
 		"z_axis_type": "growth_rate",
+		"z2_axis_type": "mode_frequency",
 		"gr_slider": {"scale": 100, "max": None},
 		"mf_slider": {"scale": 100, "max": None},
 		"parity_limits": [0.1, 0.9],
@@ -59,6 +60,7 @@ class plot_scan(object):
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
 		self._options = ["Show Phi Parity","Global Colorbar","Show Equillibrium","Show Ideal"]
 		self._vr_options = ["Show ID","Show Convergence","Show Bad nstep","Show bad fields","Show Omega -> nan"]
+		self.fig = None
 		
 		if self['eqbm_style'] not in self._valid_eqbm_styles:
 			print("ERROR: eqbm_style not found, valid styles = {self._valid_eqbm_styles}")
@@ -77,13 +79,19 @@ class plot_scan(object):
 		self.fig.savefig(filename)
 		
 	def open_plot(self):
-		self.fig, self.ax = subplots(1,2,figsize=(14.6,7))
+		if self.fig == None:
+			self.fig, self.ax = subplots(1,2,figsize=(14.6,7))
+		else:
+			self.fig.clear()
+			self.ax = self.fig.subplots(1,2)
+			self.sliders = None
 		if self['suptitle']:
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 		
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
 		self._load_z_axis(self['z_axis_type'])
+		self._load_z2_axis(self['z2_axis_type'])
 		
 		if self['aky']:
 			self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type']]]
@@ -123,19 +131,13 @@ class plot_scan(object):
 		
 		self._sliders = {}
 		self.gr_axes = axes([0.93, 0.15, 0.01, 0.73])
-		self._sliders['gr_slider'] = Slider(self.gr_axes, 'GR', 0, 100, valinit = self['gr_slider']['scale'], valstep = 1, orientation = 'vertical')
+		self._sliders['gr_slider'] = Slider(self.gr_axes, 'Z', 0, 100, valinit = self['gr_slider']['scale'], valstep = 1, orientation = 'vertical')
 		self._sliders['gr_slider'].on_changed(self.draw_fig)
 		
 		self.mf_axes = axes([0.97, 0.15, 0.01, 0.73])
-		self._sliders['mf_slider'] = Slider(self.mf_axes, 'MF', 0, 100, valinit = self['mf_slider']['scale'], valstep = 1, orientation = 'vertical')
+		self._sliders['mf_slider'] = Slider(self.mf_axes, 'Z2', 0, 100, valinit = self['mf_slider']['scale'], valstep = 1, orientation = 'vertical')
 		self._sliders['mf_slider'].on_changed(self.draw_fig)
 
-		mfs = []
-		for run in self.reader.get_all_runs():
-			val = self.reader('mode_frequency',run)
-			if str(val) not in ['-inf','inf','nan']:
-				mfs.append(val)
-		self._mf_max = max(mfs,default=1)
 		self.draw_fig()
 		ion()
 		show()
@@ -206,6 +208,32 @@ class plot_scan(object):
 			
 	def set_z_axis_type(self, axis_type):
 		self._load_z_axis(axis_type)
+		self.draw_fig()
+		
+	def _load_z2_axis(self, axis_type):
+		if axis_type not in ['mode_frequency','parity','left_right']:
+			print("ERROR: axis_type not found, valid types ['mode_frequency','parity','left_right']")
+			return
+			
+		self.settings['z2_axis_type'] = axis_type
+		
+		if self['z2_axis_type'] == 'mode_frequency':
+			zs = []
+			for run in self.reader.get_all_runs():
+				val = self.reader(self['z_axis_type'],run)
+				if str(val) not in ['-inf','inf','nan']:
+					zs.append(val)
+			self._z2_max = max(zs,default=100)
+			self._z2_axis_label = 'Mode Frequency'
+		elif self['z2_axis_type'] == 'parity':
+			self._z2_max = 1
+			self._z2_axis_label = 'Parity'
+		elif self['z2_axis_type'] == 'left_right':
+			self._z2_max = 1
+			self._z2_axis_label = 'Left/Right'
+
+	def set_z2_axis_type(self, axis_type):
+		self._load_z2_axis(axis_type)
 		self.draw_fig()
 	
 	def set_gr_max(self, val):
@@ -365,7 +393,7 @@ class plot_scan(object):
 		self.ax[1].set_facecolor('grey')
 		self.ax[1].set_ylabel(self._y_axis_label,fontsize=self['fontsizes']['axis'])
 		self.ax[1].set_xlabel(self._x_axis_label,fontsize=self['fontsizes']['axis'])
-		self.ax[1].set_title("Mode Frequency",fontsize=self['fontsizes']['title'])
+		self.ax[1].set_title(self._z2_axis_label,fontsize=self['fontsizes']['title'])
 		
 		#self.ax[0].set_ylim(amin(self.y_axis),amax(self.y_axis))
 		#self.ax[0].set_xlim(amin(self.x_axis),amax(self.x_axis))
@@ -373,6 +401,7 @@ class plot_scan(object):
 		#self.ax[1].set_xlim(amin(self.x_axis),amax(self.x_axis))
 		
 		z_type = self['z_axis_type']
+		z2_type = self['z2_axis_type']
 		if self['aky']:
 			key = '_gyro_keys'
 		elif z_type == 'growth_rate':
@@ -394,7 +423,7 @@ class plot_scan(object):
 					z_type = 'abs_gr'
 				elif not self['aky'] and z_type == 'growth_rate_norm':
 					z_type = 'norm_gr'
-				z_mf[x_id][y_id] = self.reader('mode_frequency',run) if self.reader('mode_frequency',run) is not None else nan
+				z_mf[x_id][y_id] = self.reader(z2_type,run) if self.reader(z2_type,run) is not None else nan
 				z_gr[x_id][y_id] = self.reader(z_type,run) if self.reader(z_type,run) is not None else nan
 		
 		self.z_axis_gr = z_gr = transpose(z_gr)
@@ -422,8 +451,8 @@ class plot_scan(object):
 		
 		if self['mf_slider']['max']:
 			mfmax = self._sliders['mf_slider'].val * self['mf_slider']['max']/100
-		elif status[1]:
-			mfmax = self._sliders['mf_slider'].val * self._mf_max/100
+		elif status[1] or z2_type in ['parity','left_right']:
+			mfmax = self._sliders['mf_slider'].val * self._z2_max/100
 		else:
 			try:
 				mfmax = self._sliders['mf_slider'].val * amax(abs(array(z_mf)[isfinite(z_mf)]))/100

@@ -96,19 +96,19 @@ class myro_read(object):
 					print(f"ERROR: run {run} Not Found")
 					return None
 			if len(run) != len(self.dimensions):
-					id_set = {}
-					id_list = self.get_run_list(run)
-					for sid in id_list:
-						id_set.add(self.data['gyro'][sid]['group_key'])
-					if len(id_set) == 1:
-						if key in self.data['gyro']['group_keys'][list(id_set)[0]]:
-							return self.data['gyro']['group_keys'][list(id_set)[0]][key]
-						else:
-							print(f"ERROR: either run wrong length or group key {key} not found")
-							return None
+				id_set = set()
+				id_list = self.get_run_list(run)
+				for sid in id_list:
+					id_set.add(self.data['gyro'][sid]['group_key'])
+				if len(id_set) == 1:
+					if key in self.data['gyro']['group_keys'][list(id_set)[0]]:
+						return self.data['gyro']['group_keys'][list(id_set)[0]][key]
 					else:
-						print(f"ERROR: len(run) must be length {len(self.dimensions)}")
+						print(f"ERROR: either run wrong length or group key {key} not found")
 						return None
+				else:
+					print(f"ERROR: len(run) must be length {len(self.dimensions)}")
+					return None
 
 			if key in self.data['gyro'][run_id].keys():
 				return self.data['gyro'][run_id][key]
@@ -141,7 +141,7 @@ class myro_read(object):
 			return self.dimensions[key].values
 
 		elif self.single_parameters and key in self.single_parameters.keys():
-			return self.single_parameters[key].values[0]
+			return [self.single_parameters[key].values[0]]
 		
 		elif self.verify and key in self.verify._all_keys():
 			return self.verify[key]
@@ -402,8 +402,12 @@ class myro_read(object):
 		ql_fs = zeros((len(self['beta_prime']),len(self['shear'])))
 		for bpi, bp in enumerate(self['beta_prime']):
 			for shi, sh in enumerate(self['shear']):
-				run = {'shear':sh,'beta_prime':bp}
-				ql_fs[bpi,shi] = cal_flow_shear_ql(reader=self, run=run, ge=ge)
+				run = {}
+				if 'beta_prime' in self.dimensions:
+					run['beta_prime'] = bp
+				if 'shear' in self.dimensions:
+					run['shear'] = sh	
+				ql_fs[bpi,shi], _ = cal_flow_shear_ql(reader=self, run=run, ge=ge)
 		self.data['ql_fs'][ge] = ql_fs
 		
 	def calculate_gr(self):
@@ -461,38 +465,39 @@ class myro_read(object):
 		self.data['_norm_gr_keys'] = norm_gr_keys
 	
 	def calculate_left_right(self):
+		from numpy import trapz
 		for run in self.get_all_runs():
-			from numpy import trapz
-			#try:
-			phi = self('phi',run)
-			th = self('theta',run)
-			thL = [x for x in th if x < 0]
-			thR = [x for x in th if x > 0]
-			phiL = [phi[xi] for xi,x in enumerate(th) if x < 0]
-			phiR = [phi[xi] for xi,x in enumerate(th) if x > 0]
-			intL = trapz(abs(array(phiL)),thL)
-			intR = trapz(abs(array(phiR)),thR)
-			LR = (1 - intL/intR) if intR > intL else (intR/intL - 1)
+			try:
+				phi = self('phi',run)
+				th = self('theta',run)
+				thL = [x for x in th if x < 0]
+				thR = [x for x in th if x > 0]
+				phiL = [phi[xi] for xi,x in enumerate(th) if x < 0]
+				phiR = [phi[xi] for xi,x in enumerate(th) if x > 0]
+				intL = trapz(abs(array(phiL)),thL)
+				intR = trapz(abs(array(phiR)),thR)
+				LR = (1 - intL/intR) if intR > intL else (intR/intL - 1)
 				
-			#except:
-			#	LR = nan
+			except:
+				LR = nan
 			rid = self.get_run_id(run)
 			self.data['gyro'][rid]['left_right'] = LR
 	
-	'''
 	def calculate_alpha(self):
 		if not self.eqbm:
 			self.load_equilibrium()
 		from scipy.interpolate import InterpolatedUnivariateSpline
 		qspline = InterpolatedUnivariateSpline(self.eqbm.eq_data['psiN'],self.eqbm.eq_data['qpsi'])
-		alpha_axis = []
-		alpha_values = []
-		alpha_axis_ideal = []
-		for rid, run in self.data['gyro'].items():
-			self.data['gyro'][rid]['alpha'] = abs(run['beta_prime'])*self.eqbm.eq_data['rmaxis']*qspline(run['psin'])**2
-		for 
-			alpha_axis_ideal.append([abs(x)*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2 for x in self['beta_prime_axis_ideal'][p]])
-	'''
+		self.data['_alpha'] = {}
+		for psiN in self['psiN']:
+			alpha = [abs(bp)*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2 for bp in self['beta_prime']]
+			self.data['_alpha'][psiN] = alpha
+			eqbm = self.data['equilibrium'][psiN]
+			e_alpha = eqbm['beta_prime']*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2
+			self.data['equilibrium'][psiN]['alpha'] = e_alpha
+			iruns = self.get_run_list({'psin':psiN},keys = '_ideal_keys')
+			for irun in iruns:
+				self.data['ideal'][irun]['alpha'] = [abs(x)*self.eqbm.eq_data['rmaxis']*qspline(psiN)**2 for x in self.data['ideal'][irun]['beta_prime']]
 	
 	def make_slider_axes(self, settings = {}, init = None):
 		if init is not None:
