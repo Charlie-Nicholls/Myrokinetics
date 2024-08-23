@@ -299,7 +299,7 @@ class tprim(dimension):
 	def fprimcal(nml,tprim):
 		bp = abs(nml['theta_grid_eik_knobs']['beta_prime_input'])
 		beta = nml['knobs']['beta'] if 'beta' in nml['knobs'].keys() else nml['parameters']['beta']
-   		sp12 = [(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in ['species_parameters_1','species_parameters_2']]
+		sp12 = [(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in ['species_parameters_1','species_parameters_2']]
 		dp = ((bp/beta) - sp12[0] - sp12[1])/(nml['species_parameters_3']['dens']*nml['species_parameters_3']['temp']) - tprim
 		return dp
 
