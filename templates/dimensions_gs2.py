@@ -291,12 +291,12 @@ class tprim(dimension):
 			elif nml[key]['type'] == 'ion' and self.option in ['all','impurity']:
 				nml[key]['tprim'] = val
 			else:
-				break
+				continue
 			if self._fix_fprim and self.option != 'all':
 				nml[key]['fprim'] = self.fprimcal(nml,val)
 		return nml
 
-	def fprimcal(nml,tprim):
+	def fprimcal(self, nml,tprim):
 		bp = abs(nml['theta_grid_eik_knobs']['beta_prime_input'])
 		beta = nml['knobs']['beta'] if 'beta' in nml['knobs'].keys() else nml['parameters']['beta']
 		sp12 = [(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in ['species_parameters_1','species_parameters_2']]
