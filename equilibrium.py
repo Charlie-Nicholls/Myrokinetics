@@ -217,7 +217,7 @@ class equilibrium(object):
 		if 'beta' in nml['knobs'].keys():
 			del(nml['parameters'])
 		beta = nml['knobs']['beta'] if 'beta' in nml['knobs'].keys() else nml['parameters']['beta']
-		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*beta*-1
+		bp_cal = sum([(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x]])*beta*-1
 
 		mul = beta_prim/bp_cal
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:

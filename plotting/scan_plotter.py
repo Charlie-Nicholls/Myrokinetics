@@ -460,7 +460,8 @@ class plot_scan(object):
 					mfmax = 10e-10
 			except:
 				mfmax = 1
-		norm_mf = Normalize(vmin=-mfmax,vmax=mfmax)
+		mfmin = 0 if z2_type == 'parity' else -mfmax 
+		norm_mf = Normalize(vmin=mfmin,vmax=mfmax)
 		self.settings['mf_slider']['scale'] = self._sliders['mf_slider'].val
 		self.cbar_mf.update_normal(ScalarMappable(norm = norm_mf))
 		self.ax[1].pcolormesh(x_axis, y_axis, z_mf, norm = norm_mf)

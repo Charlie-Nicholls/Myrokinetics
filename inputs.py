@@ -31,6 +31,7 @@ possible_keys = {
 	'num_shear_ideal': ['num_shat_ideal','n_shat_ideal','shat_ideal_num','shat_ideal_n','ideal_shat_n','idea_shat_num','num_shear_ideal','n_shear_ideal','shear_ideal_num','shear_ideal_n','ideal_shear_n','idea_shear_num'],
 	'num_beta_ideal': ['num_beta_ideal','n_beta_ideal','beta_ideal_num','beta_ideal_n','ideal_beta_n','idea_beta_num','num_beta_prime_ideal','n_beta_prime_ideal','beta_prime_ideal_num','beta_prime_ideal_n','ideal_beta_prime_n','ideal_beta_prime_num'],
 	'force_zero_fs': ['force_zero_fs','force_zero_flow_shear','force_0_fs','force_0_flow_shear'],
+	'magnetism': ['magnetism','mag','magnetics'],
 	'scan_format': ['scan_format','scan_type','scan','format'],
 	},
 	'info': {
@@ -80,6 +81,7 @@ default_inputs = {'files': {
 	'num_shear_ideal': None,
 	'num_beta_ideal': None,
 	'force_zero_fs': True,
+	'magnetism': True,
 	'scan_format': 'grid',
 	},
 	'info': {

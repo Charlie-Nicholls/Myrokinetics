@@ -265,9 +265,13 @@ class vnewk(dimension):
 class tprim(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		print("WARNING: TPRIM AND FPRIM HAVE NOT BEEN TESTED FOR CONSISTENCY IN LATEST VERSION, PLEASE CHECK BEFORE USE")
 		if self.option is None:
 			self.option = 'all'
+		self._fix_fprim = True
+		if self._fix_fprim:
+			print("WARNING: USING EXPERIMENTAL FIX FPRIM SETTINGS")
+		else:
+			print("WARNING: TPRIM AND FPRIM HAVE NOT BEEN TESTED FOR CONSISTENCY IN LATEST VERSION, PLEASE CHECK BEFORE USE")
 
 	name_keys = ['tprim']
 	axis_label = 'tprim'
@@ -286,7 +290,19 @@ class tprim(dimension):
 				nml[key]['tprim'] = val
 			elif nml[key]['type'] == 'ion' and self.option in ['all','impurity']:
 				nml[key]['tprim'] = val
+			else:
+				break
+			if self._fix_fprim and self.option != 'all':
+				nml[key]['fprim'] = self.fprimcal(nml,val)
 		return nml
+	
+	def fprimcal(nml,tprim):
+		bp = abs(nml['theta_grid_eik_knobs']['beta_prime_input'])
+		beta = nml['knobs']['beta'] if 'beta' in nml['knobs'].keys() else nml['parameters']['beta']
+   		sp12 = [(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in ['species_parameters_1','species_parameters_2']]
+		dp = ((bp/beta) - sp12[0] - sp12[1])/(nml['species_parameters_3']['dens']*nml['species_parameters_3']['temp']) - tprim
+		return dp
+
 
 class fprim(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
