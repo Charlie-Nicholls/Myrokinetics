@@ -295,7 +295,7 @@ class tprim(dimension):
 			if self._fix_fprim and self.option != 'all':
 				nml[key]['fprim'] = self.fprimcal(nml,val)
 		return nml
-	
+
 	def fprimcal(nml,tprim):
 		bp = abs(nml['theta_grid_eik_knobs']['beta_prime_input'])
 		beta = nml['knobs']['beta'] if 'beta' in nml['knobs'].keys() else nml['parameters']['beta']
