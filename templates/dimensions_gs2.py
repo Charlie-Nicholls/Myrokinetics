@@ -521,7 +521,7 @@ class beta(dimension):
 	def edit_nml(self, nml, val):
 		nml['knobs']['beta'] = val
 		bp_cal = sum([(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x]])*val*-1
-		mul = beta_prim/bp_cal
+		mul = nml['theta_grid_eik_knobs']['beta_prime_input']/bp_cal
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 			nml[spec]['tprim'] = nml[spec]['tprim']*mul
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul

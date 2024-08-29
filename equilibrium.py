@@ -391,11 +391,11 @@ class equilibrium(object):
 				delt = 0.01
 			nml['knobs']['delt'] = delt
 		
-		for dim_name, dim in self.inputs.dimensions.items():
-			nml = dim.edit_nml(nml=nml,val=run[dim_name])
-			
 		for dim_name, dim in self.inputs.single_parameters.items():
 			nml = dim.single_edit_nml(nml)
+		
+		for dim_name, dim in self.inputs.dimensions.items():
+			nml = dim.edit_nml(nml=nml,val=run[dim_name])
 			
 		for key in namelist_diff.keys():
 			for skey in namelist_diff[key].keys():
