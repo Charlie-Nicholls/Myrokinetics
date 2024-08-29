@@ -520,6 +520,11 @@ class beta(dimension):
 
 	def edit_nml(self, nml, val):
 		nml['knobs']['beta'] = val
+		bp_cal = sum([(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x]])*val*-1
+		mul = beta_prim/bp_cal
+		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+			nml[spec]['tprim'] = nml[spec]['tprim']*mul
+			nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		return nml
 
 dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb,qinp,beta]
