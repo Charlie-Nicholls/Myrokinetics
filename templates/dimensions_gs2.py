@@ -489,7 +489,6 @@ class g_exb(dimension):
 	
 class qinp(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
 	name_keys = ['qinp','q_inp','safety_factor']
@@ -505,4 +504,22 @@ class qinp(dimension):
 		nml['theta_grid_parameters']['qinp'] = val
 		return nml
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb,qinp]
+class beta(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['beta']
+	axis_label = 'beta'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([(x < 0) for x in values]):
+			print("Error: beta values outside the allowed range (x>=0)")
+			values = [x for x in values if (x>=0)]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['knobs']['beta'] = val
+		return nml
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb,qinp,beta]
