@@ -227,7 +227,7 @@ class equilibrium(object):
 		elif self.inputs['grad_method'] == 'beta':
 			if 'beta' in nml['knobs'].keys():
 				nml['knobs']['beta'] = beta*mul
-			else nml['parameters']['beta']:
+			else:
 				nml['parameters']['beta'] = beta*mul
 			
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
