@@ -82,6 +82,7 @@ default_inputs = {'files': {
 	'num_beta_ideal': None,
 	'force_zero_fs': True,
 	'magnetism': True,
+	'grad_method': 'both',
 	'scan_format': 'grid',
 	},
 	'info': {
@@ -377,7 +378,7 @@ class scan_inputs(object):
 			valid = False
 			
 		if self['scan_format'] not in ['grid','point']:
-			print("ERROR: scan_format not valid, valid: ['grid','point']")
+			print("ERROR: scan_format not valid, valid: 'grid','point'")
 			valid = False
 		if self['scan_format'] == 'point':
 			if self['point_name'] is None:
@@ -389,6 +390,9 @@ class scan_inputs(object):
 			if self['ideal'] == True:
 				print("ERROR: ideal must be false for point scans")
 				self.inputs['ideal'] = False
+		
+		if self['grad_method'] not in ['both','tprim','fprim','beta']:
+			print("ERROR: scan_format not valid, valid: 'both','tprim','fprim','beta'")
 			
 		return valid
 		
