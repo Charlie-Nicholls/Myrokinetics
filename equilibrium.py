@@ -220,15 +220,9 @@ class equilibrium(object):
 		bp_cal = sum([(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x]])*beta*-1
 		mul = beta_prim/bp_cal
 		
-		if self.inputs['grad_method'] == 'both':
-			for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-				nml[spec]['tprim'] = nml[spec]['tprim']*mul
-				nml[spec]['fprim'] = nml[spec]['fprim']*mul
-		elif self.inputs['grad_method'] == 'beta':
-			if 'beta' in nml['knobs'].keys():
-				nml['knobs']['beta'] = beta*mul
-			else:
-				nml['parameters']['beta'] = beta*mul
+		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+			nml[spec]['tprim'] = nml[spec]['tprim']*mul
+			nml[spec]['fprim'] = nml[spec]['fprim']*mul
 			
 		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
 			#Set bakdif to 0 for Electormagnetic Runs as a default

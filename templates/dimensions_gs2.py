@@ -39,10 +39,12 @@ class psiN(dimension):
 class beta_prime(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
+		if self.option is None:
+			self.option = 'both'
+		
 	name_keys = ['beta_prime','betap','bp','beta_p','b_p']
 	axis_label = r'$\beta^{\prime}$'
-	valid_options = []
+	valid_options = ['both','beta']
 	
 	def sub_validate(self, values):
 		values = [abs(x) for x in values]
@@ -56,10 +58,15 @@ class beta_prime(dimension):
 		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*beta*-1
 
 		mul = -1*abs(val)/bp_cal
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			nml[spec]['tprim'] = nml[spec]['tprim']*mul
-			nml[spec]['fprim'] = nml[spec]['fprim']*mul
-
+		if self.option == 'both':
+			for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
+				nml[spec]['tprim'] = nml[spec]['tprim']*mul
+				nml[spec]['fprim'] = nml[spec]['fprim']*mul
+		elif self.option == 'beta':
+			if 'beta' in nml['knobs']:
+				nml['knobs']['beta'] = beta*mul
+			else:
+				nml['parameters']['beta'] = beta*mul
 		return nml
 
 class shear(dimension):

@@ -32,7 +32,6 @@ possible_keys = {
 	'num_beta_ideal': ['num_beta_ideal','n_beta_ideal','beta_ideal_num','beta_ideal_n','ideal_beta_n','idea_beta_num','num_beta_prime_ideal','n_beta_prime_ideal','beta_prime_ideal_num','beta_prime_ideal_n','ideal_beta_prime_n','ideal_beta_prime_num'],
 	'force_zero_fs': ['force_zero_fs','force_zero_flow_shear','force_0_fs','force_0_flow_shear'],
 	'magnetism': ['magnetism','mag','magnetics'],
-	'grad_method': ['grad_method','gradient_method'],
 	'scan_format': ['scan_format','scan_type','scan','format'],
 	},
 	'info': {
@@ -83,7 +82,6 @@ default_inputs = {'files': {
 	'num_beta_ideal': None,
 	'force_zero_fs': True,
 	'magnetism': True,
-	'grad_method': 'both',
 	'scan_format': 'grid',
 	},
 	'info': {
@@ -391,9 +389,6 @@ class scan_inputs(object):
 			if self['ideal'] == True:
 				print("ERROR: ideal must be false for point scans")
 				self.inputs['ideal'] = False
-		
-		if self['grad_method'] not in ['both','tprim','fprim','beta']:
-			print("ERROR: scan_format not valid, valid: 'both','tprim','fprim','beta'")
 			
 		return valid
 		
