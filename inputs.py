@@ -211,7 +211,7 @@ class scan_inputs(object):
 				if new_key is not None:
 					self.inputs[key][new_key] = deepcopy(self.inputs[key][old_key])
 				else:
-					print(f"ERROR: {skey} is not a valid {key} input")
+					print(f"ERROR: {old_key} is not a valid {key} input")
 				del(self.inputs[key][old_key])
 		
 		self.inputs['knobs']['gk_code'] = self.inputs['knobs']['gk_code'].upper()
