@@ -208,15 +208,16 @@ class equilibrium(object):
 		self.pyro.update_gk_code()
 		nml = deepcopy(self.pyro.gk_input.data)
 
-		for dim in self.inputs.single_parameters.values():
-			nml = dim.single_edit_nml(nml)
-		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
-        
 		nml['theta_grid_parameters']['qinp'] = abs(nml['theta_grid_parameters']['qinp'])
 		
 		if 'parameters' in nml.keys() and 'beta' in nml['parameters'].keys():
 			nml['knobs']['beta'] = nml['parameters']['beta']
 			del(nml['parameters'])
+		
+		for dim in self.inputs.single_parameters.values():
+			nml = dim.single_edit_nml(nml)
+		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
+		
 		beta = nml['knobs']['beta']
 		bp_cal = sum([(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x]])*beta*-1
 		mul = beta_prim/bp_cal
