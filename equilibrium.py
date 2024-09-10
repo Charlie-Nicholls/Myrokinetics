@@ -299,7 +299,7 @@ class equilibrium(object):
 			nml['theta_grid_eik_knobs']['iflux'] = 0
 			nml['theta_grid_eik_knobs']['local_eq'] = True
 		else:
-			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.inputs['eq_path'],self.inputs['eq_name'])
+			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.inputs['data_path'],self.inputs['eq_name'])
 			nml['theta_grid_eik_knobs']['efit_eq'] =  True
 			nml['theta_grid_eik_knobs']['iflux'] = 1
 			nml['theta_grid_eik_knobs']['local_eq'] = False

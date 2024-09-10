@@ -1166,7 +1166,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 	
 	def print_run_input(self, run = {}, itt = None):
 		import f90nml
-		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
+		if run not in self.get_all_runs():
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
