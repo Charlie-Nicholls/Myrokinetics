@@ -122,11 +122,9 @@ class plot_slice(object):
 		if axis_type == 'quasilinear':
 			self._y_axis_label = "Quasilinear Metric"
 			self._y_key = '_quasilinear_keys'
-			self.dims = [x for x in self.dims if x not in ['theta0','ky']]
+			self.dims = [x for x in self.dims if x not in ['ky']]
 			if 'ky' in self['run']:
 				self.settings['run'].pop('ky')
-			if 'theta0' in self['run']:
-				self.settings['run'].pop('theta0')
 		elif axis_type in ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']:
 			self._y_key = '_gyro_keys'
 			if 'ky' in self.reader.dimensions and 'ky' not in self.dims:

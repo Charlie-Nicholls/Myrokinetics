@@ -533,12 +533,6 @@ class scan_inputs(object):
 			print("ERROR: filename not given")
 			return
 
-		if type(list(runs)[0]) == str:
-			new_runs = []
-			for run in runs:
-				new_runs.append(self.get_run_from_id(run))
-			runs = new_runs
-
 		f = open(filename, 'w')
 		for run in runs:
 			f.write(f"{run}\n")

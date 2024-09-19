@@ -276,7 +276,7 @@ class equilibrium(object):
 			nml['gs2_diagnostics_knobs']['save_for_restart'] = True
 			nml['gs2_diagnostics_knobs']['nc_sync_freq'] = 1
 			if nml['gs2_diagnostics_knobs']['nsave'] > 1000:
-				nml['gs2_diagnostics_knobs']['nsave'] = 10
+				nml['gs2_diagnostics_knobs']['nsave'] = 1
 			if 'margin_cpu_time' not in nml['knobs'].keys():
 				nml['knobs']['margin_cpu_time'] = 2400
 			if 'nperiod' not in self.inputs.dimensions and 'nperiod' not in self.inputs.single_parameters:
@@ -296,12 +296,10 @@ class equilibrium(object):
 					nml['split_nonlinear_terms_knobs'] = {'show_statistics': True}
 			
 		if self.inputs['Miller']:
-			nml['theta_grid_eik_knobs']['iflux'] = 0
 			nml['theta_grid_eik_knobs']['local_eq'] = True
 		else:
 			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.inputs['data_path'],self.inputs['eq_name'])
 			nml['theta_grid_eik_knobs']['efit_eq'] =  True
-			nml['theta_grid_eik_knobs']['iflux'] = 1
 			nml['theta_grid_eik_knobs']['local_eq'] = False
 		
 		if self.inputs['Epar']:
