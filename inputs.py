@@ -494,17 +494,41 @@ class scan_inputs(object):
 
 		if self.inputs['files']['input_name'] is None and filename is None:
 			filename = input("Input File Name: ")
+		if '.in' in filename:
+			filename = filename[:-3]
 		if self.inputs['files']['input_name'] is None:
-			self.inputs['files']['input_name'] = filename
+			self.inputs['files']['input_name'] = f"{filename}.in"
 		if filename is None:
 			filename = self.inputs['files']['input_name']
-		if "." not in filename:
-			filename = filename + ".in"
 		
-		self.inputs.write(f"{directory}/{filename}",force=True)
+		self.inputs.write(f"{directory}/{filename}.in",force=True)
 		
 		if doPrint:
 			print(f"Created {filename} at {directory}")
+	
+	def write_scan_input_copy(self, filename = None, directory = "./", doPrint = True):
+		if filename is None:
+			filename = input("Input File Name: ")
+		if '.in' in filename:
+			filename = filename[:-3]
+		new_inputs = deepcopy(self.inputs)
+		
+		new_inputs['files']['input_files'] = f"{filename}.in"
+		new_inputs['info']['run_name'] = f"{filename}"
+		new_inputs['sbatch']['job-name'] = f"{filename}"
+		new_inputs['sbatch']['output'] = f"{filename}.slurm"
+		new_inputs['sbatch_save']['job-name'] = f"{filename}"
+		
+		new_inputs['info']['run_uuid'] = None
+		new_inputs['info']['run_date'] = None
+		new_inputs['info']['data_path'] = None
+		new_inputs['info']['itteration'] = 0
+		
+		new_inputs.write(f"{directory}/{filename}.in",force=True)
+		
+		if doPrint:
+			print(f"Created {filename} at {directory}")
+		
 			
 	def write_blank_input(self, filename = None, directory = "./", doPrint = True):
 		if directory is None and self.path is None:

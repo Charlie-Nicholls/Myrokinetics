@@ -178,6 +178,7 @@ class plot_box_diag(object):
 				th_width = max(th)
 				th_new = th_width + th
 				theta += list(max(th_new)*(i+1) + th_new)
+			theta = list(array(theta)-min(theta))
 			theta = list(array(theta)-max(theta)/2)
 			
 			if self['visible']['title']:

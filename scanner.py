@@ -76,6 +76,9 @@ class myro_scan(object):
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
 		self.inputs.write_scan_input(filename = filename, directory = directory, doPrint = doPrint)
 	
+	def write_scan_input_copy(self, filename = None, directory = "./", doPrint = True):
+		self.inputs.write_scan_input_copy(filename = None, directory = "./", doPrint = True)
+	
 	def run_scan(self, n_jobs = None, n_par = None, n_sim = None, gyro = None, ideal = None, directory = None, specificRuns = None):
 		if directory is None and self.path is None:
 			directory = "./"
