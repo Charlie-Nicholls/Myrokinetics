@@ -513,7 +513,7 @@ class scan_inputs(object):
 			filename = filename[:-3]
 		new_inputs = deepcopy(self.inputs)
 		
-		new_inputs['files']['input_files'] = f"{filename}.in"
+		new_inputs['files']['input_name'] = f"{filename}.in"
 		new_inputs['info']['run_name'] = f"{filename}"
 		new_inputs['sbatch']['job-name'] = f"{filename}"
 		new_inputs['sbatch']['output'] = f"{filename}.slurm"
