@@ -527,7 +527,7 @@ class scan_inputs(object):
 		new_inputs.write(f"{directory}/{filename}.in",force=True)
 		
 		if doPrint:
-			print(f"Created {filename} at {directory}")
+			print(f"Created {filename}.in at {directory}")
 		
 			
 	def write_blank_input(self, filename = None, directory = "./", doPrint = True):
