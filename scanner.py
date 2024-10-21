@@ -640,6 +640,11 @@ wait""")
 				filename = "input.cgyro"
 				if os.path.exists(f"{sub_dir}/input.cgyro"):
 					skip = True
+			elif self.inputs['gk_code'] == 'TGLF':
+				filename = "input.tglf"
+				if os.path.exists(f"{sub_dir}/input.tglf"):
+					skip = True
+			
 			if not skip:
 				subnml = self.eqbm.get_gyro_input(run = run)
 				self.eqbm.write_nml(subnml, directory = sub_dir, filename = filename)
