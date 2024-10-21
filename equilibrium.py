@@ -357,8 +357,17 @@ class equilibrium(object):
 		
 		return deepcopy(self.surface_namelists[psiN])
 	
-	def _get_surface_input_cgyro(self, psiN):
-		pass
+	def _get_surface_input_tglf(self, psiN):
+		self.pyro.load_local(psi_n=psiN)
+		self.pyro.update_gk_code()
+		nml = deepcopy(self.pyro.gk_input.data)
+
+		for dim in self.inputs.single_parameters.values():
+			nml = dim.single_edit_nml(nml)
+					
+		self.surface_namelists[psiN] = nml
+		
+		return deepcopy(self.surface_namelists[psiN])
 
 	def get_gyro_input(self, run = None, indexes = None, namelist_diff = {}):
 		if self.inputs['gk_code'] == 'GS2':
@@ -456,7 +465,8 @@ class equilibrium(object):
 		return nml
 	
 	def _get_gyro_input_tglf(self, run = None, indexes = None, namelist_diff = {}):
-		pass
+		nml = self.get_surface_input(psiN)
+		return nml
 	
 	def write_nml(self, nml, directory = ".", filename = None):
 		if self.inputs['gk_code'] == 'GS2':
