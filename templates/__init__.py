@@ -18,7 +18,15 @@ for dim in dimensions_list_cgyro:
 	for dim_name in dim.name_keys:
 		dim_name = dim_name.lower()
 		dim_lookup_cgyro[dim_name] = dim
-		dim_lookup_cgyro['_full_list'].append(dim_name)	
+		dim_lookup_cgyro['_full_list'].append(dim_name)
+		
+dim_lookup_tglf = {'_list': [], '_full_list': []}
+for dim in dimensions_list_tglf:
+	dim_lookup_tglf['_list'].append(dim.name_keys[0].lower())
+	for dim_name in dim.name_keys:
+		dim_name = dim_name.lower()
+		dim_lookup_tglf[dim_name] = dim
+		dim_lookup_tglf['_full_list'].append(dim_name)	
 
 template_dir = Path(__file__).parent
 template_dir.resolve()

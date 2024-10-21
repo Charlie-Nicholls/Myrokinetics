@@ -456,6 +456,7 @@ class equilibrium(object):
 		return nml
 	
 	def _get_gyro_input_tglf(self, run = None, indexes = None, namelist_diff = {}):
+		pass
 	
 	def write_nml(self, nml, directory = ".", filename = None):
 		if self.inputs['gk_code'] == 'GS2':
