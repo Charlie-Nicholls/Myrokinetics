@@ -1,7 +1,7 @@
 import os
 import f90nml
 from .inputs import scan_inputs
-from .templates import template_dir, gs2_template, cgyro_template
+from .templates import template_dir, gs2_template, cgyro_template, tglf_template
 from copy import deepcopy
 
 class equilibrium(object):
@@ -111,6 +111,8 @@ class equilibrium(object):
 				self.inputs.inputs['files']['template_name'] = gs2_template
 			elif self.inputs['gk_code'] == 'CGYRO':
 				self.inputs.inputs['files']['template_name'] = cgyro_template
+			elif self.inputs['gk_code'] == 'TGLF':
+				self.inputs.inputs['files']['template_name'] = tglf_template
 			self.inputs.inputs['files']['template_path'] = template_dir
 		
 		if directory is None:
@@ -132,9 +134,10 @@ class equilibrium(object):
 		
 		if self.inputs['gk_code'] == 'GS2':
 			self._template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
-		elif self.inputs['gk_code'] == 'CGYRO':
+		elif self.inputs['gk_code'] in ['CGYRO','TGLF']:
 			with open(os.path.join(self.inputs['template_path'],self.inputs['template_name']),'r') as f:
 				self._template_lines = f.readlines()
+		
 
 		kin_type = 'pFile' if self.inputs['kinetics_type'].upper() == 'PEQDSK' else self.inputs['kinetics_type'].upper()
 		self.pyro = Pyro(
@@ -199,6 +202,8 @@ class equilibrium(object):
 			return self._get_surface_input_gs2(psiN)
 		elif self.inputs['gk_code'] == 'CGYRO':
 			return self._get_surface_input_cgyro(psiN)
+		elif self.inputs['gk_code'] == 'TGLF':
+			return self._get_surface_input_tglf(psiN)
 		else:
 			print("ERROR: gk_code not found")
 			return None
@@ -351,12 +356,17 @@ class equilibrium(object):
 		self.surface_namelists[psiN] = nml
 		
 		return deepcopy(self.surface_namelists[psiN])
+	
+	def _get_surface_input_cgyro(self, psiN):
+		pass
 
 	def get_gyro_input(self, run = None, indexes = None, namelist_diff = {}):
 		if self.inputs['gk_code'] == 'GS2':
 			return self._get_gyro_input_gs2(run = run, indexes = indexes, namelist_diff = namelist_diff)
 		if self.inputs['gk_code'] == 'CGYRO':
 			return self._get_gyro_input_cgyro(run = run, indexes = indexes, namelist_diff = namelist_diff)
+		if self.inputs['gk_code'] == 'TGLF':
+			return self._get_gyro_input_tglf(run = run, indexes = indexes, namelist_diff = namelist_diff)
 		else:
 			print("ERROR: gk_code not found")
 			return None
@@ -445,6 +455,8 @@ class equilibrium(object):
 			
 		return nml
 	
+	def _get_gyro_input_tglf(self, run = None, indexes = None, namelist_diff = {}):
+	
 	def write_nml(self, nml, directory = ".", filename = None):
 		if self.inputs['gk_code'] == 'GS2':
 			if filename is None:
@@ -454,6 +466,10 @@ class equilibrium(object):
 			with open(f"{directory}/input.cgyro", "w") as f:
 				for key, value in nml.items():
 					f.write( f"{key} = {value}\n")
+		elif self.inputs['gk_code'] == 'TGLF':
+			with open(f"{directory}/input.tglf", "w") as f:
+				for key, value in nml.items():
+					f.write( f"{key} = {value}\n")		
 		else:
 			print(f"ERROR: gk_code {self.inputs['gk_code']} not found")
 

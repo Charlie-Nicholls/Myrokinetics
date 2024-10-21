@@ -731,6 +731,9 @@ class myro_read(object):
 			self.load_equilibrium()
 		self.eqbm.plot_eq()
 	
+	def save_plot(self, plot):
+		pass
+	
 	def load_equilibrium(self, directory = None):
 		from .equilibrium import equilibrium
 		if directory is None:

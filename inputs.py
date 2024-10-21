@@ -1,7 +1,7 @@
 import os
 import f90nml
 from copy import deepcopy, copy
-from .templates import dim_lookup_gs2, dim_lookup_cgyro, template_dir, gs2_template, cgyro_template, inputs_template, systems
+from .templates import dim_lookup_gs2, dim_lookup_cgyro, dim_lookup_tglf, template_dir, gs2_template, cgyro_template, inputs_template, tglf_template, systems
 
 possible_keys = {
 	'files': {
@@ -215,13 +215,15 @@ class scan_inputs(object):
 				del(self.inputs[key][old_key])
 		
 		self.inputs['knobs']['gk_code'] = self.inputs['knobs']['gk_code'].upper()
-		if self['gk_code'] not in ['GS2','CGYRO']:
-			print("ERROR: gk_code must be GS2 or CGYRO. Setting to GS2")
+		if self['gk_code'] not in ['GS2','CGYRO','TGLF']:
+			print("ERROR: gk_code must be GS2, CGYRO or TGLF. Setting to GS2")
 			self.inputs['knobs']['gk_code'] = defaults['knobs']['gk_code']
 		elif self['gk_code'] == 'GS2':
 			self.dim_lookup = dim_lookup_gs2
 		elif self['gk_code'] == 'CGYRO':
 			self.dim_lookup = dim_lookup_cgyro
+		elif self['gk_code'] == 'TGLF':
+			self.dim_lookup = dim_lookup_tglf
 
 		if self.inputs['files']['input_name'] is None and self.input_name:
 			self.inputs['files']['input_name'] = self.input_name
@@ -233,6 +235,8 @@ class scan_inputs(object):
 				self.inputs['files']['template_name'] = gs2_template
 			elif self['gk_code'] == 'CGYRO':
 				self.inputs['files']['template_name'] = cgyro_template
+			elif self['gk_code'] == 'TGLF':
+				self.inputs['files']['template_name'] = tglf_template
 			self.inputs['files']['template_path'] = template_dir
 		
 		for key in ['eq','kin']:
