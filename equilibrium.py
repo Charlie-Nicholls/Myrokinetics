@@ -465,7 +465,28 @@ class equilibrium(object):
 		return nml
 	
 	def _get_gyro_input_tglf(self, run = None, indexes = None, namelist_diff = {}):
+		if run is None and indexes is None:
+			print("ERROR: Either indexes or run must be given")
+			return None
+		
+		if run is None:
+			if len(indexes) != len(self.inputs.dimensions):
+				print(f"ERROR: indexes must be of length {len(self.dimensions)}, {[self.inputs.dim_order]}")
+				return None
+			run = {}
+			for i, dim in zip(indexes,self.inputs.dimensions.values()):
+				run[dim.name] = dim.values[i]
+		
+		if 'psin' in run:	
+			psiN = run['psin']
+		elif 'psin' in self.inputs.single_parameters:
+			psiN = self.inputs.single_parameters['psin'].values[0]
+		else:
+			print("ERROR: psiN not defined")
+			return None
+			
 		nml = self.get_surface_input(psiN)
+		
 		return nml
 	
 	def write_nml(self, nml, directory = ".", filename = None):
