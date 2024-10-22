@@ -501,7 +501,7 @@ class equilibrium(object):
 		elif self.inputs['gk_code'] == 'TGLF':
 			with open(f"{directory}/input.tglf", "w") as f:
 				for key, value in nml.items():
-					f.write( f"{key} = {value}\n")		
+					f.write(f"{key} = {value}\n".upper())		
 		else:
 			print(f"ERROR: gk_code {self.inputs['gk_code']} not found")
 

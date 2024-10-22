@@ -334,6 +334,30 @@ def start_run(run, run_attempt = 1):
 		print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
 Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
+					elif self.inputs['gk_code'] == 'TGLF':
+						pyth.write(f"""import os
+from joblib import Parallel, delayed
+from time import sleep
+from numpy import array
+
+input_files = {input_lists[n]}
+
+def start_run(run, run_attempt = 1):
+	if run_attempt <= 3:
+		os.system(f"echo \\\"Input: {{run}}\\\"")
+		cwd = os.getcwd()
+		os.chdir(f"{{run}}")
+		os.system(f"$GACODE_ROOT/cgyro/bin/tglf -n 128 -e .")
+		os.chdir(f"{{cwd}}")
+		if os.path.exists(f"{{run}}/out.tglf.run"):
+			os.system(f"touch {{run}}/out.tglf.fin")
+		else:
+			sleep(60)
+			start_run(run, run_attempt = run_attempt+1)
+	else:
+		print(f"ERROR: {{run}} took too many attempts to start, skipping")
+
+Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 					pyth.close()
 					jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
 					jobfile.write(f"""{sbatch_n}

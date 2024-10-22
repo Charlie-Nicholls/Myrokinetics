@@ -14,6 +14,8 @@ gs2 --build-config"""
 
 viking_modules_cgyro = None
 
+viking_modules_tglf = None
+
 viking_save_modules = """module load Python/3.10.8-GCCcore-12.2.0"""
 
 viking_sbatch = {
@@ -60,6 +62,16 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate
 which cgyro
 cgyro -h"""
 
+archer2_modules_tglf = """module load PrgEnv-gnu
+module load cray-hdf5 cray-netcdf cray-fftw cray-python
+export GACODE_PLATFORM=ARCHER2
+export GACODE_ROOT=/work/e281/e281/cnicholls/gacode
+. $GACODE_ROOT/shared/bin/gacode_setup
+ulimit -s unlimited
+source /work/e281/e281/cnicholls/pythenv/bin/activate
+which cgyro
+cgyro -h"""
+
 archer2_save_modules = """module load PrgEnv-gnu
 module load cray-python
 source /work/e281/e281/cnicholls/pythenv/bin/activate"""
@@ -89,6 +101,6 @@ archer2_save_sbatch = {
 	'qos': 'serial',
 	}
 	
-systems = {'viking': {'modules': {'GS2': viking_modules_gs2, 'CGYRO': viking_modules_cgyro}, 'save_modules': viking_save_modules, 'sbatch': viking_sbatch, 'save_sbatch': viking_save_sbatch},
-	'archer2': {'modules': {'GS2': archer2_modules_gs2, 'CGYRO': archer2_modules_cgyro}, 'save_modules': archer2_save_modules, 'sbatch': archer2_sbatch, 'save_sbatch': archer2_save_sbatch},
+systems = {'viking': {'modules': {'GS2': viking_modules_gs2, 'CGYRO': viking_modules_cgyro, 'TGLF': viking_modules_tglf}, 'save_modules': viking_save_modules, 'sbatch': viking_sbatch, 'save_sbatch': viking_save_sbatch},
+	'archer2': {'modules': {'GS2': archer2_modules_gs2, 'CGYRO': archer2_modules_cgyro, 'TGLF': archer2_modules_tglf}, 'save_modules': archer2_save_modules, 'sbatch': archer2_sbatch, 'save_sbatch': archer2_save_sbatch},
 	}
