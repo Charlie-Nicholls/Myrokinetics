@@ -357,7 +357,7 @@ def start_run(run, run_attempt = 1):
 	else:
 		print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
-Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
+Parallel(n_jobs={self.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(run) for run in input_files)""")
 					pyth.close()
 					jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
 					jobfile.write(f"""{sbatch_n}
