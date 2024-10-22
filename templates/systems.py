@@ -69,8 +69,8 @@ export GACODE_ROOT=/work/e281/e281/cnicholls/gacode
 . $GACODE_ROOT/shared/bin/gacode_setup
 ulimit -s unlimited
 source /work/e281/e281/cnicholls/pythenv/bin/activate
-which cgyro
-cgyro -h"""
+which tglf
+tglf -h"""
 
 archer2_save_modules = """module load PrgEnv-gnu
 module load cray-python

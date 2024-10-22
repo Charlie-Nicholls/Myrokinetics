@@ -347,7 +347,7 @@ def start_run(run, run_attempt = 1):
 		os.system(f"echo \\\"Input: {{run}}\\\"")
 		cwd = os.getcwd()
 		os.chdir(f"{{run}}")
-		os.system(f"$GACODE_ROOT/cgyro/bin/tglf -n 128 -e .")
+		os.system(f"$GACODE_ROOT/tglf/bin/tglf -n 128 -e .")
 		os.chdir(f"{{cwd}}")
 		if os.path.exists(f"{{run}}/out.tglf.run"):
 			os.system(f"touch {{run}}/out.tglf.fin")
