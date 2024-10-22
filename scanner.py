@@ -675,8 +675,9 @@ wait""")
 			
 			if self.inputs['gk_code'] == 'GS2':
 				self._input_files.add(f"{sub_dir}/{filename}")
-			elif self.inputs['gk_code'] == 'CGYRO':
+			elif self.inputs['gk_code'] in ['CGYRO','TGLF']:
 				self._input_files.add(f"{sub_dir}")
+			
 	
 	def get_run_directory(self, run):
 		dims = [x for x in self.inputs.dim_order if x not in ['kx','ky']] if (self.inputs['grid_option'] == 'box' and self.inputs['gk_code'] == 'GS2') else self.inputs.dim_order
