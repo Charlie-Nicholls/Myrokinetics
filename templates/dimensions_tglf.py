@@ -36,13 +36,12 @@ class psiN(dimension):
 	def edit_nml(self, nml, val):
 		return nml
 
-class beta_prime(dimension):
+class alpha(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		print("BETA PRIME NOT YET IMPLIMENTED")
 
-	name_keys = ['beta_prime','betap','bp','beta_p','b_p']
-	axis_label = r'$\beta^{\prime}$'
+	name_keys = ['alpha']
+	axis_label = r'$\alpha$'
 	valid_options = []
 	
 	def sub_validate(self, values):
@@ -51,17 +50,7 @@ class beta_prime(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		'''
-		nml['theta_grid_eik_knobs']['beta_prime_input'] = -1*abs(val)
-
-		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
-
-		mul = -1*abs(val)/bp_cal
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			nml[spec]['tprim'] = nml[spec]['tprim']*mul
-			nml[spec]['fprim'] = nml[spec]['fprim']*mul
-		'''
-
+		nml['ALPHA_SA'] = val
 		return nml
 
 class shear(dimension):
@@ -79,7 +68,7 @@ class shear(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['s'] = val
+		nml['SHAT_SA'] = val
 		return nml
 
 class ky(dimension):
