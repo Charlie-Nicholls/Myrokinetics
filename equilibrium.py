@@ -367,6 +367,21 @@ class equilibrium(object):
 					
 		self.surface_namelists[psiN] = nml
 		
+		pyref = deepcopy(self.pyro)
+		pyref.gk_code = 'CGYRO'
+		pyref.load_local(psiN)
+		
+		nml['GEOMETRY_FLAG'] = 0
+		nml['SHAT_SA'] = pyref['S']
+		nml['Q_SA'] = pyref['Q']
+		nml['RMIN_SA'] = pyref['RMIN']
+		nml['RMAJ_SA'] = pyref['RMAJ']
+		nml['THETA0_SA'] = 0
+		del(pyref)
+		
+		for dim in self.inputs.single_parameters.values():
+			nml = dim.single_edit_nml(nml)
+		
 		return deepcopy(self.surface_namelists[psiN])
 
 	def get_gyro_input(self, run = None, indexes = None, namelist_diff = {}):
@@ -486,6 +501,23 @@ class equilibrium(object):
 			return None
 			
 		nml = self.get_surface_input(psiN)
+		
+		if self.inputs['knobs']['fixed_delt'] == False:
+			ky = nml['kt_grids_single_parameters']['aky']
+			delt = 0.04/ky
+			if delt > 0.01:
+				delt = 0.01
+			nml['knobs']['delt'] = delt
+		
+		for dim_name, dim in self.inputs.dimensions.items():
+			nml = dim.edit_nml(nml=nml,val=run[dim_name])
+			
+		for dim_name, dim in self.inputs.single_parameters.items():
+			nml = dim.single_edit_nml(nml)
+		
+		for key in namelist_diff.keys():
+			for skey in namelist_diff[key].keys():
+				nml[key][skey] = namelist_diff[key][skey]
 		
 		return nml
 	
