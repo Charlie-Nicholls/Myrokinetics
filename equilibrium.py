@@ -372,10 +372,10 @@ class equilibrium(object):
 		pyref.load_local(psiN)
 		
 		nml['GEOMETRY_FLAG'] = 0
-		nml['SHAT_SA'] = pyref.gk_output.data['S']
-		nml['Q_SA'] = pyref.gk_output.data['Q']
-		nml['RMIN_SA'] = pyref.gk_output.data['RMIN']
-		nml['RMAJ_SA'] = pyref.gk_output.data['RMAJ']
+		nml['SHAT_SA'] = pyref.gk_input.data['S']
+		nml['Q_SA'] = pyref.gk_input.data['Q']
+		nml['RMIN_SA'] = pyref.gk_input.data['RMIN']
+		nml['RMAJ_SA'] = pyref.gk_input.data['RMAJ']
 		nml['THETA0_SA'] = 0
 		del(pyref)
 		
