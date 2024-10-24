@@ -788,6 +788,8 @@ wait""")
 			self._save_out_gs2(filename = filename, directory = directory, specificRuns = specificRuns, SlurmSave = SlurmSave, QuickSave = QuickSave)
 		elif self.inputs['gk_code'] == 'CGYRO':
 			self._save_out_cgyro(filename = filename, directory = directory, specificRuns = specificRuns, SlurmSave = SlurmSave, QuickSave = QuickSave)
+		elif self.inputs['gk_code'] == 'TGLF':
+			self._save_out_cgyro(filename = filename, directory = directory, specificRuns = specificRuns, SlurmSave = SlurmSave, QuickSave = QuickSave)
 
 	def _save_out_gs2(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
 		if filename is None and self.inputs['run_name'] is None:
@@ -1159,6 +1161,176 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 										group_data[group_key][key] = array(key_data).tolist()
 									elif key in ['heat']:
 										group_data[group_key][key] = array(key_data[:,:,yi,:]).tolist()
+								except Exception as e:
+									print(f"Save Error in {sub_dir}: {e}")
+									if key == 'growth_rate':
+										gyro_data[run_key]['growth_rate'] = nan
+									elif key == 'mode_frequency':
+										gyro_data[run_key]['mode_frequency'] = nan
+										
+				except Exception as e:
+					print(f"Save Error {sub_dir}: {e}")
+			
+			existing_dim_keys = []
+			for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
+				existing_dim_keys.append([x for x in key if x.isdigit()])
+			dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
+			kxs = list(kxs)
+			kxs.sort()
+			self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
+			if 'ky' not in self.dimensions:
+				kys = list(kys)
+				kys.sort()
+				self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
+			self.inputs.load_dimensions()
+
+		else:
+			gyro_data = None
+			gyro_keys = None
+		
+		data = {'gyro': gyro_data,
+			'ideal': None,
+			'group': group_data,
+			'equilibrium': equilibrium,
+			'_gyro_keys': gyro_keys,
+			'_ideal_keys': None,
+			}
+		
+		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
+		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
+	
+	def _save_out_tglf(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
+		if filename is None and self.inputs['run_name'] is None:
+			filename = input("Output File Name: ")
+			filename = filename.split(".")[0]
+		elif filename is None:
+			filename = self.inputs['run_name']
+			
+		if self.inputs['data_path'] is None:
+			self.inputs.create_run_info()
+		if directory is None:
+			directory = self.path
+		
+		if not self['gyro'] and not self['ideal']:
+			print("Error: Both Gyro and Ideal are False")
+			return
+		
+		if self['system'] in ['viking','archer2'] and not SlurmSave:
+			save_modules = systems[self['system']]['save_modules']
+			self._save_nml_diff()
+			sbatch = "#!/bin/bash"
+			for key, val in self.inputs['sbatch_save'].items():
+				if key == 'output' and '/' not in val:
+					val = f"{self.inputs['data_path']}/submit_files/{val}"
+				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+			job = open(f"{self.inputs['data_path']}/submit_files/save_out.job",'w')
+			job.write(f"""{sbatch}
+
+{save_modules}
+
+python {self.inputs['data_path']}/submit_files/save_out.py""")
+			job.close()
+			pyth = open(f"{self.inputs['data_path']}/submit_files/save_out.py",'w')
+			pyth.write(f"""from Myrokinetics import myro_scan
+from numpy import load
+specificRuns = {specificRuns}
+with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
+	nd = obj['name_diffs']
+	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
+	run.namelist_diffs = nd
+	run.save_out(filename = \"{filename}\", directory = \"{directory}\",specificRuns=specificRuns, SlurmSave = True,QuickSave = {QuickSave})""")
+			pyth.close()
+			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
+			return
+			
+		if not self.check_setup():
+			return
+			
+		psi_itt = self.single_parameters['psin'].values if 'psin' in self.single_parameters else self.dimensions['psin'].values
+		equilibrium = {}
+		for psiN in psi_itt:
+			equilibrium[psiN] = {}
+			nml = self.eqbm.get_surface_input(psiN)
+			equilibrium[psiN]['shear'] = nml['S']
+			equilibrium[psiN]['beta_prime'] = nml['BETA_STAR_SCALE']
+		
+		if self['gyro']:
+			gyro_data = {}
+			group_data = {}
+			only = set({'growth_rate','mode_frequency','ky','kx'})
+			if not QuickSave:
+				only = only | set({'phi','bpar','apar','time','theta','heat'})
+			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
+			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']
+			gyro_keys = {}
+			for dim in self.dimensions.values():
+				gyro_keys[dim.name] = {}
+				for val in dim.values:
+					gyro_keys[dim.name][val] = set()
+			
+			if 'ky' not in gyro_keys.keys():
+				gyro_keys['ky'] = {}
+			kxs = set()
+			kys = set()
+			gyro_keys['kx'] = {}
+			
+			runs = self.get_all_runs() if specificRuns is None else list(specificRuns)
+			for run in runs:
+				sub_dir = self.get_run_directory(run)
+				try:
+					self.eqbm.pyro.load_gk_output(sub_dir)
+					run_data = self.eqbm.pyro.gk_output
+					group_key = run_data.attrs['object_uuid']
+					group_data[group_key] = {}
+					for key in group_keys:
+						group_data[group_key][key] = None
+					for xi, kx in enumerate(run_data['kx'].data):
+						for yi, ky in enumerate(run_data['ky'].data):
+							run_key = str(uuid4())
+							gyro_data[run_key] = deepcopy(run)
+							for key in run:
+								gyro_keys[key][run[key]].add(run_key)
+							gyro_data[run_key]['group_key'] = group_key
+	
+							kxs.add(kx)
+							kys.add(ky)
+							if ky not in gyro_keys['ky']:
+								gyro_keys['ky'][ky] = set()
+							if kx not in gyro_keys['kx']:
+								gyro_keys['kx'][kx] = set()
+							gyro_keys['ky'][ky].add(run_key)
+							gyro_keys['kx'][kx].add(run_key)
+
+							if 'kx' not in gyro_data[run_key]:
+								gyro_data[run_key]['kx'] = kx
+							if 'ky' not in gyro_data[run_key]:
+								gyro_data[run_key]['ky'] = ky
+							#gyro_data['nml_diffs'] = self.namelist_diffs[?]
+							for key in data_keys:
+								gyro_data[run_key][key] = None
+							for key in only:
+								try:
+									key_data = run_data[key]
+									if key == 'growth_rate':
+										gyro_data[run_key]['growth_rate'] = float(key_data[xi,yi,-1])
+									if key == 'mode_frequency':
+										gyro_data[run_key]['mode_frequency'] = float(key_data[xi,yi,-1])
+									'''elif key in ['phi','apar','bpar']:
+										phi = array(key_data[:,xi,yi,-1])
+										gyro_data[run_key][key] = phi.tolist()
+										try:
+											absint = abs(trapz(phi,array(run_data['theta'])))
+											intabs = trapz(abs(phi),array(run_data['theta']))
+											par = 1 - absint/intabs
+											gyro_data[run_key]['parity'] = par
+										except:
+											gyro_data[run_key]['parity'] = None'''
+									elif key in ['time']:
+										group_data[group_key]['t'] = array(key_data).tolist()
+									elif key in ['theta']:
+										group_data[group_key][key] = array(key_data).tolist()
+									#elif key in ['heat']:
+										#group_data[group_key][key] = array(key_data[:,:,yi,:]).tolist()
 								except Exception as e:
 									print(f"Save Error in {sub_dir}: {e}")
 									if key == 'growth_rate':
