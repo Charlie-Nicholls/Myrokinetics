@@ -373,7 +373,7 @@ class equilibrium(object):
 		
 		nml['GEOMETRY_FLAG'] = 0
 		nml['SHAT_SA'] = pyref.gk_input.data['S']
-		nml['Q_SA'] = pyref.gk_input.data['Q']
+		nml['Q_SA'] = abs(pyref.gk_input.data['Q'])
 		nml['RMIN_SA'] = pyref.gk_input.data['RMIN']
 		nml['RMAJ_SA'] = pyref.gk_input.data['RMAJ']
 		nml['THETA0_SA'] = 0
