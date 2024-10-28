@@ -2,7 +2,8 @@ import os
 import f90nml
 from copy import deepcopy, copy
 from .templates import template_dir, inputs_template
-from .codes import systems, codes
+from .codes import codes
+from .systems import systems
 
 possible_keys = {
 	'files': {
