@@ -2,7 +2,7 @@ import os
 from numpy import real, imag, array, loadtxt, transpose, savez, nan, ceil, trapz
 from .ncdf2dict import ncdf2dict as readnc
 from .equilibrium import equilibrium
-from .templates import systems
+from .codes import systems, codes
 from .inputs import scan_inputs
 import glob
 from uuid import uuid4
@@ -169,354 +169,10 @@ class myro_scan(object):
 		self._ideal_input_files = set()
 
 	def make_job_files(self, n_jobs = None, n_par = None, n_sim = None):
-		if self['system'] in ['viking','archer2']:
-			compile_modules = systems[self['system']]['modules'][self['gk_code']]
-			sbatch = "#!/bin/bash"
-			for key, val in self.inputs['sbatch'].items():
-				if key == 'output' and '/' not in val:
-					val = f"{self.inputs['data_path']}/submit_files/{val}"
-				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
-	
-		if self['system'] == 'ypi_server':
-			if n_jobs is None or n_jobs > len(self._input_files):
-				n_jobs = len(self._input_files)
-			while n_jobs > 0:
-				for input_file in self._input_files:
-					os.system(f"mpirun -np 8 gs2 \"{input_file}\"")
-					self._input_files.remove(input_file)
-					n_jobs -= 1
+		systems[self.inputs['system']].make_job_files(self, n_jobs=n_jobs, n_par=n_par, n_sim=n_sim)
 		
-		elif self['system'] == 'viking':
-			if n_par is None:
-				n_par = 1
-			if n_sim is None:
-				n_sim = n_par
-			os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
-			input_lists = {}
-			for n in range(n_par):
-				input_lists[n] = []
-			if n_jobs is None or n_jobs*n_par > len(self._input_files):
-				total_jobs = len(self._input_files)
-			else:
-				total_jobs = n_jobs*n_par
-			if ceil(total_jobs/n_par) > 10000:
-				print(f"Viking supports a max of 10,000 jobs per array submission (Currently requesting {ceil(total_jobs/n_par)})")
-				return
-			input_list = list(self._input_files)
-			for i in range(total_jobs):
-				input_lists[i%n_par].append(input_list[i])
-				self._input_files.remove(input_list[i])
-			for n in range(n_par):
-				filename = f"gyro_{n}"
-				os.makedirs(f"{self.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{filename}/{self.inputs['sbatch']['output']}_0")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"{filename}/{self.inputs['sbatch']['error']}_0")
-				inlist = open(f"{self.inputs['data_path']}/submit_files/gyro_{n}/{filename}.txt",'w')
-				for infile in input_lists[n]:
-					inlist.write(f"{infile[:-3]}\n")
-				inlist.close()
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
-				if len(input_lists[n]) > 1:
-					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}_0",f"{self.inputs['sbatch']['output']}_%a")
-					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}_0",f"{self.inputs['sbatch']['error']}_%a")
-					jobfile.write(f"{sbatch_n}")
-					jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
-				else:
-					jobfile.write(f"{sbatch_n}")
-				jobfile.write(f"""
-{compile_modules}
-
-INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {self.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.txt)
-echo "${{INFILE}}.in"
-gs2 "${{INFILE}}.in"
-if test -f "${{INFILE}}.out.nc"; then
-	touch "${{INFILE}}.fin"
-fi""")
-				jobfile.close()
-			submit = open(f"{self.inputs['data_path']}/submit_files/submit.job",'w')
-			submit.write(f"""#!/bin/bash
-#SBATCH --job-name=submit
-#SBATCH --partition=nodes
-#SBATCH --time=00:00:30
-#SBATCH --ntasks=1
-#SBATCH --mem=10MB
-#SBATCH --cpus-per-task=1
-#SBATCH --nodes=1
-#SBATCH --account={self.inputs['sbatch']['account']}
-#SBATCH --output={self.inputs['data_path']}/submit_files/submit.slurm
-
-""")
-			for n in range(n_sim):
-				submit.write(f"ID_{n}=$(sbatch --parsable \"{self.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.job\")\n")
-			if n_par > n_sim:
-				for n in range(n_sim, n_par):
-					submit.write(f"ID_{n}=$(sbatch --parsable --dependency=afterany:$ID_{n-n_sim} \"{self.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.job\")\n")
-			submit.close()
-			self._jobs.add(f"{self.inputs['data_path']}/submit_files/submit.job")
-
-		if self['system'] == 'archer2':
-			if self.inputs['non_linear'] == False:
-				if n_par is None:
-					n_par = 1
-				if n_sim is None:
-					n_sim = n_par if n_par < 8 else 8
-				if n_sim > 8:
-					print("Archer supports a maximum of n_sim = 8")
-					n_sim = 8
-				os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
-				input_lists = {}
-				for n in range(n_par):
-					input_lists[n] = []
-				if n_jobs is None or n_jobs*n_par > len(self._input_files):
-					total_jobs = len(self._input_files)
-				else:
-					total_jobs = n_jobs*n_par
-				input_list = list(self._input_files)
-				for i in range(total_jobs):
-					input_lists[i%n_par].append(input_list[i])
-					self._input_files.remove(input_list[i])
-				for n in range(n_par):
-					filename = f"gyro_{n}"
-					os.makedirs(f"{self.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
-					sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{filename}/{self.inputs['sbatch']['output']}_{n}")
-					pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
-					if self.inputs['gk_code'] == 'GS2':
-						pyth.write(f"""import os
-from joblib import Parallel, delayed
-from time import sleep
-
-input_files = {input_lists[n]}
-
-def start_run(run, run_attempt = 1):
-	if run_attempt <= 3:
-		os.system(f"echo \\\"Input: {{run}}\\\"")
-		os.system(f"gs2 \\\"{{run}}\\\"")
-		if os.path.exists(f"\\\"{{run[:-3]}}.out.nc\\\"'):
-			os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
-		else:
-			sleep(60)
-			start_run(run, run_attempt = run_attempt+1)
-	else:
-		print(f"ERROR: {{run}} took too many attempts to start, skipping")
-
-Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
-					elif self.inputs['gk_code'] == 'CGYRO':
-						pyth.write(f"""import os
-from joblib import Parallel, delayed
-from time import sleep
-from numpy import array
-
-input_files = {input_lists[n]}
-max_cores = {self.inputs["sbatch"]["nodes"]*self.inputs["sbatch"]["ntasks-per-node"]}
-
-def start_run(run, run_attempt = 1):
-	if run_attempt <= 3:
-		os.system(f"echo \\\"Input: {{run}}\\\"")
-		cwd = os.getcwd()
-		os.chdir(f"{{run}}")
-		if not os.path.exists("ingen.out"):
-			os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -i . &> ingen.out")
-		f = open("ingen.out")
-		lines = f.readlines()
-		n_poss = set()
-		for line in lines[3:]:
-			n_poss.add(int([x for x in line.split(" ") if x.isdigit()][0]))
-		poss_cores = [x for x in n_poss if x <= max_cores]
-		cores = max(poss_cores)
-		os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -e . -n {{cores}} -nomp 1 -numa 8 -mpinuma 16 -p .")
-		os.chdir(f"{{cwd}}")
-		if os.path.exists(f"{{run}}/out.cgyro.freq"):
-			os.system(f"touch {{run}}/out.cgyro.fin")
-		else:
-			sleep(60)
-			start_run(run, run_attempt = run_attempt+1)
-	else:
-		print(f"ERROR: {{run}} took too many attempts to start, skipping")
-
-Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
-					elif self.inputs['gk_code'] == 'TGLF':
-						pyth.write(f"""import os
-from joblib import Parallel, delayed
-from time import sleep
-from numpy import array
-
-input_files = {input_lists[n]}
-
-def start_run(run, run_attempt = 1):
-	if run_attempt <= 3:
-		os.system(f"echo \\\"Input: {{run}}\\\"")
-		cwd = os.getcwd()
-		os.chdir(f"{{run}}")
-		os.system(f"$GACODE_ROOT/tglf/bin/tglf -n 128 -e .")
-		os.chdir(f"{{cwd}}")
-		if os.path.exists(f"{{run}}/out.tglf.run"):
-			os.system(f"touch {{run}}/out.tglf.fin")
-		else:
-			sleep(60)
-			start_run(run, run_attempt = run_attempt+1)
-	else:
-		print(f"ERROR: {{run}} took too many attempts to start, skipping")
-
-Parallel(n_jobs={self.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(run) for run in input_files)""")
-					pyth.close()
-					jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
-					jobfile.write(f"""{sbatch_n}
-
-{compile_modules}
-
-python {self.inputs['data_path']}/submit_files/{filename}/{filename}.py &
-
-wait""")
-					if n_par > n_sim and n + n_sim < n_par:
-						jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/gyro_{n+n_sim}/gyro_{n+n_sim}.job")
-					jobfile.close()
-				for n in range(n_sim):
-					self._jobs.add(f"{self.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.job")
-			if self.inputs['non_linear'] == True:
-				os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
-				if self.inputs['sbatch']['cpus-per-task'] > 1:
-					compile_modules += f"\nexport OMP_NUM_THREADS={self.inputs['sbatch']['cpus-per-task']}"
-				ntasks = self.inputs['sbatch']['ntasks'] if 'ntasks' in self.inputs['sbatch'] else self.inputs['sbatch']['nodes']*self.inputs['sbatch']['ntasks-per-node']
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/submit.job",'w')
-				jobfile.write(f"""{sbatch}
-
-{compile_modules}
-
-srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={self.inputs['sbatch']['cpus-per-task']} gs2 \"{list(self._input_files)[0]}\"
-if test -f \"{list(self._input_files)[0][:-3]}.out.nc\"; then
-	touch \"{list(self._input_files)[0][:-3]}.fin\"
-fi""")
-				jobfile.close()
-				self._jobs.add(f"{self.inputs['data_path']}/submit_files/submit.job")
-
 	def make_ideal_job_files(self, n_jobs = None, n_par = None, n_sim = None):
-		if self['system'] in ['viking','archer2']:
-			compile_modules = systems[self['system']]['modules'][self['gk_code']]
-			sbatch = "#!/bin/bash"
-			for key, val in self.inputs['sbatch'].items():
-				if key == 'output' and '/' not in val:
-					val = f"{self.inputs['data_path']}/submit_files/{val}"
-				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
-	
-		if self['system'] == 'ypi_server':
-			if n_jobs is None or n_jobs > len(self._input_files):
-				n_jobs = len(self._input_files)
-			while n_jobs > 0:
-				for input_file in self._ideal_input_files:
-					os.system(f"ideal_ball \"{input_file}\"")
-					self._ideal_input_files.remove(input_file)
-					n_jobs -= 1
-		elif self['system'] == 'viking':
-			if n_par is None:
-				n_par = 1
-			if n_sim is None:
-				n_sim = n_par
-			os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
-			input_lists = {}
-			for n in range(n_par):
-				input_lists[n] = []
-			if n_jobs is None or n_jobs*n_par > len(self._ideal_input_files):
-				total_jobs = len(self._ideal_input_files)
-			else:
-				total_jobs = n_jobs*n_par
-			input_list = list(self._ideal_input_files)
-			for i in range(total_jobs):
-				input_lists[i%n_par].append(input_list[i])
-				self._ideal_input_files.remove(input_list[i])
-			for n in range(n_par):
-				os.makedirs(f"{self.inputs['data_path']}/submit_files/ideal_{n}",exist_ok=True)
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"ideal_{n}/{self.inputs['sbatch']['output']}_0")
-				sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}",f"ideal_{n}/{self.inputs['sbatch']['error']}_0")
-				sbatch_n = sbatch_n.replace(f"--cpus-per-task={self.inputs['sbatch']['cpus-per-task']}","--cpus-per-task=1")
-				filename = f"ideal_{n}"
-				inlist = open(f"{self.inputs['data_path']}/submit_files/ideal_{n}/{filename}.txt",'w')
-				for infile in input_lists[n]:
-					inlist.write(f"{infile[:-3]}\n")
-				inlist.close()
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/ideal_{n}/{filename}.job",'w')
-				if len(input_lists[n]) > 1:
-					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['output']}_0", f"{self.inputs['sbatch']['output']}_%a")
-					sbatch_n = sbatch_n.replace(f"{self.inputs['sbatch']['error']}_0", f"{self.inputs['sbatch']['error']}_%a")
-					jobfile.write(f"{sbatch_n}")
-					jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
-				else:
-					jobfile.write(f"{sbatch_n}")
-				jobfile.write(f"""
-{compile_modules}
-
-which gs2
-gs2 --build-config
-
-INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {self.inputs['data_path']}/submit_files/ideal_{n}/ideal_{n}.txt)
-echo "${{INFILE}}.in"
-ideal_ball "${{INFILE}}.in"
-if test -f "${{INFILE}}.ballstab_2d"; then
-	touch "${{INFILE}}.fin"
-fi""")
-				jobfile.close()
-			for n in range(n_sim):
-				self._ideal_jobs.add(f"{self.inputs['data_path']}/submit_files/ideal_{n}/ideal_{n}.job")	
-		if self['system'] == 'archer2':
-			if n_par is None:
-				n_par = 1
-			if n_sim is None:
-				n_sim = n_par if n_par < 8 else 8
-			if n_sim > 8:
-				print("Archer supports a maximum of n_sim = 8")
-				n_sim = 8
-			os.makedirs(f"{self.inputs['data_path']}/submit_files/",exist_ok=True)
-			input_lists = {}
-			for n in range(n_par):
-				input_lists[n] = []
-			if n_jobs is None or n_jobs*n_par > len(self._ideal_input_files):
-				total_jobs = len(self._ideal_input_files)
-			else:
-				total_jobs = n_jobs*n_par
-			input_list = list(self._ideal_input_files)
-			for i in range(total_jobs):
-				input_lists[i%n_par].append(input_list[i])
-				self._ideal_input_files.remove(input_list[i])
-			for n in range(n_par):
-				sbatch_n = sbatch.replace(f"{self.inputs['sbatch']['output']}",f"{self.inputs['sbatch']['output']}_ideal_{n}")
-				sbatch_n = sbatch_n.replace(f"#SBATCH --nodes = {self.inputs['sbatch']['nodes']}","#SBATCH --nodes = 1")
-				filename = f"ideal_{n}"
-				pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}.py",'w')
-				pyth.write(f"""import os
-from joblib import Parallel, delayed
-from time import sleep
-
-input_files = {input_lists[n]}
-
-def start_run(run, run_attempt = 1):
-	if run_attempt <= 3:
-		os.system(f"echo \\\"Ideal Input: {{run}}\\\"")
-		os.system(f"srun --nodes=1 --ntasks=1 ideal_ball \\\"{{run}}\\\"")
-		if os.path.exists(f\"{{run[:-3]}}.ballstab_2d\"):
-			os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
-		else:
-			sleep(60)
-			start_run(run, run_attempt = run_attempt+1)
-	else:
-		print(f"ERROR: {{run}} took too many attempts to start, skipping")
-
-Parallel(n_jobs={self.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(run) for run in input_files)""")
-				pyth.close()
-				jobfile = open(f"{self.inputs['data_path']}/submit_files/{filename}.job",'w')
-				jobfile.write(f"""{sbatch_n}
-
-{compile_modules}
-
-which gs2
-gs2 --build-config
-
-python {self.inputs['data_path']}/submit_files/{filename}.py &
-
-wait""")
-				if n_par > n_sim and n + n_sim < n_par:
-					jobfile.write(f"\nsbatch {self.inputs['data_path']}/submit_files/ideal_{n+n_sim}.job")
-				jobfile.close()
-			for n in range(n_sim):
-				self._ideal_jobs.add(f"{self.inputs['data_path']}/submit_files/ideal_{n}.job")
+		systems[self.inputs['system']].make_ideal_job_files(self, n_jobs=n_jobs, n_par=n_par, n_sim=n_sim)
 	
 	def run_jobs(self):
 		cwd = os.getcwd()
@@ -561,36 +217,6 @@ wait""")
 		self._input_files.add(f"{file_dir}/itteration_{itt}.in")
 		self.make_job_files()
 		self.run_jobs()
-	
-	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
-		self._ideal_input_files = set()
-		if checkSetup:
-			if not self.check_setup():
-				return
-		if directory is None:
-			directory = self.inputs['data_path']
-		if specificRuns:
-			runs = specificRuns
-		else:
-			check = self.check_complete(directory = directory, doPrint = False, gyro = False, ideal = True)
-			if check['ideal_complete']:
-				print(f"{len(check['ideal_complete'])} Existing Ideal Runs Detected")
-			runs = check['ideal_incomplete']
-			
-		for run in runs:
-			sub_dir = self.get_ideal_run_directory(run)
-			os.makedirs(sub_dir,exist_ok=True)
-			
-			existing_inputs = [] 
-			for f in glob.glob(r'itteration_*.in'):
-				existing_inputs.append([x for x in f if x.isdigit()])
-			itt = max([eval("".join(x)) for x in existing_inputs],default=-1) + 1
-			filename = f"itteration_{itt}"
-			
-			nml = self.eqbm.get_surface_input(psiN = run['psin'])
-			nml['ballstab_knobs']['theta0'] = run['theta0']
-			nml.write(f"{sub_dir}/{filename}.in", force=True)
-			self._ideal_input_files.add(f"{sub_dir}/{filename}.in")
 	
 	def get_all_runs(self, excludeDimensions = []):
 		dim_order = [x for x in self.inputs.dim_order if x not in excludeDimensions]
@@ -648,39 +274,40 @@ wait""")
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
-			if self.inputs['grid_option'] == 'box' and self.inputs['gk_code'] == 'GS2':
-				os.makedirs(sub_dir+'/response',exist_ok=True)
-				os.makedirs(sub_dir+'/restart',exist_ok=True)
-			skip = False
-			if self.inputs['gk_code'] == 'GS2':
-				existing_inputs = [] 
-				for f in glob.glob(r'itteration_*.in'):
-					existing_inputs.append([x for x in f if x.isdigit()])
-				itt = max([eval("".join(x)) for x in existing_inputs],default=-1)
-				filename = f"itteration_{self.inputs['itteration']}.in"
-				if itt >= self.inputs['itteration']:
-					skip = True
-			elif self.inputs['gk_code'] == 'CGYRO':
-				filename = "input.cgyro"
-				if os.path.exists(f"{sub_dir}/input.cgyro"):
-					skip = True
-			elif self.inputs['gk_code'] == 'TGLF':
-				filename = "input.tglf"
-				if os.path.exists(f"{sub_dir}/input.tglf"):
-					skip = True
+			codes[self.inputs['gk_code']].make_gyro_file(self, run, sub_dir)
+	
+	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
+		self._ideal_input_files = set()
+		if checkSetup:
+			if not self.check_setup():
+				return
+		if directory is None:
+			directory = self.inputs['data_path']
+		if specificRuns:
+			runs = specificRuns
+		else:
+			check = self.check_complete(directory = directory, doPrint = False, gyro = False, ideal = True)
+			if check['ideal_complete']:
+				print(f"{len(check['ideal_complete'])} Existing Ideal Runs Detected")
+			runs = check['ideal_incomplete']
 			
-			if not skip:
-				subnml = self.eqbm.get_gyro_input(run = run)
-				self.eqbm.write_nml(subnml, directory = sub_dir, filename = filename)
+		for run in runs:
+			sub_dir = self.get_ideal_run_directory(run)
+			os.makedirs(sub_dir,exist_ok=True)
 			
-			if self.inputs['gk_code'] == 'GS2':
-				self._input_files.add(f"{sub_dir}/{filename}")
-			elif self.inputs['gk_code'] in ['CGYRO','TGLF']:
-				self._input_files.add(f"{sub_dir}")
+			existing_inputs = [] 
+			for f in glob.glob(r'itteration_*.in'):
+				existing_inputs.append([x for x in f if x.isdigit()])
+			itt = max([eval("".join(x)) for x in existing_inputs],default=-1) + 1
+			filename = f"itteration_{itt}"
 			
+			nml = self.eqbm.get_surface_input(psiN = run['psin'])
+			nml['ballstab_knobs']['theta0'] = run['theta0']
+			nml.write(f"{sub_dir}/{filename}.in", force=True)
+			self._ideal_input_files.add(f"{sub_dir}/{filename}.in")
 	
 	def get_run_directory(self, run):
-		dims = [x for x in self.inputs.dim_order if x not in ['kx','ky']] if (self.inputs['grid_option'] == 'box' and self.inputs['gk_code'] == 'GS2') else self.inputs.dim_order
+		dims = [x for x in self.inputs.dim_order if x not in ['kx','ky']] if self.inputs['nonlinear'] == True else self.inputs.dim_order
 		dir_list = [f"{name}={run[name]:.4g}" for name in dims]
 		dir_list.insert(0,f"{self.inputs['data_path']}/gyro_files")
 		sub_dir = "/".join(dir_list)
@@ -729,17 +356,11 @@ wait""")
 		
 		unfinished_gyro = []
 		finished_gyro = []
-		all_runs = self.get_all_runs(excludeDimensions=['kx','ky']) if (self.inputs['grid_option'] == 'box' and self.inputs['gk_code'] == 'GS2') else self.get_all_runs()
+		all_runs = self.get_all_runs(excludeDimensions=['kx','ky']) if self.inputs['nonlinear'] else self.get_all_runs()
 		if gyro:
 			for run in all_runs:
 				sub_dir = self.get_run_directory(run)
-				if self['system'] in ['archer2','viking'] and self.inputs['gk_code'] == 'GS2' and os.path.exists(f"{sub_dir}/itteration_0.fin"):
-					finished_gyro.append(run)
-				elif self['system'] == 'ypi_server' and self.inputs['gk_code'] == 'GS2' and os.path.exists(f"{sub_dir}/itteration_0.out.nc"):
-					finished_gyro.append(run)
-				elif self['system'] in ['archer2','viking'] and self.inputs['gk_code'] == 'CGYRO' and os.path.exists(f"{sub_dir}/out.cgyro.fin"):
-					finished_gyro.append(run)
-				elif self['system'] == 'ypi_server' and self.inputs['gk_code'] == 'CGYRO' and os.path.exists(f"{sub_dir}/out.cgyro.info"):
+				if os.path.exists(f"{sub_dir}/run.fin"):
 					finished_gyro.append(run)
 				else:
 					unfinished_gyro.append(run)
@@ -784,14 +405,6 @@ wait""")
 		self.save_out(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = True)
 	
 	def save_out(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
-		if self.inputs['gk_code'] == 'GS2':
-			self._save_out_gs2(filename = filename, directory = directory, specificRuns = specificRuns, SlurmSave = SlurmSave, QuickSave = QuickSave)
-		elif self.inputs['gk_code'] == 'CGYRO':
-			self._save_out_cgyro(filename = filename, directory = directory, specificRuns = specificRuns, SlurmSave = SlurmSave, QuickSave = QuickSave)
-		elif self.inputs['gk_code'] == 'TGLF':
-			self._save_out_cgyro(filename = filename, directory = directory, specificRuns = specificRuns, SlurmSave = SlurmSave, QuickSave = QuickSave)
-
-	def _save_out_gs2(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
 		if filename is None and self.inputs['run_name'] is None:
 			filename = input("Output File Name: ")
 			filename = filename.split(".")[0]
@@ -807,557 +420,42 @@ wait""")
 			print("Error: Both Gyro and Ideal are False")
 			return
 		
-		if self['system'] in ['viking','archer2'] and not SlurmSave:
-			save_modules = systems[self['system']]['save_modules']
-			self._save_nml_diff()
+		if not scanner.check_setup():
+			return
+		
+		if systems[scanner.inputs['system']].requires_slurm_save and not SlurmSave:
+			save_modules = systems[scanner['system']].save_modules
+			scanner._save_nml_diff()
 			sbatch = "#!/bin/bash"
-			for key, val in self.inputs['sbatch_save'].items():
+			for key, val in scanner.inputs['sbatch_save'].items():
 				if key == 'output' and '/' not in val:
-					val = f"{self.inputs['data_path']}/submit_files/{val}"
+					val = f"{scanner.inputs['data_path']}/submit_files/{val}"
 				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
-			job = open(f"{self.inputs['data_path']}/submit_files/save_out.job",'w')
+			job = open(f"{scanner.inputs['data_path']}/submit_files/save_out.job",'w')
 			job.write(f"""{sbatch}
 
 {save_modules}
 
-python {self.inputs['data_path']}/submit_files/save_out.py""")
+python {scanner.inputs['data_path']}/submit_files/save_out.py""")
 			job.close()
-			pyth = open(f"{self.inputs['data_path']}/submit_files/save_out.py",'w')
+			pyth = open(f"{scanner.inputs['data_path']}/submit_files/save_out.py",'w')
 			pyth.write(f"""from Myrokinetics import myro_scan
 from numpy import load
 specificRuns = {specificRuns}
-with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
+with load(\"{scanner.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
 	nd = obj['name_diffs']
-	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
+	run = myro_scan(input_file = \"{scanner.inputs.input_name}\", directory = \"{scanner.inputs['files']['input_path']}\")
 	run.namelist_diffs = nd
 	run.save_out(filename = \"{filename}\", directory = \"{directory}\", specificRuns = specificRuns, SlurmSave = True, QuickSave = {QuickSave})""")
 			pyth.close()
-			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
-			return
-			
-		if not self.check_setup():
+			os.system(f"sbatch \"{scanner.inputs['data_path']}/submit_files/save_out.job\"")
 			return
 		
-		psi_itt = self.single_parameters['psin'].values if 'psin' in self.single_parameters else self.dimensions['psin'].values
-		equilibrium = {}
-		for psiN in psi_itt:
-			equilibrium[psiN] = {}
-			nml = self.eqbm.get_surface_input(psiN)
-			equilibrium[psiN]['shear'] = nml['theta_grid_eik_knobs']['s_hat_input']
-			equilibrium[psiN]['beta_prime'] = nml['theta_grid_eik_knobs']['beta_prime_input']
-		
-		if self['gyro']:
-			gyro_data = {}
-			group_data = {}
-			only = set({'omega','kx','ky'})
-			if not QuickSave:
-				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
-			#if self.inputs['epar']:
-				#only = only | set({'epar'}) NOT CURRENTLY WORKING
-			if self.inputs['grid_option'] == 'box':
-				only = only | set({'phi2_by_kx', 'phi2_by_ky'})
-			if self.inputs['non_linear'] == True:
-				only = only | set({'heat_flux_tot'})
-			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
-			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx', 'phi2_by_ky']
-			gyro_keys = {}
-			for dim in self.dimensions.values():
-				gyro_keys[dim.name] = {}
-				for val in dim.values:
-					gyro_keys[dim.name][val] = set()
-			
-			if self.inputs['grid_option'] == 'box':
-				kxs = set()
-				kys = set()
-				gyro_keys['ky'] = {}
-				gyro_keys['kx'] = {}
-			
-			if specificRuns:
-				runs = list(specificRuns)
-			else:
-				runs = self.get_all_runs() if self.inputs['grid_option'] != 'box' else self.get_all_runs(excludeDimensions=['kx','ky'])
-			
-			for run in runs:
-				sub_dir = self.get_run_directory(run)
-				try:
-					existing_inputs = [] 
-					for f in glob.glob(r'itteration_*.in'):
-						existing_inputs.append([x for x in f if x.isdigit()])
-					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
-					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
-					group_key = run_data['attributes']['id']
-					group_data[group_key] = {}
-					for key in group_keys:
-						group_data[group_key][key] = None
-					for xi, kx in enumerate(run_data['kx']):
-						for yi, ky in enumerate(run_data['ky']):
-							run_key = str(uuid4())
-							gyro_data[run_key] = deepcopy(run)
-							for key in run:
-								gyro_keys[key][run[key]].add(run_key)
-							gyro_data[run_key]['group_key'] = group_key
-							if self.inputs['grid_option'] == 'box':
-								kxs.add(kx)
-								kys.add(ky)
-								if ky not in gyro_keys['ky']:
-									gyro_keys['ky'][ky] = set()
-								if kx not in gyro_keys['kx']:
-									gyro_keys['kx'][kx] = set()
-								gyro_keys['ky'][ky].add(run_key)
-								gyro_keys['kx'][kx].add(run_key)
-							if 'kx' not in gyro_data[run_key]:
-								gyro_data[run_key]['kx'] = kx
-							if 'ky' not in gyro_data[run_key]:
-								gyro_data[run_key]['ky'] = ky
-							#gyro_data['nml_diffs'] = self.namelist_diffs[?]
-							for key in data_keys:
-								gyro_data[run_key][key] = None
-							for key in only:
-								try:
-									key_data = run_data[key]
-									
-									if key == 'omega':
-										om = key_data[-1,yi,xi]
-										if type(om) != complex:
-											om = key_data[-2,yi,xi]
-										gyro_data[run_key]['growth_rate'] = imag(om)
-										gyro_data[run_key]['mode_frequency'] = real(om)
-										gyro_data[run_key]['omega'] = key_data[:,yi,xi].tolist()
-									elif key in ['phi','apar','bpar']:
-										gyro_data[run_key][key] = key_data[yi,xi,:].tolist()
-										if key == 'phi':
-											try:
-												absint = abs(trapz(key_data[yi,xi,:],run_data['theta']))
-												intabs = trapz(abs(key_data[yi,xi,:]),run_data['theta'])
-												par = 1 - absint/intabs #Equation taken from arXiv:2401.14260v1
-												gyro_data[run_key]['parity'] = par
-											except:
-												gyro_data[run_key]['parity'] = None
-									elif key in ['t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']:
-										group_data[group_key][key] = key_data.tolist()
-									elif key in ['phi2']:
-										group_data[group_key]['phi2_avg'] = key_data.tolist()
-									elif key in ['ql_metric_by_mode']:
-										gyro_data[run_key]['ql_metric'] = key_data[-1,yi,xi]
-									elif key in ['phi2_by_mode']:
-										gyro_data[run_key]['phi2'] = key_data[:,yi,xi]
-									elif key in ['epar']:
-										epar_path = f"{sub_dir}/itteration_{itt}.epar"
-										epar_data = loadtxt(epar_path)
-										epar = []
-										for l in range(len(epar_data[:,3])):
-											epar.append(complex(epar_data[l,3],epar_data[l,4]))
-										epar = array(epar)
-										gyro_data[run_key]['epar'] = epar
-								except Exception as e:
-									print(f"Save Error in {sub_dir}/itteration_{itt}: {e}")
-									if key == 'omega':
-										gyro_data[run_key]['growth_rate'] = nan
-										gyro_data[run_key]['mode_frequency'] = nan
-										
-				except Exception as e:
-					print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
-			if self.inputs['grid_option'] == 'box':
-				existing_dim_keys = []
-				for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
-					existing_dim_keys.append([x for x in key if x.isdigit()])
-				dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
-				kxs = list(kxs)
-				kxs.sort()
-				self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
-				kys = list(kys)
-				kys.sort()
-				self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
-				self.inputs.load_dimensions()
-		else:
-			gyro_data = None
-			gyro_keys = None
-
-		if self['ideal']:
-			ideal_keys = {}
-			if 'theta0' in self.single_parameters:
-				theta0_itt = self.single_parameters['theta0'].values  
-			if 'theta0' in self.dimensions:
-				theta0_itt = self.dimensions['theta0'].values
-			else:
-				theta0_itt = [0]
-			
-			ideal_keys['psin'] = {}
-			ideal_keys['theta0'] = {}
-			for val in psi_itt:
-				ideal_keys['psin'][val] = set()
-			for val in theta0_itt:
-				ideal_keys['theta0'][val] = set()
-
-			ideal_data = {}
-			for run in self.get_all_ideal_runs():
-				run_id = str(uuid4())
-				for key in run:
-					ideal_keys[key][run[key]].add(run_id)
-				ideal_data[run_id] = {}
-				try:
-					sub_dir = self.get_ideal_run_directory(run)
-					existing_inputs = [] 
-					for f in glob.glob(r'itteration_*.in'):
-						existing_inputs.append([x for x in f if x.isdigit()])
-					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
-
-					shear = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_shat")
-					bp = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_bp")
-					stab = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_2d")
-					
-					ideal_data[run_id]['beta_prime'] = [abs(x) for x in bp]
-					ideal_data[run_id]['shear'] = shear.tolist()
-					ideal_data[run_id]['stabilities'] = transpose(stab).tolist()
-				except:
-					ideal_data[run_id]['beta_prime'] = None
-					ideal_data[run_id]['shear'] = None
-					ideal_data[run_id]['stabilities'] = None
-					print(f"Save Error for ideal run: {run}")
-		else:
-			ideal_data = None
-			ideal_keys = None
-		
-		data = {'gyro': gyro_data,
-			'ideal': ideal_data,
-			'group': group_data,
-			'equilibrium': equilibrium,
-			'_gyro_keys': gyro_keys,
-			'_ideal_keys': ideal_keys,
-			}
+		data = codes[self.inputs['gk_code']].save_out(scanner, filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave)
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
-	
-	def _save_out_cgyro(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
-		if filename is None and self.inputs['run_name'] is None:
-			filename = input("Output File Name: ")
-			filename = filename.split(".")[0]
-		elif filename is None:
-			filename = self.inputs['run_name']
-			
-		if self.inputs['data_path'] is None:
-			self.inputs.create_run_info()
-		if directory is None:
-			directory = self.path
-		
-		if not self['gyro'] and not self['ideal']:
-			print("Error: Both Gyro and Ideal are False")
-			return
-		
-		if self['system'] in ['viking','archer2'] and not SlurmSave:
-			save_modules = systems[self['system']]['save_modules']
-			self._save_nml_diff()
-			sbatch = "#!/bin/bash"
-			for key, val in self.inputs['sbatch_save'].items():
-				if key == 'output' and '/' not in val:
-					val = f"{self.inputs['data_path']}/submit_files/{val}"
-				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
-			job = open(f"{self.inputs['data_path']}/submit_files/save_out.job",'w')
-			job.write(f"""{sbatch}
-
-{save_modules}
-
-python {self.inputs['data_path']}/submit_files/save_out.py""")
-			job.close()
-			pyth = open(f"{self.inputs['data_path']}/submit_files/save_out.py",'w')
-			pyth.write(f"""from Myrokinetics import myro_scan
-from numpy import load
-specificRuns = {specificRuns}
-with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
-	nd = obj['name_diffs']
-	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
-	run.namelist_diffs = nd
-	run.save_out(filename = \"{filename}\", directory = \"{directory}\",specificRuns=specificRuns, SlurmSave = True,QuickSave = {QuickSave})""")
-			pyth.close()
-			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
-			return
-			
-		if not self.check_setup():
-			return
-			
-		psi_itt = self.single_parameters['psin'].values if 'psin' in self.single_parameters else self.dimensions['psin'].values
-		equilibrium = {}
-		for psiN in psi_itt:
-			equilibrium[psiN] = {}
-			nml = self.eqbm.get_surface_input(psiN)
-			equilibrium[psiN]['shear'] = nml['S']
-			equilibrium[psiN]['beta_prime'] = nml['BETA_STAR_SCALE']
-		
-		if self['gyro']:
-			gyro_data = {}
-			group_data = {}
-			only = set({'growth_rate','mode_frequency','ky','kx'})
-			if not QuickSave:
-				only = only | set({'phi','bpar','apar','time','theta','heat'})
-			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
-			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']
-			gyro_keys = {}
-			for dim in self.dimensions.values():
-				gyro_keys[dim.name] = {}
-				for val in dim.values:
-					gyro_keys[dim.name][val] = set()
-			
-			if 'ky' not in gyro_keys.keys():
-				gyro_keys['ky'] = {}
-			kxs = set()
-			kys = set()
-			gyro_keys['kx'] = {}
-			
-			runs = self.get_all_runs() if specificRuns is None else list(specificRuns)
-			for run in runs:
-				sub_dir = self.get_run_directory(run)
-				try:
-					self.eqbm.pyro.load_gk_output(sub_dir)
-					run_data = self.eqbm.pyro.gk_output
-					group_key = run_data.attrs['object_uuid']
-					group_data[group_key] = {}
-					for key in group_keys:
-						group_data[group_key][key] = None
-					for xi, kx in enumerate(run_data['kx'].data):
-						for yi, ky in enumerate(run_data['ky'].data):
-							run_key = str(uuid4())
-							gyro_data[run_key] = deepcopy(run)
-							for key in run:
-								gyro_keys[key][run[key]].add(run_key)
-							gyro_data[run_key]['group_key'] = group_key
-	
-							kxs.add(kx)
-							kys.add(ky)
-							if ky not in gyro_keys['ky']:
-								gyro_keys['ky'][ky] = set()
-							if kx not in gyro_keys['kx']:
-								gyro_keys['kx'][kx] = set()
-							gyro_keys['ky'][ky].add(run_key)
-							gyro_keys['kx'][kx].add(run_key)
-
-							if 'kx' not in gyro_data[run_key]:
-								gyro_data[run_key]['kx'] = kx
-							if 'ky' not in gyro_data[run_key]:
-								gyro_data[run_key]['ky'] = ky
-							#gyro_data['nml_diffs'] = self.namelist_diffs[?]
-							for key in data_keys:
-								gyro_data[run_key][key] = None
-							for key in only:
-								try:
-									key_data = run_data[key]
-									if key == 'growth_rate':
-										gyro_data[run_key]['growth_rate'] = float(key_data[xi,yi,-1])
-									if key == 'mode_frequency':
-										gyro_data[run_key]['mode_frequency'] = float(key_data[xi,yi,-1])
-									elif key in ['phi','apar','bpar']:
-										phi = array(key_data[:,xi,yi,-1])
-										gyro_data[run_key][key] = phi.tolist()
-										try:
-											absint = abs(trapz(phi,array(run_data['theta'])))
-											intabs = trapz(abs(phi),array(run_data['theta']))
-											par = 1 - absint/intabs
-											gyro_data[run_key]['parity'] = par
-										except:
-											gyro_data[run_key]['parity'] = None
-									elif key in ['time']:
-										group_data[group_key]['t'] = array(key_data).tolist()
-									elif key in ['theta']:
-										group_data[group_key][key] = array(key_data).tolist()
-									elif key in ['heat']:
-										group_data[group_key][key] = array(key_data[:,:,yi,:]).tolist()
-								except Exception as e:
-									print(f"Save Error in {sub_dir}: {e}")
-									if key == 'growth_rate':
-										gyro_data[run_key]['growth_rate'] = nan
-									elif key == 'mode_frequency':
-										gyro_data[run_key]['mode_frequency'] = nan
-										
-				except Exception as e:
-					print(f"Save Error {sub_dir}: {e}")
-			
-			existing_dim_keys = []
-			for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
-				existing_dim_keys.append([x for x in key if x.isdigit()])
-			dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
-			kxs = list(kxs)
-			kxs.sort()
-			self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
-			if 'ky' not in self.dimensions:
-				kys = list(kys)
-				kys.sort()
-				self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
-			self.inputs.load_dimensions()
-
-		else:
-			gyro_data = None
-			gyro_keys = None
-		
-		data = {'gyro': gyro_data,
-			'ideal': None,
-			'group': group_data,
-			'equilibrium': equilibrium,
-			'_gyro_keys': gyro_keys,
-			'_ideal_keys': None,
-			}
-		
-		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
-		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
-	
-	def _save_out_tglf(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
-		if filename is None and self.inputs['run_name'] is None:
-			filename = input("Output File Name: ")
-			filename = filename.split(".")[0]
-		elif filename is None:
-			filename = self.inputs['run_name']
-			
-		if self.inputs['data_path'] is None:
-			self.inputs.create_run_info()
-		if directory is None:
-			directory = self.path
-		
-		if not self['gyro'] and not self['ideal']:
-			print("Error: Both Gyro and Ideal are False")
-			return
-		
-		if self['system'] in ['viking','archer2'] and not SlurmSave:
-			save_modules = systems[self['system']]['save_modules']
-			self._save_nml_diff()
-			sbatch = "#!/bin/bash"
-			for key, val in self.inputs['sbatch_save'].items():
-				if key == 'output' and '/' not in val:
-					val = f"{self.inputs['data_path']}/submit_files/{val}"
-				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
-			job = open(f"{self.inputs['data_path']}/submit_files/save_out.job",'w')
-			job.write(f"""{sbatch}
-
-{save_modules}
-
-python {self.inputs['data_path']}/submit_files/save_out.py""")
-			job.close()
-			pyth = open(f"{self.inputs['data_path']}/submit_files/save_out.py",'w')
-			pyth.write(f"""from Myrokinetics import myro_scan
-from numpy import load
-specificRuns = {specificRuns}
-with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
-	nd = obj['name_diffs']
-	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
-	run.namelist_diffs = nd
-	run.save_out(filename = \"{filename}\", directory = \"{directory}\",specificRuns=specificRuns, SlurmSave = True,QuickSave = {QuickSave})""")
-			pyth.close()
-			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
-			return
-			
-		if not self.check_setup():
-			return
-			
-		psi_itt = self.single_parameters['psin'].values if 'psin' in self.single_parameters else self.dimensions['psin'].values
-		equilibrium = {}
-		for psiN in psi_itt:
-			equilibrium[psiN] = {}
-			nml = self.eqbm.get_surface_input(psiN)
-			equilibrium[psiN]['shear'] = nml['S']
-			equilibrium[psiN]['beta_prime'] = nml['BETA_STAR_SCALE']
-		
-		if self['gyro']:
-			gyro_data = {}
-			group_data = {}
-			only = set({'growth_rate','mode_frequency','ky','kx'})
-			if not QuickSave:
-				only = only | set({'phi','bpar','apar','time','theta','heat'})
-			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
-			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']
-			gyro_keys = {}
-			for dim in self.dimensions.values():
-				gyro_keys[dim.name] = {}
-				for val in dim.values:
-					gyro_keys[dim.name][val] = set()
-			
-			if 'ky' not in gyro_keys.keys():
-				gyro_keys['ky'] = {}
-			kxs = set()
-			kys = set()
-			gyro_keys['kx'] = {}
-			
-			runs = self.get_all_runs() if specificRuns is None else list(specificRuns)
-			for run in runs:
-				sub_dir = self.get_run_directory(run)
-				try:
-					self.eqbm.pyro.load_gk_output(sub_dir)
-					run_data = self.eqbm.pyro.gk_output
-					group_key = run_data.attrs['object_uuid']
-					group_data[group_key] = {}
-					for key in group_keys:
-						group_data[group_key][key] = None
-					for xi, kx in enumerate(run_data['kx'].data):
-						for yi, ky in enumerate(run_data['ky'].data):
-							run_key = str(uuid4())
-							gyro_data[run_key] = deepcopy(run)
-							for key in run:
-								gyro_keys[key][run[key]].add(run_key)
-							gyro_data[run_key]['group_key'] = group_key
-	
-							kxs.add(kx)
-							kys.add(ky)
-							if ky not in gyro_keys['ky']:
-								gyro_keys['ky'][ky] = set()
-							if kx not in gyro_keys['kx']:
-								gyro_keys['kx'][kx] = set()
-							gyro_keys['ky'][ky].add(run_key)
-							gyro_keys['kx'][kx].add(run_key)
-
-							if 'kx' not in gyro_data[run_key]:
-								gyro_data[run_key]['kx'] = kx
-							if 'ky' not in gyro_data[run_key]:
-								gyro_data[run_key]['ky'] = ky
-							#gyro_data['nml_diffs'] = self.namelist_diffs[?]
-							for key in data_keys:
-								gyro_data[run_key][key] = None
-							for key in only:
-								try:
-									key_data = run_data[key]
-									if key == 'growth_rate':
-										gyro_data[run_key]['growth_rate'] = float(key_data[xi,yi,-1])
-									if key == 'mode_frequency':
-										gyro_data[run_key]['mode_frequency'] = float(key_data[xi,yi,-1])
-									elif key in ['time']:
-										group_data[group_key]['t'] = array(key_data).tolist()
-									elif key in ['theta']:
-										group_data[group_key][key] = array(key_data).tolist()
-									#elif key in ['heat']:
-										#group_data[group_key][key] = array(key_data[:,:,yi,:]).tolist()
-								except Exception as e:
-									print(f"Save Error in {sub_dir}: {e}")
-									if key == 'growth_rate':
-										gyro_data[run_key]['growth_rate'] = nan
-									elif key == 'mode_frequency':
-										gyro_data[run_key]['mode_frequency'] = nan
-										
-				except Exception as e:
-					print(f"Save Error {sub_dir}: {e}")
-			
-			existing_dim_keys = []
-			for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
-				existing_dim_keys.append([x for x in key if x.isdigit()])
-			dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
-			kxs = list(kxs)
-			kxs.sort()
-			self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
-			if 'ky' not in self.dimensions:
-				kys = list(kys)
-				kys.sort()
-				self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
-			self.inputs.load_dimensions()
-
-		else:
-			gyro_data = None
-			gyro_keys = None
-		
-		data = {'gyro': gyro_data,
-			'ideal': None,
-			'group': group_data,
-			'equilibrium': equilibrium,
-			'_gyro_keys': gyro_keys,
-			'_ideal_keys': None,
-			}
-		
-		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
-		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
+		return
 	
 	def print_run_input(self, run = {}, itt = None):
 		import f90nml

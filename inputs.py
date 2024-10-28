@@ -1,7 +1,8 @@
 import os
 import f90nml
 from copy import deepcopy, copy
-from .templates import dim_lookup_gs2, dim_lookup_cgyro, dim_lookup_tglf, template_dir, gs2_template, cgyro_template, inputs_template, tglf_template, systems
+from .templates import template_dir, inputs_template
+from .codes import systems, codes
 
 possible_keys = {
 	'files': {
@@ -215,15 +216,10 @@ class scan_inputs(object):
 				del(self.inputs[key][old_key])
 		
 		self.inputs['knobs']['gk_code'] = self.inputs['knobs']['gk_code'].upper()
-		if self['gk_code'] not in ['GS2','CGYRO','TGLF']:
-			print("ERROR: gk_code must be GS2, CGYRO or TGLF. Setting to GS2")
+		if self['gk_code'] not in self.codes.keys():
+			print("ERROR: gk_code must be in {self.codes.keys()}. Setting to GS2")
 			self.inputs['knobs']['gk_code'] = defaults['knobs']['gk_code']
-		elif self['gk_code'] == 'GS2':
-			self.dim_lookup = dim_lookup_gs2
-		elif self['gk_code'] == 'CGYRO':
-			self.dim_lookup = dim_lookup_cgyro
-		elif self['gk_code'] == 'TGLF':
-			self.dim_lookup = dim_lookup_tglf
+		self.dim_lookup = codes[self['gk_code']].dim_lookup
 
 		if self.inputs['files']['input_name'] is None and self.input_name:
 			self.inputs['files']['input_name'] = self.input_name
@@ -231,12 +227,7 @@ class scan_inputs(object):
 			self.inputs['files']['input_path'] = self.path
 		
 		if not self.inputs['files']['template_name']:
-			if self['gk_code'] == 'GS2':
-				self.inputs['files']['template_name'] = gs2_template
-			elif self['gk_code'] == 'CGYRO':
-				self.inputs['files']['template_name'] = cgyro_template
-			elif self['gk_code'] == 'TGLF':
-				self.inputs['files']['template_name'] = tglf_template
+			self.inputs['files']['template_name'] = codes[self['gk_code']].template
 			self.inputs['files']['template_path'] = template_dir
 		
 		for key in ['eq','kin']:
@@ -251,7 +242,7 @@ class scan_inputs(object):
 					self.inputs['files'][f'{key}_path'] = self.path
 		
 		if self['knobs']['system'] in ['archer2','viking']:
-			sbatch = copy(systems[self['knobs']['system']]['sbatch'])
+			sbatch = copy(systems[self['knobs']['system']].sbatch)
 			if 'sbatch' not in self.inputs:
 				self.inputs['sbatch'] = {}
 			for skey in sbatch:
@@ -265,7 +256,7 @@ class scan_inputs(object):
 					else:
 						self.inputs['sbatch'][skey] = sbatch[skey]
 			
-			sbatch_save = copy(systems[self['knobs']['system']]['save_sbatch'])
+			sbatch_save = copy(systems[self['knobs']['system']].save_sbatch)
 			if 'sbatch_save' not in self.inputs:
 				self.inputs['sbatch_save'] = {}
 			for skey in sbatch_save:
@@ -315,19 +306,7 @@ class scan_inputs(object):
 			print("ERROR: psiN must be specified as single parameter or scan dimension")
 			valid = False
 		
-		if self['grid_option'] == 'box' and self['gk_code'] == 'GS2':
-			if 'ky' in self.dimensions or 'ky' in self.single_parameters:
-				print("ERROR: ky dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
-				valid = False
-			if 'kx' in self.dimensions or 'kx' in self.single_parameters:
-				print("ERROR: kx dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
-				valid = False
-			if 'theta0' in self.dimensions or 'theta0' in self.single_parameters:
-				print("ERROR: theta0 dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
-				valid = False
-			if not self['fixed_delt']:
-				print("grid_option == box runs can only use fixed_delt == True")
-				self.inputs['knobs']['fixed_delt'] = True
+		valid = codes[self['gk_code']].check_scan(self, valid)
 		
 		if self['grid_option'] == 'single':
 			if 'ny' in self.dimensions or 'ny' in self.single_parameters:
@@ -337,10 +316,10 @@ class scan_inputs(object):
 				print("ERROR: nx dimension is not compatible with grid_option == single: use ky")
 				valid = False
 			if 'y0' in self.dimensions or 'y0' in self.single_parameters:
-				print("ERROR: nx dimension is not compatible with grid_option == single")
+				print("ERROR: y0 dimension is not compatible with grid_option == single")
 				valid = False
 			if 'jtwist' in self.dimensions or 'jtwist' in self.single_parameters:
-				print("ERROR: nx dimension is not compatible with grid_option == single")
+				print("ERROR: jtwist dimension is not compatible with grid_option == single")
 				valid = False
 		
 		if ('kx' in self.dimensions or 'kx' in self.single_parameters) and ('theta0' in self.dimensions or 'theta0' in self.single_parameters):
@@ -370,10 +349,6 @@ class scan_inputs(object):
 			
 		if self['nonlinear'] == True and len(self.dimensions) > 0:
 			print("ERROR: dimensional scans not currently allowed for Nonlinear runs")
-			valid = False
-		
-		if self['gk_code'] != 'GS2' and self['ideal'] is True:
-			print("ERROR: Ideal runs can only be performed on GS2")
 			valid = False
 		
 		if self['gk_code'] == 'CGYRO' and self['system'] != 'archer2':

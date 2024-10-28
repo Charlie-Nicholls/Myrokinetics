@@ -1,7 +1,8 @@
 import os
 import f90nml
 from .inputs import scan_inputs
-from .templates import template_dir, gs2_template, cgyro_template, tglf_template
+from .templates import template_dir
+from .codes import codes
 from copy import deepcopy
 
 class equilibrium(object):
@@ -107,12 +108,7 @@ class equilibrium(object):
 			self.inputs.inputs['files']['template_name'] = template_file
 			self.inputs.check_inputs()
 		elif self.inputs['template_name'] is None:
-			if self.inputs['gk_code'] == 'GS2':
-				self.inputs.inputs['files']['template_name'] = gs2_template
-			elif self.inputs['gk_code'] == 'CGYRO':
-				self.inputs.inputs['files']['template_name'] = cgyro_template
-			elif self.inputs['gk_code'] == 'TGLF':
-				self.inputs.inputs['files']['template_name'] = tglf_template
+			self.inputs.inputs['files']['template_name'] = codes[self.inputs['gk_code']].template
 			self.inputs.inputs['files']['template_path'] = template_dir
 		
 		if directory is None:
@@ -132,12 +128,7 @@ class equilibrium(object):
 		if not self.kin_data:
 			self.load_kinetics()
 		
-		if self.inputs['gk_code'] == 'GS2':
-			self._template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
-		elif self.inputs['gk_code'] in ['CGYRO','TGLF']:
-			with open(os.path.join(self.inputs['template_path'],self.inputs['template_name']),'r') as f:
-				self._template_lines = f.readlines()
-		
+		self._template_lines = codes[self.inputs['gk_code']].get_template_lines(self.inputs)
 
 		kin_type = 'pFile' if self.inputs['kinetics_type'].upper() == 'PEQDSK' else self.inputs['kinetics_type'].upper()
 		self.pyro = Pyro(
@@ -197,345 +188,16 @@ class equilibrium(object):
 			return deepcopy(self.surface_namelists[psiN])
 		if self.pyro is None:
 			self.load_pyro()
-
-		if self.inputs['gk_code'] == 'GS2':
-			return self._get_surface_input_gs2(psiN)
-		elif self.inputs['gk_code'] == 'CGYRO':
-			return self._get_surface_input_cgyro(psiN)
-		elif self.inputs['gk_code'] == 'TGLF':
-			return self._get_surface_input_tglf(psiN)
-		else:
-			print("ERROR: gk_code not found")
-			return None
-
-	def _get_surface_input_gs2(self, psiN):
-		self.pyro.load_local(psi_n=psiN)
-		self.pyro.update_gk_code()
-		nml = deepcopy(self.pyro.gk_input.data)
-
-		nml['theta_grid_parameters']['qinp'] = abs(nml['theta_grid_parameters']['qinp'])
 		
-		if 'parameters' in nml.keys() and 'beta' in nml['parameters'].keys():
-			nml['knobs']['beta'] = nml['parameters']['beta']
-			del(nml['parameters'])
-		
-		for dim in self.inputs.single_parameters.values():
-			nml = dim.single_edit_nml(nml)
-		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']
-		
-		beta = nml['knobs']['beta']
-		bp_cal = sum([(nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x]])*beta*-1
-		mul = beta_prim/bp_cal
-		
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			nml[spec]['tprim'] = nml[spec]['tprim']*mul
-			nml[spec]['fprim'] = nml[spec]['fprim']*mul
-			
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			#Set bakdif to 0 for Electormagnetic Runs as a default
-			nml[spec]['bakdif'] = 0
-			#Force Uprim to 0, reccommendation by David
-			nml[spec]['uprim'] = 0
-			#TEMPORARY UNTIL PYRO FIXES BUG
-			if 'bakdif' in nml[spec].keys():
-				del(nml[spec]['bakdif'])
-		#TEMPORARY UNTIL PYRO FIXES BUG
-		if 'normalisations_knobs' in nml.keys():
-			if 'qref' in nml['normalisations_knobs'].keys():
-				del(nml['normalisations_knobs']['qref'])
-
-		if 'ngauss' in nml['le_grids_knobs'] and 'npassing' in nml['le_grids_knobs']:
-			del(nml['le_grids_knobs']['ngauss'])
-		
-		if self.inputs['force_zero_fs']:
-			nml['dist_fn_knobs']['g_exb'] = 0
-			
-		nml['theta_grid_eik_knobs']['equal_arc'] = False
-		nml['init_g_knobs']['ginit_option'] = 'random_sine'
-		nml['dist_fn_knobs']['mach'] = 0
-		
-		if 'avail_cpu_time' not in nml['knobs'].keys():
-				h, m, s = self.inputs['sbatch']['time'].split(':')
-				nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
-		
-		if self.inputs['grid_option'] == 'single':
-			nml['kt_grids_knobs']['grid_option'] = 'single'
-			if 'kt_grids_single_parameters' not in nml:
-				nml['kt_grids_single_parameters'] = {'aky': 0.1, 'theta0': 0}
-			if 'kt_grids_box_parameters' in nml:
-				del(nml['kt_grids_box_parameters'])
-			if 'margin_cpu_time' not in nml['knobs'].keys():
-				nml['knobs']['margin_cpu_time'] = 300
-		elif self.inputs['grid_option'] == 'box':
-			nml['kt_grids_knobs']['grid_option'] = 'box'
-			nml['dist_fn_knobs']['boundary_option'] = 'linked'
-			nml['dist_fn_knobs']['esv'] = True
-			nml['fields_knobs']['field_option'] = 'local'
-			if 'kt_grids_box_parameters' not in nml:
-				nml['kt_grids_box_parameters'] = {'nx': 50, 'ny': 50, 'y0': -0.05, 'jtwist': 1}
-			if 'kt_grids_single_parameters' in nml:
-				del(nml['kt_grids_single_parameters'])
-			nml['fields_knobs']['dump_response'] = True
-			nml['fields_knobs']['response_dir'] = "response"
-			nml['init_g_knobs']['restart_dir'] = "restart"
-			nml['gs2_diagnostics_knobs']['save_for_restart'] = True
-			nml['gs2_diagnostics_knobs']['nc_sync_freq'] = 1
-			if nml['gs2_diagnostics_knobs']['nsave'] > 1000:
-				nml['gs2_diagnostics_knobs']['nsave'] = 1
-			if 'margin_cpu_time' not in nml['knobs'].keys():
-				nml['knobs']['margin_cpu_time'] = 2400
-			if 'nperiod' not in self.inputs.dimensions and 'nperiod' not in self.inputs.single_parameters:
-					nml['theta_grid_parameters']['nperiod'] = 1
-		else:
-			print("ERROR: grid_option is invalid, valid: ['single','box']")
-					
-		if self.inputs['non_linear'] == True:
-			if 'nonlinear_terms_knobs' not in nml.keys():
-				nml['nonlinear_terms_knobs'] = {}
-			nml['nonlinear_terms_knobs']['nonlinear_mode'] = 'on'
-			if 'cfl' not in nml['nonlinear_terms_knobs'].keys():
-				nml['nonlinear_terms_knobs']['cfl']	= 0.5
-			if self.inputs['split_nonlinear'] == True:
-				nml['nonlinear_terms_knobs']['split_nonlinear'] = True
-				if 'split_nonlinear_terms_knobs' not in nml.keys():
-					nml['split_nonlinear_terms_knobs'] = {'show_statistics': True}
-			
-		if self.inputs['Miller']:
-			nml['theta_grid_eik_knobs']['local_eq'] = True
-		else:
-			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.inputs['data_path'],self.inputs['eq_name'])
-			nml['theta_grid_eik_knobs']['efit_eq'] =  True
-			nml['theta_grid_eik_knobs']['local_eq'] = False
-		
-		if self.inputs['Epar']:
-			nml['gs2_diagnostics_knobs']['write_ascii'] = True
-			nml['gs2_diagnostics_knobs']['write_final_epar'] = True
-		else:
-			nml['gs2_diagnostics_knobs']['write_ascii'] = False
-			nml['gs2_diagnostics_knobs']['write_final_epar'] = False
-		
-		if 'ntheta_geometry' not in nml['theta_grid_eik_knobs'].keys():
-			nml['theta_grid_eik_knobs']['ntheta_geometry'] = 4096
-
-		if self.inputs['Ideal']:
-			beta_mul = abs(self.inputs['beta_prime_max']/beta_prim)
-			beta_div = abs(beta_prim/self.inputs['beta_prime_min'])
-
-			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': self.inputs['shat_min'], 'shat_max': self.inputs['shat_max'], 'beta_div': beta_div, 'beta_mul': beta_mul}
-
-		nml['knobs']['wstar_units'] = False
-		
-		for dim_name, dim in self.inputs.single_parameters.items():
-			nml = dim.single_edit_nml(nml)
-
-		self.surface_namelists[psiN] = nml
-		
-		return deepcopy(self.surface_namelists[psiN])
-
-	def _get_surface_input_cgyro(self, psiN):
-		self.pyro.load_local(psi_n=psiN)
-		self.pyro.update_gk_code()
-		nml = deepcopy(self.pyro.gk_input.data)
-
-		for dim in self.inputs.single_parameters.values():
-			nml = dim.single_edit_nml(nml)
-					
-		if self.inputs['non_linear'] == True:
-			nml['NONLINEAR_FLAG'] = 1
-		else:
-			nml['NONLINEAR_FLAG'] = 0
-		
-		nml['DELTA_T_METHOD'] = 1
-		nml['EQUILIBRIUM_MODEL'] = 2
-		
-		nml['THETA_PLOT'] = nml['N_THETA'] #TEMPORARY UNTIL I FIND A BETTER SOLUTION TO ENSURING ALWAYS A FACTOR OF NTHETA AND/OR THE TEMPLATE LOADING ISSUE WITH PYRO
-		
-		#for dim in self.inputs.single_parameters.values():
-		#	nml = dim.single_edit_nml(nml)
-
-		self.surface_namelists[psiN] = nml
-		
-		return deepcopy(self.surface_namelists[psiN])
-	
-	def _get_surface_input_tglf(self, psiN):
-		self.pyro.load_local(psi_n=psiN)
-		self.pyro.update_gk_code()
-		nml = deepcopy(self.pyro.gk_input.data)
-
-		for dim in self.inputs.single_parameters.values():
-			nml = dim.single_edit_nml(nml)
-					
-		self.surface_namelists[psiN] = nml
-		
-		pyref = deepcopy(self.pyro)
-		pyref.gk_code = 'CGYRO'
-		pyref.load_local(psiN)
-		
-		nml['GEOMETRY_FLAG'] = 0
-		nml['SHAT_SA'] = pyref.gk_input.data['S']
-		nml['Q_SA'] = abs(pyref.gk_input.data['Q'])
-		nml['RMIN_SA'] = pyref.gk_input.data['RMIN']
-		nml['RMAJ_SA'] = pyref.gk_input.data['RMAJ']
-		nml['THETA0_SA'] = 0
-		del(pyref)
-		
-		for dim in self.inputs.single_parameters.values():
-			nml = dim.single_edit_nml(nml)
-		
+		self.surface_namelists[psiN] = codes[self.inputs['gk_code']].get_surface_input(eqbm=self, psiN=psiN)
 		return deepcopy(self.surface_namelists[psiN])
 
 	def get_gyro_input(self, run = None, indexes = None, namelist_diff = {}):
-		if self.inputs['gk_code'] == 'GS2':
-			return self._get_gyro_input_gs2(run = run, indexes = indexes, namelist_diff = namelist_diff)
-		if self.inputs['gk_code'] == 'CGYRO':
-			return self._get_gyro_input_cgyro(run = run, indexes = indexes, namelist_diff = namelist_diff)
-		if self.inputs['gk_code'] == 'TGLF':
-			return self._get_gyro_input_tglf(run = run, indexes = indexes, namelist_diff = namelist_diff)
-		else:
-			print("ERROR: gk_code not found")
-			return None
-
-	def _get_gyro_input_gs2(self, run = None, indexes = None, namelist_diff = {}):
-		if run is None and indexes is None:
-			print("ERROR: Either indexes or run must be given")
-			return None
-		
-		if run is None:
-			if len(indexes) != len(self.inputs.dimensions):
-				print(f"ERROR: indexes must be of length {len(self.dimensions)}, {[self.inputs.dim_order]}")
-				return None
-			run = {}
-			for i, dim in zip(indexes,self.inputs.dimensions.values()):
-				run[dim.name] = dim.values[i]
-		
-		if 'psin' in run:	
-			psiN = run['psin']
-		elif 'psin' in self.inputs.single_parameters:
-			psiN = self.inputs.single_parameters['psin'].values[0]
-		else:
-			print("ERROR: psiN not defined")
-			return None
-			
-		nml = self.get_surface_input(psiN)
-		
-		if self.inputs['knobs']['fixed_delt'] == False:
-			ky = nml['kt_grids_single_parameters']['aky']
-			delt = 0.04/ky
-			if delt > 0.01:
-				delt = 0.01
-			nml['knobs']['delt'] = delt
-		
-		for dim_name, dim in self.inputs.single_parameters.items():
-			nml = dim.single_edit_nml(nml)
-		
-		for dim_name, dim in self.inputs.dimensions.items():
-			nml = dim.edit_nml(nml=nml,val=run[dim_name])
-			
-		for key in namelist_diff.keys():
-			for skey in namelist_diff[key].keys():
-				nml[key][skey] = namelist_diff[key][skey]
-			
-		return nml
-
-	def _get_gyro_input_cgyro(self, run = None, indexes = None, namelist_diff = {}):
-		if run is None and indexes is None:
-			print("ERROR: Either indexes or run must be given")
-			return None
-		
-		if run is None:
-			if len(indexes) != len(self.inputs.dimensions):
-				print(f"ERROR: indexes must be of length {len(self.dimensions)}, {[self.inputs.dim_order]}")
-				return None
-			run = {}
-			for i, dim in zip(indexes,self.inputs.dimensions.values()):
-				run[dim.name] = dim.values[i]
-		
-		if 'psin' in run:	
-			psiN = run['psin']
-		elif 'psin' in self.inputs.single_parameters:
-			psiN = self.inputs.single_parameters['psin'].values[0]
-		else:
-			print("ERROR: psiN not defined")
-			return None
-			
-		nml = self.get_surface_input(psiN)
-		
-		if self.inputs['knobs']['fixed_delt'] == False:
-			ky = nml['kt_grids_single_parameters']['aky']
-			delt = 0.04/ky
-			if delt > 0.01:
-				delt = 0.01
-			nml['knobs']['delt'] = delt
-		
-		for dim_name, dim in self.inputs.dimensions.items():
-			nml = dim.edit_nml(nml=nml,val=run[dim_name])
-			
-		for dim_name, dim in self.inputs.single_parameters.items():
-			nml = dim.single_edit_nml(nml)
-		
-		for key in namelist_diff.keys():
-			for skey in namelist_diff[key].keys():
-				nml[key][skey] = namelist_diff[key][skey]
-			
-		return nml
-	
-	def _get_gyro_input_tglf(self, run = None, indexes = None, namelist_diff = {}):
-		if run is None and indexes is None:
-			print("ERROR: Either indexes or run must be given")
-			return None
-		
-		if run is None:
-			if len(indexes) != len(self.inputs.dimensions):
-				print(f"ERROR: indexes must be of length {len(self.dimensions)}, {[self.inputs.dim_order]}")
-				return None
-			run = {}
-			for i, dim in zip(indexes,self.inputs.dimensions.values()):
-				run[dim.name] = dim.values[i]
-		
-		if 'psin' in run:	
-			psiN = run['psin']
-		elif 'psin' in self.inputs.single_parameters:
-			psiN = self.inputs.single_parameters['psin'].values[0]
-		else:
-			print("ERROR: psiN not defined")
-			return None
-			
-		nml = self.get_surface_input(psiN)
-		
-		if self.inputs['knobs']['fixed_delt'] == False:
-			ky = nml['kt_grids_single_parameters']['aky']
-			delt = 0.04/ky
-			if delt > 0.01:
-				delt = 0.01
-			nml['knobs']['delt'] = delt
-		
-		for dim_name, dim in self.inputs.dimensions.items():
-			nml = dim.edit_nml(nml=nml,val=run[dim_name])
-			
-		for dim_name, dim in self.inputs.single_parameters.items():
-			nml = dim.single_edit_nml(nml)
-		
-		for key in namelist_diff.keys():
-			for skey in namelist_diff[key].keys():
-				nml[key][skey] = namelist_diff[key][skey]
-		
+		nml = codes[self.inputs['gk_code']].get_gyro_input(eqbm=self, run = run, indexes=indexes, namelist_diff=namelist_diff)
 		return nml
 	
 	def write_nml(self, nml, directory = ".", filename = None):
-		if self.inputs['gk_code'] == 'GS2':
-			if filename is None:
-				filename = "itteration_0.in"
-			nml.write(f"{directory}/{filename}", force=True)
-		elif self.inputs['gk_code'] == 'CGYRO':
-			with open(f"{directory}/input.cgyro", "w") as f:
-				for key, value in nml.items():
-					f.write( f"{key} = {value}\n")
-		elif self.inputs['gk_code'] == 'TGLF':
-			with open(f"{directory}/input.tglf", "w") as f:
-				for key, value in nml.items():
-					f.write(f"{key} = {value}\n".upper())		
-		else:
-			print(f"ERROR: gk_code {self.inputs['gk_code']} not found")
+		 codes[self.inputs['gk_code']].write_nml(nml=nml,directory=directory,filename=filename)
 
 	def make_profiles(self):
 		from scipy.interpolate import InterpolatedUnivariateSpline

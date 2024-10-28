@@ -36,12 +36,12 @@ class psiN(dimension):
 	def edit_nml(self, nml, val):
 		return nml
 
-class alpha(dimension):
+class p_prime(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
-	name_keys = ['alpha']
-	axis_label = r'$\alpha$'
+	name_keys = ['p_prime','p_prime_loc','pprime','pressure_prime','pressure_gradient']
+	axis_label = 'p_prime'
 	valid_options = []
 	
 	def sub_validate(self, values):
@@ -50,15 +50,15 @@ class alpha(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['ALPHA_SA'] = val
+		nml['P_PRIME_LOC'] = val
 		return nml
 
-class shear(dimension):
+class q_prime(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
-	name_keys = ['shear','shat','s_hat','sh','s']
-	axis_label = r'$\hat{s}$'
+	name_keys = ['q_prime','q_gradient','q_prime_loc']
+	axis_label = 'q_prime'
 	valid_options = []
 	
 	def sub_validate(self, values):
@@ -68,7 +68,7 @@ class shear(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['SHAT_SA'] = val
+		nml['Q_PRIME_LOC'] = val
 		return nml
 
 class ky(dimension):
