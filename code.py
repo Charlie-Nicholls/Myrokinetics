@@ -55,7 +55,7 @@ class code(object):
 		
 		if run is None:
 			if len(indexes) != len(eqbm.inputs.dimensions):
-				print(f"ERROR: indexes must be of length {len(eqbm.inputs.dimensions)}, {[self.inputs.dim_order]}")
+				print(f"ERROR: indexes must be of length {len(eqbm.inputs.dimensions)}, {[eqbm.inputs.dim_order]}")
 				return None
 			run = {}
 			for i, dim in zip(indexes,eqbm.inputs.dimensions.values()):
@@ -71,18 +71,18 @@ class code(object):
 		
 		nml = self.get_surface_input(eqbm, psiN)
 		
-		for dim_name, dim in self.inputs.dimensions.items():
+		for dim_name, dim in eqbm.inputs.dimensions.items():
 			nml = dim.edit_nml(nml=nml,val=run[dim_name])
 			
-		for dim_name, dim in self.inputs.single_parameters.items():
+		for dim_name, dim in eqbm.inputs.single_parameters.items():
 			nml = dim.single_edit_nml(nml)
 		
 		nml = self._get_gyro_input(eqbm.inputs, run, nml)
 		
-		for dim_name, dim in self.inputs.dimensions.items():
+		for dim_name, dim in eqbm.inputs.dimensions.items():
 			nml = dim.edit_nml(nml=nml,val=run[dim_name])
 			
-		for dim_name, dim in self.inputs.single_parameters.items():
+		for dim_name, dim in eqbm.inputs.single_parameters.items():
 			nml = dim.single_edit_nml(nml)
 		
 		for key in namelist_diff.keys():
