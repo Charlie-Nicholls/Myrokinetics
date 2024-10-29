@@ -85,7 +85,7 @@ Parallel(n_jobs={self.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(r
 		pyth.close()
 		return
 		
-	def make_gyro_file(self, run, directory):
+	def make_gyro_file(self, scanner, run, directory):
 		filename = "input.tglf"
 		if not os.path.exists(f"{sub_dir}/{filename}"):
 			subnml = scanner.eqbm.get_gyro_input(run = run)
