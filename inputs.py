@@ -217,8 +217,8 @@ class scan_inputs(object):
 				del(self.inputs[key][old_key])
 		
 		self.inputs['knobs']['gk_code'] = self.inputs['knobs']['gk_code'].upper()
-		if self['gk_code'] not in self.codes.keys():
-			print("ERROR: gk_code must be in {self.codes.keys()}. Setting to GS2")
+		if self['gk_code'] not in codes.keys():
+			print("ERROR: gk_code must be in {codes.keys()}. Setting to GS2")
 			self.inputs['knobs']['gk_code'] = defaults['knobs']['gk_code']
 		self.dim_lookup = codes[self['gk_code']].dim_lookup
 
