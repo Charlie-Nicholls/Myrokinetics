@@ -250,9 +250,7 @@ fi'''
 		if not os.path.exists(f"{sub_dir}/{filename}"):
 			subnml = self.get_gyro_input(eqbm=eqbm,run=run,namelist_diff=namelist_diff)
 			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
-		
-		scanner._input_files.add(f"{sub_dir}/{filename}")
-		return
+		return f"{sub_dir}/{filename}"
 	
 	def save_out(self, scanner, filename = None, directory = None, specificRuns = None, QuickSave = False):
 		

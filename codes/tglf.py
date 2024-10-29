@@ -90,9 +90,7 @@ Parallel(n_jobs={self.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(r
 		if not os.path.exists(f"{sub_dir}/{filename}"):
 			subnml = self.get_gyro_input(eqbm=eqbm,run=run,namelist_diff=namelist_diff)
 			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
-		
-		scanner._input_files.add(f"{sub_dir}")
-		return
+		return sub_dir
 	
 	def save_out(self, scanner, filename = None, directory = None, specificRuns = None, QuickSave = False):
 		psi_itt = self.single_parameters['psin'].values if 'psin' in self.single_parameters else self.dimensions['psin'].values
