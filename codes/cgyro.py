@@ -241,7 +241,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for
 			}
 		return data
 	
-	def write_nml(nml, directory = ".", filename = None):
+	def write_nml(self, nml, directory = ".", filename = None):
 		with open(f"{directory}/input.cgyro", "w") as f:
 			for key, value in nml.items():
 				f.write( f"{key} = {value}\n".upper())

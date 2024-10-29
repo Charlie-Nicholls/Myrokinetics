@@ -446,7 +446,7 @@ fi'''
 		
 		return data
 	
-	def write_nml(nml, directory = ".", filename = None):
+	def write_nml(self, nml, directory = ".", filename = None):
 		if filename is None:
 			filename = "itteration_0.in"
 		nml.write(f"{directory}/{filename}", force=True)

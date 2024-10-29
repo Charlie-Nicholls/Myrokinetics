@@ -206,7 +206,7 @@ Parallel(n_jobs={self.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(r
 			}
 		return data
 	
-	def write_nml(nml, directory = ".", filename = None):
+	def write_nml(self, nml, directory = ".", filename = None):
 		with open(f"{directory}/input.tglf", "w") as f:
 			for key, value in nml.items():
 				f.write(f"{key} = {value}\n".upper())	
