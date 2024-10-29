@@ -243,4 +243,4 @@ class jtwist(dimension):
 		nml['BOX_SIZE'] = val
 		return nml
 
-dimensions_list = [psiN,alpha,shear,ky,kx,theta0,y0,ntheta,nx,ny,delt,jtwist]
+dimensions_list = [psiN,p_prime,q_prime,ky,kx,theta0,y0,ntheta,nx,ny,delt,jtwist]

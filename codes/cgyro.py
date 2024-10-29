@@ -26,10 +26,11 @@ gs2 --build-config"""
 
 class cgyro(code):
 	def __init__(self):
+		self.code_name = 'CGYRO'
 		self.viking_modules = viking_modules
 		self.archer2_modules = archer2_modules
 		self.template = "template.gs2"
-		from ..dimensions.dimensions_gs2 import dimensions_list
+		from ..dimensions.dimensions_cgyro import dimensions_list
 		self.dim_list = dimensions_list
 		if self.dim_list != None:
 			self.make_dim_lookup(self.dim_list)

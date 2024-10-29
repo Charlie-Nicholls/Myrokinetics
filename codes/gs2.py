@@ -27,6 +27,7 @@ gs2 --build-config"""
 
 class gs2(code):
 	def __init__(self):
+		self.code_name = 'GS2'
 		self.viking_modules = viking_modules
 		self.archer2_modules = archer2_modules
 		self.template = "template.gs2"
