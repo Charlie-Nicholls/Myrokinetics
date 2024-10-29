@@ -34,7 +34,7 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 	
 	requires_slurm_save = True
 	
-	def make_job_files(self, scanner, codes, n_jobs = None, n_par = 1, n_sim = None):
+	def make_job_files(self, scanner, n_jobs = None, n_par = 1, n_sim = None):
 		compile_modules = codes[scanner.inputs['gk_code']].archer2_modules
 		sbatch = "#!/bin/bash"
 		for key, val in scanner.inputs['sbatch'].items():
@@ -103,7 +103,7 @@ wait""")
 		
 		return
 	
-	def make_ideal_job_files(self, scanner, codes, n_jobs = None, n_par = 1, n_sim = None):
+	def make_ideal_job_files(self, scanner, n_jobs = None, n_par = 1, n_sim = None):
 		compile_modules = codes[scanner.inputs['gk_code']].viking_modules
 		sbatch = "#!/bin/bash"
 		for key, val in scanner.inputs['sbatch'].items():
