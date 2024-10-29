@@ -56,7 +56,6 @@ class code(object):
 		if run is None:
 			if len(indexes) != len(eqbm.inputs.dimensions):
 				print(f"ERROR: indexes must be of length {len(eqbm.inputs.dimensions)}, {[eqbm.inputs.dim_order]}")
-				return None
 			run = {}
 			for i, dim in zip(indexes,eqbm.inputs.dimensions.values()):
 				run[dim.name] = dim.values[i]

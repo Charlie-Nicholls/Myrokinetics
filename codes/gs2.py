@@ -237,7 +237,7 @@ touch \"{list(scanner._input_files)[0][:-3]}.fin\"
 fi'''
 		return run_code
 		
-	def make_gyro_file(self, scanner, run, sub_dir):
+	def make_gyro_file(self, eqbm, run, sub_dir, namelist_diff = {}):
 		if scanner.inputs['grid_option'] == 'box':
 			os.makedirs(sub_dir+'/response',exist_ok=True)
 			os.makedirs(sub_dir+'/restart',exist_ok=True)
@@ -248,8 +248,8 @@ fi'''
 		itt = max([eval("".join(x)) for x in existing_inputs],default=-1)
 		filename = f"itteration_{scanner.inputs['itteration']}.in"
 		if not os.path.exists(f"{sub_dir}/{filename}"):
-			subnml = scanner.eqbm.get_gyro_input(run = run)
-			scanner.eqbm.write_nml(subnml, directory = sub_dir, filename = filename)
+			subnml = self.get_gyro_input(eqbm=eqbm,run=run,namelist_diff=namelist_diff)
+			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
 		
 		scanner._input_files.add(f"{sub_dir}/{filename}")
 		return

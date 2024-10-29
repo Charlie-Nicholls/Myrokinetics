@@ -275,7 +275,7 @@ class myro_scan(object):
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
-			codes[self.inputs['gk_code']].make_gyro_file(self, run, sub_dir)
+			codes[self.inputs['gk_code']].make_gyro_file(eqbm=self.eqbm,run=run,sub_dir=sub_dir)
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
 		self._ideal_input_files = set()

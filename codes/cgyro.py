@@ -110,11 +110,11 @@ Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for
 		pyth.close()
 		return
 		
-	def make_gyro_file(self, scanner, run, sub_dir):
+	def make_gyro_file(self, eqbm, run, sub_dir, namelist_diff = {}):
 		filename = "input.cgyro"
 		if not os.path.exists(f"{sub_dir}/{filename}"):
-			subnml = scanner.eqbm.get_gyro_input(run = run)
-			scanner.eqbm.write_nml(subnml, directory = sub_dir, filename = filename)
+			subnml = self.get_gyro_input(eqbm=eqbm,run=run,namelist_diff=namelist_diff)
+			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
 		
 		scanner._input_files.add(f"{sub_dir}")
 		return
