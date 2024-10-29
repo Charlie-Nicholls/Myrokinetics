@@ -1,4 +1,5 @@
 from ..code import code
+import os
 
 viking_modules = """module purge
 module load gompi/2022b
@@ -42,7 +43,8 @@ class tglf(code):
 		return valid
 	
 	def get_template_lines(self, inputs):
-		template_lines = f90nml.read(os.path.join(inputs['template_path'],inputs['template_name']))
+		with open(os.path.join(inputs['template_path'],inputs['template_name']),'r') as f:
+				template_lines = f.readlines()
 		return template_lines
 		
 	def _get_surface_input(self, eqbm, nml):

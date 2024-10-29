@@ -1,4 +1,5 @@
 from ..code import code
+import os
 
 viking_modules = """module purge
 module load gompi/2022b
@@ -42,7 +43,6 @@ class cgyro(code):
 		return valid
 	
 	def get_template_lines(self, inputs):
-		import os
 		with open(os.path.join(inputs['template_path'],inputs['template_name']),'r') as f:
 				template_lines = f.readlines()
 		return template_lines

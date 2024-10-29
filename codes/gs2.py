@@ -1,5 +1,6 @@
 from ..code import code
 import os
+import f90nml
 
 viking_modules = """module purge
 module load gompi/2022b
@@ -53,7 +54,6 @@ class gs2(code):
 		return valid
 	
 	def get_template_lines(self, inputs):
-		import f90nml
 		template_lines = f90nml.read(os.path.join(inputs['template_path'],inputs['template_name']))
 		return template_lines
 		
