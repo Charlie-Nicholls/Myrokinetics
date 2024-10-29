@@ -57,14 +57,14 @@ class tglf(code):
 		print(f"ERROR: {self.code_name} DOES NOT SUPPORT YPI SERVERS")
 		return
 		
-	def write_pyth_archer2(self, scanner, input_lists):
+	def write_pyth_archer2(self, scanner, input_list, filename):
 		pyth = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 		pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
 from numpy import array
 
-input_files = {input_lists[n]}
+input_files = {input_list}
 
 def start_run(run, run_attempt = 1):
 	if run_attempt <= 3:

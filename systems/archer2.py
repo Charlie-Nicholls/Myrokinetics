@@ -57,7 +57,7 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 				total_jobs = len(scanner._input_files)
 			else:
 				total_jobs = n_jobs*n_par
-			input_list = list(scanner._input_files)
+			input_lists = list(scanner._input_files)
 			for i in range(total_jobs):
 				input_lists[i%n_par].append(input_list[i])
 				scanner._input_files.remove(input_list[i])
@@ -66,10 +66,10 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 				os.makedirs(f"{scanner.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
 				sbatch_n = sbatch.replace(f"{scanner.inputs['sbatch']['output']}",f"{filename}/{scanner.inputs['sbatch']['output']}_{n}")
 			
-			codes[scanner.inputs['gk_code']].write_pyth_archer2(scanner, input_list)
+				codes[scanner.inputs['gk_code']].write_pyth_archer2(scanner, input_lists[n], filename)
 			
-			jobfile = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
-			jobfile.write(f"""{sbatch_n}
+				jobfile = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
+					jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
 
@@ -77,9 +77,9 @@ python {scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py &
 
 wait""")
 			
-			if n_par > n_sim and n + n_sim < n_par:
-				jobfile.write(f"\nsbatch {scanner.inputs['data_path']}/submit_files/gyro_{n+n_sim}/gyro_{n+n_sim}.job")
-			jobfile.close()
+				if n_par > n_sim and n + n_sim < n_par:
+					jobfile.write(f"\nsbatch {scanner.inputs['data_path']}/submit_files/gyro_{n+n_sim}/gyro_{n+n_sim}.job")
+				jobfile.close()
 				
 			for n in range(n_sim):
 				scanner._jobs.add(f"{scanner.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.job")
