@@ -80,7 +80,7 @@ class myro_scan(object):
 	def write_scan_input_copy(self, filename = None, directory = "./", doPrint = True):
 		self.inputs.write_scan_input_copy(filename = filename, directory = directory, doPrint = doPrint)
 	
-	def run_scan(self, n_jobs = None, n_par = None, n_sim = None, gyro = None, ideal = None, directory = None, specificRuns = None):
+	def run_scan(self, n_jobs = None, n_par = 1, n_sim = None, gyro = None, ideal = None, directory = None, specificRuns = None):
 		if directory is None and self.path is None:
 			directory = "./"
 		elif directory is None:
@@ -169,10 +169,10 @@ class myro_scan(object):
 		self._input_files = set()
 		self._ideal_input_files = set()
 
-	def make_job_files(self, n_jobs = None, n_par = None, n_sim = None):
+	def make_job_files(self, n_jobs = None, n_par = 1, n_sim = None):
 		systems[self.inputs['system']].make_job_files(self, n_jobs=n_jobs, n_par=n_par, n_sim=n_sim)
 		
-	def make_ideal_job_files(self, n_jobs = None, n_par = None, n_sim = None):
+	def make_ideal_job_files(self, n_jobs = None, n_par = 1, n_sim = None):
 		systems[self.inputs['system']].make_ideal_job_files(self, n_jobs=n_jobs, n_par=n_par, n_sim=n_sim)
 	
 	def run_jobs(self):
