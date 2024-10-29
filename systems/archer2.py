@@ -57,7 +57,7 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 				total_jobs = len(scanner._input_files)
 			else:
 				total_jobs = n_jobs*n_par
-			input_lists = list(scanner._input_files)
+			input_list = list(scanner._input_files)
 			for i in range(total_jobs):
 				input_lists[i%n_par].append(input_list[i])
 				scanner._input_files.remove(input_list[i])
