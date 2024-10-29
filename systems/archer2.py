@@ -69,7 +69,7 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 				codes[scanner.inputs['gk_code']].write_pyth_archer2(scanner, input_lists[n], filename)
 			
 				jobfile = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
-					jobfile.write(f"""{sbatch_n}
+				jobfile.write(f"""{sbatch_n}
 
 {compile_modules}
 
