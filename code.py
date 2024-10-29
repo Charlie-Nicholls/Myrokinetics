@@ -38,10 +38,10 @@ class code(object):
 		eqbm.pyro.update_gk_code()
 		from copy import deepcopy
 		nml = deepcopy(eqbm.pyro.gk_input.data)
-		for dim in self.inputs.single_parameters.values():
+		for dim in eqbm.inputs.single_parameters.values():
 			nml = dim.single_edit_nml(nml)
 		nml = self._get_surface_input(eqbm.inputs, nml)
-		for dim in self.inputs.single_parameters.values():
+		for dim in eqbm.inputs.single_parameters.values():
 			nml = dim.single_edit_nml(nml)
 		return nml
 		
