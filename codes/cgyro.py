@@ -1,29 +1,17 @@
 from ..code import code
 import os
 
-viking_modules = """module purge
-module load gompi/2022b
-module load OpenMPI/4.1.4-GCC-12.2.0
-module load netCDF-Fortran/4.6.0-gompi-2022b
-module load FFTW/3.3.10-GCC-12.2.0
-module load OpenBLAS/0.3.21-GCC-12.2.0
-module load Python/3.10.8-GCCcore-12.2.0
-export GK_SYSTEM=viking
-export MAKEFLAGS=-IMakefiles
-ulimit -s unlimited
-export PATH=${PATH}:${HOME}/gs2/bin
-which gs2
-gs2 --build-config"""
+viking_modules = """"""
 
 archer2_modules = """module load PrgEnv-gnu
 module load cray-hdf5 cray-netcdf cray-fftw cray-python
-export GK_SYSTEM=archer2
-export MAKEFLAGS=-IMakefiles
+export GACODE_PLATFORM=ARCHER2
+export GACODE_ROOT=/work/e281/e281/cnicholls/gacode
+. $GACODE_ROOT/shared/bin/gacode_setup
 ulimit -s unlimited
-export PATH=${PATH}:/work/e281/e281/cnicholls/gs2/bin
 source /work/e281/e281/cnicholls/pythenv/bin/activate
-which gs2
-gs2 --build-config"""
+which cgyro
+cgyro -h"""
 
 class cgyro(code):
 	def __init__(self):
