@@ -1,4 +1,5 @@
 from ..code import code
+from copy import deepcopy
 import os
 
 viking_modules = """"""

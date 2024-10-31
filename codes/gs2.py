@@ -1,4 +1,5 @@
 from ..code import code
+from copy import deepcopy
 import os
 import f90nml
 
