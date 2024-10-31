@@ -307,6 +307,7 @@ fi'''
 						group_data[group_key][key] = None
 					for xi, kx in enumerate(run_data['kx']):
 						for yi, ky in enumerate(run_data['ky']):
+							from uuid import uuid4
 							run_key = str(uuid4())
 							gyro_data[run_key] = deepcopy(run)
 							for key in run:

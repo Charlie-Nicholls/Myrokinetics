@@ -121,6 +121,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 						group_data[group_key][key] = None
 					for xi, kx in enumerate(run_data['kx'].data):
 						for yi, ky in enumerate(run_data['ky'].data):
+							from uuid import uuid4
 							run_key = str(uuid4())
 							gyro_data[run_key] = deepcopy(run)
 							for key in run:
