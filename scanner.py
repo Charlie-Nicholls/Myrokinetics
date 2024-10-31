@@ -570,7 +570,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 #SBATCH --distribution=block:block
 #SBATCH --hint=nomultithread
 
-{systems[self['system']]['modules']['CGYRO']}
+{codes[self['gk_code']].archer2_modules}
 
 cgyro -i "./" >& ingen.out
 """)
