@@ -150,9 +150,9 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 								if True:#try:
 									key_data = run_data[key]
 									if key == 'growth_rate':
-										gyro_data[run_key]['growth_rate'] = float(key_data[xi,yi,-1])
+										gyro_data[run_key]['growth_rate'] = float(key_data[xi,yi])
 									if key == 'mode_frequency':
-										gyro_data[run_key]['mode_frequency'] = float(key_data[xi,yi,-1])
+										gyro_data[run_key]['mode_frequency'] = float(key_data[xi,yi])
 									elif key in ['time']:
 										group_data[group_key]['t'] = array(key_data).tolist()
 									elif key in ['theta']:
