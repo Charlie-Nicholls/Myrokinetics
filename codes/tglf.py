@@ -114,7 +114,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 			runs = scanner.get_all_runs() if specificRuns is None else list(specificRuns)
 			for run in runs:
 				sub_dir = scanner.get_run_directory(run)
-				try:
+				if True:#try:
 					scanner.eqbm.pyro.load_gk_output(sub_dir)
 					run_data = scanner.eqbm.pyro.gk_output
 					group_key = run_data.attrs['object_uuid']
@@ -147,7 +147,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 							for key in data_keys:
 								gyro_data[run_key][key] = None
 							for key in only:
-								try:
+								if True:#try:
 									key_data = run_data[key]
 									if key == 'growth_rate':
 										gyro_data[run_key]['growth_rate'] = float(key_data[xi,yi,-1])
@@ -159,14 +159,14 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 										group_data[group_key][key] = array(key_data).tolist()
 									#elif key in ['heat']:
 										#group_data[group_key][key] = array(key_data[:,:,yi,:]).tolist()
-								except Exception as e:
+								else:#except Exception as e:
 									print(f"Save Error in {sub_dir}: {e}")
 									if key == 'growth_rate':
 										gyro_data[run_key]['growth_rate'] = nan
 									elif key == 'mode_frequency':
 										gyro_data[run_key]['mode_frequency'] = nan
 										
-				except Exception as e:
+				else:#except Exception as e:
 					print(f"Save Error {sub_dir}: {e}")
 			
 			existing_dim_keys = []
