@@ -1,5 +1,6 @@
 from ..code import code
 from copy import deepcopy
+from numpy import real, imag, array, loadtxt, transpose, nan, trapz
 import os
 import f90nml
 

@@ -1,12 +1,11 @@
 import os
-from numpy import real, imag, array, loadtxt, transpose, savez, nan, ceil, trapz
+from numpy import savez
 from .ncdf2dict import ncdf2dict as readnc
 from .equilibrium import equilibrium
 from .codes import codes
 from .systems import systems
 from .inputs import scan_inputs
 import glob
-from uuid import uuid4
 from copy import deepcopy
 
 '''

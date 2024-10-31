@@ -1,5 +1,6 @@
 from ..code import code
 from copy import deepcopy
+from numpy import array, nan
 import os
 
 viking_modules = """"""
