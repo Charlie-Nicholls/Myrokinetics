@@ -90,7 +90,7 @@ wait""")
 				compile_modules += f"\nexport OMP_NUM_THREADS={scanner.inputs['sbatch']['cpus-per-task']}"
 			ntasks = scanner.inputs['sbatch']['ntasks'] if 'ntasks' in scanner.inputs['sbatch'] else scanner.inputs['sbatch']['nodes']*scanner.inputs['sbatch']['ntasks-per-node']
 			
-			run_code = codes[scanner.inputs['gk_code']].get_non_linear_archer2()
+			run_code = codes[scanner.inputs['gk_code']].get_non_linear_archer2(scanner)
 			
 			jobfile = open(f"{scanner.inputs['data_path']}/submit_files/submit.job",'w')
 			jobfile.write(f"""{sbatch}

@@ -99,6 +99,15 @@ def start_run(run, run_attempt = 1):
 Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
 		pyth.close()
 		return
+	
+	def get_non_linear_archer2(self, scanner):
+		infi = list(scanner._input_files)[0]
+		ntasks = scanner.inputs['sbatch']['nodes']*128//scanner.inputs['sbatch']['cpus-per-task']
+		run_code = '''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} $GACODE_ROOT/cgyro/bin/cgyro -e \"{infi}\" -n {ntasks} -nomp 1 -numa 8 -mpinuma 16 -p \"{infi}\"
+if test -f \"{infi[:-3]}.out.nc\"; then
+touch \"{infi[:-3]}.fin\"
+fi'''
+		return run_code
 		
 	def make_gyro_file(self, eqbm, run, sub_dir, namelist_diff = {}):
 		filename = "input.cgyro"
