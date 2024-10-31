@@ -86,8 +86,8 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 		for psiN in psi_itt:
 			equilibrium[psiN] = {}
 			nml = scanner.eqbm.get_surface_input(psiN)
-			equilibrium[psiN]['shear'] = nml['S']
-			equilibrium[psiN]['beta_prime'] = nml['BETA_STAR_SCALE']
+			equilibrium[psiN]['shear'] = nml['q_prime']
+			equilibrium[psiN]['beta_prime'] = nml['p_prime']
 		
 		if scanner['gyro']:
 			gyro_data = {}
