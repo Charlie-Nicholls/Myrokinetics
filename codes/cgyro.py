@@ -20,7 +20,7 @@ class cgyro(code):
 		self.code_name = 'CGYRO'
 		self.viking_modules = viking_modules
 		self.archer2_modules = archer2_modules
-		self.template = "template.gs2"
+		self.template = "template.cgyro"
 		from ..dimensions.dimensions_cgyro import dimensions_list
 		self.dim_list = dimensions_list
 		if self.dim_list != None:
