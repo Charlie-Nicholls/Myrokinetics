@@ -81,15 +81,15 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 		return sub_dir
 	
 	def save_out(self, scanner, filename = None, directory = None, specificRuns = None, QuickSave = False):
-		psi_itt = self.single_parameters['psin'].values if 'psin' in self.single_parameters else self.dimensions['psin'].values
+		psi_itt = scanner.single_parameters['psin'].values if 'psin' in scanner.single_parameters else scanner.dimensions['psin'].values
 		equilibrium = {}
 		for psiN in psi_itt:
 			equilibrium[psiN] = {}
-			nml = self.eqbm.get_surface_input(psiN)
+			nml = scanner.eqbm.get_surface_input(psiN)
 			equilibrium[psiN]['shear'] = nml['S']
 			equilibrium[psiN]['beta_prime'] = nml['BETA_STAR_SCALE']
 		
-		if self['gyro']:
+		if scanner['gyro']:
 			gyro_data = {}
 			group_data = {}
 			only = set({'growth_rate','mode_frequency','ky','kx'})
@@ -98,7 +98,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
 			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']
 			gyro_keys = {}
-			for dim in self.dimensions.values():
+			for dim in scanner.dimensions.values():
 				gyro_keys[dim.name] = {}
 				for val in dim.values:
 					gyro_keys[dim.name][val] = set()
@@ -109,12 +109,12 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 			kys = set()
 			gyro_keys['kx'] = {}
 			
-			runs = self.get_all_runs() if specificRuns is None else list(specificRuns)
+			runs = scanner.get_all_runs() if specificRuns is None else list(specificRuns)
 			for run in runs:
-				sub_dir = self.get_run_directory(run)
+				sub_dir = scanner.get_run_directory(run)
 				try:
-					self.eqbm.pyro.load_gk_output(sub_dir)
-					run_data = self.eqbm.pyro.gk_output
+					scanner.eqbm.pyro.load_gk_output(sub_dir)
+					run_data = scanner.eqbm.pyro.gk_output
 					group_key = run_data.attrs['object_uuid']
 					group_data[group_key] = {}
 					for key in group_keys:
@@ -140,7 +140,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 								gyro_data[run_key]['kx'] = kx
 							if 'ky' not in gyro_data[run_key]:
 								gyro_data[run_key]['ky'] = ky
-							#gyro_data['nml_diffs'] = self.namelist_diffs[?]
+							#gyro_data['nml_diffs'] = scanner.namelist_diffs[?]
 							for key in data_keys:
 								gyro_data[run_key][key] = None
 							for key in only:
@@ -167,17 +167,17 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 					print(f"Save Error {sub_dir}: {e}")
 			
 			existing_dim_keys = []
-			for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
+			for key in [x for x in scanner.inputs.inputs.keys() if 'dimension_' in x]:
 				existing_dim_keys.append([x for x in key if x.isdigit()])
 			dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
 			kxs = list(kxs)
 			kxs.sort()
-			self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
-			if 'ky' not in self.dimensions:
+			scanner.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
+			if 'ky' not in scanner.dimensions:
 				kys = list(kys)
 				kys.sort()
-				self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
-			self.inputs.load_dimensions()
+				scanner.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
+			scanner.inputs.load_dimensions()
 
 		else:
 			gyro_data = None
