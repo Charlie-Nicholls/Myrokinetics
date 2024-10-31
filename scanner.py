@@ -423,38 +423,38 @@ class myro_scan(object):
 			print("Error: Both Gyro and Ideal are False")
 			return
 		
-		if not scanner.check_setup():
+		if not self.check_setup():
 			return
 		
-		if systems[scanner.inputs['system']].requires_slurm_save and not SlurmSave:
-			save_modules = systems[scanner['system']].save_modules
-			scanner._save_nml_diff()
+		if systems[self.inputs['system']].requires_slurm_save and not SlurmSave:
+			save_modules = systems[self['system']].save_modules
+			self._save_nml_diff()
 			sbatch = "#!/bin/bash"
-			for key, val in scanner.inputs['sbatch_save'].items():
+			for key, val in self.inputs['sbatch_save'].items():
 				if key == 'output' and '/' not in val:
-					val = f"{scanner.inputs['data_path']}/submit_files/{val}"
+					val = f"{self.inputs['data_path']}/submit_files/{val}"
 				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
-			job = open(f"{scanner.inputs['data_path']}/submit_files/save_out.job",'w')
+			job = open(f"{self.inputs['data_path']}/submit_files/save_out.job",'w')
 			job.write(f"""{sbatch}
 
 {save_modules}
 
-python {scanner.inputs['data_path']}/submit_files/save_out.py""")
+python {self.inputs['data_path']}/submit_files/save_out.py""")
 			job.close()
-			pyth = open(f"{scanner.inputs['data_path']}/submit_files/save_out.py",'w')
+			pyth = open(f"{self.inputs['data_path']}/submit_files/save_out.py",'w')
 			pyth.write(f"""from Myrokinetics import myro_scan
 from numpy import load
 specificRuns = {specificRuns}
-with load(\"{scanner.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
+with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
 	nd = obj['name_diffs']
-	run = myro_scan(input_file = \"{scanner.inputs.input_name}\", directory = \"{scanner.inputs['files']['input_path']}\")
+	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
 	run.namelist_diffs = nd
 	run.save_out(filename = \"{filename}\", directory = \"{directory}\", specificRuns = specificRuns, SlurmSave = True, QuickSave = {QuickSave})""")
 			pyth.close()
-			os.system(f"sbatch \"{scanner.inputs['data_path']}/submit_files/save_out.job\"")
+			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
 			return
 		
-		data = codes[self.inputs['gk_code']].save_out(scanner, filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave)
+		data = codes[self.inputs['gk_code']].save_out(self, filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave)
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
