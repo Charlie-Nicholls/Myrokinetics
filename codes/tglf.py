@@ -96,7 +96,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 			group_data = {}
 			only = set({'growth_rate','mode_frequency','ky','kx'})
 			if not QuickSave:
-				only = only | set({'phi','bpar','apar','time','theta','heat'})
+				only = only | set({'time','theta'})
 			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
 			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']
 			gyro_keys = {}
