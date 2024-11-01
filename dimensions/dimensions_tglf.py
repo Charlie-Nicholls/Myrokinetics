@@ -50,7 +50,7 @@ class p_prime(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['P_PRIME_LOC'] = val
+		nml['p_prime_loc'] = val
 		return nml
 
 class q_prime(dimension):
@@ -68,7 +68,7 @@ class q_prime(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['Q_PRIME_LOC'] = val
+		nml['q_prime_loc'] = val
 		return nml
 
 class ky(dimension):
@@ -86,7 +86,7 @@ class ky(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['KY'] = val
+		nml['ky'] = val
 		return nml
 
 class kx(dimension):
