@@ -42,7 +42,7 @@ class p_prime(dimension):
 
 	name_keys = ['p_prime','p_prime_loc','pprime','pressure_prime','pressure_gradient']
 	axis_label = 'p_prime'
-	valid_options = []
+	valid_options = ['both','beta']
 	
 	def sub_validate(self, values):
 		values = [abs(x) for x in values]
@@ -50,7 +50,18 @@ class p_prime(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['p_prime_loc'] = val
+		nml['p_prime_loc'] = -1*abs(val)
+		
+		beta = nml['betae']
+		bp_cal = sum((nml[f'rlts_{n}'] + nml[f'rlns_{n}'])*nml[f'as_{n}']*nml[f'taus_{n}'] for n in [1,2,3])*beta
+		
+		mul = abs(val)/(bp_cal*nml['q_loc']/(nml['rmin_loc']*8*pi))
+		if self.option == 'both':
+			for n in [1,2,3]:
+				nml[f'rlts_{n}'] = nml[f'rlts_{n}']*mul
+				nml[f'rlns_{n}'] = nml[f'rlns_{n}']*mul
+		elif self.option == 'beta':
+			nml['betae'] = beta*mul
 		return nml
 
 class q_prime(dimension):
@@ -69,6 +80,24 @@ class q_prime(dimension):
 
 	def edit_nml(self, nml, val):
 		nml['q_prime_loc'] = val
+		return nml
+
+class shear(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['shear','shat','s_hat','sh']
+	axis_label = r'$\hat{s}$'
+	valid_options = []
+	
+	def sub_validate(self, values):
+		if any([x<1e-4 for x in values]):
+				values = list(set([x if x>1e-4 else 1e-4 for x in values]))
+				values.sort()
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['q_prime_loc'] = val * (nml['q_loc']/nml['rmin_loc'])**2
 		return nml
 
 class ky(dimension):
@@ -225,4 +254,4 @@ class jtwist(dimension):
 		nml['BOX_SIZE'] = val
 		return nml
 
-dimensions_list = [psiN,p_prime,q_prime,ky,kx,theta0,ntheta,nx,ny,delt,jtwist]
+dimensions_list = [psiN,p_prime,q_prime,shear,ky,kx,theta0,ntheta,nx,ny,delt,jtwist]

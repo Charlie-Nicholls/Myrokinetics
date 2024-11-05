@@ -43,6 +43,7 @@ class tglf(code):
 		nml['vpar_shear_3'] = 0
 		nml['vexb_shear'] = 0
 		nml['use_transport_model'] = True
+		nml['q_loc'] = abs(nml['q_loc'])
 		return nml
 	
 	def _get_gyro_input(self, eqbm, run, nml):
@@ -66,7 +67,7 @@ def start_run(run, run_attempt = 1):
 		os.system(f"echo \\\"Input: {{run}}\\\"")
 		cwd = os.getcwd()
 		os.chdir(f"{{run}}")
-		os.system(f"$GACODE_ROOT/tglf/bin/tglf -n 1 -e .")
+		os.system(f"$GACODE_ROOT/tglf/bin/tglf -n 128 -e .")
 		os.chdir(f"{{cwd}}")
 		if os.path.exists(f"{{run}}/out.tglf.run"):
 			os.system(f"touch {{run}}/out.tglf.fin")
@@ -76,7 +77,7 @@ def start_run(run, run_attempt = 1):
 	else:
 		print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
-Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(run) for run in input_files)""")
+Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_files)""")
 		pyth.close()
 		return
 		
