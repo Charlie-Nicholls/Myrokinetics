@@ -213,7 +213,7 @@ class ny(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['nkygggggggggggggggggggggggggggggggggggggggggggggggggg'] = val
+		nml['nky'] = val
 		return nml
 
 class delt(dimension):
