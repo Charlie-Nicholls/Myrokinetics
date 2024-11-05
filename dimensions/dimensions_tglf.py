@@ -50,8 +50,8 @@ class p_prime(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
+		from numpy import pi
 		nml['p_prime_loc'] = -1*abs(val)
-		
 		beta = nml['betae']
 		bp_cal = sum((nml[f'rlts_{n}'] + nml[f'rlns_{n}'])*nml[f'as_{n}']*nml[f'taus_{n}'] for n in [1,2,3])*beta
 		
