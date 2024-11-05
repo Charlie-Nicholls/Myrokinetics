@@ -42,6 +42,7 @@ class tglf(code):
 		nml['vpar_shear_2'] = 0
 		nml['vpar_shear_3'] = 0
 		nml['vexb_shear'] = 0
+		nml['use_transport_model'] = True
 		return nml
 	
 	def _get_gyro_input(self, eqbm, run, nml):

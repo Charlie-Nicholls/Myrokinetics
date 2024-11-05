@@ -123,24 +123,6 @@ class theta0(dimension):
 		nml['THETA0_SA'] = val
 		return nml
 
-class y0(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['y0','ky_min']
-	axis_label = 'y0'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([x <= 0 for x in values]):
-			print("Error: y0 values outside allowed range (x>0)")
-			values = [x for x in values if (x>=0)]
-		return values
-
-	def edit_nml(self, nml, val):
-		nml['KY'] = val
-		return nml
-
 class ntheta(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
@@ -188,7 +170,7 @@ class ny(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
-	name_keys = ['ny','n_toroidal','ntoroidal','num_toroidal']
+	name_keys = ['ny','n_toroidal','ntoroidal','num_toroidal','nky']
 	axis_label = 'ny'
 	valid_options = []
 
@@ -202,7 +184,7 @@ class ny(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['N_TOROIDAL'] = val
+		nml['nkygggggggggggggggggggggggggggggggggggggggggggggggggg'] = val
 		return nml
 
 class delt(dimension):
