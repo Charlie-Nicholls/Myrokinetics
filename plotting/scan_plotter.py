@@ -8,7 +8,7 @@ from .slider_ax import slider_axes
 
 default_settings = {"suptitle": None,
 		"eqbm_style": "title",
-		"aky": False,
+		"ky": False,
 		"contour_type": 0,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "shear",
@@ -93,7 +93,7 @@ class plot_scan(object):
 		self._load_z_axis(self['z_axis_type'])
 		self._load_z2_axis(self['z2_axis_type'])
 		
-		if self['aky']:
+		if self['ky']:
 			self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type']]]
 		else:
 			self.dims = [x for x in self.reader.inputs.dim_order if x not in [self['x_axis_type'],self['y_axis_type'],'ky','theta0']]
@@ -146,8 +146,8 @@ class plot_scan(object):
 		self.sliders.set_slider(num = num, key = key, dimension_type = dimension_type)
 	
 	def _load_x_axis(self, axis_type):
-		if axis_type not in ['beta_prime','alpha']:
-			print("ERROR: axis_type not found, valid types ['beta_prime','alpha']")
+		if axis_type not in ['beta_prime','alpha','p_prime']:
+			print("ERROR: axis_type not found, valid types ['beta_prime','alpha','p_prime']")
 			return
 			
 		self.settings['x_axis_type'] = axis_type
@@ -158,9 +158,9 @@ class plot_scan(object):
 			else:
 				#self.x_axis = self.data['alpha_axis'] needs updating
 				self._x_axis_label = r'$\alpha$'
-		elif axis_type in ['beta_prime']:
-			self.x_axis = self.reader.dimensions['beta_prime'].values
-			self._x_axis_label = self.reader.dimensions['beta_prime'].axis_label	
+		else:
+			self.x_axis = self.reader.dimensions[axis_type].values
+			self._x_axis_label = self.reader.dimensions[axis_type].axis_label	
 			
 	def set_x_axis_type(self, axis_type):
 		self._load_x_axis(axis_type)
@@ -187,7 +187,7 @@ class plot_scan(object):
 		if axis_type not in ['growth_rate','growth_rate_norm','ql_norm']:
 			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm']")
 			return
-		if axis_type == 'ql_norm' and not self['aky']:
+		if axis_type == 'ql_norm' and not self['ky']:
 			print("ERROR: ql_norm axis type only allowed on seperate ky plots")
 			
 		self.settings['z_axis_type'] = axis_type
@@ -402,7 +402,7 @@ class plot_scan(object):
 		
 		z_type = self['z_axis_type']
 		z2_type = self['z2_axis_type']
-		if self['aky']:
+		if self['ky']:
 			key = '_gyro_keys'
 		elif z_type == 'growth_rate':
 			key = '_abs_gr_keys'
@@ -419,9 +419,9 @@ class plot_scan(object):
 				run_id = self.reader.get_run_id(run,keys=key)
 				run_ids.append(run_id)
 				run = self.reader.get_run_from_id(run_id)
-				if not self['aky'] and z_type == 'growth_rate':
+				if not self['ky'] and z_type == 'growth_rate':
 					z_type = 'abs_gr'
-				elif not self['aky'] and z_type == 'growth_rate_norm':
+				elif not self['ky'] and z_type == 'growth_rate_norm':
 					z_type = 'norm_gr'
 				z_mf[x_id][y_id] = self.reader(z2_type,run) if self.reader(z2_type,run) is not None else nan
 				z_gr[x_id][y_id] = self.reader(z_type,run) if self.reader(z_type,run) is not None else nan

@@ -36,9 +36,6 @@ class plot_2d(object):
 	def __init__(self, reader, settings = {}, sliders = None):	
 		self.reader = reader
 		self.sliders = sliders
-		if self.reader['quasilinear'] is None:
-			print("Error: No QuasiLinear Data")
-			return
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
 		self._options = ["Show ID","Global Axis Limits","Global Colourbar","Show Equillibrium","Show Ideal","Draw Contour"]
@@ -113,7 +110,7 @@ class plot_2d(object):
 		self._sliders['z_slider'] = Slider(self.z_axes, 'Scale', 0, 100, valinit = self['z_slider']['scale'], valstep = 1, orientation = 'vertical')
 		self._sliders['z_slider'].on_changed(self.draw_fig)
 			
-		zs = [x for x in self.reader.data['quasilinear'].values() if str(x) not in ['-inf','inf','nan']]
+		zs = [self.reader(self['z_axis_type'],arun) for arun in self.reader.get_all_runs() if str(self.reader(self['z_axis_type'],arun)) not in ['-inf','inf','nan']]
 		self._z_max = max(zs,default=1)
 		
 		ion()
@@ -126,8 +123,8 @@ class plot_2d(object):
 		self.sliders.set_slider(num = num, key = key, dimension_type = dimension_type)
 		
 	def _load_x_axis(self, axis_type):
-		if axis_type not in ['beta_prime']:
-			print("ERROR: axis_type not found, valid types ['beta_prime']")
+		if axis_type not in ['beta_prime','alpha','p_prime']:
+			print("ERROR: axis_type not found, valid types ['beta_prime','alpha','p_prime']")
 			return
 			
 		self.settings['x_axis_type'] = axis_type
@@ -135,8 +132,8 @@ class plot_2d(object):
 		if axis_type in ['alpha']:
 			self._x_axis_label = r'$\alpha$'
 		else:
-			self.x_axis = self.reader.dimensions['beta_prime'].values
-			self._x_axis_label = self.reader.dimensions['beta_prime'].axis_label
+			self.x_axis = self.reader.dimensions[axis_type].values
+			self._x_axis_label = self.reader.dimensions[axis_type].axis_label
 			
 	def set_x_axis_type(self, axis_type):
 		self._load_x_axis(axis_type)
@@ -148,8 +145,8 @@ class plot_2d(object):
 		self.draw_fig()
 	
 	def _load_y_axis(self, axis_type):
-		if axis_type not in ['shear','current']:
-			print("ERROR: axis_type not found, valid types ['shear','current']")
+		if axis_type not in ['shear','current','q_prime']:
+			print("ERROR: axis_type not found, valid types ['shear','current','q_prime']")
 			return
 			
 		self.settings['y_axis_type'] = axis_type
@@ -157,16 +154,16 @@ class plot_2d(object):
 		if axis_type in ['current']:
 			print("Not yet implimented")
 		else:
-			self.y_axis = self.reader.dimensions['shear'].values
-			self._y_axis_label = self.reader.dimensions['shear'].axis_label
+			self.y_axis = self.reader.dimensions[axis_type].values
+			self._y_axis_label = self.reader.dimensions[axis_type].axis_label
 			
 	def set_y_axis_type(self, axis_type):
 		self._load_y_axis(axis_type)
 		self.draw_fig()
 	
 	def _load_z_axis(self, axis_type):
-		if axis_type not in ['growth_rate','growth_rate_norm','mode_frequency','quasilinear','ql_norm','ql_metric']:
-			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']")
+		if axis_type not in ['growth_rate','growth_rate_norm','mode_frequency','quasilinear','ql_norm','ql_metric','heat_flux_tot']:
+			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency','heat_flux_tot']")
 			return
 			
 		self.settings['z_axis_type'] = axis_type
@@ -189,6 +186,14 @@ class plot_2d(object):
 			self._z_axis_label = "QL norm (gs2)"
 		elif axis_type in ['quasilinear']:
 			self._z_axis_label = "Quasilinear Metric"
+			self.dims = [x for x in self.dims if x not in ['ky']]#&theta0
+			if 'ky' in self['run']:
+				self.settings['run'].pop('ky')
+			#remove ky sliders
+			#if 'theta0' in self['run']:
+				#self.settings['run'].pop('theta0')
+		elif axis_type in ['heat_flux_tot']:
+			self._z_axis_label = "Heat Flux"
 			self.dims = [x for x in self.dims if x not in ['ky']]#&theta0
 			if 'ky' in self['run']:
 				self.settings['run'].pop('ky')

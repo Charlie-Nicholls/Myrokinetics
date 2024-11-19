@@ -112,11 +112,7 @@ class plot_slice(object):
 		self._load_x_axis(axis_type)
 		self.draw_fig()
 	
-	def _load_y_axis(self, axis_type):
-		if axis_type not in ['quasilinear','growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']:
-			print("ERROR: axis_type not found, valid types: 'quasilinear','growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency")
-			return
-			
+	def _load_y_axis(self, axis_type):	
 		self.settings['y_axis_type'] = axis_type
 		
 		if axis_type == 'quasilinear':
@@ -145,6 +141,9 @@ class plot_slice(object):
 				self._y_axis_label = "Quasilinear Metric"
 			elif axis_type == 'mode_frequency':
 				self._y_axis_label = "Mode Frequency"
+		else:
+			self._y_axis_label = axis_type
+			
 		
 		for key in [x for x in self.settings if 'slider_' in x]:
 			if self.sliders.settings[key]['dimension_type'] is not None and self.sliders.settings[key]['dimension_type'] not in self.dims:

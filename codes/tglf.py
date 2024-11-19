@@ -3,7 +3,13 @@ from copy import deepcopy
 from numpy import array, nan
 import os
 
-viking_modules = """"""
+viking_modules = """module load gompi/2022b OpenMPI/4.1.4-GCC-12.2.0 netCDF-Fortran/4.6.0-gompi-2022b FFTW/3.3.10-GCC-12.2.0 OpenBLAS/0.3.21-GCC-12.2.0 Python/3.10.8-GCCcore-12.2.0
+export GACODE_PLATFORM=VIKING
+export GACODE_ROOT=/users/cn762/scratch/gacode
+. $GACODE_ROOT/shared/bin/gacode_setup
+ulimit -s unlimited	
+which tglf
+tglf -h"""
 
 archer2_modules = """module load PrgEnv-gnu
 module load cray-hdf5 cray-netcdf cray-fftw cray-python
@@ -52,7 +58,12 @@ class tglf(code):
 	def make_job_files_ypi(self, scanner):
 		print(f"ERROR: {self.code_name} DOES NOT SUPPORT YPI SERVERS")
 		return
-		
+	
+	jobfile_viking = '''tglf "${{INFILE}}/input.tglf"
+if test -f "${{INFILE}}/out.tglf.run"; then
+touch "${{INFILE}}/out.tglf.fin"
+fi'''
+	
 	def write_pyth_archer2(self, scanner, input_list, filename):
 		pyth = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 		pyth.write(f"""import os
@@ -89,21 +100,23 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_files)""")
 		return sub_dir
 	
 	def save_out(self, scanner, filename = None, directory = None, specificRuns = None, QuickSave = False):
+		from numpy import sum as npsum
 		psi_itt = scanner.single_parameters['psin'].values if 'psin' in scanner.single_parameters else scanner.dimensions['psin'].values
 		equilibrium = {}
 		for psiN in psi_itt:
 			equilibrium[psiN] = {}
 			nml = scanner.eqbm.get_surface_input(psiN)
-			equilibrium[psiN]['shear'] = nml['q_prime_loc']
-			equilibrium[psiN]['beta_prime'] = nml['p_prime_loc']
+			equilibrium[psiN]['q_prime'] = nml['q_prime_loc']
+			equilibrium[psiN]['p_prime'] = nml['p_prime_loc']
+			equilibrium[psiN]['shear'] = nml['q_prime_loc'] / (nml['q_loc']/nml['rmin_loc'])**2
 		
 		if scanner['gyro']:
 			gyro_data = {}
 			group_data = {}
 			only = set({'growth_rate','mode_frequency','ky','kx'})
 			if not QuickSave:
-				only = only | set({'time','theta'})
-			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
+				only = only | set({'time','heat'}) #theta not working
+			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric','heat_flux']
 			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']
 			gyro_keys = {}
 			for dim in scanner.dimensions.values():
@@ -127,6 +140,7 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_files)""")
 					group_data[group_key] = {}
 					for key in group_keys:
 						group_data[group_key][key] = None
+					
 					for xi, kx in enumerate(run_data['kx'].data):
 						for yi, ky in enumerate(run_data['ky'].data):
 							from uuid import uuid4
@@ -156,15 +170,16 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_files)""")
 								try:
 									key_data = run_data[key]
 									if key == 'growth_rate':
-										gyro_data[run_key]['growth_rate'] = float(key_data[xi,yi])
+										gyro_data[run_key]['growth_rate'] = float(key_data[yi,0])
 									if key == 'mode_frequency':
-										gyro_data[run_key]['mode_frequency'] = float(key_data[xi,yi])
+										gyro_data[run_key]['mode_frequency'] = float(key_data[yi,0])
 									elif key in ['time']:
 										group_data[group_key]['t'] = array(key_data).tolist()
 									elif key in ['theta']:
 										group_data[group_key][key] = array(key_data).tolist()
-									#elif key in ['heat']:
-										#group_data[group_key][key] = array(key_data[:,:,yi,:]).tolist()
+									elif key in ['heat']:
+										gyro_data[run_key]['heat_flux'] = float(npsum(npsum(key_data,0),0)[yi])
+										group_data[group_key]['heat_flux_tot'] = float(npsum(key_data))
 								except Exception as e:
 									print(f"Save Error in {sub_dir}: {e}")
 									if key == 'growth_rate':

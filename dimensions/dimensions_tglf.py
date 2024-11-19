@@ -216,24 +216,6 @@ class ny(dimension):
 		nml['nky'] = val
 		return nml
 
-class delt(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = None)
-
-	name_keys = ['delt','DELTA_T','DELTA']
-	axis_label = 'delt'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([x <= 0 for x in values]):
-			print("Error: delt values outside allowed range (x>0)")
-			values = [x for x in values if (x>0)]
-		return values
-
-	def edit_nml(self, nml, val):
-		nml['DELTA_T'] = val
-		return nml
-
 class jtwist(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = None)
@@ -251,7 +233,7 @@ class jtwist(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['BOX_SIZE'] = val
+		nml['box_size'] = val
 		return nml
 
-dimensions_list = [psiN,p_prime,q_prime,shear,ky,kx,theta0,ntheta,nx,ny,delt,jtwist]
+dimensions_list = [psiN,p_prime,q_prime,shear,ky,kx,theta0,ntheta,nx,ny,jtwist]

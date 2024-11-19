@@ -93,8 +93,12 @@ class myro_read(object):
 						print(f"{dim} = {val} not found, using closest value of {dim} = {run[dim]}")
 				run_id = self.get_run_id(run)
 				if run_id is None:
-					print(f"ERROR: run {run} Not Found")
-					return None
+					if key in ['phi2_avg','t','theta','gds2','jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']:
+						group_key = self.get_group_key(run)
+						if group_key is None:
+							return None
+						else:
+							return self.data['group'][group_key][key]
 			if len(run) != len(self.dimensions):
 				id_set = set()
 				id_list = self.get_run_list(run)
@@ -364,6 +368,20 @@ class myro_read(object):
 				return runs
 		return loop(n=len(dim_order))
 	
+	def get_group_key(self, run):
+		group_keys = set()
+		for arun in self.get_all_runs():
+			if all([arun[key] == run[key] for key in run.keys()]):
+				group_keys.add(self('group_key',arun))
+		if len(group_keys) == 0:
+			print(f"ERROR: {run} does not match any runs")
+			return None
+		elif len(group_keys) != 1:
+			print(f"ERROR: {run} matches too many groups")
+			return None
+		else:
+			return list(group_keys)[0]
+	
 	def calculate_ql(self):
 		#reexclude theta0 when ql calculation is updated in line 322 & 327 & 330 & 56 & plotters
 		from .quasilinear import QL
@@ -510,10 +528,10 @@ class myro_read(object):
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
 		return Plotters['Sliders'](reader = self, settings = settings)			
 		
-	def plot_aky(self, settings = {}, init = None):
-		return self.plot_scan(init = init, aky = True, settings = settings, sliders = None)
+	def plot_ky(self, settings = {}, init = None):
+		return self.plot_scan(init = init, ky = True, settings = settings, sliders = None)
 		
-	def plot_scan(self, settings = {}, init = None, aky = None, sliders = None):
+	def plot_scan(self, settings = {}, init = None, ky = None, sliders = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -522,8 +540,8 @@ class myro_read(object):
 						settings[f"slider_{i+1}"] = {}
 					settings[f"slider_{i+1}"]['id'] = ini
 					settings[f"slider_{i+1}"]['dimension_type'] = self.inputs.dim_order[i]
-		if aky is not None:
-			settings['aky'] = aky
+		if ky is not None:
+			settings['ky'] = ky
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} Scan"
 		return Plotters['Scan'](reader = self, settings = settings, sliders = sliders)
