@@ -250,10 +250,10 @@ fi'''
 		for f in glob.glob(r'itteration_*.in'):
 			existing_inputs.append([x for x in f if x.isdigit()])
 		itt = max([eval("".join(x)) for x in existing_inputs],default=-1)
-		filename = f"itteration_{scanner.inputs['itteration']}.in"
+		filename = f"itteration_{scanner.inputs['itteration']}"
 		if not os.path.exists(f"{sub_dir}/{filename}"):
 			subnml = self.get_gyro_input(eqbm=eqbm,run=run,namelist_diff=namelist_diff)
-			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
+			self.write_nml(nml=subnml,directory=sub_dir,filename=f"{filename}.in")
 		return f"{sub_dir}/{filename}"
 	
 	def save_out(self, scanner, filename = None, directory = None, specificRuns = None, QuickSave = False):

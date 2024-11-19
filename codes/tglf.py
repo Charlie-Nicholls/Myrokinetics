@@ -61,7 +61,7 @@ class tglf(code):
 	
 	jobfile_viking = '''echo "${{INFILE}}/input.tglf"
 cd "${{INFILE}}"
-tglf "."
+tglf -e "."
 if test -f "${INFILE}/out.tglf.run"; then
 touch "${INFILE}/out.tglf.fin"
 fi'''

@@ -274,7 +274,7 @@ class myro_scan(object):
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
-			input_file = codes[self.inputs['gk_code']].make_gyro_file(eqbm=self.eqbm,run=run,sub_dir=sub_dir)[:-3]
+			input_file = codes[self.inputs['gk_code']].make_gyro_file(eqbm=self.eqbm,run=run,sub_dir=sub_dir)
 			self._input_files.add(input_file)
 			
 	
