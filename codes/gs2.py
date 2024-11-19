@@ -185,7 +185,7 @@ class gs2(code):
 			n_jobs = len(scanner._input_files)
 		while n_jobs > 0:
 			for input_file in scanner._input_files:
-				os.system(f"mpirun -np 8 gs2 \"{input_file}\"")
+				os.system(f"mpirun -np 8 gs2 \"{input_file}.in\"")
 				scanner._input_files.remove(input_file)
 				n_jobs -= 1
 		return
@@ -195,15 +195,16 @@ class gs2(code):
 			n_jobs = len(self._input_files)
 		while n_jobs > 0:
 			for input_file in self._ideal_input_files:
-				os.system(f"ideal_ball \"{input_file}\"")
+				os.system(f"ideal_ball \"{input_file}.in\"")
 				self._ideal_input_files.remove(input_file)
 				n_jobs -= 1
 		return
 	
 	
-	jobfile_viking = '''gs2 "${{INFILE}}.in"
-if test -f "${{INFILE}}.out.nc"; then
-touch "${{INFILE}}.fin"
+	jobfile_viking = '''echo "${{INFILE}}.in"
+gs2 "${INFILE}.in"
+if test -f "${INFILE}.out.nc"; then
+touch "${INFILE}.fin"
 fi'''
 		
 	def write_pyth_archer2(self, scanner, input_list, filename):
@@ -217,10 +218,10 @@ input_files = {input_list}
 
 def start_run(run, run_attempt = 1):
 if run_attempt <= 3:
-	os.system(f"echo \\\"Input: {{run}}\\\"")
-	os.system(f"gs2 \\\"{{run}}\\\"")
-	if os.path.exists(f"\\\"{{run[:-3]}}.out.nc\\\"'):
-		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
+	os.system(f"echo \\\"Input: {{run}}.in\\\"")
+	os.system(f"gs2 \\\"{{run}}.in\\\"")
+	if os.path.exists(f"\\\"{{run}}.out.nc\\\"'):
+		os.system(f"touch \\\"{{run}}.fin\\\"")
 	else:
 		sleep(60)
 		start_run(run, run_attempt = run_attempt+1)
@@ -234,9 +235,9 @@ Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for
 	
 	def get_non_linear_archer2(self, scanner):
 		ntasks = scanner.inputs['sbatch']['nodes']*128//scanner.inputs['sbatch']['cpus-per-task']
-		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{list(scanner._input_files)[0]}\"
-if test -f \"{list(scanner._input_files)[0][:-3]}.out.nc\"; then
-touch \"{list(scanner._input_files)[0][:-3]}.fin\"
+		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{list(scanner._input_files)[0]}.in\"
+if test -f \"{list(scanner._input_files)[0]}.out.nc\"; then
+touch \"{list(scanner._input_files)[0]}.fin\"
 fi'''
 		return run_code
 		

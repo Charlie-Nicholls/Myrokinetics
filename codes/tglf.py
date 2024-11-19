@@ -7,7 +7,7 @@ viking_modules = """module load gompi/2022b OpenMPI/4.1.4-GCC-12.2.0 netCDF-Fort
 export GACODE_PLATFORM=VIKING
 export GACODE_ROOT=/users/cn762/scratch/gacode
 . $GACODE_ROOT/shared/bin/gacode_setup
-ulimit -s unlimited	
+ulimit -s unlimited
 which tglf
 tglf -h"""
 
@@ -59,9 +59,11 @@ class tglf(code):
 		print(f"ERROR: {self.code_name} DOES NOT SUPPORT YPI SERVERS")
 		return
 	
-	jobfile_viking = '''tglf "${{INFILE}}/input.tglf"
-if test -f "${{INFILE}}/out.tglf.run"; then
-touch "${{INFILE}}/out.tglf.fin"
+	jobfile_viking = '''echo "${{INFILE}}/input.tglf"
+cd "${{INFILE}}"
+tglf "."
+if test -f "${INFILE}/out.tglf.run"; then
+touch "${INFILE}/out.tglf.fin"
 fi'''
 	
 	def write_pyth_archer2(self, scanner, input_list, filename):

@@ -214,7 +214,7 @@ class myro_scan(object):
 		nml['init_g_knobs']['ginit_option'] = 'many'
 		nml['gs2_diagnostics_knobs']['append_old'] = True
 		nml.write(f"{file_dir}/itteration_{itt}.in",force=True)
-		self._input_files.add(f"{file_dir}/itteration_{itt}.in")
+		self._input_files.add(f"{file_dir}/itteration_{itt}")
 		self.make_job_files()
 		self.run_jobs()
 	
@@ -274,7 +274,7 @@ class myro_scan(object):
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
-			input_file = codes[self.inputs['gk_code']].make_gyro_file(eqbm=self.eqbm,run=run,sub_dir=sub_dir)
+			input_file = codes[self.inputs['gk_code']].make_gyro_file(eqbm=self.eqbm,run=run,sub_dir=sub_dir)[:-3]
 			self._input_files.add(input_file)
 			
 	
@@ -306,7 +306,7 @@ class myro_scan(object):
 			nml = self.eqbm.get_surface_input(psiN = run['psin'])
 			nml['ballstab_knobs']['theta0'] = run['theta0']
 			nml.write(f"{sub_dir}/{filename}.in", force=True)
-			self._ideal_input_files.add(f"{sub_dir}/{filename}.in")
+			self._ideal_input_files.add(f"{sub_dir}/{filename}")
 	
 	def get_run_directory(self, run):
 		dims = [x for x in self.inputs.dim_order if x not in ['kx','ky']] if self.inputs['nonlinear'] == True else self.inputs.dim_order

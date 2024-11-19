@@ -63,7 +63,7 @@ class viking():
 			sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['error']}",f"{filename}/{scanner.inputs['sbatch']['error']}_0")
 			inlist = open(f"{scanner.inputs['data_path']}/submit_files/gyro_{n}/{filename}.txt",'w')
 			for infile in input_lists[n]:
-				inlist.write(f"{infile[:-3]}\n")
+				inlist.write(f"{infile}\n")
 			inlist.close()
 			jobfile = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
 			if len(input_lists[n]) > 1:
@@ -78,7 +78,6 @@ class viking():
 {compile_modules}
 
 INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.txt)
-echo "${{INFILE}}.in"
 
 {code_jobfile}
 
@@ -135,7 +134,7 @@ echo "${{INFILE}}.in"
 			filename = f"ideal_{n}"
 			inlist = open(f"{scanner.inputs['data_path']}/submit_files/ideal_{n}/{filename}.txt",'w')
 			for infile in input_lists[n]:
-				inlist.write(f"{infile[:-3]}\n")
+				inlist.write(f"{infile}\n")
 			inlist.close()
 			jobfile = open(f"{scanner.inputs['data_path']}/submit_files/ideal_{n}/{filename}.job",'w')
 			if len(input_lists[n]) > 1:
