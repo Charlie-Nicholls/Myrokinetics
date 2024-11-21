@@ -62,14 +62,14 @@ class cgyro(code):
 		print(f"ERROR: {self.code_name} DOES NOT SUPPORT YPI SERVERS")
 		return
 		
-	def write_pyth_archer2(self, scanner, input_list, filename):
+	def write_pyth_archer2(self, scanner, dir_list, filename):
 		pyth = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 		pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
 from numpy import array
 
-input_files = {input_list}
+input_dirs = {dir_list}
 max_cores = {scanner.inputs["sbatch"]["nodes"]*scanner.inputs["sbatch"]["ntasks-per-node"]}
 
 def start_run(run, run_attempt = 1):
@@ -77,9 +77,9 @@ def start_run(run, run_attempt = 1):
 		os.system(f"echo \\\"Input: {{run}}\\\"")
 		cwd = os.getcwd()
 		os.chdir(f"{{run}}")
-		if not os.path.exists("ingen.out"):
-			os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -i . &> ingen.out")
-		f = open("ingen.out")
+		if not os.path.exists("input.report"):
+			os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -i . &> input.report")
+		f = open("input.report")
 		lines = f.readlines()
 		n_poss = set()
 		for line in lines[3:]:
@@ -96,7 +96,7 @@ def start_run(run, run_attempt = 1):
 	else:
 		print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
-Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
+Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_dirs)""")
 		pyth.close()
 		return
 	

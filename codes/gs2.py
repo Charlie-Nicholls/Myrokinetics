@@ -207,14 +207,14 @@ if test -f "${INDIR}/input.out.nc"; then
 touch "${INDIR}/run.fin"
 fi'''
 		
-	def write_pyth_archer2(self, scanner, input_list, filename):
+	def write_pyth_archer2(self, scanner, dir_list, filename):
 
 		pyth = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 		pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
 
-input_dirs = {input_dirs}
+input_dirs = {dir_list}
 
 def start_run(run, run_attempt = 1):
 if run_attempt <= 3:
@@ -236,7 +236,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for
 	def get_non_linear_archer2(self, scanner):
 		ntasks = scanner.inputs['sbatch']['nodes']*128//scanner.inputs['sbatch']['cpus-per-task']
 		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{list(scanner._input_dirs)[0]}/input.gs2\"
-if test -f \"{list(scanner._input_files)[0]}/input.out.nc\"; then
+if test -f \"{list(scanner._input_dirs)[0]}/input.out.nc\"; then
 touch \"{list(scanner._input_files)[0]}/run.fin\"
 fi'''
 		return run_code

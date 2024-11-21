@@ -43,9 +43,9 @@ class viking():
 		os.makedirs(f"{scanner.inputs['data_path']}/submit_files/",exist_ok=True)
 		input_dirs = {}
 		for n in range(n_par):
-			input_lists[n] = []	
-		if n_jobs is None or n_jobs*n_par > len(scanner._input_files):
-			total_jobs = len(scanner._input_files)
+			input_dirs[n] = []	
+		if n_jobs is None or n_jobs*n_par > len(scanner._input_dirs):
+			total_jobs = len(scanner._input_dirs)
 		else:
 			total_jobs = n_jobs*n_par
 		from numpy import ceil
@@ -70,7 +70,7 @@ class viking():
 				sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['output']}_0",f"{scanner.inputs['sbatch']['output']}_%a")
 				sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['error']}_0",f"{scanner.inputs['sbatch']['error']}_%a")
 				jobfile.write(f"{sbatch_n}")
-				jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
+				jobfile.write(f"\n#SBATCH --array=1-{len(input_dirs[n])}\n")
 			else:
 				jobfile.write(f"{sbatch_n}")
 			code_jobfile = codes[scanner.inputs['gk_code']].jobfile_viking
@@ -140,7 +140,7 @@ INDIR=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_
 				sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['output']}_0", f"{scanner.inputs['sbatch']['output']}_%a")
 				sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['error']}_0", f"{scanner.inputs['sbatch']['error']}_%a")
 				jobfile.write(f"{sbatch_n}")
-				jobfile.write(f"\n#SBATCH --array=1-{len(input_lists[n])}\n")
+				jobfile.write(f"\n#SBATCH --array=1-{len(input_dirs[n])}\n")
 			else:
 				jobfile.write(f"{sbatch_n}")
 			jobfile.write(f"""

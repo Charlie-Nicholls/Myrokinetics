@@ -66,7 +66,7 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 				os.makedirs(f"{scanner.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
 				sbatch_n = sbatch.replace(f"{scanner.inputs['sbatch']['output']}",f"{filename}/{scanner.inputs['sbatch']['output']}_{n}")
 			
-				codes[scanner.inputs['gk_code']].write_pyth_archer2(scanner, input_lists[n], filename)
+				codes[scanner.inputs['gk_code']].write_pyth_archer2(scanner, input_dirs[n], filename)
 			
 				jobfile = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
 				jobfile.write(f"""{sbatch_n}
@@ -164,14 +164,4 @@ python {scanner.inputs['data_path']}/submit_files/{filename}.py""")
 			jobfile.close()
 		for n in range(n_sim):
 			scanner._ideal_jobs.add(f"{scanner.inputs['data_path']}/submit_files/ideal_{n}.job")	
-		return
-			
-				
-				
-				
-				
-				
-				
-				
-				
-				
+		return			
