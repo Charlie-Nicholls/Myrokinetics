@@ -52,10 +52,10 @@ class viking():
 		if ceil(total_jobs/n_par) > 10000:
 			print(f"Viking supports a max of 10,000 jobs per array submission (Currently requesting {ceil(total_jobs/n_par)})")
 			return
-		input_dirs = list(scanner._input_dirs)
+		dir_list = list(scanner._input_dirs)
 		for i in range(total_jobs):
-			input_dirs[i%n_par].append(input_dirs[i])
-			scanner._input_dirs.remove(input_dirs[i])
+			input_dirs[i%n_par].append(dir_list[i])
+			scanner._input_dirs.remove(dir_list[i])
 		for n in range(n_par):
 			filename = f"gyro_{n}"
 			os.makedirs(f"{scanner.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
