@@ -213,7 +213,7 @@ class myro_scan(object):
 		nml['init_g_knobs']['ginit_option'] = 'many'
 		nml['gs2_diagnostics_knobs']['append_old'] = True
 		nml.write(f"{file_dir}/input.gs2",force=True)
-		self._input_dir	s.add(f"{file_dir}/input.gs2")
+		self._input_dirs.add(f"{file_dir}/input.gs2")
 		self.make_job_files()
 		self.run_jobs()
 	
@@ -353,7 +353,7 @@ class myro_scan(object):
 		if gyro:
 			for run in all_runs:
 				sub_dir = self.get_run_directory(run)
-				if os.path.exists(f"{sub_dir}/run.fin") or :
+				if os.path.exists(f"{sub_dir}/run.fin"):
 					finished_gyro.append(run)
 				else:
 					unfinished_gyro.append(run)
