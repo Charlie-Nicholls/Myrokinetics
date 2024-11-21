@@ -181,12 +181,12 @@ class gs2(code):
 		return nml
 	
 	def make_job_files_ypi(self, scanner):
-		if n_jobs is None or n_jobs > len(scanner._input_files):
-			n_jobs = len(scanner._input_files)
+		if n_jobs is None or n_jobs > len(scanner._input_dirs):
+			n_jobs = len(scanner._input_dirs)
 		while n_jobs > 0:
-			for input_file in scanner._input_files:
-				os.system(f"mpirun -np 8 gs2 \"{input_file}/input.gs2\"")
-				scanner._input_files.remove(input_file)
+			for input_dir in scanner._input_dirs:
+				os.system(f"mpirun -np 8 gs2 \"{input_dir}/input.gs2\"")
+				scanner._input_dirs.remove(input_dir)
 				n_jobs -= 1
 		return
 		

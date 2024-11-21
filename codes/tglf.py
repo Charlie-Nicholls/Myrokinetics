@@ -66,18 +66,18 @@ if test -f "${INFILE}/out.tglf.run"; then
 touch "${INFILE}/run.fin"
 fi'''
 	
-	def write_pyth_archer2(self, scanner, input_list, filename):
+	def write_pyth_archer2(self, scanner, dir_list, filename):
 		pyth = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 		pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
 from numpy import array
 
-input_files = {input_list}
+input_dirs = {dir_list}
 
 def start_run(run, run_attempt = 1):
 	if run_attempt <= 3:
-		os.system(f"echo \\\"Input: {{run}}\\\"")
+		os.system(f"echo \\\"Input: {{run}}/input.tglf\\\"")
 		cwd = os.getcwd()
 		os.chdir(f"{{run}}")
 		os.system(f"$GACODE_ROOT/tglf/bin/tglf -n 128 -e .")
@@ -90,7 +90,7 @@ def start_run(run, run_attempt = 1):
 	else:
 		print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
-Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_files)""")
+Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 		pyth.close()
 		return
 		
