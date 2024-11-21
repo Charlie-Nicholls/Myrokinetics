@@ -50,17 +50,17 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 				print("Archer supports a maximum of n_sim = 8")
 				n_sim = 8
 			os.makedirs(f"{scanner.inputs['data_path']}/submit_files/",exist_ok=True)
-			input_lists = {}
+			input_dirs = {}
 			for n in range(n_par):
-				input_lists[n] = []
-			if n_jobs is None or n_jobs*n_par > len(scanner._input_files):
-				total_jobs = len(scanner._input_files)
+				input_dirs[n] = []
+			if n_jobs is None or n_jobs*n_par > len(scanner._input_dirs):
+				total_jobs = len(scanner._input_dirs)
 			else:
 				total_jobs = n_jobs*n_par
-			input_list = list(scanner._input_files)
+			dir_list = list(scanner._input_dirs)
 			for i in range(total_jobs):
-				input_lists[i%n_par].append(input_list[i])
-				scanner._input_files.remove(input_list[i])
+				input_dirs[i%n_par].append(dir_list[i])
+				scanner._input_dirs.remove(dir_list[i])
 			for n in range(n_par):
 				filename = f"gyro_{n}"
 				os.makedirs(f"{scanner.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
@@ -73,9 +73,7 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 
 {compile_modules}
 
-python {scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py &
-
-wait""")
+python {scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py""")
 			
 				if n_par > n_sim and n + n_sim < n_par:
 					jobfile.write(f"\nsbatch {scanner.inputs['data_path']}/submit_files/gyro_{n+n_sim}/gyro_{n+n_sim}.job")
@@ -116,17 +114,17 @@ wait""")
 			print("Archer supports a maximum of n_sim = 8")
 			n_sim = 8
 		os.makedirs(f"{scanner.inputs['data_path']}/submit_files/",exist_ok=True)
-		input_lists = {}
+		input_dirs = {}
 		for n in range(n_par):
-			input_lists[n] = []
-		if n_jobs is None or n_jobs*n_par > len(scanner._ideal_input_files):
-			total_jobs = len(scanner._ideal_input_files)
+			input_dirs[n] = []
+		if n_jobs is None or n_jobs*n_par > len(scanner._ideal_dirs):
+			total_jobs = len(scanner._ideal_dirs)
 		else:
 			total_jobs = n_jobs*n_par
-		input_list = list(scanner._ideal_input_files)
+		dir_list = list(scanner._ideal_input_dirs)
 		for i in range(total_jobs):
-			input_lists[i%n_par].append(input_list[i])
-			scanner._ideal_input_files.remove(input_list[i])
+			input_dirs[i%n_par].append(dir_list[i])
+			scanner._ideal_input_dirs.remove(dir_list[i])
 		for n in range(n_par):
 			sbatch_n = sbatch.replace(f"{scanner.inputs['sbatch']['output']}",f"{scanner.inputs['sbatch']['output']}_ideal_{n}")
 			sbatch_n = sbatch_n.replace(f"#SBATCH --nodes = {scanner.inputs['sbatch']['nodes']}","#SBATCH --nodes = 1")
@@ -136,21 +134,21 @@ wait""")
 from joblib import Parallel, delayed
 from time import sleep
 
-input_files = {input_lists[n]}
+input_dirs = {input_dirs[n]}
 
 def start_run(run, run_attempt = 1):
 if run_attempt <= 3:
-	os.system(f"echo \\\"Ideal Input: {{run}}\\\"")
-	os.system(f"srun --nodes=1 --ntasks=1 ideal_ball \\\"{{run}}\\\"")
-	if os.path.exists(f\"{{run[:-3]}}.ballstab_2d\"):
-		os.system(f"touch \\\"{{run[:-3]}}.fin\\\"")
+	os.system(f"echo \\\"Ideal Input: {{run}}/ideal.gs2\\\"")
+	os.system(f"srun --nodes=1 --ntasks=1 ideal_ball \\\"{{run}}/ideal.gs2\\\"")
+	if os.path.exists(f\"{{run}}/ideal.ballstab_2d\"):
+		os.system(f"touch \\\"{{run}}/ideal.fin\\\"")
 	else:
 		sleep(60)
 		start_run(run, run_attempt = run_attempt+1)
 else:
 	print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
-Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(run) for run in input_files)""")
+Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run)(run) for run in input_dirs)""")
 			pyth.close()
 			jobfile = open(f"{scanner.inputs['data_path']}/submit_files/{filename}.job",'w')
 			jobfile.write(f"""{sbatch_n}
@@ -160,9 +158,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['ntasks-per-node']})(delayed(start_run
 which gs2
 gs2 --build-config
 
-python {scanner.inputs['data_path']}/submit_files/{filename}.py &
-
-wait""")
+python {scanner.inputs['data_path']}/submit_files/{filename}.py""")
 			if n_par > n_sim and n + n_sim < n_par:
 				jobfile.write(f"\nsbatch {scanner.inputs['data_path']}/submit_files/ideal_{n+n_sim}.job")
 			jobfile.close()

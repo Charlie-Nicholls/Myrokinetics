@@ -59,11 +59,11 @@ class tglf(code):
 		print(f"ERROR: {self.code_name} DOES NOT SUPPORT YPI SERVERS")
 		return
 	
-	jobfile_viking = '''echo "${{INFILE}}/input.tglf"
-cd "${{INFILE}}"
+	jobfile_viking = '''echo "${INFILE}/input.tglf"
+cd "${INFILE}"
 tglf -e "."
 if test -f "${INFILE}/out.tglf.run"; then
-touch "${INFILE}/out.tglf.fin"
+touch "${INFILE}/run.fin"
 fi'''
 	
 	def write_pyth_archer2(self, scanner, input_list, filename):
@@ -83,7 +83,7 @@ def start_run(run, run_attempt = 1):
 		os.system(f"$GACODE_ROOT/tglf/bin/tglf -n 128 -e .")
 		os.chdir(f"{{cwd}}")
 		if os.path.exists(f"{{run}}/out.tglf.run"):
-			os.system(f"touch {{run}}/out.tglf.fin")
+			os.system(f"touch {{run}}/run.fin")
 		else:
 			sleep(60)
 			start_run(run, run_attempt = run_attempt+1)

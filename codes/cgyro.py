@@ -89,7 +89,7 @@ def start_run(run, run_attempt = 1):
 		os.system(f"$GACODE_ROOT/cgyro/bin/cgyro -e . -n {{cores}} -nomp 1 -numa 8 -mpinuma 16 -p .")
 		os.chdir(f"{{cwd}}")
 		if os.path.exists(f"{{run}}/out.cgyro.freq"):
-			os.system(f"touch {{run}}/out.cgyro.fin")
+			os.system(f"touch {{run}}/run.fin")
 		else:
 			sleep(60)
 			start_run(run, run_attempt = run_attempt+1)
@@ -105,7 +105,7 @@ Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for
 		ntasks = scanner.inputs['sbatch']['nodes']*128//scanner.inputs['sbatch']['cpus-per-task']
 		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} $GACODE_ROOT/cgyro/bin/cgyro -e \"{infi}\" -n {ntasks} -nomp 1 -numa 8 -mpinuma 16 -p \"{infi}\"
 if test -f \"{infi}/out.cgyro.run\"; then
-touch \"{infi}/out.cgyro.fin\"
+touch \"{infi}/run.fin\"
 fi'''
 		return run_code
 		

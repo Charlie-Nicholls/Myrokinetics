@@ -41,7 +41,7 @@ class viking():
 
 		n_sim = n_par if n_sim is None else n_sim
 		os.makedirs(f"{scanner.inputs['data_path']}/submit_files/",exist_ok=True)
-		input_lists = {}
+		input_dirs = {}
 		for n in range(n_par):
 			input_lists[n] = []	
 		if n_jobs is None or n_jobs*n_par > len(scanner._input_files):
@@ -52,21 +52,21 @@ class viking():
 		if ceil(total_jobs/n_par) > 10000:
 			print(f"Viking supports a max of 10,000 jobs per array submission (Currently requesting {ceil(total_jobs/n_par)})")
 			return
-		input_list = list(scanner._input_files)
+		input_dirs = list(scanner._input_dirs)
 		for i in range(total_jobs):
-			input_lists[i%n_par].append(input_list[i])
-			scanner._input_files.remove(input_list[i])
+			input_dirs[i%n_par].append(input_dirs[i])
+			scanner._input_dirs.remove(input_dirs[i])
 		for n in range(n_par):
 			filename = f"gyro_{n}"
 			os.makedirs(f"{scanner.inputs['data_path']}/submit_files/{filename}",exist_ok=True)
 			sbatch_n = sbatch.replace(f"{scanner.inputs['sbatch']['output']}",f"{filename}/{scanner.inputs['sbatch']['output']}_0")
 			sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['error']}",f"{filename}/{scanner.inputs['sbatch']['error']}_0")
-			inlist = open(f"{scanner.inputs['data_path']}/submit_files/gyro_{n}/{filename}.txt",'w')
-			for infile in input_lists[n]:
-				inlist.write(f"{infile}\n")
-			inlist.close()
+			dirlist = open(f"{scanner.inputs['data_path']}/submit_files/gyro_{n}/{filename}.txt",'w')
+			for indir in input_dirs[n]:
+				dirlist.write(f"{indir}\n")
+			dirlist.close()
 			jobfile = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.job",'w')
-			if len(input_lists[n]) > 1:
+			if len(input_dirs[n]) > 1:
 				sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['output']}_0",f"{scanner.inputs['sbatch']['output']}_%a")
 				sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['error']}_0",f"{scanner.inputs['sbatch']['error']}_%a")
 				jobfile.write(f"{sbatch_n}")
@@ -77,7 +77,7 @@ class viking():
 			jobfile.write(f"""
 {compile_modules}
 
-INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.txt)
+INDIR=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.txt)
 
 {code_jobfile}
 
@@ -94,7 +94,6 @@ INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit
 #SBATCH --nodes=1
 #SBATCH --account={scanner.inputs['sbatch']['account']}
 #SBATCH --output={scanner.inputs['data_path']}/submit_files/submit.slurm
-
 
 """)
 		for n in range(n_sim):
@@ -115,29 +114,29 @@ INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit
 			sbatch = sbatch + f"\n#SBATCH --{key}={val}"
 		n_sim = n_par if n_sim is None else n_sim
 		os.makedirs(f"{scanner.inputs['data_path']}/submit_files/",exist_ok=True)
-		input_lists = {}
+		input_dirs = {}
 		for n in range(n_par):
-			input_lists[n] = []
-		if n_jobs is None or n_jobs*n_par > len(scanner._ideal_input_files):
-			total_jobs = len(scanner._ideal_input_files)
+			input_dirs[n] = []
+		if n_jobs is None or n_jobs*n_par > len(scanner._ideal_dirs):
+			total_jobs = len(scanner._ideal_dirs)
 		else:
 			total_jobs = n_jobs*n_par
-		input_list = list(scanner._ideal_input_files)
+		dir_list = list(scanner._ideal_dirs)
 		for i in range(total_jobs):
-			input_lists[i%n_par].append(input_list[i])
-			scanner._ideal_input_files.remove(input_list[i])
+			input_dirs[i%n_par].append(dir_list[i])
+			scanner._ideal_dirs.remove(dir_list[i])
 		for n in range(n_par):
 			os.makedirs(f"{scanner.inputs['data_path']}/submit_files/ideal_{n}",exist_ok=True)
 			sbatch_n = sbatch.replace(f"{scanner.inputs['sbatch']['output']}",f"ideal_{n}/{scanner.inputs['sbatch']['output']}_0")
 			sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['error']}",f"ideal_{n}/{scanner.inputs['sbatch']['error']}_0")
 			sbatch_n = sbatch_n.replace(f"--cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']}","--cpus-per-task=1")
 			filename = f"ideal_{n}"
-			inlist = open(f"{scanner.inputs['data_path']}/submit_files/ideal_{n}/{filename}.txt",'w')
-			for infile in input_lists[n]:
-				inlist.write(f"{infile}\n")
-			inlist.close()
+			dirlist = open(f"{scanner.inputs['data_path']}/submit_files/ideal_{n}/{filename}.txt",'w')
+			for indir in input_dirs[n]:
+				dirlist.write(f"{indir}\n")
+			dirlist.close()
 			jobfile = open(f"{scanner.inputs['data_path']}/submit_files/ideal_{n}/{filename}.job",'w')
-			if len(input_lists[n]) > 1:
+			if len(input_dirs[n]) > 1:
 				sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['output']}_0", f"{scanner.inputs['sbatch']['output']}_%a")
 				sbatch_n = sbatch_n.replace(f"{scanner.inputs['sbatch']['error']}_0", f"{scanner.inputs['sbatch']['error']}_%a")
 				jobfile.write(f"{sbatch_n}")
@@ -150,11 +149,11 @@ INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit
 which gs2
 gs2 --build-config
 
-INFILE=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_files/ideal_{n}/ideal_{n}.txt)
-echo "${{INFILE}}.in"
-ideal_ball "${{INFILE}}.in"
-if test -f "${{INFILE}}.ballstab_2d"; then
-touch "${{INFILE}}.fin"
+INDIR=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_files/ideal_{n}/ideal_{n}.txt)
+echo "${{INDIR}}.in"
+ideal_ball "${{INDIR}}/ideal.gs2"
+if test -f "${{INDIR}}/ideal.ballstab_2d"; then
+touch "${{INDIR}}/run.fin"
 fi""")
 			jobfile.close()
 		for n in range(n_sim):

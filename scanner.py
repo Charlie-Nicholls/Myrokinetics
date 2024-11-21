@@ -18,9 +18,9 @@ class myro_scan(object):
 			directory = os.getcwd()
 		self.path = directory
 		self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
-		self._input_files = set()
+		self._input_dirs = set()
 		self._jobs = set()
-		self._ideal_input_files = set()
+		self._ideal_input_dirs = set()
 		self._ideal_jobs = set()
 		self.load_inputs(input_file = input_file, directory = directory)
 		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
@@ -72,6 +72,10 @@ class myro_scan(object):
 		self.single_parameters = self.inputs.single_parameters
 		if self.eqbm:
 			self.eqbm.load_inputs(self.inputs)
+	
+	@property
+	def run_input(self):
+		return f"input.{self['code'].lower()}"
 			
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
 		self.inputs.write_scan_input(filename = filename, directory = directory, doPrint = doPrint)
@@ -165,8 +169,8 @@ class myro_scan(object):
 		return True
 	
 	def clear_jobs(self):
-		self._input_files = set()
-		self._ideal_input_files = set()
+		self._input_dirs = set()
+		self._ideal_input_dirs = set()
 
 	def make_job_files(self, n_jobs = None, n_par = 1, n_sim = None):
 		systems[self.inputs['system']].make_job_files(self, n_jobs=n_jobs, n_par=n_par, n_sim=n_sim)
@@ -190,7 +194,7 @@ class myro_scan(object):
 		os.chdir(cwd)
 		self._ideal_jobs = set()
 	
-	def restart_run(self, run = {}, itt = None):
+	def restart_run(self, run = {}):
 		import f90nml
 		if self.inputs['grid_option'] != 'box':
 			print("ERROR: restart_run only supported for grid_option = True")
@@ -199,12 +203,7 @@ class myro_scan(object):
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
-		if itt is None:
-			itt = self['itteration']
-			if not os.path.exists(f"{file_dir}/itteration_{itt}.out.nc"):
-				print(f"ERROR: itteration {itt} not found, please specify itt")
-				return
-		nml = f90nml.read(f"{file_dir}/itteration_{itt}.in")
+		nml = f90nml.read(f"{file_dir}/input.gs2")
 		nml['knobs']['delt_option'] = 'check_restart'
 		h, m, s = self.inputs['sbatch']['time'].split(':')
 		time = (int(h) * 3600) + (int(m) * 60) + int(s)
@@ -213,8 +212,8 @@ class myro_scan(object):
 		nml['knobs']['delt_option'] = 'check_restart'
 		nml['init_g_knobs']['ginit_option'] = 'many'
 		nml['gs2_diagnostics_knobs']['append_old'] = True
-		nml.write(f"{file_dir}/itteration_{itt}.in",force=True)
-		self._input_files.add(f"{file_dir}/itteration_{itt}")
+		nml.write(f"{file_dir}/input.gs2",force=True)
+		self._input_dir	s.add(f"{file_dir}/input.gs2")
 		self.make_job_files()
 		self.run_jobs()
 	
@@ -257,7 +256,7 @@ class myro_scan(object):
 		return runs
 				
 	def make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None):
-		self._input_files = set()
+		self._input_dirs = set()
 		if checkSetup:
 			if not self.check_setup():
 				return
@@ -274,12 +273,12 @@ class myro_scan(object):
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
-			input_file = codes[self.inputs['gk_code']].make_gyro_file(eqbm=self.eqbm,run=run,sub_dir=sub_dir)
-			self._input_files.add(input_file)
+			codes[self.inputs['gk_code']].make_gyro_file(eqbm=self.eqbm,run=run,sub_dir=sub_dir)
+			self._input_dirs.add(sub_dir)
 			
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
-		self._ideal_input_files = set()
+		self._ideal_input_dirs = set()
 		if checkSetup:
 			if not self.check_setup():
 				return
@@ -297,16 +296,12 @@ class myro_scan(object):
 			sub_dir = self.get_ideal_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
 			
-			existing_inputs = [] 
-			for f in glob.glob(r'itteration_*.in'):
-				existing_inputs.append([x for x in f if x.isdigit()])
-			itt = max([eval("".join(x)) for x in existing_inputs],default=-1) + 1
-			filename = f"itteration_{itt}"
+			filename = f"input.ideal"
 			
 			nml = self.eqbm.get_surface_input(psiN = run['psin'])
 			nml['ballstab_knobs']['theta0'] = run['theta0']
-			nml.write(f"{sub_dir}/{filename}.in", force=True)
-			self._ideal_input_files.add(f"{sub_dir}/{filename}")
+			nml.write(f"{sub_dir}/{filename}", force=True)
+			self._ideal_input_dirs.add(sub_dir)
 	
 	def get_run_directory(self, run):
 		dims = [x for x in self.inputs.dim_order if x not in ['kx','ky']] if self.inputs['nonlinear'] == True else self.inputs.dim_order
@@ -331,10 +326,6 @@ class myro_scan(object):
 		
 		sub_dir = f"{self.inputs['data_path']}/ideal_files/" + "/".join([f"{name}={run[name]:.4g}" for name in ['psin','theta0']])
 		return sub_dir
-	
-	def update_itteration(self):
-		self.inputs['info']['itteration'] = self.inputs['itteration'] + 1
-		print(f"Updated to itteration {self.inputs['itteration']}")
 	
 	def create_run_info(self):
 		self.inputs.create_run_info()
@@ -362,7 +353,7 @@ class myro_scan(object):
 		if gyro:
 			for run in all_runs:
 				sub_dir = self.get_run_directory(run)
-				if os.path.exists(f"{sub_dir}/run.fin"):
+				if os.path.exists(f"{sub_dir}/run.fin") or :
 					finished_gyro.append(run)
 				else:
 					unfinished_gyro.append(run)
@@ -372,7 +363,7 @@ class myro_scan(object):
 		if ideal:
 			for run in self.get_all_ideal_runs():
 				sub_dir = self.get_ideal_run_directory(run)
-				if os.path.exists(f"{sub_dir}/itteration_0.fin"):
+				if os.path.exists(f"{sub_dir}/run.fin"):
 					finished_ideal.append(run)
 				else:
 					unfinished_ideal.append(run)
@@ -459,26 +450,17 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
 		return
 	
-	def print_run_input(self, run = {}, itt = None):
+	def print_run_input(self, run = {}):
 		import f90nml
 		if run not in self.get_all_runs():
 			print("ERROR: run not found")
 			return
-		file_dir = self.get_run_directory(run)
-		if self.inputs['gk_code'] == 'GS2':
-			if itt is None:
-				itt = self['itteration']
-				filepath = f"{file_dir}/itteration_{itt}.in"
-				if not os.path.exists(filepath):
-					print(f"ERROR: input \"{filepath}\" not found, please specify itt and ensure make files has been run")
-					return
-			nml = f90nml.read(filepath)
-			print(nml)
-		elif self.inputs['gk_code'] == 'CGYRO':
-				with open(f"{file_dir}/input.cgyro") as f:
-					lines = f.readlines()
-					for line in lines:
-						print(line)
+			
+		filepath = f"{self.get_run_directory(run)}/{self.run_input}"
+		with open(filepath) as f:
+			lines = f.readlines()
+			for line in lines:
+				print(line)
 		
 	
 	def print_submit_file(self, n = 0):
@@ -543,23 +525,19 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		for line in slines:
 			print(line, end='')
 	
-	def run_ingen(self, run = {}, itt = None):
+	def run_ingen(self, run = {}):
+		#NEEDS UPDATING
 		if run not in self.get_all_runs():
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
-		if self.inputs['gk_code'] == 'GS2':
-			if itt is None:
-				itt = self['itteration']
-				filepath = f"{file_dir}/itteration_{itt}.in"
-				if not os.path.exists(filepath):
-					print(f"ERROR: input \"{filepath}\" not found")
-					return
-			os.system(filepath)
-			self.print_ingen(run = run, itt = itt)
-		elif self.inputs['gk_code'] == 'CGYRO' and self.inputs['system'] == 'archer2':
-			f = open(f"{file_dir}/ingen.job",'w')
-			f.write(f"""#!/bin/bash
+		filepath = f"{self.get_run_directory(run)}/{self.run_input}"
+		if not os.path.exists(filepath):
+			print(f"ERROR: input \"{filepath}\" not found")
+			return
+			#self.print_ingen(run = run)
+		f = open(f"{file_dir}/ingen.job",'w')
+		f.write(f"""#!/bin/bash
 #SBATCH --time=00:00:30
 #SBATCH --job-name=ingen
 #SBATCH --nodes=1
@@ -572,49 +550,40 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 
 {codes[self['gk_code']].archer2_modules}
 
-cgyro -i "./" >& ingen.out
+cgyro -i "./" >& input.report
 """)
-			f.close()
-			cwd = os.getcwd()
-			os.chdir(file_dir)
-			os.system(f"sbatch {file_dir}/ingen.job")
-			os.chdir(cwd)
+		f.close()
+		cwd = os.getcwd()
+		os.chdir(file_dir)
+		os.system(f"sbatch {file_dir}/ingen.job")
+		os.chdir(cwd)
 	
-	def print_ingen(self, run = {}, itt = None):
+	def print_ingen(self, run = {}):
 		if run not in self.get_all_runs():
 			print("ERROR: run not found")
 			return
-		file_dir = self.get_run_directory(run)
-		if self.inputs['gk_code'] == 'GS2':
-			if itt is None:
-				itt = self['itteration']
-			filepath = f"{file_dir}/itteration_{itt}.report"
-		elif self.inputs['gk_code'] == 'CGYRO':
-			filepath = f"{file_dir}/ingen.out"
+
+		filepath = f"{self.get_run_directory(run)}/input.report"
 		if os.path.exists(filepath):
-			sfile = open(filepath)
+			with open(filepath) as f:
+				lines = f.readlines()
+				for line in lines:
+					print(line, end='')
 		else:
-			print(f"ERROR: report \"{filepath}\" not found, please specify itt and ensure ingen has been run")
+			print(f"ERROR: report \"{filepath}\" not found, please ingen has been run")
 			return
-		slines = sfile.readlines()
-		sfile.close()
-		for line in slines:
-			print(line, end='')
 			
-	def load_run_out(self, run = {}, itt = None):
+	def load_run_out(self, run = {}):
 		if run not in self.get_all_runs():
 			print("ERROR: run not found")
 			return
-		file_dir = self.get_run_directory(run)
-		if itt is None:
-			itt = self['itteration']
-		filepath = f"{file_dir}/itteration_{itt}.out.nc"
+		filepath = f"{self.get_run_directory(run)}/{self.run_input}"
 		if os.path.exists(filepath):
 			sfile = readnc(filepath)
+			return sfile
 		else:
-			print(f"ERROR: report \"{filepath}\" not found, please specify itt and ensure simulation has run")
+			print(f"ERROR: report \"{filepath}\" not found, please ensure simulation has run")
 			return
-		return sfile
 
 	def load_run_set(self, filename = None):
 		if filename is None:
@@ -644,7 +613,6 @@ cgyro -i "./" >& ingen.out
 			nml = f90nml.read(nml)
 		for p,i,j,k,t in runs:
 			self.namelist_diffs[p][i][j][k][t] = nml
-		self.inputs.inputs['itteration'] += 1
 		self.make_gyro_files(specificRuns = runs, directory = directory, group_runs = group_runs)
 		self.run_jobs()
 	'''

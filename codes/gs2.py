@@ -185,26 +185,26 @@ class gs2(code):
 			n_jobs = len(scanner._input_files)
 		while n_jobs > 0:
 			for input_file in scanner._input_files:
-				os.system(f"mpirun -np 8 gs2 \"{input_file}.in\"")
+				os.system(f"mpirun -np 8 gs2 \"{input_file}/input.gs2\"")
 				scanner._input_files.remove(input_file)
 				n_jobs -= 1
 		return
 		
 	def make_ideal_job_files_ypi(self, scanner):
-		if n_jobs is None or n_jobs > len(self._input_files):
-			n_jobs = len(self._input_files)
+		if n_jobs is None or n_jobs > len(scanner._ideal_dirs):
+			n_jobs = len(scanner._ideal_dirs)
 		while n_jobs > 0:
-			for input_file in self._ideal_input_files:
-				os.system(f"ideal_ball \"{input_file}.in\"")
-				self._ideal_input_files.remove(input_file)
+			for input_dir in scanner._ideal_dirs:
+				os.system(f"ideal_ball \"{input_dir}/ideal.gs2\"")
+				scanner._ideal_dirs.remove(input_dir)
 				n_jobs -= 1
 		return
 	
 	
-	jobfile_viking = '''echo "${{INFILE}}.in"
-gs2 "${INFILE}.in"
-if test -f "${INFILE}.out.nc"; then
-touch "${INFILE}.fin"
+	jobfile_viking = '''echo "${INDIR}/input.gs2"
+gs2 "${INDIR}/input.gs2"
+if test -f "${INDIR}/input.out.nc"; then
+touch "${INDIR}/run.fin"
 fi'''
 		
 	def write_pyth_archer2(self, scanner, input_list, filename):
@@ -214,30 +214,30 @@ fi'''
 from joblib import Parallel, delayed
 from time import sleep
 
-input_files = {input_list}
+input_dirs = {input_dirs}
 
 def start_run(run, run_attempt = 1):
 if run_attempt <= 3:
-	os.system(f"echo \\\"Input: {{run}}.in\\\"")
-	os.system(f"gs2 \\\"{{run}}.in\\\"")
-	if os.path.exists(f"\\\"{{run}}.out.nc\\\"'):
-		os.system(f"touch \\\"{{run}}.fin\\\"")
+	os.system(f"echo \\\"Input: {{run}}/input.gs2\\\"")
+	os.system(f"gs2 \\\"{{run}}/input.gs2\\\"")
+	if os.path.exists(f"\\\"{{run}}/input.out.nc\\\"'):
+		os.system(f"touch \\\"{{run}}/run.fin\\\"")
 	else:
 		sleep(60)
 		start_run(run, run_attempt = run_attempt+1)
 else:
 	print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
-Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_files)""")
+Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_dirs)""")
 		pyth.close()
 		
 		return
 	
 	def get_non_linear_archer2(self, scanner):
 		ntasks = scanner.inputs['sbatch']['nodes']*128//scanner.inputs['sbatch']['cpus-per-task']
-		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{list(scanner._input_files)[0]}.in\"
-if test -f \"{list(scanner._input_files)[0]}.out.nc\"; then
-touch \"{list(scanner._input_files)[0]}.fin\"
+		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{list(scanner._input_dirs)[0]}/input.gs2\"
+if test -f \"{list(scanner._input_files)[0]}/input.out.nc\"; then
+touch \"{list(scanner._input_files)[0]}/run.fin\"
 fi'''
 		return run_code
 		
@@ -246,21 +246,17 @@ fi'''
 			os.makedirs(sub_dir+'/response',exist_ok=True)
 			os.makedirs(sub_dir+'/restart',exist_ok=True)
 		
-		existing_inputs = [] 
-		for f in glob.glob(r'itteration_*.in'):
-			existing_inputs.append([x for x in f if x.isdigit()])
-		itt = max([eval("".join(x)) for x in existing_inputs],default=-1)
-		filename = f"itteration_{scanner.inputs['itteration']}"
+		filename = f"input.gs2"
 		if not os.path.exists(f"{sub_dir}/{filename}"):
 			subnml = self.get_gyro_input(eqbm=eqbm,run=run,namelist_diff=namelist_diff)
-			self.write_nml(nml=subnml,directory=sub_dir,filename=f"{filename}.in")
-		return f"{sub_dir}/{filename}"
+			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
+		return
 	
 	def save_out(self, scanner, filename = None, directory = None, specificRuns = None, QuickSave = False):
 		
-		psi_itt = scanner.single_parameters['psin'].values if 'psin' in scanner.single_parameters else scanner.dimensions['psin'].values
+		psiNs = scanner.single_parameters['psin'].values if 'psin' in scanner.single_parameters else scanner.dimensions['psin'].values
 		equilibrium = {}
-		for psiN in psi_itt:
+		for psiN in psiNs:
 			equilibrium[psiN] = {}
 			nml = scanner.eqbm.get_surface_input(psiN)
 			equilibrium[psiN]['shear'] = nml['theta_grid_eik_knobs']['s_hat_input']
@@ -300,11 +296,7 @@ fi'''
 			for run in runs:
 				sub_dir = scanner.get_run_directory(run)
 				try:
-					existing_inputs = [] 
-					for f in glob.glob(r'itteration_*.in'):
-						existing_inputs.append([x for x in f if x.isdigit()])
-					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
-					run_data = readnc(f"{sub_dir}/itteration_{itt}.out.nc",only=only)	
+					run_data = readnc(f"{sub_dir}/input.out.nc",only=only)	
 					group_key = run_data['attributes']['id']
 					group_data[group_key] = {}
 					for key in group_keys:
@@ -363,7 +355,7 @@ fi'''
 									elif key in ['phi2_by_mode']:
 										gyro_data[run_key]['phi2'] = key_data[:,yi,xi]
 									elif key in ['epar']:
-										epar_path = f"{sub_dir}/itteration_{itt}.epar"
+										epar_path = f"{sub_dir}/input.epar"
 										epar_data = loadtxt(epar_path)
 										epar = []
 										for l in range(len(epar_data[:,3])):
@@ -371,13 +363,13 @@ fi'''
 										epar = array(epar)
 										gyro_data[run_key]['epar'] = epar
 								except Exception as e:
-									print(f"Save Error in {sub_dir}/itteration_{itt}: {e}")
+									print(f"Save Error in {sub_dir}: {e}")
 									if key == 'omega':
 										gyro_data[run_key]['growth_rate'] = nan
 										gyro_data[run_key]['mode_frequency'] = nan
 										
 				except Exception as e:
-					print(f"Save Error {sub_dir}/itteration_{itt}: {e}")
+					print(f"Save Error {sub_dir}: {e}")
 			if scanner.inputs['grid_option'] == 'box':
 				existing_dim_keys = []
 				for key in [x for x in scanner.inputs.inputs.keys() if 'dimension_' in x]:
@@ -397,17 +389,17 @@ fi'''
 		if scanner['ideal']:
 			ideal_keys = {}
 			if 'theta0' in scanner.single_parameters:
-				theta0_itt = scanner.single_parameters['theta0'].values  
+				theta0s = scanner.single_parameters['theta0'].values  
 			if 'theta0' in scanner.dimensions:
-				theta0_itt = scanner.dimensions['theta0'].values
+				theta0s = scanner.dimensions['theta0'].values
 			else:
-				theta0_itt = [0]
+				theta0s = [0]
 			
 			ideal_keys['psin'] = {}
 			ideal_keys['theta0'] = {}
-			for val in psi_itt:
+			for val in psiNs:
 				ideal_keys['psin'][val] = set()
-			for val in theta0_itt:
+			for val in theta0s:
 				ideal_keys['theta0'][val] = set()
 
 			ideal_data = {}
@@ -418,14 +410,10 @@ fi'''
 				ideal_data[run_id] = {}
 				try:
 					sub_dir = scanner.get_ideal_run_directory(run)
-					existing_inputs = [] 
-					for f in glob.glob(r'itteration_*.in'):
-						existing_inputs.append([x for x in f if x.isdigit()])
-					itt = max([eval("".join(x)) for x in existing_inputs],default=0)
 
-					shear = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_shat")
-					bp = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_bp")
-					stab = loadtxt(f"{sub_dir}/itteration_{itt}.ballstab_2d")
+					shear = loadtxt(f"{sub_dir}/ideal.ballstab_shat")
+					bp = loadtxt(f"{sub_dir}/ideal.ballstab_bp")
+					stab = loadtxt(f"{sub_dir}/ideal.ballstab_2d")
 					
 					ideal_data[run_id]['beta_prime'] = [abs(x) for x in bp]
 					ideal_data[run_id]['shear'] = shear.tolist()
@@ -451,7 +439,7 @@ fi'''
 	
 	def write_nml(self, nml, directory = ".", filename = None):
 		if filename is None:
-			filename = "itteration_0.in"
+			filename = "input.gs2"
 		nml.write(f"{directory}/{filename}", force=True)
 		return
 
