@@ -39,6 +39,8 @@ class psiN(dimension):
 class p_prime(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+		if self.option is None:
+			self.option = 'both'
 
 	name_keys = ['p_prime','p_prime_loc','pprime','pressure_prime','pressure_gradient']
 	axis_label = 'p_prime'
