@@ -39,6 +39,8 @@ class gs2(code):
 		if self.dim_list != None:
 			self.make_dim_lookup(self.dim_list)
 	
+	verifications = ['omega','phi2','t','phi','apar','bpar','epar']
+	
 	def check_scan(self, inputs, valid = True):
 		if self['grid_option'] == 'box':
 			if 'ky' in inputs.dimensions or 'ky' in inputs.single_parameters:

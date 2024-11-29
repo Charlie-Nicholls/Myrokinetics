@@ -25,6 +25,8 @@ class cgyro(code):
 		self.dim_list = dimensions_list
 		if self.dim_list != None:
 			self.make_dim_lookup(self.dim_list)
+			
+	verifications = ['omega','phi2','t','phi','apar','bpar','epar']
 	
 	def check_scan(self, inputs, valid = True):
 		if inputs['ideal'] == True:

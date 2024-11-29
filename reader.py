@@ -726,11 +726,14 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']}"
 		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
 
-	def plot_hflux(self, settings = {}):
-		if not self['nonlinear']:
-			print("ERROR: Only available for non-linear runs")
-			return
-		return Plotters['NL_Hflux'](reader = self, settings = settings)
+	def plot_hflux(self, settings = {}, sliders = None):
+		if self['nonlinear']:
+			return Plotters['NL_Hflux'](reader = self, settings = settings)
+		elif self['code'] in ['TGLF']:
+			settings['x_axis_type'] = 'p_prime'
+			settings['z_axis_type'] = 'heat_flux'
+			return Plotters['2D'](reader = self, settings = settings, sliders = sliders)
+			
 	
 	def plot_zonality(self, settings = {}):
 		if not self['nonlinear']:

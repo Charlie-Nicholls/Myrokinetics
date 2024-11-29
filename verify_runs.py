@@ -1,4 +1,5 @@
 from numpy import imag, real, nan, polyfit, log, log10
+from .codes import codes
 
 class verify_scan(object):
 	
@@ -17,6 +18,7 @@ class verify_scan(object):
 		self.convergence = {'converged': set(), 'converged_fit': set(), 'unconverged_stable': set(), 'unconverged': set(), 'uncalculated': set()}
 		self.save_errors = {'run': set(), 'omega': set(), 'phi2': set(), 't': set(), 'phi': set(), 'apar': set(), 'bpar': set(), 'epar': set()}
 		self.nts = {}
+		self.verifications = codes[reader['code']].verifications
 		self.check_all()
 	
 	def __getitem__(self, key):
@@ -158,6 +160,8 @@ class verify_scan(object):
 			print(e)
 
 	def check_nan(self, run):
+		if any([['omega','phi2','t'] not in self.verifications]):
+			return
 		omega = self.reader('omega',run)
 		phi2 = self.reader('phi2',run)
 		t = self.reader('t',run)
@@ -187,6 +191,8 @@ class verify_scan(object):
 			self.scan[run_id]['mode_frequency'] = real(omega[-1])
 			
 	def check_order(self, run):
+		if any([['phi2','t'] not in self.verifications]):
+			return
 		phi2 = self.reader('phi2',run)
 		t = self.reader('t',run)
 		if len(t) < 2:
@@ -210,6 +216,8 @@ class verify_scan(object):
 			self.scan[run_id]['t'] = [x for idx, x in enumerate(t) if positive[idx]]
 									
 	def check_convergence(self, run):
+		if any([['omega','phi2','t'] not in self.verifications]):
+			return
 		from scipy.stats import pearsonr
 		omega = self.reader('omega',run)
 		phi2 = self.reader('phi2',run)
@@ -293,6 +301,8 @@ class verify_scan(object):
 		self.nts[run_id] = nt
 
 	def check_nstep(self, run):
+		if 'omega' not in self.verifications:
+			return
 		omega = self.reader('omega',run)
 		run_id = self.reader.get_run_id(run)
 		if omega is None:
@@ -303,6 +313,8 @@ class verify_scan(object):
 			self.bad_runs['nstep'].add(run_id)
 		
 	def check_phi(self, run):
+		if 'phi' not in self.verifications:
+			return
 		phi = self.reader('phi',run)
 		run_id = self.reader.get_run_id(run)
 		if phi is None:
@@ -317,6 +329,8 @@ class verify_scan(object):
 			pass
 
 	def check_apar(self, run):
+		if 'apar' not in self.verifications:
+			return
 		apar = self.reader('apar',run)
 		run_id = self.reader.get_run_id(run)
 		if apar is None:
@@ -331,6 +345,8 @@ class verify_scan(object):
 			pass
 		
 	def check_bpar(self, run):
+		if'bpar' not in self.verifications:
+			return
 		bpar = self.reader('bpar',run)
 		run_id = self.reader.get_run_id(run)
 		if bpar is None:
@@ -345,6 +361,8 @@ class verify_scan(object):
 			pass
 	
 	def check_epar(self, run):
+		if 'epar' not in self.verifications:
+			return
 		epar = self.reader('epar',run)
 		run_id = self.reader.get_run_id(run)
 		if epar is None:

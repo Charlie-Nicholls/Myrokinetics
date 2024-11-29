@@ -32,6 +32,8 @@ class tglf(code):
 		if self.dim_list != None:
 			self.make_dim_lookup(self.dim_list)
 	
+	verifications = ['t']
+	
 	def check_scan(self, inputs, valid = True):
 		if inputs['ideal'] == True:
 			print("ERROR: Ideal runs cannot be performed on TGLF")
@@ -50,6 +52,8 @@ class tglf(code):
 		nml['vexb_shear'] = 0
 		nml['use_transport_model'] = True
 		nml['q_loc'] = abs(nml['q_loc'])
+		nml['kygrid_model'] = 0
+		nml['sat_rule'] = 3
 		return nml
 	
 	def _get_gyro_input(self, eqbm, run, nml):
