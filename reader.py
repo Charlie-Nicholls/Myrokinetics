@@ -364,7 +364,7 @@ class myro_read(object):
 			return
 		self.verify = verify_scan(reader = self)
 		self.data['gyro'] = self.verify.scan
-		self.calculate_gr()
+		#self.calculate_gr()
 	
 	def get_all_runs(self, excludeDimensions = []):
 		dim_order = [x for x in self.inputs.dim_order if x not in excludeDimensions]
@@ -443,6 +443,7 @@ class myro_read(object):
 		self.data['ql_fs'][ge] = ql_fs
 		
 	def calculate_gr(self):
+		#Deprecated?
 		abs_gr_keys = {}
 		norm_gr_keys = {}
 		for dim in [x for x in self.dimensions.values() if x.name not in ['ky','theta0']]:
@@ -452,14 +453,14 @@ class myro_read(object):
 				abs_gr_keys[dim.name][val] = []
 				norm_gr_keys[dim.name][val] = []
 		for runs in self.get_all_runs(excludeDimensions = ['ky','theta0']):
-			run_ids = self.get_run_list(runs)
 			abs_grs = []
 			norm_grs = []
-			if run_ids is not None:
-				for run_id in run_ids:
-					abs_grs.append(self.data['gyro'][run_id]['growth_rate'])
-					if 'ky' in self.data['gyro'][run_id]:
-						ky = self.data['gyro'][run_id]['ky']
+			if runs is not None:
+				for run in run_ids:
+					gr = self('growth_rate',run)
+					abs_grs.append(gr)
+					if 'ky' in run:
+						ky = run['ky']
 					elif 'ky' in self.single_parameters:
 						ky = self.single_parameters['ky'].values[0]
 					else:
@@ -470,7 +471,7 @@ class myro_read(object):
 						else:
 							norm_gr = nan
 					else:
-						norm_gr = self.data['gyro'][run_id]['growth_rate']/(ky**2)
+						norm_gr = gr/(ky**2)
 					norm_grs.append(norm_gr)
 					self.data['gyro'][run_id]['growth_rate_norm'] = norm_gr
 			
@@ -740,12 +741,15 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']}"
 		return Plotters["NL_Phi2_by_k"](reader = self, settings = settings)
 
-	def plot_hflux(self, settings = {}, sliders = None):
+	def plot_hflux(self, tot = True, settings = {}, sliders = None):
 		if self['nonlinear']:
 			return Plotters['NL_Hflux'](reader = self, settings = settings)
 		elif self['code'] in ['TGLF']:
 			settings['x_axis_type'] = 'p_prime'
-			settings['z_axis_type'] = 'heat_flux_tot'
+			if tot is False:
+				settings['z_axis_type'] = 'heat_flux'
+			else:
+				settings['z_axis_type'] = 'heat_flux_tot'
 			return Plotters['2D'](reader = self, settings = settings, sliders = sliders)
 			
 	

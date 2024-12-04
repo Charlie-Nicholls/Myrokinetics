@@ -110,8 +110,16 @@ class plot_2d(object):
 		self._sliders['z_slider'] = Slider(self.z_axes, 'Scale', 0, 100, valinit = self['z_slider']['scale'], valstep = 1, orientation = 'vertical')
 		self._sliders['z_slider'].on_changed(self.draw_fig)
 			
-		zs = [self.reader(self['z_axis_type'],arun) for arun in self.reader.get_all_runs() if str(self.reader(self['z_axis_type'],arun)) not in ['-inf','inf','nan']]
+		zsi = [self.reader(self['z_axis_type'],arun) for arun in self.reader.get_all_runs()]
+		zs = [val for val in zsi if str(val) not in ['-inf','inf','nan']]
 		self._z_max = max(zs,default=1)
+	
+		zs = []
+		for run in self.reader.get_all_runs():
+			val = self.reader(self['z_axis_type'],run)
+			if str(val) not in ['-inf','inf','nan']:
+				zs.append(val)
+		self._z_max = max(zs,default=100)
 		
 		ion()
 		self.draw_fig()
@@ -162,8 +170,8 @@ class plot_2d(object):
 		self.draw_fig()
 	
 	def _load_z_axis(self, axis_type):
-		if axis_type not in ['growth_rate','growth_rate_norm','mode_frequency','quasilinear','ql_norm','ql_metric','heat_flux_tot']:
-			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency','heat_flux_tot']")
+		if axis_type not in ['growth_rate','growth_rate_norm','mode_frequency','quasilinear','ql_norm','ql_metric','heat_flux_tot','heat_flux']:
+			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency','heat_flux_tot','heat_flux']")
 			return
 			
 		self.settings['z_axis_type'] = axis_type
@@ -200,6 +208,8 @@ class plot_2d(object):
 			#remove ky sliders
 			#if 'theta0' in self['run']:
 				#self.settings['run'].pop('theta0')
+		elif axis_type in ['heat_flux']:
+			self._z_axis_label = "Heat Flux"
 			
 	def set_z_axis_type(self, axis_type):
 		self._load_z_axis(axis_type)
@@ -347,9 +357,6 @@ class plot_2d(object):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
-				print(run)
-				print(self['z_axis_type'])
-				print(self.reader(self['z_axis_type'],run))
 				z[x_id][y_id] = self.reader(self['z_axis_type'],run)
 		z = transpose(z)
 		self.z_axis = z
