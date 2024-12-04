@@ -79,9 +79,6 @@ class myro_read(object):
 		else:
 			
 			if run is None:
-				if len(ids) != len(self.dimensions):
-					print(f"ERROR: ids must be length {len(self.dimensions)}")
-					return None
 				run = {}
 				for idx, i in enumerate(ids):
 					run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]

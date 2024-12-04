@@ -102,12 +102,12 @@ class shear(dimension):
 		nml['q_prime_loc'] = val * (nml['q_loc']/nml['rmin_loc'])**2
 		return nml
 
-class ky(dimension):
+class ky_max(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
-	name_keys = ['ky','aky','ky_rho0']
-	axis_label = r'$k_{y}\rho_{0}$'
+	name_keys = ['ky_max']
+	axis_label = r'$max(k_{y})$'
 	valid_options = []
 
 	def sub_validate(self, values):
@@ -238,4 +238,4 @@ class jtwist(dimension):
 		nml['box_size'] = val
 		return nml
 
-dimensions_list = [psiN,p_prime,q_prime,shear,ky,kx,theta0,ntheta,nx,ny,jtwist]
+dimensions_list = [psiN,p_prime,q_prime,shear,ky_max,kx,theta0,ntheta,nx,ny,jtwist]
