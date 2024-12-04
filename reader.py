@@ -1,5 +1,5 @@
 import os
-from numpy import load, savez, nan, isfinite, array, zeros
+from numpy import load, savez, nan, isfinite, array, zeros, linspace
 from .plotting import Plotters
 from .verify_runs import verify_scan
 from .inputs import scan_inputs
@@ -83,20 +83,8 @@ class myro_read(object):
 				for idx, i in enumerate(ids):
 					run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]
 			run_id = self.get_run_id(run)
-			if run_id is None:
-				for dim, val in run.items():
-					if val not in self.dimensions[dim].values:
-						run[dim] = self.dimensions[dim].values[abs(array(self.dimensions[dim].values) - val).argmin()]
-						print(f"{dim} = {val} not found, using closest value of {dim} = {run[dim]}")
-				run_id = self.get_run_id(run)
-				if run_id is None:
-					if key in ['phi2_avg','t','theta','gds2','jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']:
-						group_key = self.get_group_key(run)
-						if group_key is None:
-							return None
-						else:
-							return self.data['group'][group_key][key]
-			if len(run) != len(self.dimensions):
+			
+			if len(run) < len(self.dimensions):
 				id_set = set()
 				id_list = self.get_run_list(run)
 				for sid in id_list:
@@ -110,6 +98,38 @@ class myro_read(object):
 				else:
 					print(f"ERROR: len(run) must be length {len(self.dimensions)}")
 					return None
+					
+			elif len(run) > len(self.dimensions):
+				if 'ky' in run.keys() and 'ky' not in self.dimensions.keys() and 'ky_max' in self.single_parameters.keys() and 'ny' in self.single_parameters.keys():
+					ky = run['ky']
+					del(run['ky'])
+					val = self(key,run)
+					if type(val) == list:
+						kys = linspace(self.single_parameters['ky_max'].values[0],self.single_parameters['ny'].values[0])
+						if ky in kys:
+							ky_id = kys.index(ky)
+						else:
+							ky_id = abs(array(kys) - ky).argmin()
+						val = val[ky_id]
+					return val
+				else:
+					print(f"ERROR: len(run) must be length {len(self.dimensions)}")
+					return None
+			
+			elif run_id is None:
+				for dim, val in run.items():
+					if val not in self.dimensions[dim].values:
+						run[dim] = self.dimensions[dim].values[abs(array(self.dimensions[dim].values) - val).argmin()]
+						print(f"{dim} = {val} not found, using closest value of {dim} = {run[dim]}")
+				run_id = self.get_run_id(run)
+				if run_id is None:
+					if key in ['phi2_avg','t','theta','gds2','jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']:
+						group_key = self.get_group_key(run)
+						if group_key is None:
+							return None
+						else:
+							return self.data['group'][group_key][key]
+			
 
 			if key in self.data['gyro'][run_id].keys():
 				return self.data['gyro'][run_id][key]
@@ -728,7 +748,7 @@ class myro_read(object):
 			return Plotters['NL_Hflux'](reader = self, settings = settings)
 		elif self['code'] in ['TGLF']:
 			settings['x_axis_type'] = 'p_prime'
-			settings['z_axis_type'] = 'heat_flux'
+			settings['z_axis_type'] = 'heat_flux_tot'
 			return Plotters['2D'](reader = self, settings = settings, sliders = sliders)
 			
 	

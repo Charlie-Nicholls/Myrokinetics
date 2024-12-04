@@ -347,6 +347,9 @@ class plot_2d(object):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
+				print(run)
+				print(self['z_axis_type'])
+				print(self.reader(self['z_axis_type'],run))
 				z[x_id][y_id] = self.reader(self['z_axis_type'],run)
 		z = transpose(z)
 		self.z_axis = z

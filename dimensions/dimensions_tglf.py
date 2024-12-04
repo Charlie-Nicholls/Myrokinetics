@@ -112,12 +112,29 @@ class ky_max(dimension):
 
 	def sub_validate(self, values):
 		if any([x < 0 for x in values]):
-			print("Error: ky values outside allowed range (x>=0)")
+			print("Error: ky_max values outside allowed range (x>=0)")
 			values = [x for x in values if (x>=0)]
 		return values
 
 	def edit_nml(self, nml, val):
 		nml['ky'] = val
+		return nml
+
+class ky(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['ky']
+	axis_label = r'$k_{y}$'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([x < 0 for x in values]):
+			print("Error: ky values outside allowed range (x>=0)")
+			values = [x for x in values if (x>=0)]
+		return values
+
+	def edit_nml(self, nml, val):
 		return nml
 
 class kx(dimension):
