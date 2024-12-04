@@ -82,9 +82,24 @@ class myro_read(object):
 				run = {}
 				for idx, i in enumerate(ids):
 					run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]
+			
 			run_id = self.get_run_id(run)
 			
-			if len(run) < len(self.dimensions):
+			if 'ky' in run and self['code'] == 'TGLF':
+				# ADD SUPPORT FOR GROUPED/NL GS2 RUNS
+				ky = run['ky']
+				del(run['ky'])
+				val = self(key,run)
+				if type(val) == list:
+					kys = self['ky']
+					if ky in kys:
+						ky_id = kys.index(ky)
+					else:
+						ky_id = abs(array(kys) - ky).argmin()
+					val = val[ky_id]
+				return val
+			
+			elif len(run) != len(self.dimensions) and self['code'] != 'TGLF':
 				id_set = set()
 				id_list = self.get_run_list(run)
 				for sid in id_list:
@@ -95,23 +110,6 @@ class myro_read(object):
 					else:
 						print(f"ERROR: either run wrong length or group key {key} not found")
 						return None
-				else:
-					print(f"ERROR: len(run) must be length {len(self.dimensions)}")
-					return None
-					
-			elif len(run) > len(self.dimensions):
-				if 'ky' in run.keys() and 'ky' not in self.dimensions.keys() and 'ky_max' in self.single_parameters.keys() and 'ny' in self.single_parameters.keys():
-					ky = run['ky']
-					del(run['ky'])
-					val = self(key,run)
-					if type(val) == list:
-						kys = linspace(self.single_parameters['ky_max'].values[0],self.single_parameters['ny'].values[0])
-						if ky in kys:
-							ky_id = kys.index(ky)
-						else:
-							ky_id = abs(array(kys) - ky).argmin()
-						val = val[ky_id]
-					return val
 				else:
 					print(f"ERROR: len(run) must be length {len(self.dimensions)}")
 					return None
@@ -129,7 +127,6 @@ class myro_read(object):
 							return None
 						else:
 							return self.data['group'][group_key][key]
-			
 
 			if key in self.data['gyro'][run_id].keys():
 				return self.data['gyro'][run_id][key]
