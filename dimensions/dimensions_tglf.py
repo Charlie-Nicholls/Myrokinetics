@@ -146,7 +146,7 @@ class ky_model(dimension):
 	valid_options = []
 
 	def sub_validate(self, values):
-		if any([x not in [0,1,4]]):
+		if any([x not in [0,1,4] for x in values]):
 			print("Error: ky_model value invalid, valid: [0,1,4]")
 			values = [x for x in values if (x in [0,1,4])]
 		return values
