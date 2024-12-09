@@ -152,7 +152,7 @@ class ky_model(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['ky_model'] = val
+		nml['kygrid_model'] = val
 		return nml
 
 class kx(dimension):
