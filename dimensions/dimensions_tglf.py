@@ -137,6 +137,24 @@ class ky(dimension):
 	def edit_nml(self, nml, val):
 		return nml
 
+class ky_model(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['ky_model','kygrid_model']
+	axis_label = 'ky_model'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([x not in [0,1,4]]):
+			print("Error: ky_model value invalid, valid: [0,1,4]")
+			values = [x for x in values if (x in [0,1,4])]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['ky_model'] = val
+		return nml
+
 class kx(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
