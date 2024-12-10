@@ -219,7 +219,7 @@ class q_loc(dimension):
 	
 	def sub_validate(self, values):
 		if any([x<0 for x in values]):
-				values = [x if x>=0 for x in values]
+				values = [x for x in values if x >= 0]
 				values.sort()
 		return values
 
