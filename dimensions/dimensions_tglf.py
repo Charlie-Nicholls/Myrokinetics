@@ -167,69 +167,7 @@ class kx(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		print("kx dimension only used for reading data in cgyro")
-		return nml
-
-class theta0(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['theta0','theta','t0']
-	axis_label = r'$\theta_{0}$'
-	valid_options = []
-
-	def sub_validate(self, values):
-		from numpy import pi
-		if any([x < -pi or x > pi for x in values]):
-			print("Error: theta0 values outside allowed range (-pi<=x<=pi)")
-			values = [x for x in values if (-pi<=x<=pi)]
-		return values
-
-	def edit_nml(self, nml, val):
-		nml['THETA0_SA'] = val
-		return nml
-
-class ntheta(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['ntheta','n_theta','num_theta']
-	axis_label = 'ntheta'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([x <= 0 for x in values]):
-			print("Error: ntheta values outside the allowed range (x>0)")
-			values = [x for x in values if (x>0)]
-		if any([x != int(x) for x in values]):
-			print("Error: ntheta values must be integers")
-			values = [x for x in values if (x==int(x))]
-		return values
-
-	def edit_nml(self, nml, val):
-		nml['N_THETA'] = val
-		nml['THETA_PLOT'] = val #Temporary?
-		return nml
-
-class nx(dimension):
-	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-
-	name_keys = ['nx','n_radial','nradial','num_radial']
-	axis_label = 'nx'
-	valid_options = []
-
-	def sub_validate(self, values):
-		if any([x <= 0 for x in values]):
-			print("Error: nx values outside the allowed range (x>0)")
-			values = [x for x in values if (x>0)]
-		if any([x != int(x) for x in values]):
-			print("Error: nx values must be integers")
-			values = [x for x in values if (x==int(x))]
-		return values
-
-	def edit_nml(self, nml, val):
-		nml['N_RADIAL'] = val
+		print("kx dimension only used for reading data in tglf")
 		return nml
 
 class ny(dimension):
@@ -253,24 +191,22 @@ class ny(dimension):
 		nml['nky'] = val
 		return nml
 
-class jtwist(dimension):
+class sat_rule(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
-		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = None)
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
 
-	name_keys = ['jtwist']
-	axis_label = 'jtwist'
+	name_keys = ['sat_rule']
+	axis_label = 'sat_rule'
 	valid_options = []
 
 	def sub_validate(self, values):
-		if any([x <= 0 for x in values]):
-			print("Error: jtwist values outside allowed range (x>0)")
-		if any([int(x) != x for x in values]):
-			print("Error: jtwist must be integers")
-			values = [x for x in values if (x>0 and int(x)==x)]
+		if any([x not in [0,1,2,3] for x in values]):
+			print("Error: ky_model value invalid, valid: [0,1,2,3]")
+			values = [x for x in values if (x in [0,1,2,3])]
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['box_size'] = val
+		nml['sat_rule'] = val
 		return nml
 
-dimensions_list = [psiN,p_prime,q_prime,shear,ky_max,ky,ky_model,kx,theta0,ntheta,nx,ny,jtwist]
+dimensions_list = [psiN,p_prime,q_prime,shear,ky_max,ky,ky_model,kx,ny,sat_rule]
