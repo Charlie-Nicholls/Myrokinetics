@@ -209,4 +209,22 @@ class sat_rule(dimension):
 		nml['sat_rule'] = val
 		return nml
 
-dimensions_list = [psiN,p_prime,q_prime,shear,ky_max,ky,ky_model,kx,ny,sat_rule]
+class q_loc(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['q','q_loc']
+	axis_label = 'q_loc'
+	valid_options = []
+	
+	def sub_validate(self, values):
+		if any([x<0 for x in values]):
+				values = [x if x>=0 for x in values]
+				values.sort()
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['q_loc'] = val
+		return nml
+
+dimensions_list = [psiN,p_prime,q_prime,shear,ky_max,ky,ky_model,kx,ny,sat_rule,q_loc]
