@@ -46,10 +46,11 @@ class tglf(code):
 		return template_lines
 		
 	def _get_surface_input(self, eqbm, nml):
-		nml['vpar_shear_1'] = 0
-		nml['vpar_shear_2'] = 0
-		nml['vpar_shear_3'] = 0
-		nml['vexb_shear'] = 0
+		if self.eqbm.inputs['force_zero_fs']:
+			nml['vpar_shear_1'] = 0
+			nml['vpar_shear_2'] = 0
+			nml['vpar_shear_3'] = 0
+			nml['vexb_shear'] = 0
 		nml['use_transport_model'] = True
 		nml['q_loc'] = abs(nml['q_loc'])
 		nml['kygrid_model'] = 0

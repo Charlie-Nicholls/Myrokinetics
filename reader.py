@@ -23,15 +23,16 @@ class myro_read(object):
 			self._verify_run()
 	
 	def __call__(self, key, *indexes):
+		from copy import deepcopy
 		if type(indexes[0]) == dict:
-			run = indexes[0]
+			run = deepcopy(indexes[0])
 			ids = None
 		elif type(indexes[0]) == int:
 			run = None
-			ids = list(indexes)
+			ids = list(deepcopy(indexes))
 		else:
 			run = None
-			ids = list(indexes[0])
+			ids = list(deepcopy(indexes)[0])
 		
 		key.lower()
 		if key in ['gr','growth','gamma']:
