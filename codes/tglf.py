@@ -45,8 +45,8 @@ class tglf(code):
 				template_lines = f.readlines()
 		return template_lines
 		
-	def _get_surface_input(self, eqbm, nml):
-		if eqbm.inputs['force_zero_fs']:
+	def _get_surface_input(self, inputs, nml):
+		if inputs['force_zero_fs']:
 			nml['vpar_shear_1'] = 0
 			nml['vpar_shear_2'] = 0
 			nml['vpar_shear_3'] = 0
