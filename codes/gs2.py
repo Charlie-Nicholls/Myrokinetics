@@ -245,7 +245,7 @@ fi'''
 		return run_code
 		
 	def make_gyro_file(self, eqbm, run, sub_dir, namelist_diff = {}):
-		if scanner.inputs['grid_option'] == 'box':
+		if eqbm.inputs['grid_option'] == 'box':
 			os.makedirs(sub_dir+'/response',exist_ok=True)
 			os.makedirs(sub_dir+'/restart',exist_ok=True)
 		
