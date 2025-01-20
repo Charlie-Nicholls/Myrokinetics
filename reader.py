@@ -175,6 +175,30 @@ class myro_read(object):
 			tot *= len(dim)
 		return tot
 	
+	def get_eq(self, psiN = None):
+		if 'psin' in self.single_parameters:
+			psiN = self.single_parameters['psin'].values[0]
+		if psiN is None:
+			print("ERROR: psiN not specified")
+			return
+		
+		sh = self.data['equilibrium'][psiN]['shear']
+		sh_cl = self.dimensions['shear'].values[abs(array(self.dimensions['shear'].values) - sh).argmin()]
+		sh_id = self.dimensions['shear'].values.index(sh_cl)
+		if self['code'] == 'TGLF':
+			bp = self.data['equilibrium'][psiN]['p_prime']
+			bp_cl = self.dimensions['p_prime'].values[abs(array(self.dimensions['p_prime'].values) - bp).argmin()]
+			bp_id = self.dimensions['p_prime'].values.index(bp_cl)
+		else:
+			bp = self.data['equilibrium'][psiN]['beta_prime']
+			bp_cl = self.dimensions['beta_prime'].values[abs(array(self.dimensions['beta_prime'].values) - bp).argmin()]
+			bp_id = self.dimensions['beta_prime'].values.index(bp_cl)
+		
+		
+		print(f"Closest: {bp_cl}, {sh_cl} | Closest Index: {bp_id}, {sh_id}")
+		
+		return {'beta_prime': bp, 'shear': sh}
+	
 	def get_run_from_id(self, run_id):
 		run = {}
 		for dim in self.dimensions:

@@ -450,6 +450,10 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
 		return
 	
+	def print_info(self):
+		for key, val in self.inputs['info'].items():
+			print(f"{key} = {val}")
+	
 	def print_run_input(self, run = {}):
 		import f90nml
 		if run not in self.get_all_runs():

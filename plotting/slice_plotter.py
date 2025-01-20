@@ -255,11 +255,12 @@ class plot_slice(object):
 			limits = self.ax.get_ylim()
 			low_lim = 0 if min(limits) > 0 else min(limits)
 			high_lim = max(limits) if max(limits) > 0 else 0
+			psiN = None
 			if 'psin' in self['run']:
 				psiN = self['run']['psin']
-			else:
+			elif self['x_axis_type'] != 'psin':
 				psiN = self.reader.single_parameters['psin'].values[0]
-			if self['x_axis_type'] in self.reader.data['equilibrium'][psiN]:
+			if psiN is not None and self['x_axis_type'] in self.reader.data['equilibrium'][psiN]:
 				eqbm_val = abs(self.reader.data['equilibrium'][psiN][self['x_axis_type']])
 				self.ax.vlines(eqbm_val,low_lim,high_lim,self['colours']['eqbm'])
 				handles.append(Line2D([0.5,0.5],[0,1],c=self['colours']['eqbm'],label = "Equillibrium"))
