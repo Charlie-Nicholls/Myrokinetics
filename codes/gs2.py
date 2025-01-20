@@ -42,7 +42,7 @@ class gs2(code):
 	verifications = ['omega','phi2','t','phi','apar','bpar','epar']
 	
 	def check_scan(self, inputs, valid = True):
-		if self['grid_option'] == 'box':
+		if inputs['grid_option'] == 'box':
 			if 'ky' in inputs.dimensions or 'ky' in inputs.single_parameters:
 				print("ERROR: ky dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
 				valid = False

@@ -497,6 +497,7 @@ class scan_inputs(object):
 		new_inputs['info']['run_name'] = f"{filename}"
 		new_inputs['sbatch']['job-name'] = f"{filename}"
 		new_inputs['sbatch']['output'] = f"{filename}.slurm"
+		new_inputs['sbatch']['error'] = f"{filename}.err"
 		new_inputs['sbatch_save']['job-name'] = f"{filename}"
 		
 		new_inputs['info']['run_uuid'] = None

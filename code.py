@@ -45,7 +45,7 @@ class code(object):
 			nml = dim.single_edit_nml(nml)
 		return nml
 		
-	def _get_surface_input(self, eqbm, nml):
+	def _get_surface_input(self, inputs, nml):
 		return nml
 		
 	def get_gyro_input(self, eqbm, run = None, indexes = None, namelist_diff = {}):
