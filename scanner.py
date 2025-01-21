@@ -257,6 +257,7 @@ class myro_scan(object):
 				
 	def make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None):
 		self._input_dirs = set()
+		codes[self.inputs['gk_code']].pass_dependencies(self)
 		if checkSetup:
 			if not self.check_setup():
 				return
@@ -269,8 +270,6 @@ class myro_scan(object):
 			runs = check['gyro_incomplete']
 		else:
 			runs = specificRuns
-		
-		codes[self.inputs['gk_code']].pass_dependencies(self)
 		
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
