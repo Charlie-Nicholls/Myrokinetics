@@ -251,7 +251,7 @@ fi'''
 		
 		filename = f"input.gs2"
 		if not os.path.exists(f"{sub_dir}/{filename}"):
-			subnml = self.get_gyro_input(eqbm=self.eqbm,run=run,namelist_diff=namelist_diff)
+			subnml = self.get_gyro_input(run=run,namelist_diff=namelist_diff)
 			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
 		return
 	
