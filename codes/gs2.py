@@ -41,27 +41,27 @@ class gs2(code):
 	
 	verifications = ['omega','phi2','t','phi','apar','bpar','epar']
 	
-	def check_scan(self, inputs, valid = True):
-		if inputs['grid_option'] == 'box':
-			if 'ky' in inputs.dimensions or 'ky' in inputs.single_parameters:
+	def check_scan(self, valid = True):
+		if self.inputs['grid_option'] == 'box':
+			if 'ky' in self.inputs.dimensions or 'ky' in self.inputs.single_parameters:
 				print("ERROR: ky dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
 				valid = False
-			if 'kx' in inputs.dimensions or 'kx' in inputs.single_parameters:
+			if 'kx' in self.inputs.dimensions or 'kx' in self.inputs.single_parameters:
 				print("ERROR: kx dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
 				valid = False
-			if 'theta0' in inputs.dimensions or 'theta0' in inputs.single_parameters:
+			if 'theta0' in self.inputs.dimensions or 'theta0' in self.inputs.single_parameters:
 				print("ERROR: theta0 dimension is not compatible with grid_option == box: use nx, ny, y0 and jtwist")
 				valid = False
-			if not inputs['fixed_delt']:
+			if not self.inputs['fixed_delt']:
 				print("grid_option == box runs can only use fixed_delt == True")
-				self.inputs['knobs']['fixed_delt'] = True
+				self.self.inputs['knobs']['fixed_delt'] = True
 		return valid
 	
-	def get_template_lines(self, inputs):
-		template_lines = f90nml.read(os.path.join(inputs['template_path'],inputs['template_name']))
+	def get_template_lines(self):
+		template_lines = f90nml.read(os.path.join(self.inputs['template_path'],self.inputs['template_name']))
 		return template_lines
 		
-	def _get_surface_input(self, inputs, nml):
+	def _get_surface_input(self, nml):
 		nml['theta_grid_parameters']['qinp'] = abs(nml['theta_grid_parameters']['qinp'])
 		
 		if 'parameters' in nml.keys() and 'beta' in nml['parameters'].keys():
@@ -94,7 +94,7 @@ class gs2(code):
 		if 'ngauss' in nml['le_grids_knobs'] and 'npassing' in nml['le_grids_knobs']:
 			del(nml['le_grids_knobs']['ngauss'])
 		
-		if inputs['force_zero_fs']:
+		if self.inputs['force_zero_fs']:
 			nml['dist_fn_knobs']['g_exb'] = 0
 			
 		nml['theta_grid_eik_knobs']['equal_arc'] = False
@@ -102,10 +102,10 @@ class gs2(code):
 		nml['dist_fn_knobs']['mach'] = 0
 		
 		if 'avail_cpu_time' not in nml['knobs'].keys():
-				h, m, s = inputs['sbatch']['time'].split(':')
+				h, m, s = self.inputs['sbatch']['time'].split(':')
 				nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
 		
-		if inputs['grid_option'] == 'single':
+		if self.inputs['grid_option'] == 'single':
 			nml['kt_grids_knobs']['grid_option'] = 'single'
 			if 'kt_grids_single_parameters' not in nml:
 				nml['kt_grids_single_parameters'] = {'aky': 0.1, 'theta0': 0}
@@ -113,7 +113,7 @@ class gs2(code):
 				del(nml['kt_grids_box_parameters'])
 			if 'margin_cpu_time' not in nml['knobs'].keys():
 				nml['knobs']['margin_cpu_time'] = 300
-		elif inputs['grid_option'] == 'box':
+		elif self.inputs['grid_option'] == 'box':
 			nml['kt_grids_knobs']['grid_option'] = 'box'
 			nml['dist_fn_knobs']['boundary_option'] = 'linked'
 			nml['dist_fn_knobs']['esv'] = True
@@ -131,30 +131,30 @@ class gs2(code):
 				nml['gs2_diagnostics_knobs']['nsave'] = 1
 			if 'margin_cpu_time' not in nml['knobs'].keys():
 				nml['knobs']['margin_cpu_time'] = 2400
-			if 'nperiod' not in inputs.dimensions and 'nperiod' not in inputs.single_parameters:
+			if 'nperiod' not in self.inputs.dimensions and 'nperiod' not in self.inputs.single_parameters:
 					nml['theta_grid_parameters']['nperiod'] = 1
 		else:
 			print("ERROR: grid_option is invalid, valid: ['single','box']")
 					
-		if inputs['non_linear'] == True:
+		if self.inputs['non_linear'] == True:
 			if 'nonlinear_terms_knobs' not in nml.keys():
 				nml['nonlinear_terms_knobs'] = {}
 			nml['nonlinear_terms_knobs']['nonlinear_mode'] = 'on'
 			if 'cfl' not in nml['nonlinear_terms_knobs'].keys():
 				nml['nonlinear_terms_knobs']['cfl']	= 0.5
-			if inputs['split_nonlinear'] == True:
+			if self.inputs['split_nonlinear'] == True:
 				nml['nonlinear_terms_knobs']['split_nonlinear'] = True
 				if 'split_nonlinear_terms_knobs' not in nml.keys():
 					nml['split_nonlinear_terms_knobs'] = {'show_statistics': True}
 			
-		if inputs['Miller']:
+		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['local_eq'] = True
 		else:
-			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(inputs['data_path'],inputs['eq_name'])
+			nml['theta_grid_eik_knobs']['eqfile'] = os.path.join(self.inputs['data_path'],self.inputs['eq_name'])
 			nml['theta_grid_eik_knobs']['efit_eq'] =  True
 			nml['theta_grid_eik_knobs']['local_eq'] = False
 		
-		if inputs['Epar']:
+		if self.inputs['Epar']:
 			nml['gs2_diagnostics_knobs']['write_ascii'] = True
 			nml['gs2_diagnostics_knobs']['write_final_epar'] = True
 		else:
@@ -164,17 +164,17 @@ class gs2(code):
 		if 'ntheta_geometry' not in nml['theta_grid_eik_knobs'].keys():
 			nml['theta_grid_eik_knobs']['ntheta_geometry'] = 4096
 
-		if inputs['Ideal']:
-			beta_mul = abs(inputs['beta_prime_max']/beta_prim)
-			beta_div = abs(beta_prim/inputs['beta_prime_min'])
+		if self.inputs['Ideal']:
+			beta_mul = abs(self.inputs['beta_prime_max']/beta_prim)
+			beta_div = abs(beta_prim/self.inputs['beta_prime_min'])
 
-			nml['ballstab_knobs'] = {'n_shat': inputs['n_shat_ideal'], 'n_beta': inputs['n_beta_ideal'], 'shat_min': inputs['shat_min'], 'shat_max': inputs['shat_max'], 'beta_div': beta_div, 'beta_mul': beta_mul}
+			nml['ballstab_knobs'] = {'n_shat': self.inputs['n_shat_ideal'], 'n_beta': self.inputs['n_beta_ideal'], 'shat_min': self.inputs['shat_min'], 'shat_max': self.inputs['shat_max'], 'beta_div': beta_div, 'beta_mul': beta_mul}
 
 		nml['knobs']['wstar_units'] = False
 		return nml
 	
-	def _get_gyro_input(self, inputs, run, nml):
-		if inputs['knobs']['fixed_delt'] == False:
+	def _get_gyro_input(self, run, nml):
+		if self.inputs['knobs']['fixed_delt'] == False:
 			ky = nml['kt_grids_single_parameters']['aky']
 			delt = 0.04/ky
 			if delt > 0.01:
@@ -182,23 +182,23 @@ class gs2(code):
 			nml['knobs']['delt'] = delt
 		return nml
 	
-	def make_job_files_ypi(self, scanner):
-		if n_jobs is None or n_jobs > len(scanner._input_dirs):
-			n_jobs = len(scanner._input_dirs)
+	def make_job_files_ypi(self):
+		if n_jobs is None or n_jobs > len(self.scanner._input_dirs):
+			n_jobs = len(self.scanner._input_dirs)
 		while n_jobs > 0:
-			for input_dir in scanner._input_dirs:
+			for input_dir in self.scanner._input_dirs:
 				os.system(f"mpirun -np 8 gs2 \"{input_dir}/input.gs2\"")
-				scanner._input_dirs.remove(input_dir)
+				self.scanner._input_dirs.remove(input_dir)
 				n_jobs -= 1
 		return
 		
-	def make_ideal_job_files_ypi(self, scanner):
-		if n_jobs is None or n_jobs > len(scanner._ideal_dirs):
-			n_jobs = len(scanner._ideal_dirs)
+	def make_ideal_job_files_ypi(self):
+		if n_jobs is None or n_jobs > len(self.scanner._ideal_dirs):
+			n_jobs = len(self.scanner._ideal_dirs)
 		while n_jobs > 0:
-			for input_dir in scanner._ideal_dirs:
+			for input_dir in self.scanner._ideal_dirs:
 				os.system(f"ideal_ball \"{input_dir}/ideal.gs2\"")
-				scanner._ideal_dirs.remove(input_dir)
+				self.scanner._ideal_dirs.remove(input_dir)
 				n_jobs -= 1
 		return
 	
@@ -209,9 +209,9 @@ if test -f "${INDIR}/input.out.nc"; then
 touch "${INDIR}/run.fin"
 fi'''
 		
-	def write_pyth_archer2(self, scanner, dir_list, filename):
+	def write_pyth_archer2(self, dir_list, filename):
 
-		pyth = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
+		pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 		pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
@@ -235,57 +235,57 @@ Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for
 		
 		return
 	
-	def get_non_linear_archer2(self, scanner):
-		ntasks = scanner.inputs['sbatch']['nodes']*128//scanner.inputs['sbatch']['cpus-per-task']
-		run_dir = list(scanner._input_dirs)[0]
+	def get_non_linear_archer2(self):
+		ntasks = self.inputs['sbatch']['nodes']*128//self.inputs['sbatch']['cpus-per-task']
+		run_dir = list(self.scanner._input_dirs)[0]
 		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{run_dir}/input.gs2\"
 if test -f \"{run_dir}/input.out.nc\"; then
 touch \"{run_dir}/run.fin\"
 fi'''
 		return run_code
 		
-	def make_gyro_file(self, eqbm, run, sub_dir, namelist_diff = {}):
-		if eqbm.inputs['grid_option'] == 'box':
+	def make_gyro_file(self, run, sub_dir, namelist_diff = {}):
+		if self.inputs['grid_option'] == 'box':
 			os.makedirs(sub_dir+'/response',exist_ok=True)
 			os.makedirs(sub_dir+'/restart',exist_ok=True)
 		
 		filename = f"input.gs2"
 		if not os.path.exists(f"{sub_dir}/{filename}"):
-			subnml = self.get_gyro_input(eqbm=eqbm,run=run,namelist_diff=namelist_diff)
+			subnml = self.get_gyro_input(eqbm=self.eqbm,run=run,namelist_diff=namelist_diff)
 			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
 		return
 	
-	def save_out(self, scanner, filename = None, directory = None, specificRuns = None, QuickSave = False):
+	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False):
 		
-		psiNs = scanner.single_parameters['psin'].values if 'psin' in scanner.single_parameters else scanner.dimensions['psin'].values
+		psiNs = self.scanner.single_parameters['psin'].values if 'psin' in self.scanner.single_parameters else self.scanner.dimensions['psin'].values
 		equilibrium = {}
 		for psiN in psiNs:
 			equilibrium[psiN] = {}
-			nml = scanner.eqbm.get_surface_input(psiN)
+			nml = self.eqbm.get_surface_input(psiN)
 			equilibrium[psiN]['shear'] = nml['theta_grid_eik_knobs']['s_hat_input']
 			equilibrium[psiN]['beta_prime'] = nml['theta_grid_eik_knobs']['beta_prime_input']
 
-		if scanner['gyro']:
+		if self.scanner['gyro']:
 			gyro_data = {}
 			group_data = {}
 			only = set({'omega','kx','ky'})
 			if not QuickSave:
 				only = only | set({'phi','bpar','apar','phi2','t','theta', 'gds2', 'jacob','ql_metric_by_mode', 'phi2_by_mode'})
-			#if scanner.inputs['epar']:
+			#if self.inputs['epar']:
 				#only = only | set({'epar'}) NOT CURRENTLY WORKING
-			if scanner.inputs['grid_option'] == 'box':
+			if self.inputs['grid_option'] == 'box':
 				only = only | set({'phi2_by_kx', 'phi2_by_ky'})
-			if scanner.inputs['non_linear'] == True:
+			if self.inputs['non_linear'] == True:
 				only = only | set({'heat_flux_tot'})
 			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
 			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx', 'phi2_by_ky']
 			gyro_keys = {}
-			for dim in scanner.dimensions.values():
+			for dim in self.scanner.dimensions.values():
 				gyro_keys[dim.name] = {}
 				for val in dim.values:
 					gyro_keys[dim.name][val] = set()
 			
-			if scanner.inputs['grid_option'] == 'box':
+			if self.inputs['grid_option'] == 'box':
 				kxs = set()
 				kys = set()
 				gyro_keys['ky'] = {}
@@ -294,10 +294,10 @@ fi'''
 			if specificRuns:
 				runs = list(specificRuns)
 			else:
-				runs = scanner.get_all_runs() if scanner.inputs['grid_option'] != 'box' else scanner.get_all_runs(excludeDimensions=['kx','ky'])
+				runs = self.scanner.get_all_runs() if self.inputs['grid_option'] != 'box' else self.scanner.get_all_runs(excludeDimensions=['kx','ky'])
 			
 			for run in runs:
-				sub_dir = scanner.get_run_directory(run)
+				sub_dir = self.scanner.get_run_directory(run)
 				try:
 					run_data = readnc(f"{sub_dir}/input.out.nc",only=only)	
 					group_key = run_data['attributes']['id']
@@ -312,7 +312,7 @@ fi'''
 							for key in run:
 								gyro_keys[key][run[key]].add(run_key)
 							gyro_data[run_key]['group_key'] = group_key
-							if scanner.inputs['grid_option'] == 'box':
+							if self.inputs['grid_option'] == 'box':
 								kxs.add(kx)
 								kys.add(ky)
 								if ky not in gyro_keys['ky']:
@@ -325,7 +325,7 @@ fi'''
 								gyro_data[run_key]['kx'] = kx
 							if 'ky' not in gyro_data[run_key]:
 								gyro_data[run_key]['ky'] = ky
-							#gyro_data['nml_diffs'] = scanner.namelist_diffs[?]
+							#gyro_data['nml_diffs'] = self.scanner.namelist_diffs[?]
 							for key in data_keys:
 								gyro_data[run_key][key] = None
 							for key in only:
@@ -373,28 +373,28 @@ fi'''
 										
 				except Exception as e:
 					print(f"Save Error {sub_dir}: {e}")
-			if scanner.inputs['grid_option'] == 'box':
+			if self.inputs['grid_option'] == 'box':
 				existing_dim_keys = []
-				for key in [x for x in scanner.inputs.inputs.keys() if 'dimension_' in x]:
+				for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
 					existing_dim_keys.append([x for x in key if x.isdigit()])
 				dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
 				kxs = list(kxs)
 				kxs.sort()
-				scanner.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
+				self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
 				kys = list(kys)
 				kys.sort()
-				scanner.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
-				scanner.inputs.load_dimensions()
+				self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
+				self.inputs.load_dimensions()
 		else:
 			gyro_data = None
 			gyro_keys = None
 
-		if scanner['ideal']:
+		if self.scanner['ideal']:
 			ideal_keys = {}
-			if 'theta0' in scanner.single_parameters:
-				theta0s = scanner.single_parameters['theta0'].values  
-			if 'theta0' in scanner.dimensions:
-				theta0s = scanner.dimensions['theta0'].values
+			if 'theta0' in self.scanner.single_parameters:
+				theta0s = self.scanner.single_parameters['theta0'].values  
+			if 'theta0' in self.scanner.dimensions:
+				theta0s = self.scanner.dimensions['theta0'].values
 			else:
 				theta0s = [0]
 			
@@ -406,13 +406,13 @@ fi'''
 				ideal_keys['theta0'][val] = set()
 
 			ideal_data = {}
-			for run in scanner.get_all_ideal_runs():
+			for run in self.scanner.get_all_ideal_runs():
 				run_id = str(uuid4())
 				for key in run:
 					ideal_keys[key][run[key]].add(run_id)
 				ideal_data[run_id] = {}
 				try:
-					sub_dir = scanner.get_ideal_run_directory(run)
+					sub_dir = self.scanner.get_ideal_run_directory(run)
 
 					shear = loadtxt(f"{sub_dir}/ideal.ballstab_shat")
 					bp = loadtxt(f"{sub_dir}/ideal.ballstab_bp")

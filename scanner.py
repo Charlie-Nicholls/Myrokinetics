@@ -269,13 +269,14 @@ class myro_scan(object):
 			runs = check['gyro_incomplete']
 		else:
 			runs = specificRuns
-	
+		
+		codes[self.inputs['gk_code']].pass_dependencies(self)
+		
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
-			codes[self.inputs['gk_code']].make_gyro_file(eqbm=self.eqbm,run=run,sub_dir=sub_dir)
+			codes[self.inputs['gk_code']].make_gyro_file(run=run,sub_dir=sub_dir)
 			self._input_dirs.add(sub_dir)
-			
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
 		self._ideal_input_dirs = set()
@@ -444,7 +445,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
 			return
 		
-		data = codes[self.inputs['gk_code']].save_out(self, filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave)
+		data = codes[self.inputs['gk_code']].save_out(filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave)
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
