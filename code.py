@@ -17,7 +17,7 @@ class code(object):
 	def pass_dependencies(self, scanner):
 		self.eqbm = scanner.eqbm
 		self.inputs = scanner.inputs
-		self.scanner = self.scanner
+		self.scanner = self
 	
 	def make_dim_lookup(self, dim_list):
 		dim_lookup = {'_list': [], '_full_list': []}
