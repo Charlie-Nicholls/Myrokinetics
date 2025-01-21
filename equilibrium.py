@@ -128,7 +128,7 @@ class equilibrium(object):
 		if not self.kin_data:
 			self.load_kinetics()
 		
-		self._template_lines = codes[self.inputs['gk_code']].get_template_lines(self.inputs)
+		self._template_lines = codes[self.inputs['gk_code']].get_template_lines()
 
 		kin_type = 'pFile' if self.inputs['kinetics_type'].upper() == 'PEQDSK' else self.inputs['kinetics_type'].upper()
 		self.pyro = Pyro(
@@ -189,11 +189,11 @@ class equilibrium(object):
 		if self.pyro is None:
 			self.load_pyro()
 		
-		self.surface_namelists[psiN] = codes[self.inputs['gk_code']].get_surface_input(eqbm=self, psiN=psiN)
+		self.surface_namelists[psiN] = codes[self.inputs['gk_code']].get_surface_input(psiN=psiN)
 		return deepcopy(self.surface_namelists[psiN])
 
 	def get_gyro_input(self, run = None, indexes = None, namelist_diff = {}):
-		nml = codes[self.inputs['gk_code']].get_gyro_input(eqbm=self, run = run, indexes=indexes, namelist_diff=namelist_diff)
+		nml = codes[self.inputs['gk_code']].get_gyro_input(run = run, indexes=indexes, namelist_diff=namelist_diff)
 		return nml
 	
 	def write_nml(self, nml, directory = ".", filename = None):
