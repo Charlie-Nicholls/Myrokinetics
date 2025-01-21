@@ -307,7 +307,7 @@ class scan_inputs(object):
 			print("ERROR: psiN must be specified as single parameter or scan dimension")
 			valid = False
 		
-		valid = codes[self['gk_code']].check_scan(self, valid)
+		valid = codes[self['gk_code']].check_scan(valid)
 		
 		if self['grid_option'] == 'single':
 			if 'ny' in self.dimensions or 'ny' in self.single_parameters:
