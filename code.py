@@ -45,7 +45,7 @@ class code(object):
 		nml = deepcopy(self.eqbm.pyro.gk_input.data)
 		for dim in self.inputs.single_parameters.values():
 			nml = dim.single_edit_nml(nml)
-		nml = self._get_surface_input(self.inputs, nml)
+		nml = self._get_surface_input(nml)
 		for dim in self.inputs.single_parameters.values():
 			nml = dim.single_edit_nml(nml)
 		return nml
@@ -81,7 +81,7 @@ class code(object):
 		for dim_name, dim in self.inputs.single_parameters.items():
 			nml = dim.single_edit_nml(nml)
 		
-		nml = self._get_gyro_input(self.inputs, run, nml)
+		nml = self._get_gyro_input(run, nml)
 		
 		for dim_name, dim in self.inputs.dimensions.items():
 			nml = dim.edit_nml(nml=nml,val=run[dim_name])
