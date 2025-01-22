@@ -66,10 +66,10 @@ class tglf(code):
 		print(f"ERROR: {self.code_name} DOES NOT SUPPORT YPI SERVERS")
 		return
 	
-	jobfile_viking = f'''echo "${{INDIR}}/{self.input_name}"
+	jobfile_viking = f'''echo "${{INDIR}}/{input_name}"
 cd "${{INDIR}}"
 tglf -e "."
-if test -f "${{INDIR}}/{self.output_name}"; then
+if test -f "${{INDIR}}/{output_name}"; then
 touch "${{INDIR}}/run.fin"
 fi'''
 	
