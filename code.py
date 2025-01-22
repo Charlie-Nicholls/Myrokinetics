@@ -66,7 +66,7 @@ class code(object):
 			print("ERROR: psiN not defined")
 			return None
 		
-		nml = self.get_surface_input(psiN)
+		nml = self.eqbm.get_surface_input(psiN)
 		
 		for dim_name, dim in self.inputs.dimensions.items():
 			nml = dim.edit_nml(nml=nml,val=run[dim_name])
