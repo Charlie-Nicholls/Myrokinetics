@@ -251,10 +251,9 @@ fi'''
 			os.makedirs(sub_dir+'/response',exist_ok=True)
 			os.makedirs(sub_dir+'/restart',exist_ok=True)
 		
-		filename = f"input.in"
-		if not os.path.exists(f"{sub_dir}/{filename}"):
+		if not os.path.exists(f"{sub_dir}/{self.input_name}"):
 			subnml = self.get_gyro_input(run=run,namelist_diff=namelist_diff)
-			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
+			self.write_nml(nml=subnml,directory=sub_dir,filename=self.input_name)
 		return
 	
 	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False):
