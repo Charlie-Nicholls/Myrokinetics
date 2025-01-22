@@ -20,8 +20,9 @@ class code(object):
 	
 	def pass_dependencies(self, scanner):
 		self.eqbm = scanner.eqbm
-		self.eqbm.pyro.gk_code = self.code_name
-		self.eqbm.pyro.update_gk_code()
+		if self.eqbm.pyro is not None:
+			self.eqbm.pyro.gk_code = self.code_name
+			self.eqbm.pyro.update_gk_code()
 		self.inputs = scanner.inputs
 		self.scanner = self
 	
