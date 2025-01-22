@@ -205,9 +205,9 @@ class gs2(code):
 		return
 	
 	
-	jobfile_viking = f'''echo "${{INDIR}}/{self.input_name}"
-gs2 "${{INDIR}}/{self.input_name}"
-if test -f "${{INDIR}}/{self.output_name}"; then
+	jobfile_viking = f'''echo "${{INDIR}}/{input_name}"
+gs2 "${{INDIR}}/{input_name}"
+if test -f "${{INDIR}}/{output_name}"; then
 touch "${{INDIR}}/run.fin"
 fi'''
 		
