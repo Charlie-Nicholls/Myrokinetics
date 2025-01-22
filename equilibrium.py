@@ -108,7 +108,7 @@ class equilibrium(object):
 			self.inputs.inputs['files']['template_name'] = template_file
 			self.inputs.check_inputs()
 		elif self.inputs['template_name'] is None:
-			self.inputs.inputs['files']['template_name'] = codes[self.inputs['gk_code']].template
+			self.inputs.inputs['files']['template_name'] = self.inputs.code.template
 			self.inputs.inputs['files']['template_path'] = template_dir
 		
 		if directory is None:
@@ -128,7 +128,7 @@ class equilibrium(object):
 		if not self.kin_data:
 			self.load_kinetics()
 		
-		self._template_lines = codes[self.inputs['gk_code']].get_template_lines()
+		self._template_lines = self.inputs.code.get_template_lines()
 
 		kin_type = 'pFile' if self.inputs['kinetics_type'].upper() == 'PEQDSK' else self.inputs['kinetics_type'].upper()
 		self.pyro = Pyro(
@@ -189,15 +189,15 @@ class equilibrium(object):
 		if self.pyro is None:
 			self.load_pyro()
 		
-		self.surface_namelists[psiN] = codes[self.inputs['gk_code']].get_surface_input(psiN=psiN)
+		self.surface_namelists[psiN] = self.inputs.code.get_surface_input(psiN=psiN)
 		return deepcopy(self.surface_namelists[psiN])
 
 	def get_gyro_input(self, run = None, indexes = None, namelist_diff = {}):
-		nml = codes[self.inputs['gk_code']].get_gyro_input(run = run, indexes=indexes, namelist_diff=namelist_diff)
+		nml = self.inputs.code.get_gyro_input(run = run, indexes=indexes, namelist_diff=namelist_diff)
 		return nml
 	
 	def write_nml(self, nml, directory = ".", filename = None):
-		 codes[self.inputs['gk_code']].write_nml(nml=nml,directory=directory,filename=filename)
+		 self.inputs.code.write_nml(nml=nml,directory=directory,filename=filename)
 
 	def make_profiles(self):
 		from scipy.interpolate import InterpolatedUnivariateSpline

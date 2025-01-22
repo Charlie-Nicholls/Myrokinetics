@@ -34,19 +34,19 @@ class tglf(code):
 	
 	verifications = ['t']
 	
-	def check_scan(self, inputs, valid = True):
-		if inputs['ideal'] == True:
+	def check_scan(self, valid = True):
+		if self.inputs['ideal'] == True:
 			print("ERROR: Ideal runs cannot be performed on TGLF")
 			valid = False
 		return valid
 	
-	def get_template_lines(self, inputs):
-		with open(os.path.join(inputs['template_path'],inputs['template_name']),'r') as f:
+	def get_template_lines(self):
+		with open(os.path.join(self.inputs['template_path'],self.inputs['template_name']),'r') as f:
 				template_lines = f.readlines()
 		return template_lines
 		
-	def _get_surface_input(self, inputs, nml):
-		if inputs['force_zero_fs']:
+	def _get_surface_input(self, nml):
+		if self.inputs['force_zero_fs']:
 			nml['vpar_shear_1'] = 0
 			nml['vpar_shear_2'] = 0
 			nml['vpar_shear_3'] = 0
@@ -57,10 +57,10 @@ class tglf(code):
 		nml['sat_rule'] = 3
 		return nml
 	
-	def _get_gyro_input(self, eqbm, run, nml):
+	def _get_gyro_input(self, run, nml):
 		return nml
 	
-	def make_job_files_ypi(self, scanner):
+	def make_job_files_ypi(self):
 		print(f"ERROR: {self.code_name} DOES NOT SUPPORT YPI SERVERS")
 		return
 	
@@ -71,8 +71,8 @@ if test -f "${INDIR}/out.tglf.run"; then
 touch "${INDIR}/run.fin"
 fi'''
 	
-	def write_pyth_archer2(self, scanner, dir_list, filename):
-		pyth = open(f"{scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
+	def write_pyth_archer2(self, dir_list, filename):
+		pyth = open(f"{self.inputs['data_path']}/submit_files/{filename}/{filename}.py",'w')
 		pyth.write(f"""import os
 from joblib import Parallel, delayed
 from time import sleep
@@ -99,25 +99,25 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 		pyth.close()
 		return
 		
-	def make_gyro_file(self, eqbm, run, sub_dir, namelist_diff = {}):
+	def make_gyro_file(self, run, sub_dir, namelist_diff = {}):
 		filename = "input.tglf"
 		if not os.path.exists(f"{sub_dir}/{filename}"):
-			subnml = self.get_gyro_input(eqbm=eqbm,run=run,namelist_diff=namelist_diff)
+			subnml = self.get_gyro_input(run=run,namelist_diff=namelist_diff)
 			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
 		return sub_dir
 	
-	def save_out(self, scanner, filename = None, directory = None, specificRuns = None, QuickSave = False):
+	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False):
 		from numpy import sum as npsum
-		psi_itt = scanner.single_parameters['psin'].values if 'psin' in scanner.single_parameters else scanner.dimensions['psin'].values
+		psi_itt = self.scanner.single_parameters['psin'].values if 'psin' in self.scanner.single_parameters else self.scanner.dimensions['psin'].values
 		equilibrium = {}
 		for psiN in psi_itt:
 			equilibrium[psiN] = {}
-			nml = scanner.eqbm.get_surface_input(psiN)
+			nml = self.eqbm.get_surface_input(psiN)
 			equilibrium[psiN]['q_prime'] = nml['q_prime_loc']
 			equilibrium[psiN]['p_prime'] = nml['p_prime_loc']
 			equilibrium[psiN]['shear'] = nml['q_prime_loc'] / (nml['q_loc']/nml['rmin_loc'])**2
 		
-		if scanner['gyro']:
+		if self.scanner['gyro']:
 			gyro_data = {}
 			group_data = {}
 			only = set({'growth_rate','mode_frequency','ky','kx'})
@@ -125,18 +125,18 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 				only = only | set({'time','heat','phi','bpar','apar'}) #theta not working
 			data_keys = ['growth_rate','mode_frequency','growth_rate2','mode_frequency2','phi','bpar','apar','parity','ql_metric','heat_flux','t']
 			gyro_keys = {}
-			for dim in scanner.dimensions.values():
+			for dim in self.scanner.dimensions.values():
 				gyro_keys[dim.name] = {}
 				for val in dim.values:
 					gyro_keys[dim.name][val] = set()
 			kys = None
 			
-			runs = scanner.get_all_runs() if specificRuns is None else list(specificRuns)
+			runs = self.scanner.get_all_runs() if specificRuns is None else list(specificRuns)
 			for run in runs:
-				sub_dir = scanner.get_run_directory(run)
+				sub_dir = self.scanner.get_run_directory(run)
 				try:
-					scanner.eqbm.pyro.load_gk_output(sub_dir)
-					run_data = scanner.eqbm.pyro.gk_output
+					self.eqbm.pyro.load_gk_output(sub_dir)
+					run_data = self.eqbm.pyro.gk_output
 					if kys is None:
 						kys = array(run_data['ky']).tolist()
 					try:
@@ -179,13 +179,13 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 					print(f"Save Error {sub_dir}: {e}")
 			
 			existing_dim_keys = []
-			for key in [x for x in scanner.inputs.inputs.keys() if 'dimension_' in x]:
+			for key in [x for x in self.inputs.inputs.keys() if 'dimension_' in x]:
 				existing_dim_keys.append([x for x in key if x.isdigit()])
 			dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
 			if 'ky' not in scanner.dimensions:
 				kys.sort()
-				scanner.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
-			scanner.inputs.load_dimensions()
+				self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
+			self.inputs.load_dimensions()
 
 		else:
 			gyro_data = None

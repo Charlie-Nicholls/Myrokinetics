@@ -17,7 +17,7 @@ class myro_scan(object):
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
-		self.dat = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
+		self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
 		self._input_dirs = set()
 		self._jobs = set()
 		self._ideal_input_dirs = set()
@@ -72,6 +72,7 @@ class myro_scan(object):
 		self.single_parameters = self.inputs.single_parameters
 		if self.eqbm:
 			self.eqbm.load_inputs(self.inputs)
+		self.inputs.load_code(self)
 	
 	@property
 	def run_input(self):
@@ -257,7 +258,6 @@ class myro_scan(object):
 				
 	def make_gyro_files(self, directory = None, checkSetup = True, specificRuns = None):
 		self._input_dirs = set()
-		codes[self.inputs['gk_code']].pass_dependencies(self)
 		if checkSetup:
 			if not self.check_setup():
 				return
@@ -274,7 +274,7 @@ class myro_scan(object):
 		for run in runs:
 			sub_dir = self.get_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
-			codes[self.inputs['gk_code']].make_gyro_file(run=run,sub_dir=sub_dir)
+			self.inputs.code.make_gyro_file(run=run,sub_dir=sub_dir)
 			self._input_dirs.add(sub_dir)
 	
 	def make_ideal_files(self, directory = None, specificRuns = None, checkSetup = True):
@@ -444,7 +444,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
 			return
 		
-		data = codes[self.inputs['gk_code']].save_out(filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave)
+		data = self.inputs.code.save_out(filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave)
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
@@ -552,7 +552,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 #SBATCH --distribution=block:block
 #SBATCH --hint=nomultithread
 
-{codes[self['gk_code']].archer2_modules}
+{self.inputs.code.archer2_modules}
 
 cgyro -i "./" >& input.report
 """)

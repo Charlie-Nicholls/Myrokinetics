@@ -106,7 +106,7 @@ class scan_inputs(object):
 			directory = template_dir
 		self.path = directory
 		self.input_name = input_file
-		self.inputs = self.dimensions = self.dim_order = None
+		self.inputs = self.dimensions = self.dim_order = self.code = None
 		if input_file is not None:
 			self.load_inputs()
 		if input_dict is not None:
@@ -185,7 +185,15 @@ class scan_inputs(object):
 				self.inputs[key][sub_key] = dic[key][sub_key]
 		self.check_inputs()
 		self.load_dimensions()
-
+	
+	def load_code(self, scanner = None):
+		if self.inputs['gk_code'] in codes.keys():
+			self.code = codes[self.inputs['gk_code']]
+			if scanner is not None:
+				self.code.pass_dependencies(scanner)
+		else:
+			print("ERROR gk_code {self.inputs['gk_code']} not found")
+	
 	def check_inputs(self):
 		defaults = deepcopy(default_inputs)
 		for key in defaults:
@@ -220,7 +228,9 @@ class scan_inputs(object):
 		if self['gk_code'] not in codes.keys():
 			print("ERROR: gk_code must be in {codes.keys()}. Setting to GS2")
 			self.inputs['knobs']['gk_code'] = defaults['knobs']['gk_code']
-		self.dim_lookup = codes[self['gk_code']].dim_lookup
+			if self.code is None:
+				self.load_code()
+		self.dim_lookup = self.code.dim_lookup
 
 		if self.inputs['files']['input_name'] is None and self.input_name:
 			self.inputs['files']['input_name'] = self.input_name
@@ -228,7 +238,7 @@ class scan_inputs(object):
 			self.inputs['files']['input_path'] = self.path
 		
 		if not self.inputs['files']['template_name']:
-			self.inputs['files']['template_name'] = codes[self['gk_code']].template
+			self.inputs['files']['template_name'] = self.code.template
 			self.inputs['files']['template_path'] = template_dir
 		
 		for key in ['eq','kin']:
@@ -307,7 +317,7 @@ class scan_inputs(object):
 			print("ERROR: psiN must be specified as single parameter or scan dimension")
 			valid = False
 		
-		valid = codes[self['gk_code']].check_scan(valid)
+		valid = self.code.check_scan(valid)
 		
 		if self['grid_option'] == 'single':
 			if 'ny' in self.dimensions or 'ny' in self.single_parameters:
