@@ -228,8 +228,8 @@ class scan_inputs(object):
 		if self['gk_code'] not in codes.keys():
 			print("ERROR: gk_code must be in {codes.keys()}. Setting to GS2")
 			self.inputs['knobs']['gk_code'] = defaults['knobs']['gk_code']
-			if self.code is None:
-				self.load_code()
+		if self.code is None:
+			self.load_code()
 		self.dim_lookup = self.code.dim_lookup
 
 		if self.inputs['files']['input_name'] is None and self.input_name:
