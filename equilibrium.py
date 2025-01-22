@@ -191,7 +191,7 @@ class equilibrium(object):
 			self.pyro.load_local(psi_n=psiN)
 			self.pyro.update_gk_code()
 			
-			nml = deepcopy(self.eqbm.pyro.gk_input.data)
+			nml = deepcopy(self.pyro.gk_input.data)
 			for dim in self.inputs.single_parameters.values():
 				nml = dim.single_edit_nml(nml)
 				
