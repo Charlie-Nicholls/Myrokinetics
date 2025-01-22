@@ -184,12 +184,23 @@ class equilibrium(object):
 		f.close()
 	
 	def get_surface_input(self, psiN):
-		if psiN in self.surface_namelists.keys():
-			return deepcopy(self.surface_namelists[psiN])
-		if self.pyro is None:
-			self.load_pyro()
+		if psiN not in self.surface_namelists.keys():
+			if self.pyro is None:
+				self.load_pyro()
 		
-		self.surface_namelists[psiN] = self.inputs.code.get_surface_input(psiN=psiN)
+			self.pyro.load_local(psi_n=psiN)
+			self.pyro.update_gk_code()
+			
+			nml = deepcopy(self.eqbm.pyro.gk_input.data)
+			for dim in self.inputs.single_parameters.values():
+				nml = dim.single_edit_nml(nml)
+				
+			nml = self.inputs.code._get_surface_input(nml)
+			for dim in self.inputs.single_parameters.values():
+				nml = dim.single_edit_nml(nml)
+			
+			self.surface_namelists[psiN] = nml
+			
 		return deepcopy(self.surface_namelists[psiN])
 
 	def get_gyro_input(self, run = None, indexes = None, namelist_diff = {}):

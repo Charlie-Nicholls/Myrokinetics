@@ -20,6 +20,8 @@ class code(object):
 	
 	def pass_dependencies(self, scanner):
 		self.eqbm = scanner.eqbm
+		self.eqbm.pyro.gk_code = self.code_name
+		self.eqbm.pyro.update_gk_code()
 		self.inputs = scanner.inputs
 		self.scanner = self
 	
@@ -39,20 +41,6 @@ class code(object):
 	def get_template_lines(self):
 		template_lines = None
 		return template_lines
-	
-	def get_surface_input(self, psiN):
-		self.eqbm.pyro.gk_code = self.code_name
-		self.eqbm.pyro.update_gk_code()
-		self.eqbm.pyro.load_local(psi_n=psiN)
-		self.eqbm.pyro.update_gk_code()
-		from copy import deepcopy
-		nml = deepcopy(self.eqbm.pyro.gk_input.data)
-		for dim in self.inputs.single_parameters.values():
-			nml = dim.single_edit_nml(nml)
-		nml = self._get_surface_input(nml)
-		for dim in self.inputs.single_parameters.values():
-			nml = dim.single_edit_nml(nml)
-		return nml
 		
 	def _get_surface_input(self, nml):
 		return nml
