@@ -205,10 +205,10 @@ class gs2(code):
 		return
 	
 	
-	jobfile_viking = f'''echo "${INDIR}/{self.input_name}"
-gs2 "${INDIR}/{self.input_name}"
-if test -f "${INDIR}/{self.output_name}"; then
-touch "${INDIR}/run.fin"
+	jobfile_viking = f'''echo "${{INDIR}}/{self.input_name}"
+gs2 "${{INDIR}}/{self.input_name}"
+if test -f "${{INDIR}}/{self.output_name}"; then
+touch "${{INDIR}}/run.fin"
 fi'''
 		
 	def write_pyth_archer2(self, dir_list, filename):

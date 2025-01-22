@@ -66,11 +66,11 @@ class tglf(code):
 		print(f"ERROR: {self.code_name} DOES NOT SUPPORT YPI SERVERS")
 		return
 	
-	jobfile_viking = '''echo "${INDIR}/input.tglf"
-cd "${INDIR}"
+	jobfile_viking = f'''echo "${{INDIR}}/{self.input_name}"
+cd "${{INDIR}}"
 tglf -e "."
-if test -f "${INDIR}/{self.output_name}"; then
-touch "${INDIR}/run.fin"
+if test -f "${{INDIR}}/{self.output_name}"; then
+touch "${{INDIR}}/run.fin"
 fi'''
 	
 	def write_pyth_archer2(self, dir_list, filename):
