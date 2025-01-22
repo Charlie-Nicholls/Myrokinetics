@@ -17,13 +17,13 @@ class myro_scan(object):
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
-		self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
+		self.eqbm = self.equilbrium = self.inputs = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
 		self._input_dirs = set()
 		self._jobs = set()
 		self._ideal_input_dirs = set()
 		self._ideal_jobs = set()
 		self.load_inputs(input_file = input_file, directory = directory)
-		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
+		self.load_equilibrium(directory = directory)
 	
 	def __getitem__(self, key):
 		if key == "inputs":
@@ -72,6 +72,12 @@ class myro_scan(object):
 		self.single_parameters = self.inputs.single_parameters
 		if self.eqbm:
 			self.eqbm.load_inputs(self.inputs)
+		self.inputs.load_code(self)
+	
+	def load_equilibrium(self, directory = None):
+		if self.inputs is None:
+			print("ERROR: must provide inputs before loading equilibrium")
+		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
 		self.inputs.load_code(self)
 	
 	@property
