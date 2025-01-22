@@ -187,12 +187,12 @@ class scan_inputs(object):
 		self.load_dimensions()
 	
 	def load_code(self, scanner = None):
-		if self.inputs['gk_code'] in codes.keys():
-			self.code = codes[self.inputs['gk_code']]
+		if self['gk_code'] in codes.keys():
+			self.code = codes[self['gk_code']]
 			if scanner is not None:
 				self.code.pass_dependencies(scanner)
 		else:
-			print("ERROR gk_code {self.inputs['gk_code']} not found")
+			print("ERROR gk_code {self['gk_code']} not found")
 	
 	def check_inputs(self):
 		defaults = deepcopy(default_inputs)
