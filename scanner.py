@@ -17,7 +17,7 @@ class myro_scan(object):
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
-		self.eqbm = self.equilbrium = self.inputs = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
+		self.eqbm = self.equilibrium = self.inputs = self.file_lines = self.verify = self.dimensions = self.namelist_diffs = self.eqbm =  None
 		self._input_dirs = set()
 		self._jobs = set()
 		self._ideal_input_dirs = set()
