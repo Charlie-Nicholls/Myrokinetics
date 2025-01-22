@@ -33,6 +33,8 @@ class tglf(code):
 			self.make_dim_lookup(self.dim_list)
 	
 	verifications = ['t']
+	input_name = "input.tglf"
+	output_name = "out.tglf.run"
 	
 	def check_scan(self, valid = True):
 		if self.inputs['ideal'] == True:
@@ -67,7 +69,7 @@ class tglf(code):
 	jobfile_viking = '''echo "${INDIR}/input.tglf"
 cd "${INDIR}"
 tglf -e "."
-if test -f "${INDIR}/out.tglf.run"; then
+if test -f "${INDIR}/{self.output_name}"; then
 touch "${INDIR}/run.fin"
 fi'''
 	
@@ -87,7 +89,7 @@ def start_run(run, run_attempt = 1):
 		os.chdir(f"{{run}}")
 		os.system(f"$GACODE_ROOT/tglf/bin/tglf -n 128 -e .")
 		os.chdir(f"{{cwd}}")
-		if os.path.exists(f"{{run}}/out.tglf.run"):
+		if os.path.exists(f"{{run}}/{self.output_name}"):
 			os.system(f"touch {{run}}/run.fin")
 		else:
 			sleep(60)
@@ -100,10 +102,9 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 		return
 		
 	def make_gyro_file(self, run, sub_dir, namelist_diff = {}):
-		filename = "input.tglf"
-		if not os.path.exists(f"{sub_dir}/{filename}"):
+		if not os.path.exists(f"{sub_dir}/{self.input_name}"):
 			subnml = self.get_gyro_input(run=run,namelist_diff=namelist_diff)
-			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
+			self.write_nml(nml=subnml,directory=sub_dir,filename=self.input_name)
 		return sub_dir
 	
 	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False):

@@ -79,10 +79,6 @@ class myro_scan(object):
 			print("ERROR: must provide inputs before loading equilibrium")
 		self.eqbm = self.equilibrium = equilibrium(inputs = self.inputs, directory = directory)
 		self.inputs.load_code(self)
-	
-	@property
-	def run_input(self):
-		return f"input.{self['code'].lower()}"
 			
 	def write_scan_input(self, filename = None, directory = "./", doPrint = True):
 		self.inputs.write_scan_input(filename = filename, directory = directory, doPrint = doPrint)
@@ -466,7 +462,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			print("ERROR: run not found")
 			return
 			
-		filepath = f"{self.get_run_directory(run)}/{self.run_input}"
+		filepath = f"{self.get_run_directory(run)}/{self.inputs.code.input_name}"
 		with open(filepath) as f:
 			lines = f.readlines()
 			for line in lines:
@@ -541,7 +537,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
-		filepath = f"{self.get_run_directory(run)}/{self.run_input}"
+		filepath = f"{self.get_run_directory(run)}/{self.inputs.code.input_name}"
 		if not os.path.exists(filepath):
 			print(f"ERROR: input \"{filepath}\" not found")
 			return
@@ -587,7 +583,7 @@ cgyro -i "./" >& input.report
 		if run not in self.get_all_runs():
 			print("ERROR: run not found")
 			return
-		filepath = f"{self.get_run_directory(run)}/{self.run_input}"
+		filepath = f"{self.get_run_directory(run)}/{self.inputs.code.output_name}"
 		if os.path.exists(filepath):
 			sfile = readnc(filepath)
 			return sfile

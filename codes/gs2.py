@@ -40,6 +40,8 @@ class gs2(code):
 			self.make_dim_lookup(self.dim_list)
 	
 	verifications = ['omega','phi2','t','phi','apar','bpar','epar']
+	input_name = "gs2.in"
+	output_name = "gs2.out.nc"
 	
 	def check_scan(self, valid = True):
 		if self.inputs['grid_option'] == 'box':
@@ -187,7 +189,7 @@ class gs2(code):
 			n_jobs = len(self.scanner._input_dirs)
 		while n_jobs > 0:
 			for input_dir in self.scanner._input_dirs:
-				os.system(f"mpirun -np 8 gs2 \"{input_dir}/input.gs2\"")
+				os.system(f"mpirun -np 8 gs2 \"{input_dir}/{self.input_name}\"")
 				self.scanner._input_dirs.remove(input_dir)
 				n_jobs -= 1
 		return
@@ -203,9 +205,9 @@ class gs2(code):
 		return
 	
 	
-	jobfile_viking = '''echo "${INDIR}/input.gs2"
-gs2 "${INDIR}/input.gs2"
-if test -f "${INDIR}/input.out.nc"; then
+	jobfile_viking = f'''echo "${INDIR}/{self.input_name}"
+gs2 "${INDIR}/{self.input_name}"
+if test -f "${INDIR}/{self.output_name}"; then
 touch "${INDIR}/run.fin"
 fi'''
 		
@@ -220,9 +222,9 @@ input_dirs = {dir_list}
 
 def start_run(run, run_attempt = 1):
 if run_attempt <= 3:
-	os.system(f"echo \\\"Input: {{run}}/input.gs2\\\"")
-	os.system(f"gs2 \\\"{{run}}/input.gs2\\\"")
-	if os.path.exists(f"\\\"{{run}}/input.out.nc\\\"'):
+	os.system(f"echo \\\"Input: {{run}}/{self.input_name}\\\"")
+	os.system(f"gs2 \\\"{{run}}/{self.input_name}\\\"")
+	if os.path.exists(f"\\\"{{run}}/{self.output_name}\\\"'):
 		os.system(f"touch \\\"{{run}}/run.fin\\\"")
 	else:
 		sleep(60)
@@ -238,8 +240,8 @@ Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for
 	def get_non_linear_archer2(self):
 		ntasks = self.inputs['sbatch']['nodes']*128//self.inputs['sbatch']['cpus-per-task']
 		run_dir = list(self.scanner._input_dirs)[0]
-		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{run_dir}/input.gs2\"
-if test -f \"{run_dir}/input.out.nc\"; then
+		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{run_dir}/{self.input_name}\"
+if test -f \"{run_dir}/{self.output_name}\"; then
 touch \"{run_dir}/run.fin\"
 fi'''
 		return run_code
@@ -249,7 +251,7 @@ fi'''
 			os.makedirs(sub_dir+'/response',exist_ok=True)
 			os.makedirs(sub_dir+'/restart',exist_ok=True)
 		
-		filename = f"input.gs2"
+		filename = f"input.in"
 		if not os.path.exists(f"{sub_dir}/{filename}"):
 			subnml = self.get_gyro_input(run=run,namelist_diff=namelist_diff)
 			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
@@ -299,7 +301,7 @@ fi'''
 			for run in runs:
 				sub_dir = self.scanner.get_run_directory(run)
 				try:
-					run_data = readnc(f"{sub_dir}/input.out.nc",only=only)	
+					run_data = readnc(f"{sub_dir}/{self.output_name}",only=only)	
 					group_key = run_data['attributes']['id']
 					group_data[group_key] = {}
 					for key in group_keys:
@@ -442,7 +444,7 @@ fi'''
 	
 	def write_nml(self, nml, directory = ".", filename = None):
 		if filename is None:
-			filename = "input.gs2"
+			filename = self.input_name
 		nml.write(f"{directory}/{filename}", force=True)
 		return
 

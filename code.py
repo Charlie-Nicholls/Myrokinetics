@@ -14,6 +14,10 @@ class code(object):
 		if self.dim_list != None:
 			self.make_dim_lookup(self.dim_list)
 	
+	verifications = []
+	input_name = ""
+	output_name = ""
+	
 	def pass_dependencies(self, scanner):
 		self.eqbm = scanner.eqbm
 		self.inputs = scanner.inputs

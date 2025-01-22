@@ -27,6 +27,8 @@ class cgyro(code):
 			self.make_dim_lookup(self.dim_list)
 			
 	verifications = ['omega','phi2','t','phi','apar','bpar','epar']
+	input_name = "input.cgyro"
+	output_name = "out.cgyro.run"
 	
 	def check_scan(self, valid = True):
 		if self.inputs['ideal'] == True:
@@ -107,16 +109,15 @@ Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for ru
 		ntasks = self.inputs['sbatch']['nodes']*128//self.inputs['sbatch']['cpus-per-task']
 		run_code = f'''cd {indir}
 srun --nodes={self.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={self.inputs['sbatch']['cpus-per-task']} $GACODE_ROOT/cgyro/bin/cgyro -e . -n {ntasks} -nomp 1 -numa 8 -mpinuma 16 -p .
-if test -f \"{infi}/out.cgyro.run\"; then
-touch \"{infi}/run.fin\"
+if test -f \"./{self.output_name}\"; then
+touch \"./run.fin\"
 fi'''
 		return run_code
 		
 	def make_gyro_file(self, run, sub_dir, namelist_diff = {}):
-		filename = "input.cgyro"
-		if not os.path.exists(f"{sub_dir}/{filename}"):
+		if not os.path.exists(f"{sub_dir}/{self.input_name}"):
 			subnml = self.get_gyro_input(run=run,namelist_diff=namelist_diff)
-			self.write_nml(nml=subnml,directory=sub_dir,filename=filename)
+			self.write_nml(nml=subnml,directory=sub_dir,filename=self.input_name)
 		return sub_dir
 	
 	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False):
