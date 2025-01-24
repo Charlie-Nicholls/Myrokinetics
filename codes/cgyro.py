@@ -138,7 +138,7 @@ fi'''
 			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
 			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']
 			gyro_keys = {}
-			for dim in self.scanner.dimensions.values():
+			for dim in self.inputs.dimensions.values():
 				gyro_keys[dim.name] = {}
 				for val in dim.values:
 					gyro_keys[dim.name][val] = set()
@@ -224,7 +224,7 @@ fi'''
 			kxs = list(kxs)
 			kxs.sort()
 			self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
-			if 'ky' not in self.scanner.dimensions:
+			if 'ky' not in self.inputs.dimensions:
 				kys = list(kys)
 				kys.sort()
 				self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}

@@ -281,7 +281,7 @@ fi'''
 			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric']
 			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx', 'phi2_by_ky']
 			gyro_keys = {}
-			for dim in self.scanner.dimensions.values():
+			for dim in self.inputs.dimensions.values():
 				gyro_keys[dim.name] = {}
 				for val in dim.values:
 					gyro_keys[dim.name][val] = set()
@@ -392,10 +392,10 @@ fi'''
 
 		if self.scanner['ideal']:
 			ideal_keys = {}
-			if 'theta0' in self.scanner.single_parameters:
-				theta0s = self.scanner.single_parameters['theta0'].values  
-			if 'theta0' in self.scanner.dimensions:
-				theta0s = self.scanner.dimensions['theta0'].values
+			if 'theta0' in self.inputs.single_parameters:
+				theta0s = self.inputs.single_parameters['theta0'].values  
+			if 'theta0' in self.inputs.dimensions:
+				theta0s = self.inputs.dimensions['theta0'].values
 			else:
 				theta0s = [0]
 			
