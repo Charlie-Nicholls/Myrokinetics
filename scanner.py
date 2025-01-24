@@ -42,6 +42,20 @@ class myro_scan(object):
 			return len(self.get_all_runs())
 		return tot
 
+	@property
+	def single_parameters(self):
+		if self.inputs is None:
+			return None
+		else:
+			return self.inputs.single_parameters
+	
+	@property
+	def dimensions(self):
+		if self.inputs is None:
+			return None
+		else:
+			return self.inputs.dimensions
+
 	def print_inputs(self):
 		self.inputs.print_inputs()
 
@@ -68,8 +82,6 @@ class myro_scan(object):
 			self.inputs = None
 			return
 		self.inputs = scan_inputs(input_file = input_file, directory = directory)
-		self.dimensions = self.inputs.dimensions
-		self.single_parameters = self.inputs.single_parameters
 		if self.eqbm:
 			self.eqbm.load_inputs(self.inputs)
 		self.inputs.load_code(self)

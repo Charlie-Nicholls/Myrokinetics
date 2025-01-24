@@ -121,7 +121,7 @@ fi'''
 		return sub_dir
 	
 	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False):
-		psi_itt = self.scanner.single_parameters['psin'].values if 'psin' in self.scanner.single_parameters else self.scanner.dimensions['psin'].values
+		psi_itt = self.inputs.single_parameters['psin'].values if 'psin' in self.inputs.single_parameters else self.inputs.dimensions['psin'].values
 		equilibrium = {}
 		for psiN in psi_itt:
 			equilibrium[psiN] = {}
