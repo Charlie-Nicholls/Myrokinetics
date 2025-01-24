@@ -24,7 +24,7 @@ class code(object):
 			self.eqbm.pyro.gk_code = self.code_name
 			self.eqbm.pyro.update_gk_code()
 		self.inputs = scanner.inputs
-		self.scanner = self
+		self.scanner = scanner
 	
 	def make_dim_lookup(self, dim_list):
 		dim_lookup = {'_list': [], '_full_list': []}
