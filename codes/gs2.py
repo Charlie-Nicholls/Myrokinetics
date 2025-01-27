@@ -1,4 +1,5 @@
 from ..code import code
+from ..ncdf2dict import readnc
 from copy import deepcopy
 from numpy import real, imag, array, loadtxt, transpose, nan, trapz
 import os
