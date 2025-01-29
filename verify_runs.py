@@ -1,5 +1,6 @@
 from numpy import imag, real, nan, polyfit, log, log10
 from .codes import codes
+from scipy.stats import pearsonr
 
 class verify_scan(object):
 	
@@ -160,7 +161,7 @@ class verify_scan(object):
 			print(e)
 
 	def check_nan(self, run):
-		if any([['omega','phi2','t'] not in self.verifications]):
+		if any([x not in self.verifications for x in ['omega','phi2','t']]):
 			return
 		omega = self.reader('omega',run)
 		phi2 = self.reader('phi2',run)
@@ -191,7 +192,7 @@ class verify_scan(object):
 			self.scan[run_id]['mode_frequency'] = real(omega[-1])
 			
 	def check_order(self, run):
-		if any([['phi2','t'] not in self.verifications]):
+		if any([x not in self.verifications for x in ['phi2','t']]):
 			return
 		phi2 = self.reader('phi2',run)
 		t = self.reader('t',run)
@@ -216,9 +217,8 @@ class verify_scan(object):
 			self.scan[run_id]['t'] = [x for idx, x in enumerate(t) if positive[idx]]
 									
 	def check_convergence(self, run):
-		if any([['omega','phi2','t'] not in self.verifications]):
+		if any([x not in self.verifications for x in ['omega','phi2','t']]):
 			return
-		from scipy.stats import pearsonr
 		omega = self.reader('omega',run)
 		phi2 = self.reader('phi2',run)
 		t = self.reader('t',run)
