@@ -75,7 +75,7 @@ class beta_star_scale(dimension):
 	
 	def sub_validate(self, values):
 		if any([x<=0 for x in values]):
-			values = ([x for x in values if x > 0]))
+			values = [x for x in values if x > 0]
 			values.sort()
 		return values
 	def edit_nml(self, nml, val):
