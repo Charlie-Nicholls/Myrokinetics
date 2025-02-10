@@ -152,7 +152,7 @@ class theta0(dimension):
 
 	def edit_nml(self, nml, val):
 		from numpy import pi
-		nml['PX0'] = (val+pi)/2*pi
+		nml['PX0'] = val/pi
 		return nml
 
 class y0(dimension):
