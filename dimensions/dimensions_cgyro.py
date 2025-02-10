@@ -64,6 +64,24 @@ class beta_prime(dimension):
 
 		return nml
 
+class beta_star_scale(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+		print("BETA PRIME NOT YET IMPLIMENTED")
+
+	name_keys = ['beta_star_scale']
+	axis_label = r'$\beta_{*scale}$'
+	valid_options = []
+	
+	def sub_validate(self, values):
+		if any([x<=0 for x in values]):
+			values = ([x for x in values if x > 0]))
+			values.sort()
+		return values
+	def edit_nml(self, nml, val):
+		nml['BETA_STAR_SCALE'] = val
+		return nml
+
 class shear(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
@@ -79,7 +97,7 @@ class shear(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['s'] = val
+		nml['S'] = val
 		return nml
 
 class ky(dimension):
