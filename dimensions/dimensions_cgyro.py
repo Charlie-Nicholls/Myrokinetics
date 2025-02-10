@@ -106,7 +106,7 @@ class ky(dimension):
 
 	name_keys = ['ky','aky','ky_rho0']
 	axis_label = r'$k_{y}\rho_{0}$'
-	valid_options = []
+	valid_options = ['convert']
 
 	def sub_validate(self, values):
 		if any([x < 0 for x in values]):
@@ -115,6 +115,8 @@ class ky(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
+		if self.option = 'convert':
+			val = val / 2**0.5
 		nml['KY'] = val
 		return nml
 
@@ -159,7 +161,7 @@ class y0(dimension):
 
 	name_keys = ['y0','ky_min']
 	axis_label = 'y0'
-	valid_options = []
+	valid_options = ['convert']
 
 	def sub_validate(self, values):
 		if any([x <= 0 for x in values]):
@@ -168,6 +170,8 @@ class y0(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
+		if self.option = 'convert':
+			val = val / 2**0.5
 		nml['KY'] = val
 		return nml
 
