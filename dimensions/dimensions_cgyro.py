@@ -67,7 +67,6 @@ class beta_prime(dimension):
 class beta_star_scale(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		print("BETA PRIME NOT YET IMPLIMENTED")
 
 	name_keys = ['beta_star_scale']
 	axis_label = r'$\beta_{*scale}$'
