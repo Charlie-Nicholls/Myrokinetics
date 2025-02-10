@@ -115,7 +115,7 @@ class ky(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		if self.option = 'convert':
+		if self.option == 'convert':
 			val = val / 2**0.5
 		nml['KY'] = val
 		return nml
@@ -170,7 +170,7 @@ class y0(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		if self.option = 'convert':
+		if self.option == 'convert':
 			val = val / 2**0.5
 		nml['KY'] = val
 		return nml
