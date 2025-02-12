@@ -218,7 +218,7 @@ class myro_scan(object):
 			print("ERROR: run not found")
 			return
 		file_dir = self.get_run_directory(run)
-		nml = f90nml.read(f"{file_dir}/input.gs2")
+		nml = f90nml.read(f"{file_dir}/{self.inputs.code.input_name}")
 		nml['knobs']['delt_option'] = 'check_restart'
 		h, m, s = self.inputs['sbatch']['time'].split(':')
 		time = (int(h) * 3600) + (int(m) * 60) + int(s)
@@ -227,8 +227,8 @@ class myro_scan(object):
 		nml['knobs']['delt_option'] = 'check_restart'
 		nml['init_g_knobs']['ginit_option'] = 'many'
 		nml['gs2_diagnostics_knobs']['append_old'] = True
-		nml.write(f"{file_dir}/input.gs2",force=True)
-		self._input_dirs.add(f"{file_dir}/input.gs2")
+		nml.write(f"{file_dir}/{self.inputs.code.input_name}",force=True)
+		self._input_dirs.add(f"{file_dir}/{self.inputs.code.input_name}")
 		self.make_job_files()
 		self.run_jobs()
 	

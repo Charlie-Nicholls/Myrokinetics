@@ -100,7 +100,7 @@ def start_run(run, run_attempt = 1):
 	else:
 		print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
-Parallel(n_jobs={self.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_dirs)""")
+Parallel(n_jobs={self.inputs['sbatch']['nodes']}*128)(delayed(start_run)(run) for run in input_dirs)""")
 		pyth.close()
 		return
 	
