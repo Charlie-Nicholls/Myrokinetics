@@ -53,6 +53,7 @@
     fapar = 1.0
     fbpar = 1.0
     delt  = 0.1
+    beta = 0.4
     !delt_option = 'check_restart'
     nstep = 50000
     wstar_units = .false.
@@ -123,12 +124,6 @@
     omegatinst = 500.0
     nsave = 50000
     save_for_restart = .false.
-/
-
-&parameters
-    beta = 0.4
-    tite = 1.0
-    zeff = 1.0
 /
 
 &diagnostics_config

@@ -68,7 +68,8 @@ class gs2(code):
 		nml['theta_grid_parameters']['qinp'] = abs(nml['theta_grid_parameters']['qinp'])
 		
 		if 'parameters' in nml.keys() and 'beta' in nml['parameters'].keys():
-			nml['knobs']['beta'] = nml['parameters']['beta']
+			if 'beta' not in nml['knobs'].keys():
+				nml['knobs']['beta'] = nml['parameters']['beta']
 			del(nml['parameters'])
 		
 		beta_prim = nml['theta_grid_eik_knobs']['beta_prime_input']

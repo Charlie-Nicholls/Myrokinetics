@@ -63,10 +63,7 @@ class beta_prime(dimension):
 				nml[spec]['tprim'] = nml[spec]['tprim']*mul
 				nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		elif self.option == 'beta':
-			if 'beta' in nml['knobs']:
-				nml['knobs']['beta'] = beta*mul
-			else:
-				nml['parameters']['beta'] = beta*mul
+			nml['knobs']['beta'] = beta*mul
 		return nml
 
 class shear(dimension):
