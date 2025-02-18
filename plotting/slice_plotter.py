@@ -15,7 +15,7 @@ default_settings = {"suptitle": None,
 		"y_lim": [None, None],
 		"fontsizes": {"title": 13, "axis": 17,"suptitle": 20},
 		"visible": {"eqbm": True, "suptitle": True, "title": True, "ref_line": False},
-		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k'},
+		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k', "stable": None},
 }
 
 slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
@@ -234,9 +234,13 @@ class plot_slice(object):
 
 		self.x_axis = [x for i, x in enumerate(x_vals) if str(y_vals[i]) not in ['nan','inf','-inf']]
 		self.y_axis = [y for y in y_vals if str(y) not in ['nan','inf','-inf']]
-
+	
 		self.ax.plot(self.x_axis,self.y_axis,c=self['colours']['line'])
 		self.ax.plot(self.x_axis,self.y_axis,'.',c=self['colours']['points'])
+		if self['colours']['stable'] is not None:
+			x_stable = [x for x, y in zip(self.x_axis,self.y_axis) if y <= 0]
+			y_stable = [y for x, y in zip(self.x_axis,self.y_axis) if y <= 0]
+			self.ax.plot(x_stable,y_stable,'.',c=self['colours']['stable'])
 		
 		if self['visible']['ref_line']:
 			if self.temp:

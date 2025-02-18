@@ -150,7 +150,14 @@ class gs2(code):
 				nml['nonlinear_terms_knobs']['split_nonlinear'] = True
 				if 'split_nonlinear_terms_knobs' not in nml.keys():
 					nml['split_nonlinear_terms_knobs'] = {'show_statistics': True}
-			
+		
+		if self.inputs['Magnetism'] == False:
+			nml['knobs']['fapar'] = 0.0
+			nml['knobs']['fbpar'] = 0.0
+		else:
+			nml['knobs']['fapar'] = 1.0
+			nml['knobs']['fbpar'] = 1.0
+		
 		if self.inputs['Miller']:
 			nml['theta_grid_eik_knobs']['local_eq'] = True
 		else:
