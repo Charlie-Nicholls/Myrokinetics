@@ -479,7 +479,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 			lines = f.readlines()
 			for line in lines:
 				line.removesuffix("\n")
-				print(line[:-2])
+				print(line)
 		
 	
 	def print_submit_file(self, n = 0):
