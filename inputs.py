@@ -95,6 +95,7 @@ default_inputs = {'files': {
 	'description': '',
 	},
 	'single_parameters': {},
+	'single_parameter_options': {},
 	}
 
 class scan_inputs(object):
@@ -281,6 +282,12 @@ class scan_inputs(object):
 			if key not in self.dim_lookup:
 				print(f"ERROR: {key} is not a valid parameter, valid parameters: {self.dim_lookup['_list']}")
 				del(self.inputs['single_parameters'][key])
+		
+		for key in self.inputs['single_parameter_options']:
+			if key not in self.inputs['single_parameters'].keys():
+				print(f"ERROR: {key} option is invlaid as {key} is not a loaded single_parameter")
+				del(self.inputs['single_parameter_options'][key])
+		
 		for key in [x for x in self.inputs if 'dimension_' in x]:
 			for skey in self.inputs[key]:
 				if skey not in possible_keys['dimension_n']:
@@ -451,7 +458,8 @@ class scan_inputs(object):
 				elif dim_type in single_parameters:
 					print(f"ERROR: {dim_type} defined multiple times.")
 				else:
-					dim = self.dim_lookup[dim_type](values=self.inputs['single_parameters'][dim_type])
+					option = self.inputs['single_parameter_options'][dim_type] if dim_type in self.inputs['single_parameter_options'] else None
+					dim = self.dim_lookup[dim_type](values=self.inputs['single_parameters'][dim_type], option=option)
 					single_parameters[dim.name] = dim
 		
 		for key in [x for x in self.inputs if 'dimension_' in x]:
