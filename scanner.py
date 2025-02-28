@@ -209,26 +209,30 @@ class myro_scan(object):
 		os.chdir(cwd)
 		self._ideal_jobs = set()
 	
-	def restart_run(self, run = {}):
+	def restart_run(self, runs = None):
 		import f90nml
-		if self.inputs['grid_option'] != 'box':
-			print("ERROR: restart_run only supported for grid_option = True")
-			return
-		if run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
-			print("ERROR: run not found")
-			return
-		file_dir = self.get_run_directory(run)
-		nml = f90nml.read(f"{file_dir}/{self.inputs.code.input_name}")
-		nml['knobs']['delt_option'] = 'check_restart'
-		h, m, s = self.inputs['sbatch']['time'].split(':')
-		time = (int(h) * 3600) + (int(m) * 60) + int(s)
-		nml['knobs']['avail_cpu_time'] = time
-		nml['knobs']['margin_cpu_time'] = time // 20
-		nml['knobs']['delt_option'] = 'check_restart'
-		nml['init_g_knobs']['ginit_option'] = 'many'
-		nml['gs2_diagnostics_knobs']['append_old'] = True
-		nml.write(f"{file_dir}/{self.inputs.code.input_name}",force=True)
-		self._input_dirs.add(f"{file_dir}/{self.inputs.code.input_name}")
+		if self['non_linear']:
+			if runs is None:
+				runs = [{}]
+			elif run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
+				print("ERROR: run not found")
+				return
+		else:
+			if runs is None:
+				runs = self.get_all_runs()
+		
+		for run in runs:
+			file_dir = self.get_run_directory(run)
+			nml = f90nml.read(f"{file_dir}/{self.inputs.code.input_name}")
+			h, m, s = self.inputs['sbatch']['time'].split(':')
+			time = (int(h) * 3600) + (int(m) * 60) + int(s)
+			nml['knobs']['avail_cpu_time'] = time
+			nml['knobs']['margin_cpu_time'] = time // 20
+			nml['knobs']['delt_option'] = 'check_restart'
+			nml['init_g_knobs']['ginit_option'] = 'many'
+			nml['gs2_diagnostics_knobs']['append_old'] = True
+			nml.write(f"{file_dir}/{self.inputs.code.input_name}",force=True)
+			self._input_dirs.add(f"{file_dir}/{self.inputs.code.input_name}")
 		self.make_job_files()
 		self.run_jobs()
 	
