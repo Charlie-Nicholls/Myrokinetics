@@ -232,7 +232,7 @@ class myro_scan(object):
 			nml['init_g_knobs']['ginit_option'] = 'many'
 			nml['gs2_diagnostics_knobs']['append_old'] = True
 			nml.write(f"{file_dir}/{self.inputs.code.input_name}",force=True)
-			self._input_dirs.add(f"{file_dir}/{self.inputs.code.input_name}")
+			self._input_dirs.add(file_dir)
 		self.make_job_files()
 		self.run_jobs()
 	

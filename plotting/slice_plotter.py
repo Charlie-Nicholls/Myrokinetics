@@ -277,6 +277,9 @@ class plot_slice(object):
 			self.ax.set_ylim(limits[0],limits[1])
 		self.ax.set_xscale(self['xscale'])
 		self.ax.set_yscale(self['yscale'])
+		if self['yscale'] == 'symlog':
+			linthresh = min([abs(x) for x in self.y_axis if abs(x) > 0])
+			self.ax.set_yscale(self['yscale'], linthresh=linthresh)
 		
 		self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
 		self.ax.legend_.set_visible(self['visible']['title'])
