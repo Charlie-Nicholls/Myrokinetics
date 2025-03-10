@@ -208,6 +208,11 @@ class plot_slice(object):
 		self.settings['suptitle'] = title
 		self.fig.suptitle(title,fontsize=self.settings['fontsizes']['suptitle'])
 	
+	def set_refline(self, plot):
+		self.settings['ref_line']['x_axis'] = plot.x_axis
+		self.settings['ref_line']['y_axis'] = plot.y_axis
+		self.draw_fig()
+	
 	def draw_fig(self, val = None):
 		handles = []
 		for key, sli in self.sliders.sliders.items():

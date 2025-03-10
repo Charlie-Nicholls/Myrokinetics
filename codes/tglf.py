@@ -125,6 +125,7 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 			if not QuickSave:
 				only = only | set({'time','heat','phi','bpar','apar'}) #theta not working
 			data_keys = ['growth_rate','mode_frequency','growth_rate2','mode_frequency2','phi','bpar','apar','parity','ql_metric','heat_flux','t']
+			group_keys = ['phi','apar','bpar']
 			gyro_keys = {}
 			for dim in self.inputs.dimensions.values():
 				gyro_keys[dim.name] = {}
@@ -157,11 +158,13 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 						try:
 							key_data = run_data[key]
 							if key == 'growth_rate':
-								gyro_data[run_key]['growth_rate'] = array(key_data[:,0]).tolist()
+								gyro_data[run_key]['growth_rate'] = float(key_data[:,0]).tolist()
 								gyro_data[run_key]['growth_rate2'] = array(key_data[:,1]).tolist()
 							if key == 'mode_frequency':
 								gyro_data[run_key]['mode_frequency'] = array(key_data[:,0]).tolist()
 								gyro_data[run_key]['mode_frequency2'] = array(key_data[:,1]).tolist()
+							elif key in ['phi','apar','bpar']:
+								gyro_data[run_key][key] = array(key_data[:,0]).tolist()
 							elif key in ['time']:
 								gyro_data[run_key]['t'] = array(key_data).tolist()
 							elif key in ['theta']:
