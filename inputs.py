@@ -492,12 +492,10 @@ class scan_inputs(object):
 
 		if self.inputs['files']['input_name'] is None and filename is None:
 			filename = input("Input File Name: ")
-		if '.in' in filename:
-			filename = filename[:-3]
-		if self.inputs['files']['input_name'] is None:
-			self.inputs['files']['input_name'] = f"{filename}.in"
 		if filename is None:
 			filename = self.inputs['files']['input_name']
+		if '.in' in filename:
+			filename = filename[:-3]
 		
 		self.inputs.write(f"{directory}/{filename}.in",force=True)
 		

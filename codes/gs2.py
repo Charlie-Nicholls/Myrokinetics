@@ -241,7 +241,7 @@ if run_attempt <= 3:
 else:
 	print(f"ERROR: {{run}} took too many attempts to start, skipping")
 
-Parallel(n_jobs={scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_dirs)""")
+Parallel(n_jobs={self.scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run) for run in input_dirs)""")
 		pyth.close()
 		
 		return
