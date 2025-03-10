@@ -249,7 +249,7 @@ Parallel(n_jobs={self.scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run
 	def get_box_archer2(self):
 		ntasks = self.scanner.inputs['sbatch']['ntasks'] if 'ntasks' in self.scanner.inputs['sbatch'] else self.scanner.inputs['sbatch']['nodes']*self.scanner.inputs['sbatch']['ntasks-per-node']
 		run_dir = list(self.scanner._input_dirs)[0]
-		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{run_dir}/{self.input_name}\"
+		run_code = f'''srun --nodes={self.scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={self.scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{run_dir}/{self.input_name}\"
 if test -f \"{run_dir}/{self.output_name}\"; then
 touch \"{run_dir}/run.fin\"
 fi'''
