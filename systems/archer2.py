@@ -42,7 +42,7 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 				val = f"{scanner.inputs['data_path']}/submit_files/{val}"
 			sbatch = sbatch + f"\n#SBATCH --{key}={val}"
 			
-		if scanner.inputs['non_linear'] == False:
+		if scanner.inputs['grid_option'] == 'single':
 		
 			if n_sim is None:
 				n_sim = n_par if n_par < 8 else 8
@@ -82,13 +82,12 @@ python {scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py""")
 			for n in range(n_sim):
 				scanner._jobs.add(f"{scanner.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.job")
 				
-		if scanner.inputs['non_linear'] == True:
+		if scanner.inputs['grid_option'] == 'box':
 			os.makedirs(f"{scanner.inputs['data_path']}/submit_files/",exist_ok=True)
 			if scanner.inputs['sbatch']['cpus-per-task'] > 1:
 				compile_modules += f"\nexport OMP_NUM_THREADS={scanner.inputs['sbatch']['cpus-per-task']}"
-			ntasks = scanner.inputs['sbatch']['ntasks'] if 'ntasks' in scanner.inputs['sbatch'] else scanner.inputs['sbatch']['nodes']*scanner.inputs['sbatch']['ntasks-per-node']
 			
-			run_code = codes[scanner.inputs['gk_code']].get_non_linear_archer2(scanner)
+			run_code = codes[scanner.inputs['gk_code']].get_box_archer2()
 			
 			jobfile = open(f"{scanner.inputs['data_path']}/submit_files/submit.job",'w')
 			jobfile.write(f"""{sbatch}

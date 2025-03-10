@@ -246,8 +246,8 @@ Parallel(n_jobs={self.scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run
 		
 		return
 	
-	def get_non_linear_archer2(self):
-		ntasks = self.inputs['sbatch']['nodes']*128//self.inputs['sbatch']['cpus-per-task']
+	def get_box_archer2(self):
+		ntasks = scanner.inputs['sbatch']['ntasks'] if 'ntasks' in scanner.inputs['sbatch'] else scanner.inputs['sbatch']['nodes']*scanner.inputs['sbatch']['ntasks-per-node']
 		run_dir = list(self.scanner._input_dirs)[0]
 		run_code = f'''srun --nodes={scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{run_dir}/{self.input_name}\"
 if test -f \"{run_dir}/{self.output_name}\"; then
