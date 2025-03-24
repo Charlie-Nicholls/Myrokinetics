@@ -219,12 +219,52 @@ class q_loc(dimension):
 	
 	def sub_validate(self, values):
 		if any([x<0 for x in values]):
-				values = [x for x in values if x >= 0]
-				values.sort()
+			values = [x for x in values if x >= 0]
+			values.sort()
 		return values
 
 	def edit_nml(self, nml, val):
 		nml['q_loc'] = val
 		return nml
 
-dimensions_list = [psiN,p_prime,q_prime,shear,ky_max,ky,ky_model,kx,ny,sat_rule,q_loc]
+class nbasis_max(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['nbasis_max','n_basis_max']
+	axis_label = 'nbasis_max'
+	valid_options = []
+	
+	def sub_validate(self, values):
+		if any([x<=0 for x in values]):
+			values = [x for x in values if x >= 0]
+			values.sort()
+		if any([int(x) != x]):
+			values = [x for x in values if int(x) == x]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['nbasis_max'] = val
+		return nml
+
+class nbasis_min(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['nbasis_min','n_basis_min']
+	axis_label = 'nbasis_min'
+	valid_options = []
+	
+	def sub_validate(self, values):
+		if any([x<=0 for x in values]):
+			values = [x for x in values if x >= 0]
+			values.sort()
+		if any([int(x) != x]):
+			values = [x for x in values if int(x) == x]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['nbasis_min'] = val
+		return nml
+
+dimensions_list = [psiN,p_prime,q_prime,shear,ky_max,ky,ky_model,kx,ny,sat_rule,q_loc,nbasis_max,nbasis_min]
