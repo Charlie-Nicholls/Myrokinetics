@@ -239,7 +239,7 @@ class nbasis_max(dimension):
 		if any([x<=0 for x in values]):
 			values = [x for x in values if x >= 0]
 			values.sort()
-		if any([int(x) != x]):
+		if any([int(x) != x for x in values]):
 			values = [x for x in values if int(x) == x]
 		return values
 
@@ -259,7 +259,7 @@ class nbasis_min(dimension):
 		if any([x<=0 for x in values]):
 			values = [x for x in values if x >= 0]
 			values.sort()
-		if any([int(x) != x]):
+		if any([int(x) != x for x in values]):
 			values = [x for x in values if int(x) == x]
 		return values
 
