@@ -128,6 +128,8 @@ class myro_read(object):
 							return None
 						else:
 							return self.data['group'][group_key][key]
+					else:
+						return None
 
 			if key in self.data['gyro'][run_id].keys():
 				return self.data['gyro'][run_id][key]
@@ -599,8 +601,11 @@ class myro_read(object):
 			settings['suptitle'] = f"{self['run_name']} kxky"
 		return Plotters['kxky'](reader = self, settings = settings, sliders = sliders)
 	
-	def plot_ql_by_ky(self, settings = {}, init = None, sliders = None):
-		settings['z_axis_type'] = 'ql_metric'
+	def plot_ql_by_ky(self, settings = {}, norm = True, init = None, sliders = None):
+		if norm:
+			settings['z_axis_type'] = 'ql_norm'
+		else:
+			settings['z_axis_type'] = 'ql_metric'
 		return self.plot_ql(settings=settings,init=init,sliders=sliders)
 
 	def plot_ql(self, settings = {}, init = None, sliders = None):

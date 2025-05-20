@@ -1,4 +1,4 @@
-from numpy import transpose, array, amax, amin, isfinite, full, nan, diff
+from numpy import transpose, array, amax, amin, isfinite, full, nan, diff, trapz
 from matplotlib.pyplot import subplots, Normalize, colorbar, axes, ion, show, Line2D
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
@@ -59,6 +59,9 @@ class plot_2d(object):
 			print("ERROR: eqbm_style not found, valid styles = {self._valid_eqbm_styles}")
 			self.settings['eqbm_style'] = "title"
 		
+		self.ky_min = self.ky_max = None
+		self.ql_adjustable = False
+		
 		self.open_plot()
 		
 	def __getitem__(self, key):
@@ -111,13 +114,13 @@ class plot_2d(object):
 		self._sliders['z_slider'].on_changed(self.draw_fig)
 			
 		zsi = [self.reader(self['z_axis_type'],arun) for arun in self.reader.get_all_runs()]
-		zs = [val for val in zsi if str(val) not in ['-inf','inf','nan']]
+		zs = [val for val in zsi if str(val) not in ['-inf','inf','nan','None']]
 		self._z_max = max(zs,default=1)
 	
 		zs = []
 		for run in self.reader.get_all_runs():
 			val = self.reader(self['z_axis_type'],run)
-			if str(val) not in ['-inf','inf','nan']:
+			if str(val) not in ['-inf','inf','nan','None']:
 				zs.append(val)
 		self._z_max = max(zs,default=100)
 		
@@ -178,6 +181,8 @@ class plot_2d(object):
 		zs = []
 		for run in self.reader.get_all_runs():
 			val = self.reader(self['z_axis_type'],run)
+			if val is None:
+				val = nan
 			if str(val) not in ['-inf','inf','nan']:
 				zs.append(val)
 		self._z_max = max(zs,default=100)
@@ -357,7 +362,24 @@ class plot_2d(object):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
-				z[x_id][y_id] = self.reader(self['z_axis_type'],run)
+				if self.ql_adjustable:
+					kys = self.reader['ky']
+					if self.ky_min:
+						kys = [x for x in kys if x >= self.ky_min]
+					if self.ky_max:
+						kys = [x for x in kys if x <= self.ky_max]
+					qls = []
+					kys2 = []
+					for ky in kys:
+						run['ky'] = ky
+						ql = self.reader('ql_norm',run)
+						if str(ql) not in ['nan','inf','-inf','None']:
+							qls.append(ql)
+							kys2.append(ky)
+					z[x_id][y_id] = trapz(qls,kys2)			
+					
+				else:
+					z[x_id][y_id] = self.reader(self['z_axis_type'],run)
 		z = transpose(z)
 		self.z_axis = z
 		

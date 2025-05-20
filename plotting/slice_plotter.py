@@ -12,6 +12,8 @@ default_settings = {"suptitle": None,
 		"ref_line": {"x_axis": [], "y_axis": []},
 		"x_lim": [None, None],
 		"y_lim": [None, None],
+        "parity_bound": 0.3,
+		"markersize": 8,
 		"fontsizes": {"title": 13, "axis": 17,"suptitle": 20},
 		"visible": {"eqbm": True, "suptitle": True, "title": True, "ref_line": False},
 		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k', "stable": 'g'},
@@ -231,20 +233,39 @@ class plot_slice(object):
 		if self['x_lim'][1] is not None:
 			x_vals = [x for x in x_vals if x <= self['x_lim'][1]]
 		y_vals = full((len(x_vals)),nan)
+		parities = full((len(x_vals)),nan)
 		for x_id, x_value in enumerate(x_vals):
 			run = self['run'].copy()
 			run[self['x_axis_type']] = x_value
 			y_vals[x_id] = self.reader(self['y_axis_type'],run)
+			parities[x_id] = self.reader('parity',run)
 
 		self.x_axis = [x for i, x in enumerate(x_vals) if str(y_vals[i]) not in ['nan','inf','-inf']]
 		self.y_axis = [y for y in y_vals if str(y) not in ['nan','inf','-inf']]
 	
 		self.ax.plot(self.x_axis,self.y_axis,c=self['colours']['line'])
-		self.ax.plot(self.x_axis,self.y_axis,'.',c=self['colours']['points'])
-		if self['colours']['stable'] is not None:
-			x_stable = [x for x, y in zip(self.x_axis,self.y_axis) if y <= 0]
-			y_stable = [y for x, y in zip(self.x_axis,self.y_axis) if y <= 0]
-			self.ax.plot(x_stable,y_stable,'.',c=self['colours']['stable'])
+
+		if self['parity_bound'] is not None:
+			y_even = [y for yi, y in enumerate(self.y_axis) if parities[yi] < self['parity_bound']]
+			y_odd = [y for yi, y in enumerate(self.y_axis) if parities[yi] >= self['parity_bound']]
+			x_even = [x for xi, x in enumerate(self.x_axis) if parities[xi] < self['parity_bound']]
+			x_odd = [x for xi, x in enumerate(self.x_axis) if parities[xi] >= self['parity_bound']]
+
+			self.ax.plot(x_even,y_even,'.',c=self['colours']['points'],markerfacecolor='none',markersize=self['markersize'])
+			self.ax.plot(x_odd,y_odd,'.',c=self['colours']['points'],markersize=self['markersize'])
+			if self['colours']['stable'] is not None:
+				x_odd_stable = [x for x, y in zip(x_odd,y_odd) if y <= 0]
+				y_odd_stable = [y for x, y in zip(x_odd,y_odd) if y <= 0]
+				x_even_stable = [x for x, y in zip(x_even,y_even) if y <= 0]
+				y_even_stable = [y for x, y in zip(x_even,y_even) if y <= 0]
+				self.ax.plot(x_odd_stable,y_odd_stable,'.',c=self['colours']['stable'],markersize=self['markersize'])
+				self.ax.plot(x_even_stable,y_even_stable,'.',c=self['colours']['stable'],markerfacecolor='none',markersize=self['markersize'])
+		else:
+			self.ax.plot(self.x_axis,y_axis,'.',c=self['colours']['points'],markersize=self['markersize'])
+			if self['colours']['stable'] is not None:
+				x_stable = [x for x, y in zip(self.x_axis,self.y_axis) if y <= 0]
+				y_stable = [y for x, y in zip(self.x_axis,self.y_axis) if y <= 0]
+				self.ax.plot(x_stable,y_stable,'.',c=self['colours']['stable'],markersize=self['markersize'])
 		
 		if self['visible']['ref_line']:
 			if self.temp:
@@ -286,7 +307,8 @@ class plot_slice(object):
 			linthresh = min([abs(x) for x in self.y_axis if abs(x) > 0])
 			self.ax.set_yscale(self['yscale'], linthresh=linthresh)
 		
-		self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
-		self.ax.legend_.set_visible(self['visible']['title'])
+		if len(handles) > 0:
+			self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
+			self.ax.legend_.set_visible(self['visible']['title'])
 		
 		self.fig.canvas.draw_idle()

@@ -4,7 +4,7 @@
 #-->Add conversion to dictionary (with complex forming)
 
 try:
-    from numpy import product
+    from numpy import prod
 except ImportError:
     print("ERROR: NumPy module not available")
     raise
@@ -219,7 +219,7 @@ class DataFile:
                 newShape.pop(dimInd)
                 dataT=data.transpose(indOrd)
 
-                fdata=dataT.reshape([int(product(newShape)),2])
+                fdata=dataT.reshape([int(prod(newShape)),2])
                 cdata=fdata[:,0]+ci*fdata[:,1]
                 cdata=cdata.reshape(newShape)
                 ret[varName]=cdata.copy()

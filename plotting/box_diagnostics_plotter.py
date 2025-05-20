@@ -189,13 +189,13 @@ class plot_box_diag(object):
 				self.ax.set_title(title,fontsize=self['fontsizes']['title'])
 			
 			if self['var'] == 'phi':
-				ylabel = "$\phi$"
+				ylabel = r"$\phi$"
 			elif self['var'] == 'apar':
-				ylabel = "$A_{\parallel}$"
+				ylabel = r"$A_{\parallel}$"
 			elif self['var'] == 'bpar':
-				ylabel = "$B_{\parallel}$"
+				ylabel = r"$B_{\parallel}$"
 			elif self['var'] == 'epar':
-				ylabel = "$E_{\parallel}$"
+				ylabel = r"$E_{\parallel}$"
 			
 			if self['normalisation'] == 'highest':
 					norms = []
@@ -204,7 +204,7 @@ class plot_box_diag(object):
 						norm = max([amax([abs(i) for i in self.reader(x,run)]) for x in [y for y in ['phi','apar','bpar','epar'] if (self.reader(y,run) is not None)]])
 						norms.append(norm)
 					norm = max(norms)
-					ylabel += " / max($\phi,A_{\parallel},B_{\parallel},E_{\parallel}$)"
+					ylabel += r" / max($\phi,A_{\parallel},B_{\parallel},E_{\parallel}$)"
 			elif self['normalisation'] in ['phi','apar','bpar','epar']:
 				norms = []
 				for kxid in kx_list:

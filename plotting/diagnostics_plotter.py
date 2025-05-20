@@ -211,20 +211,20 @@ class plot_diag(object):
 				theta = self.reader('theta',run)
 				
 			if self['var'] == 'phi':
-				ylabel = "$\phi$"
+				ylabel = r"$\phi$"
 			elif self['var'] == 'apar':
-				ylabel = "$A_{\parallel}$"
+				ylabel = r"$A_{\parallel}$"
 			elif self['var'] == 'bpar':
-				ylabel = "$B_{\parallel}$"
+				ylabel = r"$B_{\parallel}$"
 			elif self['var'] == 'epar':
-				ylabel = "$E_{\parallel}$"
+				ylabel = r"$E_{\parallel}$"
 			elif self['var'] == 'jacob':
 				ylabel = "Jacobian"
 			
 			if self['var'] in ['phi','apar','bpar','epar']:
 				if self['normalisation'] == 'highest':
 					norm = max([amax([abs(i) for i in self.reader(x,run)]) for x in [y for y in ['phi','apar','bpar','epar'] if (self.reader(y,run) is not None)]])
-					ylabel += " / max($\phi,A_{\parallel},B_{\parallel},E_{\parallel}$)"
+					ylabel += r" / max($\phi,A_{\parallel},B_{\parallel},E_{\parallel}$)"
 				elif self['normalisation'] in ['phi','apar','bpar','epar']:
 					norm = amax([abs(i) for i in self.reader(self['normalisation'],run)])
 					ylabel += f" / max({self['normalisation']})"
@@ -255,7 +255,7 @@ class plot_diag(object):
 				self.ax.plot(t,phi2,'k')
 				if max(phi2) > 1e267:
 					self.ax.set_ylim(min(phi2)/100, 1e267) #Display error occurs on log scale above 1e267
-				self.ax.set_ylabel("$\phi^{2}$",fontsize=self['fontsizes']['axis'])
+				self.ax.set_ylabel(r"$\phi^{2}$",fontsize=self['fontsizes']['axis'])
 				self.ax.set_yscale('log')
 				self.ax.set_xlabel(f"Time ({len(t)} steps)",fontsize=self['fontsizes']['axis'])
 				
