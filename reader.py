@@ -139,6 +139,8 @@ class myro_read(object):
 				return self.data['gyro'][run_id]
 			elif key in ['nt']:
 				return self.verify.nts[run_id]
+			elif key in ['growth_rate_ky2','gr_ky2']:
+				return self.data['gyro'][run_id]['growth_rate'] / self.data['gyro'][run_id]['ky']**2
 			else:
 				print(f"ERROR: {key} not found")
 			return None
@@ -233,7 +235,7 @@ class myro_read(object):
 				return run_id
 			else:
 				return None
-        		
+			
 	def print_inputs(self):
 		self.inputs.print_inputs()
 

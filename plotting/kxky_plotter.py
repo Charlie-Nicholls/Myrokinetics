@@ -157,8 +157,8 @@ class plot_kxky(object):
 		self.draw_fig()
 	
 	def _load_z_axis(self, axis_type):
-		if axis_type not in ['growth_rate','growth_rate_norm','ql_norm']:
-			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm']")
+		if axis_type not in ['growth_rate','growth_rate_norm','ql_norm','growth_rate_ky2']:
+			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','growth_rate_ky2']")
 			return
 			
 		self.settings['z_axis_type'] = axis_type
@@ -169,6 +169,8 @@ class plot_kxky(object):
 			self._z_axis_label = r'$\gamma/k_{y}^{2}$'
 		elif axis_type in ['ql_norm']:
 			self._z_axis_label = "QL metric"
+		elif axis_type in ['growth_rate_ky2']:
+			self._z_axis_label = r'$\gamma/k_{y}^{2}$'
 			
 	def set_z_axis_type(self, axis_type):
 		self._load_z_axis(axis_type)
@@ -307,9 +309,10 @@ class plot_kxky(object):
 		self.settings['mf_slider']['scale'] = self._sliders['mf_slider'].val
 		self.cbar_mf.update_normal(ScalarMappable(norm = norm_mf))
 		self.ax[1].pcolormesh(x_axis, y_axis, self.z_axis_mf, norm = norm_mf)
-		
-		self.ax[0].legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0,1.02),loc = "lower left", fontsize = self['fontsizes']['title'], frameon = False)
-		self.ax[0].legend_.set_visible(self['visible']['legend'])
+
+		if len(handles) > 0:
+			self.ax[0].legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0,1.02),loc = "lower left", fontsize = self['fontsizes']['title'], frameon = False)
+			self.ax[0].legend_.set_visible(self['visible']['legend'])
 		self.ax[0].set_xscale(self['xscale'])
 		self.ax[0].set_yscale(self['yscale'])
 		self.ax[1].set_xscale(self['xscale'])

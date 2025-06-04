@@ -12,8 +12,8 @@ default_settings = {"suptitle": None,
 		"ref_line": {"x_axis": [], "y_axis": []},
 		"x_lim": [None, None],
 		"y_lim": [None, None],
-        "parity_bound": 0.3,
-		"markersize": 8,
+	"parity_bound": 0.3,
+		"markersize": 4,
 		"fontsizes": {"title": 13, "axis": 17,"suptitle": 20},
 		"visible": {"eqbm": True, "suptitle": True, "title": True, "ref_line": False},
 		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k', "stable": 'g'},
@@ -122,7 +122,7 @@ class plot_slice(object):
 			self.dims = [x for x in self.dims if x not in ['ky']]
 			if 'ky' in self['run']:
 				self.settings['run'].pop('ky')
-		elif axis_type in ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency']:
+		elif axis_type in ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency','growth_rate_ky2']:
 			self._y_key = '_gyro_keys'
 			if 'ky' in self.reader.dimensions and 'ky' not in self.dims:
 				self.dims.append('ky')
@@ -135,6 +135,8 @@ class plot_slice(object):
 			if axis_type == 'growth_rate':
 				self._y_axis_label = "Growth Rate"
 			elif axis_type == 'growth_rate_norm':
+				self._y_axis_label = "Growth Rate/$(k_{y}\\rho_{0})^{2}$"
+			elif axis_type == 'growth_rate_ky2':
 				self._y_axis_label = "Growth Rate/$(k_{y}\\rho_{0})^{2}$"
 			elif axis_type == 'ql_norm':
 				self._y_axis_label = "QL Normalised Growth Rate"
@@ -248,24 +250,29 @@ class plot_slice(object):
 		if self['parity_bound'] is not None:
 			y_even = [y for yi, y in enumerate(self.y_axis) if parities[yi] < self['parity_bound']]
 			y_odd = [y for yi, y in enumerate(self.y_axis) if parities[yi] >= self['parity_bound']]
+			y_none = [y for yi, y in enumerate(self.y_axis) if str(parities[yi]) in ['None','nan','inf']]
 			x_even = [x for xi, x in enumerate(self.x_axis) if parities[xi] < self['parity_bound']]
 			x_odd = [x for xi, x in enumerate(self.x_axis) if parities[xi] >= self['parity_bound']]
-
-			self.ax.plot(x_even,y_even,'.',c=self['colours']['points'],markerfacecolor='none',markersize=self['markersize'])
-			self.ax.plot(x_odd,y_odd,'.',c=self['colours']['points'],markersize=self['markersize'])
+			x_none = [x for xi, x in enumerate(self.x_axis) if str(parities[xi]) in ['None','nan','inf']]
+			self.ax.plot(x_even,y_even,'o',c=self['colours']['points'],markerfacecolor='none',markersize=self['markersize'])
+			self.ax.plot(x_odd,y_odd,'o',c=self['colours']['points'],markersize=self['markersize'])
+			self.ax.plot(x_none,y_none,'s',c=self['colours']['points'],markersize=self['markersize'])
 			if self['colours']['stable'] is not None:
 				x_odd_stable = [x for x, y in zip(x_odd,y_odd) if y <= 0]
 				y_odd_stable = [y for x, y in zip(x_odd,y_odd) if y <= 0]
 				x_even_stable = [x for x, y in zip(x_even,y_even) if y <= 0]
 				y_even_stable = [y for x, y in zip(x_even,y_even) if y <= 0]
-				self.ax.plot(x_odd_stable,y_odd_stable,'.',c=self['colours']['stable'],markersize=self['markersize'])
-				self.ax.plot(x_even_stable,y_even_stable,'.',c=self['colours']['stable'],markerfacecolor='none',markersize=self['markersize'])
+				x_none_stable = [x for x, y in zip(x_none,y_none) if y <= 0]
+				y_none_stable = [y for x, y in zip(x_none,y_none) if y <= 0]
+				self.ax.plot(x_odd_stable,y_odd_stable,'o',c=self['colours']['stable'],markersize=self['markersize'])
+				self.ax.plot(x_even_stable,y_even_stable,'o',c=self['colours']['stable'],markerfacecolor='none',markersize=self['markersize'])
+				self.ax.plot(x_none_stable,y_none_stable,'s',c=self['colours']['stable'],markersize=self['markersize'])
 		else:
-			self.ax.plot(self.x_axis,y_axis,'.',c=self['colours']['points'],markersize=self['markersize'])
+			self.ax.plot(self.x_axis,self.y_axis,'o',c=self['colours']['points'],markersize=self['markersize'])
 			if self['colours']['stable'] is not None:
 				x_stable = [x for x, y in zip(self.x_axis,self.y_axis) if y <= 0]
 				y_stable = [y for x, y in zip(self.x_axis,self.y_axis) if y <= 0]
-				self.ax.plot(x_stable,y_stable,'.',c=self['colours']['stable'],markersize=self['markersize'])
+				self.ax.plot(x_stable,y_stable,'o',c=self['colours']['stable'],markersize=self['markersize'])
 		
 		if self['visible']['ref_line']:
 			if self.temp:
@@ -278,7 +285,7 @@ class plot_slice(object):
 				self.ax.vlines(t0max,min(self.y_axis),max(self.y_axis))
 			else:
 				self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],c=self['colours']['ref_line'])
-				self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],'.',c=self['colours']['ref_points'])
+				self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],'o',c=self['colours']['ref_points'])
 		
 		if self['visible']['eqbm']:
 			limits = self.ax.get_ylim()
