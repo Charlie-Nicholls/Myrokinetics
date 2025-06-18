@@ -179,6 +179,7 @@ class plot_diag(object):
 			return
 		title = "".join([f"{self.reader.dimensions[x].axis_label}: {self.reader(x,run):.3g} | " for x in self.reader.inputs.dim_order])[:-3]
 		self.ax.set_title(title,fontsize=self['fontsizes']['title'],visible=self['visible']['title'])
+		variables = ['phi','apar','bpar','epar','jacob']
 		
 		if self['var'] == 'omega':
 			if self.reader('omega',run) is None or self.reader('t',run) is None:
@@ -202,7 +203,7 @@ class plot_diag(object):
 			self.ax.legend(loc=1)
 			self.ax2.legend(loc=1)
 			
-		elif self['var'] in ['phi','apar','bpar','epar','jacob']:
+		elif self['var'] in variables:
 			if self.reader(self['var'],run) is None or self.reader('theta',run) is None:
 				print("ERROR: data not found")
 				return
@@ -210,24 +211,17 @@ class plot_diag(object):
 				field = self.reader(self['var'],run)
 				theta = self.reader('theta',run)
 				
-			if self['var'] == 'phi':
-				ylabel = r"$\phi$"
-			elif self['var'] == 'apar':
-				ylabel = r"$A_{\parallel}$"
-			elif self['var'] == 'bpar':
-				ylabel = r"$B_{\parallel}$"
-			elif self['var'] == 'epar':
-				ylabel = r"$E_{\parallel}$"
-			elif self['var'] == 'jacob':
-				ylabel = "Jacobian"
 			
-			if self['var'] in ['phi','apar','bpar','epar']:
+			varlabels = [r'$\phi$',r'$A_{\parallel}$',r'$B_{\parallel}$',r'$E_{\parallel}$',"Jacobian"]
+			ylabel = varlabels[variables.index(self['var'])]
+			
+			if self['var'] in variables[:4]:
 				if self['normalisation'] == 'highest':
-					norm = max([amax([abs(i) for i in self.reader(x,run)]) for x in [y for y in ['phi','apar','bpar','epar'] if (self.reader(y,run) is not None)]])
+					norm = max([amax([abs(i) for i in self.reader(x,run)]) for x in [y for y in variables[:4] if (self.reader(y,run) is not None)]])
 					ylabel += r" / max($\phi,A_{\parallel},B_{\parallel},E_{\parallel}$)"
-				elif self['normalisation'] in ['phi','apar','bpar','epar']:
-					norm = amax([abs(i) for i in self.reader(self['normalisation'],run)])
-					ylabel += f" / max({self['normalisation']})"
+				elif self['normalisation'] in variables[:4]:
+					norm = amax([abs(i) for i in self.reader(self['normalisation'],run)])					
+					ylabel += f" / max({varlabels[variables.index(self['normalisation'])]})"
 				else:
 					norm = 1
 				field_norm = array(field)/norm

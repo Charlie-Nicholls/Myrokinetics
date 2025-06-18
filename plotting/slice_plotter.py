@@ -285,7 +285,7 @@ class plot_slice(object):
 				self.ax.vlines(t0max,min(self.y_axis),max(self.y_axis))
 			else:
 				self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],c=self['colours']['ref_line'])
-				self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],'o',c=self['colours']['ref_points'])
+				self.ax.plot(self['ref_line']['x_axis'],self['ref_line']['y_axis'],'o',c=self['colours']['ref_points'],markersize=self['markersize'])
 		
 		if self['visible']['eqbm']:
 			limits = self.ax.get_ylim()

@@ -231,6 +231,7 @@ class myro_scan(object):
 			nml['knobs']['delt_option'] = 'check_restart'
 			nml['init_g_knobs']['ginit_option'] = 'many'
 			nml['gs2_diagnostics_knobs']['append_old'] = True
+			nml['field knobs']['read_response'] = True
 			nml.write(f"{file_dir}/{self.inputs.code.input_name}",force=True)
 			self._input_dirs.add(file_dir)
 		self.make_job_files()
