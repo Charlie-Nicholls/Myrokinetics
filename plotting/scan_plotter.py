@@ -6,7 +6,9 @@ from matplotlib.colors import LinearSegmentedColormap
 from copy import deepcopy
 from .slider_ax import slider_axes
 
-default_settings = {"suptitle": None,
+default_settings = {"plot_type": "Scan",
+		"reader": None,
+		"suptitle": None,
 		"eqbm_style": "title",
 		"ky": False,
 		"contour_type": 0,
@@ -36,6 +38,7 @@ slider_settings = {"slider_1": {"axis": [0.15, 0.01, 0.5, 0.03]},
 class plot_scan(object):
 	def __init__(self, reader = None, settings = {}, sliders = None):
 		self.reader = reader
+		settings['reader'] = self.reader.filename
 		self.verify = reader.verify
 		self.data = reader.data['gyro']
 		self.sliders = sliders

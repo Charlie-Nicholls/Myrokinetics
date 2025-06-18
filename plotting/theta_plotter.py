@@ -4,7 +4,9 @@ from matplotlib.pyplot import figure, subplots, ion, show
 from copy import deepcopy
 from .slider_ax import slider_axes
 
-default_settings = {"suptitle": None,
+default_settings = {"plot_type": "Theta",
+		"reader": None,
+		"suptitle": None,
 		"var": 'phi',
 		"periods": 3,
 		"polar": True,
@@ -24,6 +26,7 @@ slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
 class plot_theta(object):
 	def __init__(self, reader, settings = {}, sliders = None):
 		self.reader = reader
+		settings['reader'] = self.reader.filename
 		self.settings = {}
 		self.sliders = sliders
 		defaults = deepcopy(default_settings)

@@ -5,7 +5,9 @@ from matplotlib.widgets import CheckButtons
 from copy import deepcopy
 from .slider_ax import slider_axes
 
-default_settings = {"suptitle": None,
+default_settings = {"plot_type": "Ideal",
+		"reader": None,
+		"suptitle": None,
 		"eqbm_style": "split",
 		"x_axis_type": 'beta_prime',
 		"y_axis_type": 'shear',
@@ -27,6 +29,7 @@ slider_settings = {"slider_1": {"axis": [0.15, 0.01, 0.5, 0.03]},
 class plot_ideal(object):
 	def __init__(self, reader, settings = {}, sliders = None):
 		self.reader = reader
+		settings['reader'] = self.reader.filename
 		self.sliders = sliders
 		if self.reader.data['ideal'] is None:
 			print("Error: No ideal_ball data")

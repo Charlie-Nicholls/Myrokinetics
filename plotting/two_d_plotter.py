@@ -7,7 +7,9 @@ from scipy.interpolate import RegularGridInterpolator
 from copy import deepcopy
 from .slider_ax import slider_axes
 
-default_settings = {"suptitle": None,
+default_settings = {"plot_type": "2D",
+		"reader": None,
+		"suptitle": None,
 		"eqbm_style": "title",
 		"contour_type": 0,
 		"x_axis_type": "beta_prime",
@@ -36,6 +38,7 @@ class plot_2d(object):
 	def __init__(self, reader, settings = {}, sliders = None):	
 		self.reader = reader
 		self.sliders = sliders
+		settings['reader'] = self.reader.filename
 		
 		self._valid_eqbm_styles = ["title",0,"split",1,"point",2,"title numless",3,"point numless",4]
 		self._options = ["Show ID","Global Axis Limits","Global Colourbar","Show Equillibrium","Show Ideal","Draw Contour"]

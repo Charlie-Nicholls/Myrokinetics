@@ -7,7 +7,9 @@ from scipy.interpolate import RegularGridInterpolator
 from copy import deepcopy
 from .slider_ax import slider_axes
 
-default_settings = {"suptitle": None,
+default_settings = {"plot_type": "QL_FS",
+		"reader": None,
+		"suptitle": None,
 		"eqbm_style": "title",
 		"contour_type": 0,
 		"x_axis_type": "beta_prime",
@@ -28,6 +30,7 @@ default_settings = {"suptitle": None,
 class plot_ql_fs(object):
 	def __init__(self, reader, settings = {}, sliders = None):	
 		self.reader = reader
+		settings['reader'] = self.reader.filename
 		self.sliders = sliders
 		if self.reader['ql_fs'] is None:
 			print("Error: No ql_fs Data")

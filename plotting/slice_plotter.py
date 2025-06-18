@@ -3,7 +3,9 @@ from numpy import full, nan
 from copy import deepcopy
 from .slider_ax import slider_axes
 
-default_settings = {"suptitle": None,
+default_settings = {"plot_type": "Slice",
+		"reader": None
+		"suptitle": None,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "growth_rate",
 		"xscale": "log",
@@ -30,6 +32,7 @@ slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
 class plot_slice(object):
 	def __init__(self, reader, settings = {}, sliders = None):
 		self.reader = reader
+		settings['reader'] = self.reader.filename
 		self.settings = {}
 		self.sliders = sliders
 		defaults = deepcopy(default_settings)

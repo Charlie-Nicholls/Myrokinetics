@@ -3,7 +3,9 @@ from matplotlib.pyplot import subplots, ion, show
 from copy import deepcopy
 from .slider_ax import slider_axes
 
-default_settings = {"suptitle": None,
+default_settings = {"plot_type": "Box_Diag",
+		"reader": None,
+		"suptitle": None,
 		"var": 'phi',
 		"run": {},
 		"normalisation": "highest",
@@ -23,6 +25,7 @@ slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
 class plot_box_diag(object):
 	def __init__(self, reader, settings = {}, sliders = None):
 		self.reader = reader
+		settings['reader'] = self.reader.filename
 		self.verify = reader.verify
 		self.sliders = sliders
 		self.settings = {}
