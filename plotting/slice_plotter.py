@@ -4,7 +4,7 @@ from copy import deepcopy
 from .slider_ax import slider_axes
 
 default_settings = {"plot_type": "Slice",
-		"reader": None
+		"reader": None,
 		"suptitle": None,
 		"x_axis_type": "beta_prime",
 		"y_axis_type": "growth_rate",

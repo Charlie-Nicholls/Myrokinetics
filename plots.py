@@ -10,7 +10,7 @@ class plot(object):
 		if reader is None:
 				from .reader import myro_read 
 				self.reader = myro_read(self.settings['reader'])
-                self.launch_plot()
+		self.launch_plot()
 
 
 	def launch_plot(self):
