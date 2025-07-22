@@ -106,8 +106,8 @@ class gs2(code):
 		nml['dist_fn_knobs']['mach'] = 0
 		
 		if 'avail_cpu_time' not in nml['knobs'].keys():
-				h, m, s = self.inputs['sbatch']['time'].split(':')
-				nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
+			h, m, s = self.inputs['sbatch']['time'].split(':')
+			nml['knobs']['avail_cpu_time'] = (int(h) * 3600) + (int(m) * 60) + int(s)
 		
 		if self.inputs['grid_option'] == 'single':
 			nml['kt_grids_knobs']['grid_option'] = 'single'
@@ -134,7 +134,7 @@ class gs2(code):
 			if nml['gs2_diagnostics_knobs']['nsave'] > 1000:
 				nml['gs2_diagnostics_knobs']['nsave'] = 1
 			if 'margin_cpu_time' not in nml['knobs'].keys():
-				nml['knobs']['margin_cpu_time'] = 2400
+				nml['knobs']['margin_cpu_time'] = nml['knobs']['avail_cpu_time'] // 10
 			if 'nperiod' not in self.inputs.dimensions and 'nperiod' not in self.inputs.single_parameters:
 					nml['theta_grid_parameters']['nperiod'] = 1
 		else:

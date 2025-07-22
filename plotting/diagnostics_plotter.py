@@ -221,10 +221,10 @@ class plot_diag(object):
 			if self['var'] in variables[:4]:
 				if self['normalisation'] == 'highest':
 					norm = max([amax([abs(i) for i in self.reader(x,run)]) for x in [y for y in variables[:4] if (self.reader(y,run) is not None)]])
-					ylabel += r" / max($\phi,A_{\parallel},B_{\parallel},E_{\parallel}$)"
+					ylabel += r" / max(|$\phi|,|A_{\parallel}|,|B_{\parallel}|,E_{\parallel}$)"
 				elif self['normalisation'] in variables[:4]:
 					norm = amax([abs(i) for i in self.reader(self['normalisation'],run)])					
-					ylabel += f" / max({varlabels[variables.index(self['normalisation'])]})"
+					ylabel += f" / max(|{varlabels[variables.index(self['normalisation'])]}|)"
 				else:
 					norm = 1
 				field_norm = array(field)/norm
