@@ -41,8 +41,9 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 			if key == 'output' and '/' not in val:
 				val = f"{scanner.inputs['data_path']}/submit_files/{val}"
 			if key == 'ntasks-per-node' and 'ntasks' in scanner.inputs['sbatch'].keys():
-                                break
-			sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+                                pass
+			else:
+                                sbatch = sbatch + f"\n#SBATCH --{key}={val}"
 			
 		if scanner.inputs['grid_option'] == 'single':
 		
