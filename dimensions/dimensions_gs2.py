@@ -531,4 +531,40 @@ class beta(dimension):
 			nml[spec]['fprim'] = nml[spec]['fprim']*mul
 		return nml
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb,qinp,beta]
+class absolute_tolerance(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['absolute_tolerance','abs_tolerance','abs_tol']
+	axis_label = 'absolute tolerance'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([(x <= 0) for x in values]):
+			print("Error: absolute tolerance values outside the allowed range (x>0)")
+			values = [x for x in values if (x>0)]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['split_nonlinear_terms_knobs']['absolute_tolerance'] = val
+		return nml
+
+class relative_tolerance(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['relative_tolerance','rel_tolerance','rel_tol']
+	axis_label = 'relative tolerance'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([(x <= 0) for x in values]):
+			print("Error: relative tolerance values outside the allowed range (x>0)")
+			values = [x for x in values if (x>0)]
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['split_nonlinear_terms_knobs']['relative_tolerance'] = val
+		return nml
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb,qinp,beta,absolute_tolerance,relative_tolerance]
