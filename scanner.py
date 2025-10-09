@@ -70,7 +70,7 @@ class myro_scan(object):
 	def load_kinetics(self, kin_file, kinetics_type = None, directory = None):
 		if directory:
 			self.inputs.inputs['files']['kin_path'] = directory
-		self.eqbm.load_kinetics(self, kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
+		self.eqbm.load_kinetics(kin_file = kin_file, kinetics_type = kinetics_type, directory = directory)
 	
 	def load_pyro(self, template_file = None, directory = None):
 		if directory:
@@ -78,9 +78,6 @@ class myro_scan(object):
 		self.eqbm.load_pyro(template_file = template_file, directory = directory)
 		
 	def load_inputs(self, input_file = None, directory = None):
-		if input_file is None:
-			self.inputs = None
-			return
 		self.inputs = scan_inputs(input_file = input_file, directory = directory)
 		if self.eqbm:
 			self.eqbm.load_inputs(self.inputs)

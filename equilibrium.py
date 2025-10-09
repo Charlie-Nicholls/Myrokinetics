@@ -212,7 +212,7 @@ class equilibrium(object):
 
 	def make_profiles(self):
 		from scipy.interpolate import InterpolatedUnivariateSpline
-		from numpy import linspace
+		from numpy import linspace, array
 		if not self.pyro:
 			self.load_pyro()
 		pyro = self.pyro
@@ -221,10 +221,10 @@ class equilibrium(object):
 		sh = []
 		for psiN in psiNs:
 			pyro.load_local_geometry(psi_n=psiN)
-			bp.append(pyro.local_geometry['beta_prime'])
-			sh.append(pyro.local_geometry['shat'])
-		self.beta_prime_profile = InterpolatedUnivariateSpline(psiNs,bp)
-		self.shear_profile = InterpolatedUnivariateSpline(psiNs,sh)
+			bp.append(pyro.local_geometry['beta_prime'].magnitude)
+			sh.append(pyro.local_geometry['shat'].magnitude)
+		self.beta_prime_profile = InterpolatedUnivariateSpline(array(psiNs),array(bp))
+		self.shear_profile = InterpolatedUnivariateSpline(array(psiNs),array(sh))
 	
 	def plot_eq(self):
 		from matplotlib.pyplot import subplots, show, ion

@@ -117,14 +117,14 @@ INDIR=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_
 		input_dirs = {}
 		for n in range(n_par):
 			input_dirs[n] = []
-		if n_jobs is None or n_jobs*n_par > len(scanner._ideal_dirs):
-			total_jobs = len(scanner._ideal_dirs)
+		if n_jobs is None or n_jobs*n_par > len(scanner._ideal_input_dirs):
+			total_jobs = len(scanner._ideal_input_dirs)
 		else:
 			total_jobs = n_jobs*n_par
-		dir_list = list(scanner._ideal_dirs)
+		dir_list = list(scanner._ideal_input_dirs)
 		for i in range(total_jobs):
 			input_dirs[i%n_par].append(dir_list[i])
-			scanner._ideal_dirs.remove(dir_list[i])
+			scanner._ideal_input_dirs.remove(dir_list[i])
 		for n in range(n_par):
 			os.makedirs(f"{scanner.inputs['data_path']}/submit_files/ideal_{n}",exist_ok=True)
 			sbatch_n = sbatch.replace(f"{scanner.inputs['sbatch']['output']}",f"ideal_{n}/{scanner.inputs['sbatch']['output']}_0")
