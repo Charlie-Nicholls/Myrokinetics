@@ -151,8 +151,8 @@ gs2 --build-config
 
 INDIR=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_files/ideal_{n}/ideal_{n}.txt)
 echo "${{INDIR}}.in"
-ideal_ball "${{INDIR}}/ideal.gs2"
-if test -f "${{INDIR}}/ideal.ballstab_2d"; then
+ideal_ball "${{INDIR}}/ideal_ball.in"
+if test -f "${{INDIR}}/ideal_ball.ballstab_2d"; then
 touch "${{INDIR}}/run.fin"
 fi""")
 			jobfile.close()

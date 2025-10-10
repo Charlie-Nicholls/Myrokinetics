@@ -140,10 +140,10 @@ input_dirs = {input_dirs[n]}
 
 def start_run(run, run_attempt = 1):
 if run_attempt <= 3:
-	os.system(f"echo \\\"Ideal Input: {{run}}/ideal.gs2\\\"")
-	os.system(f"srun --nodes=1 --ntasks=1 ideal_ball \\\"{{run}}/ideal.gs2\\\"")
-	if os.path.exists(f\"{{run}}/ideal.ballstab_2d\"):
-		os.system(f"touch \\\"{{run}}/ideal.fin\\\"")
+	os.system(f"echo \\\"Ideal Input: {{run}}/ideal_ball.in\\\"")
+	os.system(f"srun --nodes=1 --ntasks=1 ideal_ball \\\"{{run}}/ideal_ball.in\\\"")
+	if os.path.exists(f\"{{run}}/ideal_ball.ballstab_2d\"):
+		os.system(f"touch \\\"{{run}}/run.fin\\\"")
 	else:
 		sleep(60)
 		start_run(run, run_attempt = run_attempt+1)

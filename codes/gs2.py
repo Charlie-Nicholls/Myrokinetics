@@ -208,7 +208,7 @@ class gs2(code):
 			n_jobs = len(self.scanner._ideal_dirs)
 		while n_jobs > 0:
 			for input_dir in self.scanner._ideal_dirs:
-				os.system(f"ideal_ball \"{input_dir}/ideal.gs2\"")
+				os.system(f"ideal_ball \"{input_dir}/ideal_ball.in\"")
 				self.scanner._ideal_dirs.remove(input_dir)
 				n_jobs -= 1
 		return
@@ -424,9 +424,9 @@ fi'''
 				try:
 					sub_dir = self.scanner.get_ideal_run_directory(run)
 
-					shear = loadtxt(f"{sub_dir}/ideal.ballstab_shat")
-					bp = loadtxt(f"{sub_dir}/ideal.ballstab_bp")
-					stab = loadtxt(f"{sub_dir}/ideal.ballstab_2d")
+					shear = loadtxt(f"{sub_dir}/ideal_ball.ballstab_shat")
+					bp = loadtxt(f"{sub_dir}/ideal_ball.ballstab_bp")
+					stab = loadtxt(f"{sub_dir}/ideal_ball.ballstab_2d")
 					
 					ideal_data[run_id]['beta_prime'] = [abs(x) for x in bp]
 					ideal_data[run_id]['shear'] = shear.tolist()
