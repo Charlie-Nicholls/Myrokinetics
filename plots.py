@@ -24,7 +24,7 @@ class plot(object):
 			filename += ".dat"
 
 		f = open(filename,'w')
-		f.write(f"settings = {settings}")
+		f.write(f"{settings}")
 
 def open_plot(filename):
 	with open(filename,'r') as f:

@@ -803,6 +803,10 @@ class myro_read(object):
 		self.eqbm.plot_eq()
 	
 	def save_plot(self, plot):
+		
+
+
+		
 		pass
 	
 	def load_equilibrium(self, directory = None):
