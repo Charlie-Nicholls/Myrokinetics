@@ -189,6 +189,14 @@ class myro_scan(object):
 		
 	def make_ideal_job_files(self, n_jobs = None, n_par = 1, n_sim = None):
 		systems[self.inputs['system']].make_ideal_job_files(self, n_jobs=n_jobs, n_par=n_par, n_sim=n_sim)
+
+	def make_backup_files(self):
+                n = 1
+                while os.path.exists(f"{self['data_path']}/backup{n}"):
+                        n += 1
+                os.mkdir(f"{self['data_path']}/backup{n}")
+                os.system(f"cp -r {self['data_path']}/gyro_files {self['data_path']}/backup{n}/gyro_files}
+                os.system(f"cp -r {self['data_path']}/submit_files {self['data_path']}/backup{n}/submit_files}
 	
 	def run_jobs(self):
 		cwd = os.getcwd()
@@ -206,9 +214,11 @@ class myro_scan(object):
 		os.chdir(cwd)
 		self._ideal_jobs = set()
 	
-	def restart_run(self, runs = None):
+	def restart_run(self, runs = None, backup = True):
 		import f90nml
 		if self['non_linear']:
+                        if backup:
+                                self.make_backup_files()
 			if runs is None:
 				runs = [{}]
 			elif run not in self.get_all_runs(excludeDimensions = ['kx','ky']):
