@@ -20,7 +20,7 @@ which gs2
 gs2 --build-config"""
 
 archer2_modules = """module load PrgEnv-gnu
-module load cray-hdf5 cray-netcdf cray-fftw cray-python
+module load cray-hdf5 cray-netcdf cray-fftw cray-python/3.10.10
 export GK_SYSTEM=archer2
 export MAKEFLAGS=-IMakefiles
 ulimit -s unlimited

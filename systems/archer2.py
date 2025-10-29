@@ -4,7 +4,7 @@ from ..codes import codes
 class archer2():
 
 	save_modules = """module load PrgEnv-gnu
-module load cray-python
+module load cray-python/3.10.10
 source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 
 	sbatch = {

@@ -30,7 +30,6 @@
     bishop  = 4
     irho    = 2
     writelots = .true.
-    iflux   = 0
     beta_prime_input = 0.0
     s_hat_input = 4.0
 /
