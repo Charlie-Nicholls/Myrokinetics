@@ -322,7 +322,7 @@ class myro_scan(object):
 			sub_dir = self.get_ideal_run_directory(run)
 			os.makedirs(sub_dir,exist_ok=True)
 			
-			filename = f"input.ideal"
+			filename = f"ideal_ball.in"
 			
 			nml = self.eqbm.get_surface_input(psiN = run['psin'])
 			nml['ballstab_knobs']['theta0'] = run['theta0']
