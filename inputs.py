@@ -244,7 +244,7 @@ class scan_inputs(object):
 		
 		for key in ['eq','kin']:
 			if not self.inputs['files'][f'{key}_name']:
-				print(f"ERROR: No {key} file given")
+				pass
 			elif not self.inputs['files'][f'{key}_path']:
 				if '/' in self.inputs['files'][f'{key}_name']:
 					full = self.inputs['files'][f'{key}_name']
@@ -312,6 +312,11 @@ class scan_inputs(object):
 		if not self.inputs:
 			print("ERROR: No inputs loaded")
 			return False
+		for key in ['eq','kin']:
+			if not self.inputs['files'][f'{key}_name']:
+				print(f"ERROR: No {key} file given")
+				valid = False
+
 		if not self.dimensions:
 			self.load_dimensions()
 			

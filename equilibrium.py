@@ -1,20 +1,24 @@
 import os
 import f90nml
 from .inputs import scan_inputs
-from .templates import template_dir
+from .templates import template_dir, blank_input
 from .codes import codes
 from copy import deepcopy
 
 class equilibrium(object):
-	def __init__(self, inputs = None, directory = None):
+	def __init__(self, inputs = None, directory = None, eq_file = None, kin_file = None):
 		if directory == "./":
 			directory = os.getcwd()
 		self.path = directory
 		if inputs is None:
-			inputs = scan_inputs()
+			inputs = scan_inputs(input_file = blank_input, directory = template_dir)
 		self.load_inputs(inputs)
 		self.eq_data = self.kin_data = self.pyro = self._eq_lines = self._kin_lines = self.beta_prime_profile = self.shear_profile = None
 		self.surface_namelists = {}
+		if eq_file is not None:
+			self.load_geqdsk(eq_file=eq_file,directory=self.path)
+		if kin_file is not None:
+			self.load_kinetics(kin_file=kin_file,directory=self.path)
 
 	def load_geqdsk(self, eq_file = None, directory = None):
 		from .geqdsk_reader import geqdsk
@@ -127,18 +131,21 @@ class equilibrium(object):
 			self.load_geqdsk()
 		if not self.kin_data:
 			self.load_kinetics()
-		
-		self._template_lines = self.inputs.code.get_template_lines()
+
+		try:
+			self._template_lines = self.inputs.code.get_template_lines()
+		except:
+			self._template_lines = None
 
 		kin_type = 'pFile' if self.inputs['kinetics_type'].upper() == 'PEQDSK' else self.inputs['kinetics_type'].upper()
 		self.pyro = Pyro(
 			eq_file = Path(self.inputs['eq_path']) / self.inputs['eq_name'],
-		 	eq_type = "GEQDSK",
-		 	kinetics_file = Path(self.inputs['kin_path']) / self.inputs['kin_name'],
-		 	kinetics_type = kin_type,
-		 	gk_file = Path(self.inputs['template_path']) / self.inputs['template_name'],
+			eq_type = "GEQDSK",
+			kinetics_file = Path(self.inputs['kin_path']) / self.inputs['kin_name'],
+			kinetics_type = kin_type,
+			gk_file = Path(self.inputs['template_path']) / self.inputs['template_name'],
 			gk_code = self.inputs['gk_code']
-		 	)
+			)
 		#PYRO DOES NOT SEEM TO LOAD GK FILE PROPERLY, AT LEAST FOR CGYRO, UNSURE WHY
 		
 		

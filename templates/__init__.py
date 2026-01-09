@@ -9,5 +9,6 @@ cgyro_template = "template.cgyro"
 tglf_template = "template.tglf"
 
 inputs_template = "default_input.in"
+blank_input = "blank_input.in"
 
-__all__ = ['template_dir','gs2_template','cgyro_template','tglf_template','inputs_template']
+__all__ = ['template_dir','gs2_template','cgyro_template','tglf_template','inputs_template','blank_input.in']

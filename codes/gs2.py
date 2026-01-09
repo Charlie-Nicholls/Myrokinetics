@@ -266,7 +266,7 @@ fi'''
 			self.write_nml(nml=subnml,directory=sub_dir,filename=self.input_name)
 		return
 	
-	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False):
+	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False, debug = False):
 		
 		psiNs = self.inputs.single_parameters['psin'].values if 'psin' in self.inputs.single_parameters else self.inputs.dimensions['psin'].values
 		equilibrium = {}
@@ -308,6 +308,7 @@ fi'''
 				runs = self.scanner.get_all_runs() if self.inputs['grid_option'] != 'box' else self.scanner.get_all_runs(excludeDimensions=['kx','ky'])
 			
 			for run in runs:
+				if debug: print(f"Saving {run}")
 				sub_dir = self.scanner.get_run_directory(run)
 				try:
 					run_data = readnc(f"{sub_dir}/{self.output_name}",only=only)	

@@ -423,7 +423,7 @@ class myro_scan(object):
 	def quick_save(self, filename = None, directory = None, SlurmSave = False):
 		self.save_out(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = True)
 	
-	def save_out(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False):
+	def save_out(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False, debug = False):
 		if filename is None and self.inputs['run_name'] is None:
 			filename = input("Output File Name: ")
 			filename = filename.split(".")[0]
@@ -465,12 +465,12 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 	nd = obj['name_diffs']
 	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
 	run.namelist_diffs = nd
-	run.save_out(filename = \"{filename}\", directory = \"{directory}\", specificRuns = specificRuns, SlurmSave = True, QuickSave = {QuickSave})""")
+	run.save_out(filename = \"{filename}\", directory = \"{directory}\", specificRuns = specificRuns, SlurmSave = True, QuickSave = {QuickSave}, debug = {debug})""")
 			pyth.close()
 			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
 			return
 		
-		data = self.inputs.code.save_out(filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave)
+		data = self.inputs.code.save_out(filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave, debug = debug)
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
