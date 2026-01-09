@@ -72,7 +72,7 @@ class gs2(code):
 				nml['knobs']['beta'] = nml['parameters']['beta']
 			del(nml['parameters'])
 		if 'zeff' in nml['knobs'].keys():
-			nml['species_knobs']['zeff'] = nml['species_knobs']['zeff']
+			nml['species_knobs']['zeff'] = nml['knobs']['zeff']
 			del(nml['species_knobs']['zeff'])
 		if 'iflux' in nml['theta_grid_eik_knobs'].keys():
 			del(nml['theta_grid_eik_knobs']['iflux'])
