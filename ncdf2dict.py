@@ -1,7 +1,4 @@
-#Obtained from David Dickinson
-#Originally based on datafile.py from the BOUT++ tools
-#-->Writing ability removed
-#-->Add conversion to dictionary (with complex forming)
+#Obtained from gs2ools
 
 try:
     from numpy import prod
@@ -70,7 +67,7 @@ class DataFile:
         except KeyError:
             # Not found. Try to find using case-insensitive search
             var = None
-            if self.handle is not None:
+            if self.handle is not none:
                 for n in self.handle.variables.keys():
                     if n.lower() == name.lower():
                         print("WARNING: Reading '"+n+"' instead of '"+name+"'")
@@ -196,6 +193,7 @@ class DataFile:
         for varName in self.handle.variables.keys():
             if only is not None and varName not in only:
                 continue
+            if varName == comDim: continue
             dims=self.handle.variables[varName].dimensions
             #Not complex
             if not comDim in dims:
@@ -218,8 +216,7 @@ class DataFile:
                 newShape=list(oldShape)
                 newShape.pop(dimInd)
                 dataT=data.transpose(indOrd)
-
-                fdata=dataT.reshape([int(prod(newShape)),2])
+                fdata=dataT.reshape([prod(newShape),2])
                 cdata=fdata[:,0]+ci*fdata[:,1]
                 cdata=cdata.reshape(newShape)
                 ret[varName]=cdata.copy()
@@ -246,5 +243,16 @@ def ncdf2dict(filename=None,*args,**kwargs):
         print("ERROR: Must pass filename (todo: extend to match a pattern)")
         return
     
-    a=DataFile(filename=filename,*args,**kwargs)
-    return a.toDict(*args,**kwargs)
+    try:
+        a=DataFile(filename=filename,*args,**kwargs)
+    except:
+        print("ERROR creating datafile")
+
+    try:
+        res = a.toDict(*args,**kwargs)
+    except:
+        print("ERROR in converting to dictionary")
+        a.close()
+        res = None
+    a.close()
+    return res
