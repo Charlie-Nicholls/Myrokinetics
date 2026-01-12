@@ -313,7 +313,10 @@ fi'''
 				runs = self.scanner.get_all_runs() if self.inputs['grid_option'] != 'box' else self.scanner.get_all_runs(excludeDimensions=['kx','ky'])
 			
 			for run in runs:
-				if debug: print(f"Saving {run}")
+				if debug:
+                                        f = open("debug.dat",'a')
+                                        f.write(f"Saving {run}\n")
+                                        f.close()
 				sub_dir = self.scanner.get_run_directory(run)
 				try:
 					run_data = readnc(f"{sub_dir}/{self.output_name}",only=only)	
