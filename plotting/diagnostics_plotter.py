@@ -167,7 +167,15 @@ class plot_diag(object):
 			
 		self.settings['normalisation'] = norm.lower()
 		self.draw_fig()
+
+	def set_width(self, width):
+		self.settings['fig_size']['width'] = width
+		self.fig.set_figwidth(width)
 		
+	def set_height(self, height):
+		self.settings['fig_size']['height'] = height
+		self.fig.set_figheight(height)
+	
 	def draw_fig(self, val = None):
 		for key, sli in self.sliders.sliders.items():
 			dim = self.sliders.settings[key]['dimension_type']
@@ -302,5 +310,8 @@ class plot_diag(object):
 				bad.append('bpar')
 			if bad:
 				self.ax.text(0.01,0.01,f"BAD RUN: {str(bad)[1:-1]}",ha='left',va='bottom',transform=self.ax.transAxes,color='r')
+
+		self.fig.set_figwidth(self.settings['fig_size']['width'])
+		self.fig.set_figheight(self.settings['fig_size']['height'])
 		self.fig.canvas.draw_idle()
 		return

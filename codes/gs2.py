@@ -365,8 +365,11 @@ fi'''
 											try:
 												absint = abs(trapz(key_data[yi,xi,:],run_data['theta']))
 												intabs = trapz(abs(key_data[yi,xi,:]),run_data['theta'])
-												par = 1 - absint/intabs #Equation taken from arXiv:2401.14260v1
-												gyro_data[run_key]['parity'] = par
+												par = 1 - absint/intabs #Equation taken from arXiv:2401.14260v
+												if str(par) in ['nan','inf','-inf','None']:
+													gyro_data[run_key]['parity'] = None
+												else:
+													gyro_data[run_key]['parity'] = par
 											except:
 												gyro_data[run_key]['parity'] = None
 									elif key in ['t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx','phi2_by_ky']:

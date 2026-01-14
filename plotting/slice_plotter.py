@@ -14,11 +14,12 @@ default_settings = {"plot_type": "Slice",
 		"ref_line": {"x_axis": [], "y_axis": []},
 		"x_lim": [None, None],
 		"y_lim": [None, None],
-	"parity_bound": 0.3,
+		"parity_bound": 0.3,
 		"markersize": 4,
 		"fontsizes": {"title": 13, "axis": 17,"suptitle": 20},
 		"visible": {"eqbm": True, "suptitle": True, "title": True, "ref_line": False},
 		"colours": {"eqbm": 'k', "points": 'k', "line": 'r', "ref_line": 'b', "ref_points": 'k', "stable": 'g'},
+		"fig_size": {"width": 9, "height": 7}
 }
 
 slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
@@ -63,7 +64,7 @@ class plot_slice(object):
 		
 	def save_plot(self, filename = None):
 		if filename is None:
-			filename = f"Slice_{self['slider_1']['id']}_{self['slider_2']['id']}"
+			filename = f"Slice_{self._y_axis_label}_{self._x_axis_label}"
 		self.fig.savefig(filename)
 		
 	def open_plot(self, save = False, filename = None):
@@ -219,6 +220,14 @@ class plot_slice(object):
 		self.settings['ref_line']['x_axis'] = plot.x_axis
 		self.settings['ref_line']['y_axis'] = plot.y_axis
 		self.draw_fig()
+		
+	def set_width(self, width):
+		self.settings['fig_size']['width'] = width
+		self.fig.set_figwidth(width)
+		
+	def set_height(self, height):
+		self.settings['fig_size']['height'] = height
+		self.fig.set_figheight(height)
 	
 	def draw_fig(self, val = None):
 		handles = []
@@ -321,4 +330,6 @@ class plot_slice(object):
 			self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
 			self.ax.legend_.set_visible(self['visible']['title'])
 		
+		self.fig.set_figwidth(self.settings['fig_size']['width'])
+		self.fig.set_figheight(self.settings['fig_size']['height'])
 		self.fig.canvas.draw_idle()

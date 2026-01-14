@@ -804,7 +804,8 @@ class myro_read(object):
 	
 	def save_plot(self, plot, filename = None):
                 if filename is None:
-                        filename = str(hex(random.randint(0,16777216))[2:])
+			from random import randint
+                        filename = str(hex(randint(0,16777216))[2:])
                 plot.settings['sliders'] = plot.sliders.settings
                 f = open(filename,'w')
                 f.write(f"{plot.settings}")
