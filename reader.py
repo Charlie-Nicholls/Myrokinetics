@@ -803,15 +803,15 @@ class myro_read(object):
 		self.eqbm.plot_eq()
 	
 	def save_plot(self, plot, filename = None):
-                if filename is None:
+		if filename is None:
 			from random import randint
-                        filename = str(hex(randint(0,16777216))[2:])
-                plot.settings['sliders'] = plot.sliders.settings
-                f = open(filename,'w')
-                f.write(f"{plot.settings}")
-                f.close()
-                plot.save_plot(filename=filename)
-                
+			filename = str(hex(randint(0,16777216))[2:])
+		plot.settings['sliders'] = plot.sliders.settings
+		f = open(filename,'w')
+		f.write(f"{plot.settings}")
+		f.close()
+		plot.save_plot(filename=filename)
+		
 	def load_equilibrium(self, directory = None):
 		from .equilibrium import equilibrium
 		if directory is None:
