@@ -639,30 +639,30 @@ class myro_read(object):
 		return Plotters['Ideal'](reader = self, settings = settings)
 	
 	def plot_omega(self, settings = {}, init = None, sliders = None):
-		return self._plot_diag(var = 'omega', init = init, settings = settings, sliders = sliders)
+		return self._plot_eigen(var = 'omega', init = init, settings = settings, sliders = sliders)
 	
 	def plot_phi(self, settings = {}, init = None, sliders = None):
-		return self._plot_diag(var = 'phi', init = init, settings = settings, sliders = sliders)
+		return self._plot_eigen(var = 'phi', init = init, settings = settings, sliders = sliders)
 	
 	def plot_apar(self, settings = {}, init = None, sliders = None):
-		return self._plot_diag(var = 'apar', init = init, settings = settings, sliders = sliders)
+		return self._plot_eigen(var = 'apar', init = init, settings = settings, sliders = sliders)
 		
 	def plot_bpar(self, settings = {}, init = None, sliders = None):
-		return self._plot_diag(var = 'bpar', init = init, settings = settings, sliders = sliders)
+		return self._plot_eigen(var = 'bpar', init = init, settings = settings, sliders = sliders)
 		
 	def plot_epar(self, settings = {}, init = None, sliders = None):
-		return self._plot_diag(var = 'epar', init = init, settings = settings, sliders = sliders)
+		return self._plot_eigen(var = 'epar', init = init, settings = settings, sliders = sliders)
 		
 	def plot_phi2(self, settings = {}, init = None, sliders = None):
-		return self._plot_diag(var = 'phi2', init = init, settings = settings, sliders = sliders)
+		return self._plot_eigen(var = 'phi2', init = init, settings = settings, sliders = sliders)
 	
 	def plot_phi2_avg(self, settings = {}, init = None, sliders = None):
-		return self._plot_diag(var = 'phi2_avg', init = init, settings = settings, sliders = sliders)
+		return self._plot_eigen(var = 'phi2_avg', init = init, settings = settings, sliders = sliders)
 		
 	def plot_jacob(self, settings = {}, init = None, sliders = None):
-		return self._plot_diag(var = 'jacob', init = init, settings = settings, sliders = sliders)
+		return self._plot_eigen(var = 'jacob', init = init, settings = settings, sliders = sliders)
 	
-	def _plot_diag(self, settings = {}, init = None, var = None, sliders = None):
+	def _plot_eigen(self, settings = {}, init = None, var = None, sliders = None):
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):
@@ -675,21 +675,21 @@ class myro_read(object):
 			settings['var'] = var
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
-		return Plotters['Diag'](reader = self, settings = settings, sliders = sliders)
+		return Plotters['Eigen'](reader = self, settings = settings, sliders = sliders)
 	
 	def plot_box_phi(self, settings = {}, init = None, sliders = None):
-		return self._plot_box_diag(var = 'phi', init = init, settings = settings, sliders = sliders)
+		return self._plot_box_eigen(var = 'phi', init = init, settings = settings, sliders = sliders)
 	
 	def plot_box_apar(self, settings = {}, init = None, sliders = None):
-		return self._plot_box_diag(var = 'apar', init = init, settings = settings, sliders = sliders)
+		return self._plot_box_eigen(var = 'apar', init = init, settings = settings, sliders = sliders)
 		
 	def plot_box_bpar(self, settings = {}, init = None, sliders = None):
-		return self._plot_box_diag(var = 'bpar', init = init, settings = settings, sliders = sliders)
+		return self._plot_box_eigen(var = 'bpar', init = init, settings = settings, sliders = sliders)
 		
 	def plot_box_epar(self, settings = {}, init = None, sliders = None):
-		return self._plot_box_diag(var = 'epar', init = init, settings = settings, sliders = sliders)
+		return self._plot_box_eigen(var = 'epar', init = init, settings = settings, sliders = sliders)
 	
-	def _plot_box_diag(self, settings = {}, init = None, var = None, sliders = None):
+	def _plot_box_eigen(self, settings = {}, init = None, var = None, sliders = None):
 		if self.inputs['grid_option'] != 'box':
 			print("ERROR: box plot only used for flux tube runs [inputs -> grid_option = box]")
 			return
@@ -705,7 +705,7 @@ class myro_read(object):
 			settings['var'] = var
 		if 'title' not in settings:
 			settings['suptitle'] = f"{self['run_name']} {var}"
-		return Plotters['Box_Diag'](reader = self, settings = settings, sliders = sliders)
+		return Plotters['Box_Eigen'](reader = self, settings = settings, sliders = sliders)
 	
 	#def plot_epar_scan(self):
 		#Plotters['Epar'](data = self.run['data'], inputs = self.inputs)

@@ -91,8 +91,6 @@ class plot_slice(object):
 
 		ion()
 		show()
-		self.temp = False
-		self.settings['visible']['ref_line'] = True
 		self.draw_fig()
 		
 	def set_slider(self, num = None, key = None, dimension_type = None):
