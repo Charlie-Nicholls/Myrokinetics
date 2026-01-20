@@ -10,6 +10,7 @@ default_settings = {"plot_type": "Slice",
 		"y_axis_type": "growth_rate",
 		"xscale": "log",
 		"yscale": "symlog",
+		"neg_y_to_0": False,
 		"run": {},
 		"ref_line": {"x_axis": [], "y_axis": []},
 		"x_lim": [None, None],
@@ -254,6 +255,8 @@ class plot_slice(object):
 
 		self.x_axis = [x for i, x in enumerate(x_vals) if str(y_vals[i]) not in ['nan','inf','-inf']]
 		self.y_axis = [y for y in y_vals if str(y) not in ['nan','inf','-inf']]
+		if self['neg_y_to_0']:
+			self.y_axis = [0 if y < 0 else y for y in self.y_axis]
 	
 		self.ax.plot(self.x_axis,self.y_axis,c=self['colours']['line'])
 

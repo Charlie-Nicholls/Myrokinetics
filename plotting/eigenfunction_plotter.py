@@ -1,4 +1,4 @@
-from numpy import real, imag, log, polyfit, array, exp, amax
+from numpy import real, imag, log, polyfit, array, exp, amax, pi
 from matplotlib.pyplot import subplots, ion, show, axes
 from matplotlib.widgets import CheckButtons
 from scipy.stats import pearsonr
@@ -10,11 +10,14 @@ default_settings = {"plot_type": "Diag",
 		"suptitle": None,
 		"var": 'omega',
 		"run": {},
-		"normalisation": "highest",
+		"normalisation": "phi",
+		"pi": False,
 		"options": [True],
 		"fontsizes": {"legend": 10,"ch_box": 8,"axis": 11,"title": 13,"suptitle": 20, "verify": 8},
 		"visible": {"op_box": True, "suptitle": True, "title": True, "legend": True, "verify": True, 'absolute': True, 'real': True, 'imag': True},
 		"colours": {"real": 'r', "imag": 'b', "absolute": 'k', "divider": 'g'},
+		"fig_size": {"width": 9, "height": 7}
+
 }
 
 slider_settings = {"slider_1": {"axis": [0.25, 0.01, 0.5, 0.03]},
@@ -236,6 +239,8 @@ class plot_eigen(object):
 				else:
 					norm = 1
 				field_norm = array(field)/norm
+				if self['pi']:
+					theta = [x/pi for x in theta]
 				if self['visible']['real']:
 					self.ax.plot(theta,real(field_norm),color=self['colours']['real'],label="real")
 				if self['visible']['imag']:
@@ -245,8 +250,9 @@ class plot_eigen(object):
 				self.ax.legend(loc=0)
 			else:
 				self.ax.plot(theta,field,'r')
-				
-			self.ax.set_xlabel("Ballooning Angle",fontsize=self['fontsizes']['axis'])
+
+			xlabel = r'$\theta/\pi$' if self['pi'] else "Ballooning Angle"
+			self.ax.set_xlabel(xlabel,fontsize=self['fontsizes']['axis'])
 			self.ax.set_ylabel(ylabel,fontsize=self['fontsizes']['axis'])
 			
 		elif self['var'] in ['phi2','phi2_avg']:

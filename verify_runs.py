@@ -196,9 +196,14 @@ class verify_scan(object):
 			return
 		phi2 = self.reader('phi2',run)
 		t = self.reader('t',run)
-		if len(t) < 2:
-			return
 		run_id = self.reader.get_run_id(run)
+		if any([x is None for x in [phi2,t]]):
+			if phi2 is None:
+				self.save_errors['phi2'].add(run_id)
+			if t is None:
+				self.save_errors['t'].add(run_id)
+			return
+
 		if any([x is None for x in [phi2,t]]):
 			self.convergence['uncalculated'].add(run_id)
 			if phi2 is None:
@@ -206,7 +211,7 @@ class verify_scan(object):
 			if t is None:
 				self.save_errors['t'].add(run_id)
 			return
-			
+		t = [x for x in t if x is not None]
 		increasing = [y > x for x,y in zip(t,t[1:])]
 		if not all(increasing):
 			self.bad_runs['order'].add(run_id)
