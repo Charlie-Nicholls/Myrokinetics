@@ -198,7 +198,7 @@ class plot_scan(object):
 		zs = []
 		for run in self.reader.get_all_runs():
 			val = self.reader(self['z_axis_type'],run)
-			if str(val) not in ['-inf','inf','nan']:
+			if str(val) not in ['-inf','inf','nan','None']:
 				zs.append(val)
 		self._z_max = max(zs,default=100)
 		
@@ -224,7 +224,7 @@ class plot_scan(object):
 			zs = []
 			for run in self.reader.get_all_runs():
 				val = self.reader(self['z_axis_type'],run)
-				if str(val) not in ['-inf','inf','nan']:
+				if str(val) not in ['-inf','inf','nan','None']:
 					zs.append(val)
 			self._z2_max = max(zs,default=100)
 			self._z2_axis_label = 'Mode Frequency'
@@ -409,25 +409,27 @@ class plot_scan(object):
 			key = '_gyro_keys'
 		elif z_type == 'growth_rate':
 			key = '_abs_gr_keys'
+			z_type = 'abs_gr'
 		elif z_type == 'growth_rate_norm':
 			key = '_norm_gr_keys'
+			z_type = 'norm_gr'
 		z_gr = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
 		z_mf = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
-		run_ids = []
+		run_ids = []                        
 		for x_id, x_value in enumerate(self.x_axis):
 			for y_id, y_value in enumerate(self.y_axis):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
 				run_id = self.reader.get_run_id(run,keys=key)
-				run_ids.append(run_id)
-				run = self.reader.get_run_from_id(run_id)
-				if not self['ky'] and z_type == 'growth_rate':
-					z_type = 'abs_gr'
-				elif not self['ky'] and z_type == 'growth_rate_norm':
-					z_type = 'norm_gr'
-				z_mf[x_id][y_id] = self.reader(z2_type,run) if self.reader(z2_type,run) is not None else nan
-				z_gr[x_id][y_id] = self.reader(z_type,run) if self.reader(z_type,run) is not None else nan
+				if run_id is not None:
+					run_ids.append(run_id)
+					run = self.reader.get_run_from_id(run_id)
+					z_mf[x_id][y_id] = self.reader(z2_type,run) if self.reader(z2_type,run) is not None else nan
+					z_gr[x_id][y_id] = self.reader(z_type,run) if self.reader(z_type,run) is not None else nan
+				else:
+					z_mf[x_id][y_id] = nan
+					z_gr[x_id][y_id] = nan
 		
 		self.z_axis_gr = z_gr = transpose(z_gr)
 		self.z_axis_mf = z_mf = transpose(z_mf)

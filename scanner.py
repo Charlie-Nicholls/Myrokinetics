@@ -423,7 +423,7 @@ class myro_scan(object):
 	def quick_save(self, filename = None, directory = None, SlurmSave = False):
 		self.save_out(filename = filename, directory = directory, SlurmSave = SlurmSave, QuickSave = True)
 	
-	def save_out(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False, debug = False):
+	def save_out(self, filename = None, directory = None, specificRuns = None, SlurmSave = False, QuickSave = False, debug = False, n_par = 1):
 		if filename is None and self.inputs['run_name'] is None:
 			filename = input("Output File Name: ")
 			filename = filename.split(".")[0]
@@ -441,6 +441,11 @@ class myro_scan(object):
 		
 		if not self.check_setup():
 			return
+
+		if specificRuns:
+			runs = list(specificRuns)
+		else:
+			runs = self.get_all_runs() if self.inputs['grid_option'] != 'box' else self.get_all_runs(excludeDimensions=['kx','ky'])
 		
 		if systems[self.inputs['system']].requires_slurm_save and not SlurmSave:
 			save_modules = systems[self['system']].save_modules
@@ -449,25 +454,30 @@ class myro_scan(object):
 			for key, val in self.inputs['sbatch_save'].items():
 				if key == 'output' and '/' not in val:
 					val = f"{self.inputs['data_path']}/submit_files/{val}"
-				sbatch = sbatch + f"\n#SBATCH --{key}={val}"
-			job = open(f"{self.inputs['data_path']}/submit_files/save_out.job",'w')
-			job.write(f"""{sbatch}
+				elif key != 'output':
+					sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+			for n in range(n_par):
+				sbatch = sbatch + f"\n#SBATCH --output={self.inputs['sbatch_save']['output']}_{n}"
+				job = open(f"{self.inputs['data_path']}/submit_files/save_out_{n}.job",'w')
+				job.write(f"""{sbatch}
 
-{save_modules}
+	{save_modules}
 
-python {self.inputs['data_path']}/submit_files/save_out.py""")
-			job.close()
-			pyth = open(f"{self.inputs['data_path']}/submit_files/save_out.py",'w')
-			pyth.write(f"""from Myrokinetics import myro_scan
-from numpy import load
-specificRuns = {specificRuns}
-with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
-	nd = obj['name_diffs']
-	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
-	run.namelist_diffs = nd
-	run.save_out(filename = \"{filename}\", directory = \"{directory}\", specificRuns = specificRuns, SlurmSave = True, QuickSave = {QuickSave}, debug = {debug})""")
-			pyth.close()
-			os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out.job\"")
+	python {self.inputs['data_path']}/submit_files/save_out_{n}.py""")
+				job.close()
+				low = len(runs)*n//n_par
+				high = len(runs)*(n+1)//n_par
+				pyth = open(f"{self.inputs['data_path']}/submit_files/save_out_{n}.py",'w')
+				pyth.write(f"""from Myrokinetics import myro_scan
+	from numpy import load
+	specificRuns = {runs[low:high]}
+	with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
+		nd = obj['name_diffs']
+		run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
+		run.namelist_diffs = nd
+		run.save_out(filename = \"{filename}_{n}\", directory = \"{directory}\", specificRuns = specificRuns, SlurmSave = True, QuickSave = {QuickSave}, debug = {debug})""")
+				pyth.close()
+				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out_{n}.job\"")
 			return
 		
 		data = self.inputs.code.save_out(filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave, debug = debug)
