@@ -38,6 +38,7 @@ class plot_slice(object):
 		self.settings = {}
 		self.sliders = sliders
 		defaults = deepcopy(default_settings)
+		self.temp = False
 		for key in settings:
 			if key not in defaults:
 				print(f"ERROR: {key} not found")
@@ -218,6 +219,7 @@ class plot_slice(object):
 	def set_refline(self, plot):
 		self.settings['ref_line']['x_axis'] = plot.x_axis
 		self.settings['ref_line']['y_axis'] = plot.y_axis
+		self.settings['visible']['ref_line'] = True
 		self.draw_fig()
 		
 	def set_width(self, width):

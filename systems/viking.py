@@ -146,9 +146,6 @@ INDIR=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_
 			jobfile.write(f"""
 {compile_modules}
 
-which gs2
-gs2 --build-config
-
 INDIR=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_files/ideal_{n}/ideal_{n}.txt)
 echo "${{INDIR}}/ideal_ball.in"
 ideal_ball "${{INDIR}}/ideal_ball.in"

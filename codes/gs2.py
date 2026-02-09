@@ -223,6 +223,7 @@ class gs2(code):
 gs2 "${{INDIR}}/{input_name}"
 if test -f "${{INDIR}}/{output_name}"; then
 touch "${{INDIR}}/run.fin"
+rm \"${{INDIR}}/{input_name[:-2]}.bishop
 fi'''
 		
 	def write_pyth_archer2(self, dir_list, filename):
@@ -257,7 +258,6 @@ Parallel(n_jobs={self.scanner.inputs['sbatch']['nodes']})(delayed(start_run)(run
 		run_code = f'''srun --nodes={self.scanner.inputs['sbatch']['nodes']} --ntasks={ntasks} --cpus-per-task={self.scanner.inputs['sbatch']['cpus-per-task']} gs2 \"{run_dir}/{self.input_name}\"
 if test -f \"{run_dir}/{self.output_name}\"; then
 touch \"{run_dir}/run.fin\"
-rm \"{run_dir}/{self.input_name[:-2]}/.bishop\"
 fi'''
 		return run_code
 		

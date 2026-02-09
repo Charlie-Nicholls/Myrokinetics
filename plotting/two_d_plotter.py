@@ -26,6 +26,7 @@ default_settings = {"plot_type": "2D",
 		"cdict": {"red": ((0.0, 1, 1),(1.0, 0.8, 0.8)),
 			"green": ((0.0, 1, 1),(1.0, 0.0, 0.0)),
 			"blue": ((0.0, 1, 1),(1.0, 0.0, 0.0))},
+		"marker": {"size": 8, "width": 3},
 }
 
 slider_settings = {"slider_1": {"axis": [0.15, 0.01, 0.5, 0.03]},
@@ -130,7 +131,7 @@ class plot_2d(object):
 		ion()
 		self.draw_fig()
 		if self['z_slider']['max']:
-			self.set_z_max(self.settings['z_slider']['max'])
+			self.set_max(self.settings['z_slider']['max'])
 		show()
 	
 	def set_slider(self, num = None, key = None, dimension_type = None):
@@ -282,7 +283,7 @@ class plot_2d(object):
 			self.settings['contour_type'] = contour_type
 			self.draw_fig()
 		else:
-			print(f"ERROR: eqbm_style not found, valid styles = {0,1}")
+			print(f"ERROR: contour type not found, valid styles = {0,1}")
 	
 	def set_option(self, option, value):
 		if type(option) == str:
@@ -439,7 +440,7 @@ class plot_2d(object):
 			self.ax.set_ylim(amin(self.y_axis),amax(self.y_axis))
 
 		if status[3]:
-			self.ax.plot(x_val,y_val,'kx')
+			self.ax.plot(x_val,y_val,'kx',markersize=self['marker']['size'],markeredgewidth=self['marker']['width'])
 			eqbm_pos = f"{x_val:.2f},{y_val:.2f}"
 			if status[5]:
 				eqbm_pos += f",{eqbm_val:.2f}"
