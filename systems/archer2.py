@@ -85,7 +85,7 @@ python {scanner.inputs['data_path']}/submit_files/{filename}/{filename}.py""")
 			for n in range(n_sim):
 				scanner._jobs.add(f"{scanner.inputs['data_path']}/submit_files/gyro_{n}/gyro_{n}.job")
 				
-		if scanner.inputs['grid_option'] == 'box':
+		elif scanner.inputs['grid_option'] == 'box':
 			os.makedirs(f"{scanner.inputs['data_path']}/submit_files/",exist_ok=True)
 			if scanner.inputs['sbatch']['cpus-per-task'] > 1:
 				compile_modules += f"\nexport OMP_NUM_THREADS={scanner.inputs['sbatch']['cpus-per-task']}"
