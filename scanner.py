@@ -467,6 +467,7 @@ python {self.inputs['data_path']}/submit_files/save_out_{n}.py""")
 				job.close()
 				low = len(runs)*n//n_par
 				high = len(runs)*(n+1)//n_par
+				if npar > 1: filename_n = f"{filename}_{n}" 
 				pyth = open(f"{self.inputs['data_path']}/submit_files/save_out_{n}.py",'w')
 				pyth.write(f"""from Myrokinetics import myro_scan
 from numpy import load
