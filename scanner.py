@@ -452,30 +452,30 @@ class myro_scan(object):
 			self._save_nml_diff()
 			sbatch = "#!/bin/bash"
 			for key, val in self.inputs['sbatch_save'].items():
-				if key == 'output' and '/' not in val:
-					val = f"{self.inputs['data_path']}/submit_files/{val}"
-				elif key != 'output':
+				if key != 'output':
 					sbatch = sbatch + f"\n#SBATCH --{key}={val}"
+			if '/' not in self.inputs['sbatch_save']['output']:
+				self.inputs['sbatch_save']['output'] = f"{self.inputs['data_path']}/submit_files/{self.inputs['sbatch_save']['output']}"
 			for n in range(n_par):
 				sbatch = sbatch + f"\n#SBATCH --output={self.inputs['sbatch_save']['output']}_{n}"
 				job = open(f"{self.inputs['data_path']}/submit_files/save_out_{n}.job",'w')
 				job.write(f"""{sbatch}
 
-	{save_modules}
+{save_modules}
 
-	python {self.inputs['data_path']}/submit_files/save_out_{n}.py""")
+python {self.inputs['data_path']}/submit_files/save_out_{n}.py""")
 				job.close()
 				low = len(runs)*n//n_par
 				high = len(runs)*(n+1)//n_par
 				pyth = open(f"{self.inputs['data_path']}/submit_files/save_out_{n}.py",'w')
 				pyth.write(f"""from Myrokinetics import myro_scan
-	from numpy import load
-	specificRuns = {runs[low:high]}
-	with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
-		nd = obj['name_diffs']
-		run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
-		run.namelist_diffs = nd
-		run.save_out(filename = \"{filename}_{n}\", directory = \"{directory}\", specificRuns = specificRuns, SlurmSave = True, QuickSave = {QuickSave}, debug = {debug})""")
+from numpy import load
+specificRuns = {runs[low:high]}
+with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as obj:
+	nd = obj['name_diffs']
+	run = myro_scan(input_file = \"{self.inputs.input_name}\", directory = \"{self.inputs['files']['input_path']}\")
+	run.namelist_diffs = nd
+	run.save_out(filename = \"{filename}_{n}\", directory = \"{directory}\", specificRuns = specificRuns, SlurmSave = True, QuickSave = {QuickSave}, debug = {debug})""")
 				pyth.close()
 				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out_{n}.job\"")
 			return
