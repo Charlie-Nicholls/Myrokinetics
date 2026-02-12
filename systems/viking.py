@@ -111,6 +111,8 @@ INDIR=$(sed -n "${{SLURM_ARRAY_TASK_ID}}p" {scanner.inputs['data_path']}/submit_
 		for key, val in scanner.inputs['sbatch'].items():
 			if key == 'output' and '/' not in val:
 				val = f"{scanner.inputs['data_path']}/submit_files/{val}"
+			if key == 'error' and '/' not in val:
+				val = f"{scanner.inputs['data_path']}/submit_files/{val}"
 			sbatch = sbatch + f"\n#SBATCH --{key}={val}"
 		n_sim = n_par if n_sim is None else n_sim
 		os.makedirs(f"{scanner.inputs['data_path']}/submit_files/",exist_ok=True)
