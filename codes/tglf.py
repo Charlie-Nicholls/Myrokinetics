@@ -107,7 +107,7 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 			self.write_nml(nml=subnml,directory=sub_dir,filename=self.input_name)
 		return sub_dir
 	
-	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False):
+	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False, debug = False):
 		from numpy import sum as npsum
 		psi_itt = self.inputs.single_parameters['psin'].values if 'psin' in self.inputs.single_parameters else self.inputs.dimensions['psin'].values
 		equilibrium = {}
