@@ -488,7 +488,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		return
 
 	def combine_saves(self, n_par, filename = None, directory = None):
-		from .reader import myro
+		from .reader import myro_read
 		if filename is None and self.inputs['run_name'] is None:
 			filename = input("Output File Name: ")
 			filename = filename.split(".")[0]
@@ -498,9 +498,9 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		if directory is None:
 			directory = self.path
 
-		out = myro("{filename}_1.npz",verify=False)
+		out = myro_read("{filename}_1.npz",verify=False)
 		for n in range(2, n_par+1):
-			temp = myro("{filename}_{n}",verify=False)
+			temp = myro_read("{filename}_{n}",verify=False)
 			out.merge_myro(temp,verify=False)
 		out.save_file(filename)
 			
