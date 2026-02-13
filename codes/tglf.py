@@ -173,7 +173,7 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 								gyro_data[run_key]['heat_flux'] = array(npsum(npsum(key_data,0),0)).tolist()
 								gyro_data[run_key]['heat_flux_tot'] = sum(gyro_data[run_key]['heat_flux'])
 						except Exception as e:
-							print(f"Save Error in {sub_dir}: {e}")
+							print(f"Save Error in {sub_dir} on {key}: {e}")
 							if key == 'growth_rate':
 								gyro_data[run_key]['growth_rate'] = nan
 							elif key == 'mode_frequency':
