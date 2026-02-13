@@ -498,9 +498,9 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		if directory is None:
 			directory = self.path
 
-		out = myro_read("{filename}_1.npz",verify=False)
+		out = myro_read(f"{filename}_1.npz",verify=False)
 		for n in range(2, n_par+1):
-			temp = myro_read("{filename}_{n}",verify=False)
+			temp = myro_read(f"{filename}_{n}",verify=False)
 			out.merge_myro(temp,verify=False)
 		out.save_file(filename)
 			
