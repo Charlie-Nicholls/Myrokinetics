@@ -456,7 +456,7 @@ class myro_scan(object):
 					sbatch = sbatch + f"\n#SBATCH --{key}={val}"
 			if '/' not in self.inputs['sbatch_save']['output']:
 				self.inputs['sbatch_save']['output'] = f"{self.inputs['data_path']}/submit_files/{self.inputs['sbatch_save']['output']}"
-			for n in range(n_par):
+			for n in range(1,n_par+1):
 				sbatch = sbatch + f"\n#SBATCH --output={self.inputs['sbatch_save']['output']}_{n}"
 				job = open(f"{self.inputs['data_path']}/submit_files/save_out_{n}.job",'w')
 				job.write(f"""{sbatch}
@@ -486,7 +486,23 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
 		return
-	
+
+        def combine_saves(self, n_par, filename = None, directory = None):
+                filename is None and self.inputs['run_name'] is None:
+			filename = input("Output File Name: ")
+			filename = filename.split(".")[0]
+		elif filename is None:
+			filename = self.inputs['run_name']
+
+                if directory is None:
+			directory = self.path
+
+                out = myro("{filename}_1.npz",verify=False)
+                for n in range(2, n_par+1):
+                        temp = myro("{filename}_{n}",verify=False)
+                        out.merge_myro(temp,verify=False)
+                out.save_file(filename)
+			
 	def print_info(self):
 		for key, val in self.inputs['info'].items():
 			print(f"{key} = {val}")

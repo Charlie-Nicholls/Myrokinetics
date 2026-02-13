@@ -867,7 +867,7 @@ class myro_read(object):
 		self.eqbm.write_nml(nml, os.path.join(directory,filename))
 		print(f"Created {filename} at {directory}")
 	
-	def merge_myro(self, myro):
+	def merge_myro(self, myro, verify = True):
 		dims = set(self.dimensions.keys()).union(set(self.single_parameters.keys()))
 		compare_dims = set(myro.dimensions.keys()).union(set(myro.single_parameters.keys()))
 		if dims != compare_dims:
@@ -926,7 +926,8 @@ class myro_read(object):
 		self.inputs = new_inputs
 		self.dimensions = self.inputs.dimensions
 		self.single_parameters = self.inputs.single_parameters
-		self._verify_run()
+		if verify:
+                        self._verify_run()
 		
 	'''
 	def _return_mf_set(self, psi_id, ky_id, mf = None, mferr = None, mfmax = None, mfmin = None, smin_id = None, smax_id = None, bmin_id = None, bmax_id = None):
