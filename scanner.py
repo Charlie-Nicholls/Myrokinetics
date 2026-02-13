@@ -487,21 +487,21 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
 		return
 
-        def combine_saves(self, n_par, filename = None, directory = None):
-                filename is None and self.inputs['run_name'] is None:
+	def combine_saves(self, n_par, filename = None, directory = None):
+		if filename is None and self.inputs['run_name'] is None:
 			filename = input("Output File Name: ")
 			filename = filename.split(".")[0]
 		elif filename is None:
 			filename = self.inputs['run_name']
 
-                if directory is None:
+		if directory is None:
 			directory = self.path
 
-                out = myro("{filename}_1.npz",verify=False)
-                for n in range(2, n_par+1):
-                        temp = myro("{filename}_{n}",verify=False)
-                        out.merge_myro(temp,verify=False)
-                out.save_file(filename)
+		out = myro("{filename}_1.npz",verify=False)
+		for n in range(2, n_par+1):
+			temp = myro("{filename}_{n}",verify=False)
+			out.merge_myro(temp,verify=False)
+		out.save_file(filename)
 			
 	def print_info(self):
 		for key, val in self.inputs['info'].items():

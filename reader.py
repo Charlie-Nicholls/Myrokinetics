@@ -927,7 +927,7 @@ class myro_read(object):
 		self.dimensions = self.inputs.dimensions
 		self.single_parameters = self.inputs.single_parameters
 		if verify:
-                        self._verify_run()
+			self._verify_run()
 		
 	'''
 	def _return_mf_set(self, psi_id, ky_id, mf = None, mferr = None, mfmax = None, mfmin = None, smin_id = None, smax_id = None, bmin_id = None, bmax_id = None):
