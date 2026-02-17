@@ -108,7 +108,7 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 			self.write_nml(nml=subnml,directory=sub_dir,filename=self.input_name)
 		return sub_dir
 	
-	def save_out(self, filename = None, directory = None, specificRuns = None, QuickSave = False, debug = False):
+	def save_out(self, specificRuns = None, QuickSave = False, debug = False):
 		from numpy import sum as npsum
 		psi_itt = self.inputs.single_parameters['psin'].values if 'psin' in self.inputs.single_parameters else self.inputs.dimensions['psin'].values
 		equilibrium = {}
@@ -132,7 +132,6 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 				gyro_keys[dim.name] = {}
 				for val in dim.values:
 					gyro_keys[dim.name][val] = set()
-			kys = None
 			
 			runs = self.scanner.get_all_runs() if specificRuns is None else list(specificRuns)
 			for run in runs:
@@ -147,10 +146,12 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 					group_data[group_key] = {}
 					for key in group_keys:
 						group_data[group_key][key] = None
-					if kys is None:
+					if 'ky' not in run:
 						kys = array(run_data['ky']).tolist()
+					else:
+						kys = [run['ky']]
 					
-					for yi, ky in enumerate(run_data['ky']):
+					for yi, ky in enumerate(kys):
 						run_key = str(uuid4())
 						gyro_data[run_key] = deepcopy(run)
 						gyro_data[run_key]['group_key'] = group_key
@@ -202,6 +203,7 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 		else:
 			gyro_data = None
 			gyro_keys = None
+			group_data = None
 		
 		data = {'gyro': gyro_data,
 			'ideal': None,

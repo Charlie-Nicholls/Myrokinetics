@@ -482,7 +482,7 @@ with load(\"{self.inputs['data_path']}/nml_diffs.npz\",allow_pickle = True) as o
 				os.system(f"sbatch \"{self.inputs['data_path']}/submit_files/save_out{end_n}.job\"")
 			return
 		
-		data = self.inputs.code.save_out(filename = filename, directory = directory, specificRuns = specificRuns, QuickSave = QuickSave, debug = debug)
+		data = self.inputs.code.save_out(specificRuns = specificRuns, QuickSave = QuickSave, debug = debug)
 		
 		self.file_lines = {'eq_file': self.eqbm._eq_lines, 'kin_file': self.eqbm._kin_lines, 'template_file': self.eqbm._template_lines}
 		savez(f"{directory}/{filename}", inputs = self.inputs.inputs, data = data, files = self.file_lines)
