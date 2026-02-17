@@ -223,7 +223,7 @@ class gs2(code):
 gs2 "${{INDIR}}/{input_name}"
 if test -f "${{INDIR}}/{output_name}"; then
 touch "${{INDIR}}/run.fin"
-rm \"${{INDIR}}/{input_name[:-2]}.bishop\"
+rm \"${{INDIR}}/{input_name[:-2]}bishop\"
 fi'''
 		
 	def write_pyth_archer2(self, dir_list, filename):
