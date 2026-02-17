@@ -149,8 +149,9 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 					if 'ky' not in run:
 						kys = array(run_data['ky']).tolist()
 						gyro_keys['ky'] = {}
-						for ky in kys:
-							gyro_keys['ky'][ky] = set()
+						if 'ky' not in gyro_keys.keys():
+							for ky in kys:
+								gyro_keys['ky'][ky] = set()
 					else:
 						kys = [run['ky']]
 					
