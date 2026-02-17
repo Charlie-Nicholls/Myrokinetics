@@ -85,21 +85,8 @@ class myro_read(object):
 					run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]
 			
 			run_id = self.get_run_id(run)
-			
-			if 'ky' in run and self['code'] == 'TGLF':
-				# ADD SUPPORT FOR GROUPED/NL GS2 RUNS
-				ky = run['ky']
-				del(run['ky'])
-				val = self(key,run)
-				if type(val) == list:
-					kys = self['ky']
-					if ky in kys:
-						ky_id = kys.index(ky)
-					else:
-						ky_id = abs(array(kys) - ky).argmin()
-					val = val[ky_id]
-				return val
-			
+
+			'''		
 			elif len(run) != len(self.dimensions) and self['code'] != 'TGLF':
 				id_set = set()
 				id_list = self.get_run_list(run)
@@ -114,8 +101,9 @@ class myro_read(object):
 				else:
 					print(f"ERROR: len(run) must be length {len(self.dimensions)}")
 					return None
+			'''
 			
-			elif run_id is None:
+			if run_id is None:
 				for dim, val in run.items():
 					if val not in self.dimensions[dim].values:
 						run[dim] = self.dimensions[dim].values[abs(array(self.dimensions[dim].values) - val).argmin()]
@@ -129,6 +117,7 @@ class myro_read(object):
 						else:
 							return self.data['group'][group_key][key]
 					else:
+						print("Error: cannot find run_id")
 						return None
 
 			if key in self.data['gyro'][run_id].keys():

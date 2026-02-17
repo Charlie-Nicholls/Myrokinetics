@@ -148,6 +148,9 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 						group_data[group_key][key] = None
 					if 'ky' not in run:
 						kys = array(run_data['ky']).tolist()
+						gyro_keys['ky'] = {}
+						for ky in kys:
+							gyro_keys['ky'][ky] = []
 					else:
 						kys = [run['ky']]
 					
@@ -157,6 +160,7 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 						gyro_data[run_key]['group_key'] = group_key
 						if 'ky' not in gyro_data[run_key]:
 							gyro_data[run_key]['ky'] = ky
+							gyro_keys['ky'][ky].add(run_key)
 						for key in run:
 							gyro_keys[key][run[key]].add(run_key)
 
