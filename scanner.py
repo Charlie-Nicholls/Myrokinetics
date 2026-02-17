@@ -457,7 +457,7 @@ class myro_scan(object):
 			if '/' not in self.inputs['sbatch_save']['output']:
 				self.inputs['sbatch_save']['output'] = f"{self.inputs['data_path']}/submit_files/{self.inputs['sbatch_save']['output']}"
 			for n in range(1,n_par+1):
-                                end_n = f"_{n}" if n_par > 1 else ""
+				end_n = f"_{n}" if n_par > 1 else ""
 				sbatch = sbatch + f"\n#SBATCH --output={self.inputs['sbatch_save']['output']}{end_n}"
 				job = open(f"{self.inputs['data_path']}/submit_files/save_out{end_n}.job",'w')
 				job.write(f"""{sbatch}
