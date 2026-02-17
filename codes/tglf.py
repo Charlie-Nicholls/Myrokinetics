@@ -174,12 +174,12 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 								elif key in ['phi','apar','bpar']:
 									gyro_data[run_key][key] = array(key_data[yi,0]).tolist()
 								elif key in ['time']:
-									group_data[run_key]['t'] = array(key_data).tolist()
+									group_data[group_key]['t'] = array(key_data).tolist()
 								elif key in ['theta']:
-									group_data[run_key][key] = array(key_data).tolist()
+									group_data[group_key][key] = array(key_data).tolist()
 								elif key in ['heat']:
 									gyro_data[run_key]['heat_flux'] = array(npsum(npsum(key_data,0),0)).tolist()[yi]
-									group_data[run_key]['heat_flux_tot'] = sum(array(npsum(npsum(key_data,0),0)).tolist())
+									group_data[group_key]['heat_flux_tot'] = sum(array(npsum(npsum(key_data,0),0)).tolist())
 							except Exception as e:
 								print(f"Save Error in {sub_dir} on {key}: {e}")
 								if key == 'growth_rate':
