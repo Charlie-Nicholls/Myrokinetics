@@ -1,4 +1,4 @@
-from numpy import transpose, array, amax, amin, isfinite, full, nan, diff, trapz
+from numpy import transpose, array, amax, amin, isfinite, full, nan, diff, trapz, nanmax
 from matplotlib.pyplot import subplots, Normalize, colorbar, axes, ion, show, Line2D
 from matplotlib.cm import ScalarMappable
 from matplotlib.widgets import Slider, CheckButtons
@@ -91,6 +91,7 @@ class plot_2d(object):
 		self._load_x_axis(self['x_axis_type'])
 		self._load_y_axis(self['y_axis_type'])
 		self._load_z_axis(self['z_axis_type'])
+		self.calculate_z()
 		
 		if self.sliders in [None,'seperate']:
 			self.fig.subplots_adjust(bottom=0.15)
@@ -182,14 +183,8 @@ class plot_2d(object):
 			return
 			
 		self.settings['z_axis_type'] = axis_type
-		zs = []
-		for run in self.reader.get_all_runs():
-			val = self.reader(self['z_axis_type'],run)
-			if val is None:
-				val = nan
-			if str(val) not in ['-inf','inf','nan']:
-				zs.append(val)
-		self._z_max = max(zs,default=100)
+		self.calculate_z()
+		
 		
 		if axis_type in ['growth_rate']:
 			self._z_axis_label = r'$\gamma$'
@@ -329,6 +324,41 @@ class plot_2d(object):
 		else:
 			print("ERROR: contour_margin_per must be > 0 and <= 100")
 
+	def calculate_z(self):
+		z = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
+		for x_id, x_value in enumerate(self.x_axis):
+			for y_id, y_value in enumerate(self.y_axis):
+				run = self['run'].copy()
+				run[self['x_axis_type']] = x_value
+				run[self['y_axis_type']] = y_value
+				if self.ql_adjustable:
+					kys = self.reader['ky']
+					if self.ky_min:
+						kys = [x for x in kys if x >= self.ky_min]
+					if self.ky_max:
+						kys = [x for x in kys if x <= self.ky_max]
+					qls = []
+					kys2 = []
+					for ky in kys:
+						run['ky'] = ky
+						if self['z_axis_type'] == 'quasilinear':
+							ql = self.reader('ql_norm',run)
+						elif self['z_axis_type'] == 'heat_flux_tot':
+							ql = self.reader('heat_flux',run)
+						if str(ql) not in ['nan','inf','-inf','None']:
+							qls.append(ql)
+							kys2.append(ky)
+					if self['z_axis_type'] == 'quasilinear':
+						z[x_id][y_id] = trapz(qls,kys2)	
+					elif self['z_axis_type'] == 'heat_flux_tot':
+						z[x_id][y_id] = sum(qls)	
+					
+				else:
+					z[x_id][y_id] = self.reader(self['z_axis_type'],run)
+		z = transpose(z)
+		self.z_axis = z
+		self._z_max = amax(abs(array(z)[isfinite(z)]))
+	
 	def draw_fig(self, val = None):
 		handles = []
 		for key, sli in self.sliders.sliders.items():
@@ -360,40 +390,13 @@ class plot_2d(object):
 		status = self.options.get_status()
 		self.settings['options'] = status
 		
-		z = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
-		for x_id, x_value in enumerate(self.x_axis):
-			for y_id, y_value in enumerate(self.y_axis):
-				run = self['run'].copy()
-				run[self['x_axis_type']] = x_value
-				run[self['y_axis_type']] = y_value
-				if self.ql_adjustable:
-					kys = self.reader['ky']
-					if self.ky_min:
-						kys = [x for x in kys if x >= self.ky_min]
-					if self.ky_max:
-						kys = [x for x in kys if x <= self.ky_max]
-					qls = []
-					kys2 = []
-					for ky in kys:
-						run['ky'] = ky
-						ql = self.reader('ql_norm',run)
-						if str(ql) not in ['nan','inf','-inf','None']:
-							qls.append(ql)
-							kys2.append(ky)
-					z[x_id][y_id] = trapz(qls,kys2)			
-					
-				else:
-					z[x_id][y_id] = self.reader(self['z_axis_type'],run)
-		z = transpose(z)
-		self.z_axis = z
-		
 		if self['z_slider']['max']:
 			z_max = self._sliders['z_slider'].val * self['z_slider']['max']/100
 		elif status[2]:
 			z_max = self._sliders['z_slider'].val * self._z_max/100
 		else:
 			try:
-				z_max = self._sliders['z_slider'].val * amax(abs(array(z)[isfinite(z)]))/100
+				z_max = self._sliders['z_slider'].val * self._z_max/100
 				if z_max < 10e-10:
 					z_max = 10e-10
 			except:
@@ -403,18 +406,18 @@ class plot_2d(object):
 		self.settings['z_slider']['scale'] = self._sliders['z_slider'].val
 		self.cbar.update_normal(ScalarMappable(norm = norm, cmap = self.cmap))
 		if self['contour_type'] == 1:
-			self.ax.contourf(x_axis,y_axis,z, cmap = self.cmap, norm = norm)
+			self.ax.contourf(x_axis, y_axis, self.z_axis, cmap = self.cmap, norm = norm)
 		else:
-			self.ax.pcolormesh(x_axis, y_axis, z, cmap = self.cmap, norm=norm)
+			self.ax.pcolormesh(x_axis, y_axis, self.z_axis, cmap = self.cmap, norm=norm)
 			
 		if status[5]:
-			grid = RegularGridInterpolator([x_axis,y_axis],transpose(z))
+			grid = RegularGridInterpolator([x_axis,y_axis],transpose(self.z_axis))
 			if min(x_axis) > x_val or max(x_axis) < x_val or min(y_axis) > y_val or max(y_axis) < y_val:
 				print("ERRROR: eqbm point outside scan range")
 			else:
 				eqbm_val = grid((x_val,y_val))
 				cont_val = eqbm_val if self['contour_value'] in ['eqbm','EQBM','equilibrium'] else self['contour_value']
-				self.ax.contourf(x_axis, y_axis, z, [cont_val-(cont_val*self['contour_margin_per'])/100,cont_val+(cont_val*self['contour_margin_per'])/100], colors = ('b'))
+				self.ax.contourf(x_axis, y_axis, self.z_axis, [cont_val-(cont_val*self['contour_margin_per'])/100,cont_val+(cont_val*self['contour_margin_per'])/100], colors = ('b'))
 				handles.append(Line2D([0,1],[0.5,0.5],color='b',label=f"QL = {cont_val:.2f}",visible = True))
 			
 		if status[0]:

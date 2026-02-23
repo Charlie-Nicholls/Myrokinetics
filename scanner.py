@@ -466,8 +466,8 @@ class myro_scan(object):
 
 python {self.inputs['data_path']}/submit_files/save_out{end_n}.py""")
 				job.close()
-				low = len(runs)*n//n_par
-				high = len(runs)*(n+1)//n_par
+				low = len(runs)*(n-1)//n_par
+				high = len(runs)*n//n_par
 				if n_par > 1: filename_n = f"{filename}{end_n}" 
 				pyth = open(f"{self.inputs['data_path']}/submit_files/save_out{end_n}.py",'w')
 				pyth.write(f"""from Myrokinetics import myro_scan

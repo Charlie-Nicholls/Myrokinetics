@@ -117,7 +117,7 @@ class myro_read(object):
 						else:
 							return self.data['group'][group_key][key]
 					else:
-						print("Error: cannot find run_id")
+						print(f"Error: cannot find run_id for {run}")
 						return None
 
 			if key in self.data['gyro'][run_id].keys():
@@ -427,7 +427,7 @@ class myro_read(object):
 			ql_keys[dim.name] = {}
 			for val in dim.values:
 				ql_keys[dim.name][val] = []
-				
+		
 		for runs in self.get_all_runs(excludeDimensions = ['ky']):
 			run_ids = self.get_run_list(runs)
 			ql_key = str(uuid4())
@@ -600,7 +600,7 @@ class myro_read(object):
 		return self.plot_ql(settings=settings,init=init,sliders=sliders)
 
 	def plot_ql(self, settings = {}, init = None, sliders = None):
-		if self['ql'] is None:
+		if self['ql'] is None and self['code'] == 'GS2':
 			self.calculate_ql()
 		if init is not None:
 			init = list(init)
