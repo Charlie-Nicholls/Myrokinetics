@@ -202,7 +202,7 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 				existing_dim_keys.append([x for x in key if x.isdigit()])
 			dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
 			if 'ky' not in self.inputs.dimensions:
-                                kys = list(gyro_keys['ky'].keys())
+				kys = list(gyro_keys['ky'].keys())
 				kys.sort()
 				self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
 			self.inputs.load_dimensions()
