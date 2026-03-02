@@ -348,11 +348,7 @@ class plot_2d(object):
 						if str(ql) not in ['nan','inf','-inf','None']:
 							qls.append(ql)
 							kys2.append(ky)
-					if self['z_axis_type'] == 'quasilinear':
-						z[x_id][y_id] = trapz(qls,kys2)	
-					elif self['z_axis_type'] == 'heat_flux_tot':
-						z[x_id][y_id] = sum(qls)	
-					
+					z[x_id][y_id] = trapz(qls,kys2)
 				else:
 					z[x_id][y_id] = self.reader(self['z_axis_type'],run)
 		z = transpose(z)
