@@ -126,8 +126,8 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 			only = set({'growth_rate','mode_frequency','ky','kx'})
 			if not QuickSave:
 				only = only | set({'time','heat','phi','bpar','apar'}) #theta not working
-			data_keys = ['growth_rate','mode_frequency','growth_rate2','mode_frequency2','phi','bpar','apar','parity','heat_flux']
-			group_keys = ['t','heat_flux_tot']
+			data_keys = ['growth_rate','mode_frequency','growth_rate2','mode_frequency2','phi','bpar','apar','parity','heat_flux','ky','kx','t','heat_flux_tot']
+			group_keys = []
 			gyro_keys = {}
 			for dim in self.inputs.dimensions.values():
 				gyro_keys[dim.name] = {}
@@ -140,59 +140,38 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 				try:
 					self.eqbm.pyro.load_gk_output(sub_dir)
 					run_data = self.eqbm.pyro.gk_output
-					try:
-						group_key = run_data.attrs['object_uuid']
-					except:
-						group_key = str(uuid4())
-					group_data[group_key] = {}
-					for key in group_keys:
-						group_data[group_key][key] = None
-					if 'ky' not in run:
-						kys = array(run_data['ky']).tolist()
-						if 'ky' not in gyro_keys.keys():
-							gyro_keys['ky'] = {}
-							for ky in kys:
-								gyro_keys['ky'][ky] = set()
-					else:
-						kys = [run['ky']]
-					
-					for yi, ky in enumerate(kys):
-						run_key = str(uuid4())
-						gyro_data[run_key] = deepcopy(run)
-						gyro_data[run_key]['group_key'] = group_key
-						if 'ky' not in gyro_data[run_key]:
-							gyro_data[run_key]['ky'] = ky
-							gyro_keys['ky'][ky].add(run_key)
-						for key in run:
-							gyro_keys[key][run[key]].add(run_key)
-
+					run_key = str(uuid4())
+					gyro_data[run_key] = deepcopy(run)
+					for key in run:
+						gyro_keys[key][run[key]].add(run_key)
 						for key in data_keys:
-							gyro_data[run_key][key] = None
-						
-						for key in only:
-							try:
-								key_data = run_data[key]
-								if key == 'growth_rate':
-									gyro_data[run_key]['growth_rate'] = array(key_data[yi,0]).tolist()
-									gyro_data[run_key]['growth_rate2'] = array(key_data[yi,1]).tolist()
-								if key == 'mode_frequency':
-									gyro_data[run_key]['mode_frequency'] = array(key_data[yi,0]).tolist()
-									gyro_data[run_key]['mode_frequency2'] = array(key_data[yi,1]).tolist()
-								elif key in ['phi','apar','bpar']:
-									gyro_data[run_key][key] = array(key_data[yi,0]).tolist()
-								elif key in ['time']:
-									group_data[group_key]['t'] = array(key_data).tolist()
-								elif key in ['theta']:
-									group_data[group_key][key] = array(key_data).tolist()
-								elif key in ['heat']:
-									gyro_data[run_key]['heat_flux'] = array(npsum(npsum(key_data,0),0)).tolist()[yi]
-									group_data[group_key]['heat_flux_tot'] = sum(array(npsum(npsum(key_data,0),0)).tolist())
-							except Exception as e:
-								print(f"Save Error in {sub_dir} on {key}: {e}")
-								if key == 'growth_rate':
-									gyro_data[run_key]['growth_rate'] = nan
-								elif key == 'mode_frequency':
-									gyro_data[run_key]['mode_frequency'] = nan
+                                                        gyro_data[run_key][key] = None
+					
+					for key in only:
+						try:
+							key_data = run_data[key]
+							if key == 'growth_rate':
+								gyro_data[run_key]['growth_rate'] = array(key_data[:,0]).tolist()
+								gyro_data[run_key]['growth_rate2'] = array(key_data[:,1]).tolist()
+							if key == 'mode_frequency':
+								gyro_data[run_key]['mode_frequency'] = array(key_data[:,0]).tolist()
+								gyro_data[run_key]['mode_frequency2'] = array(key_data[:,1]).tolist()
+							elif key in ['phi','apar','bpar']:
+								gyro_data[run_key][key] = array(key_data[:,0]).tolist()
+							elif key in ['time']:
+								gyro_data[run_key]['t'] = array(key_data).tolist()
+							elif key in ['theta','ky','kx']:
+								gyro_data[run_key][key] = array(key_data).tolist()
+								if key == 'ky' and kys == []: kys = array(key_data).tolist()
+							elif key in ['heat']:
+								gyro_data[run_key]['heat_flux'] = array(npsum(npsum(key_data,0),0)).tolist()
+								gyro_data[run_key]['heat_flux_tot'] = sum(array(npsum(npsum(key_data,0),0)).tolist())
+						except Exception as e:
+							print(f"Save Error in {sub_dir} on {key}: {e}")
+							if key == 'growth_rate':
+								gyro_data[run_key]['growth_rate'] = nan
+							elif key == 'mode_frequency':
+								gyro_data[run_key]['mode_frequency'] = nan
 									
 				except Exception as e:
 					print(f"Save Error {sub_dir}: {e}")
@@ -202,7 +181,6 @@ Parallel(n_jobs=1)(delayed(start_run)(run) for run in input_dirs)""")
 				existing_dim_keys.append([x for x in key if x.isdigit()])
 			dim_n = max([eval("".join(x)) for x in existing_dim_keys],default=1) + 1
 			if 'ky' not in self.inputs.dimensions:
-				kys = list(gyro_keys['ky'].keys())
 				kys.sort()
 				self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
 			self.inputs.load_dimensions()

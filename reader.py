@@ -33,7 +33,7 @@ class myro_read(object):
 		else:
 			run = None
 			ids = list(deepcopy(indexes)[0])
-		
+			
 		key.lower()
 		if key in ['gr','growth','gamma']:
 			key = 'growth_rate'
@@ -83,7 +83,14 @@ class myro_read(object):
 				run = {}
 				for idx, i in enumerate(ids):
 					run[self.inputs.dim_order[idx]] = self.dimensions[self.inputs.dim_order[idx]].values[i]
-			
+
+			if self['code'] == 'TGLF' and 'ky' in run.keys():
+				run_noky = {k: run[k] for k in run.keys() - {'ky'}}
+				run_id = self.get_run_id(run_noky)
+				ky_id = self.data['gyro'][run_id]['ky'].index(run['ky'])
+				return self(key,run_noky)[ky_id]
+				
+
 			run_id = self.get_run_id(run)
 
 			'''		
