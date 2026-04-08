@@ -117,22 +117,9 @@ class plot_2d(object):
 		self.z_axes = axes([0.9, 0.13, 0.01, 0.73],visible=self['visible']['z_slider'])
 		self._sliders['z_slider'] = Slider(self.z_axes, 'Scale', 0, 100, valinit = self['z_slider']['scale'], valstep = 1, orientation = 'vertical')
 		self._sliders['z_slider'].on_changed(self.draw_fig)
-			
-		zsi = [self.reader(self['z_axis_type'],arun) for arun in self.reader.get_all_runs()]
-		zs = [val for val in zsi if str(val) not in ['-inf','inf','nan','None']]
-		self._z_max = max(zs,default=1)
-	
-		zs = []
-		for run in self.reader.get_all_runs():
-			val = self.reader(self['z_axis_type'],run)
-			if str(val) not in ['-inf','inf','nan','None']:
-				zs.append(val)
-		self._z_max = max(zs,default=100)
-		
+					
 		ion()
 		self.draw_fig()
-		if self['z_slider']['max']:
-			self.set_max(self.settings['z_slider']['max'])
 		show()
 	
 	def set_slider(self, num = None, key = None, dimension_type = None):
@@ -183,8 +170,9 @@ class plot_2d(object):
 			return
 			
 		self.settings['z_axis_type'] = axis_type
+		if axis_type in ['quasilinear','heat_flux_tot']:
+			del(self.settings['run']['ky'])
 		self.calculate_z()
-		
 		
 		if axis_type in ['growth_rate']:
 			self._z_axis_label = r'$\gamma$'

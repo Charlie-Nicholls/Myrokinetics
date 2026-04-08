@@ -7,7 +7,7 @@ from scipy.stats import pearsonr
 class plot_nl_phi2:
 	def __init__(self, reader, settings = {}):
 		self.reader = reader
-		self.settings = {'y_axis_type': 'phi2_by_ky', 'plot_type': 'group', 'fit': True, "fontsizes": {"legend": 10,"axis": 11,"title": 13,"suptitle": 20},"suptitle": None,}
+		self.settings = {'y_axis_type': 'phi2_by_ky', 'plot_type': 'group', 'fit': True, "fontsizes": {"legend": 10,"axis": 11,"title": 13,"suptitle": 20},"suptitle": None,"xlim":[None,None],"ylim":[None,None]}
 		self.settings['run'] = self.reader.get_all_runs()[0]
 		for key, val in settings.items():
 			if key in self.settings:
@@ -44,6 +44,20 @@ class plot_nl_phi2:
 		self.settings['plot_type'] = plot_type
 		self.draw_fig()
 
+	def set_ylim(self, limit=[None,None]):
+		if type(limit) != list or len(limit) != 2:
+			print("ERROR: limit must be list of length 2 [lower,upper] (None for no limit)")
+			return
+		self.settings['y_lim'] = limit
+		self.draw_fig()
+		
+	def set_xlim(self, limit=[None,None]):
+		if type(limit) != list or len(limit) != 2:
+			print("ERROR: limit must be list of length 2 [lower,upper] (None for no limit)")
+			return
+		self.settings['x_lim'] = limit
+		self.draw_fig()
+	
 	def toggle_fit(self):
 		self.settings['fit'] = not self.settings['fit']
 		self.draw_fig()
@@ -64,6 +78,8 @@ class plot_nl_phi2:
 			self.ax.set_yscale('log')
 			self.ax.set_title(f"{self['y_axis_type']} | {var} = {sl}",fontsize=self['fontsizes']['title'])
 			self.ax.set_ylabel("$\phi^{2}$",fontsize=self['fontsizes']['axis'])
+			self.ax.set_xlim(self['xlim'])
+			self.ax.set_ylim(self['ylim'])
 			if self['fit']:
 				lt = int(self._tmin/(self.x[1]-self.x[0]))
 				ut = int(self._tmax/(self.x[1]-self.x[0])) + 1
@@ -78,6 +94,8 @@ class plot_nl_phi2:
 			self.ax.set_yscale('log')
 			self.ax.set_title(self['y_axis_type'],fontsize=self['fontsizes']['title'])
 			self.ax.set_ylabel("$\phi^{2}$",fontsize=self['fontsizes']['axis'])
+			self.ax.set_xlim(self['xlim'])
+			self.ax.set_ylim(self['ylim'])
 		elif self['plot_type'] == 'mesh':
 			self.y = self.reader[var]
 			self.z = log(array(phi2)).tolist()

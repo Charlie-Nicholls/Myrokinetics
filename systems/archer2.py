@@ -45,7 +45,7 @@ source /work/e281/e281/cnicholls/pythenv/bin/activate"""
 			else:
                                 sbatch = sbatch + f"\n#SBATCH --{key}={val}"
 			
-		if scanner.inputs['grid_option'] == 'single' or scanner.inputs['gk_code'] == 'TGLF':
+		if scanner.inputs['grid_option'] == 'single' or scanner.inputs['gk_code'] in ['TGLF','CGYRO']:
 		
 			if n_sim is None:
 				n_sim = n_par if n_par < 8 else 8

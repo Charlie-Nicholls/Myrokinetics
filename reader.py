@@ -87,10 +87,11 @@ class myro_read(object):
 			if self['code'] == 'TGLF' and 'ky' in run.keys():
 				run_noky = {k: run[k] for k in run.keys() - {'ky'}}
 				run_id = self.get_run_id(run_noky)
-				ky_id = self.data['gyro'][run_id]['ky'].index(run['ky'])
-				return self(key,run_noky)[ky_id]
+				val = self(key,run_noky)
+				if type(val) == list and key in ['growth_rate','growth_rate2','mode_frequency','mode_frequency2','heat_flux','parity']:
+					return val[self.data['gyro'][run_id]['ky'].index(run['ky'])]
+				else: return val
 				
-
 			run_id = self.get_run_id(run)
 
 			'''		

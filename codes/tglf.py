@@ -90,7 +90,7 @@ def start_run(run, run_attempt = 1):
 		os.chdir(f"{{run}}")
 		os.system(f"$GACODE_ROOT/tglf/bin/tglf -n 128 -e .")
 		os.chdir(f"{{cwd}}")
-		if os.path.exists(f"{{run}}/{self.output_name}"):
+		if os.path.exists(f"{{run}}/{self.output_name[:-3]}.ky_spectrum"):
 			os.system(f"touch {{run}}/run.fin")
 		else:
 			sleep(60)
