@@ -225,6 +225,7 @@ fi'''
 			kxs.sort()
 			self.inputs.inputs[f'dimension_{dim_n}'] = {'type': 'kx', 'values': kxs, 'min': min(kxs), 'max': max(kxs), 'num': len(kxs), 'option': None}
 			if 'ky' not in self.inputs.dimensions:
+                                kys = [abs(x) for x in kys]
 				kys = list(kys)
 				kys.sort()
 				self.inputs.inputs[f'dimension_{dim_n+1}'] = {'type': 'ky', 'values': kys, 'min': min(kys), 'max': max(kys), 'num': len(kys), 'option': None}
