@@ -208,7 +208,7 @@ fi'''
 									elif key in ['heat']:
 										group_data[group_key][key] = array(key_data[:,:,yi,:]).tolist()
 										from numpy import sum as npsum
-										group_data[group_key]['heat_flux_tot'] = npsum(npsum(array(key_data[:,:,yi,:]),axis=0,axis=0).tolist()
+										group_data[group_key]['heat_flux_tot'] = npsum(npsum(array(key_data[:,:,yi,:]),axis=0),axis=0).tolist()
 								except Exception as e:
 									print(f"Save Error in {sub_dir}: {e}")
 									if key == 'growth_rate':
