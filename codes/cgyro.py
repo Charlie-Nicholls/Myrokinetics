@@ -51,6 +51,10 @@ class cgyro(code):
 		nml['EQUILIBRIUM_MODEL'] = 2
 		
 		nml['THETA_PLOT'] = nml['N_THETA'] #TEMPORARY UNTIL I FIND A BETTER SOLUTION TO ENSURING ALWAYS A FACTOR OF NTHETA AND/OR THE TEMPLATE LOADING ISSUE WITH PYRO
+
+		if self.inputs['force_zero_fs']:
+			nml['GAMMA_E'] = 0
+			NML['GAMMA_P'] = 0
 		return nml
 	
 	def _get_gyro_input(self, run, nml):
