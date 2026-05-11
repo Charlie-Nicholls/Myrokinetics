@@ -54,7 +54,7 @@ class cgyro(code):
 
 		if self.inputs['force_zero_fs']:
 			nml['GAMMA_E'] = 0
-			NML['GAMMA_P'] = 0
+			nml['GAMMA_P'] = 0
 		return nml
 	
 	def _get_gyro_input(self, run, nml):
