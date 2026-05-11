@@ -188,7 +188,7 @@ fi'''
 							#gyro_data['nml_diffs'] = self.scanner.namelist_diffs[?]
 							for key in data_keys:
 								gyro_data[run_key][key] = None
-							for key in only:
+							for key in [k for k in only if k in run_data]:
 								try:
 									key_data = run_data[key]
 									if key == 'growth_rate':
