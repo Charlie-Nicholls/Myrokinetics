@@ -39,7 +39,6 @@ class psiN(dimension):
 class beta_prime(dimension):
 	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
 		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
-		print("BETA PRIME NOT YET IMPLIMENTED")
 
 	name_keys = ['beta_prime','betap','bp','beta_p','b_p']
 	axis_label = r'$\beta^{\prime}$'
@@ -51,14 +50,13 @@ class beta_prime(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		'''
+		
 		bp_cal = sum((nml[f'DLNTDR_{N}'] + nml[f'DLNNDR_{N}'])*nml[f'DENS_{N}']*nml[f'TEMP_{N}'] for N in range(1,4))*nml['BETA_STAR_SCALE']*nml['BETAE_UNIT']
 
 		mul = abs(val)/bp_cal
 		for N in range(1,4):
 			nml[f'DLNTDR_{N}'] = nml[f'DLNTDR_{N}'] *mul
 			nml[f'DLNNDR_{N}'] = nml[f'DLNNDR_{N}']*mul
-		'''
 
 		return nml
 
