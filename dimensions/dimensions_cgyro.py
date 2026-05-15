@@ -52,14 +52,12 @@ class beta_prime(dimension):
 
 	def edit_nml(self, nml, val):
 		'''
-		nml['theta_grid_eik_knobs']['beta_prime_input'] = -1*abs(val)
+		bp_cal = sum((nml[f'DLNTDR_{N}'] + nml[f'DLNNDR_{N}'])*nml[f'DENS_{N}']*nml[f'TEMP_{N}'] for N in range(1,4))*nml['BETA_STAR_SCALE']*nml['BETAE_UNIT']
 
-		bp_cal = sum((nml[spec]['tprim'] + nml[spec]['fprim'])*nml[spec]['dens']*nml[spec]['temp'] for spec in [x for x in nml.keys() if 'species_parameters_' in x])*nml['parameters']['beta']*-1
-
-		mul = -1*abs(val)/bp_cal
-		for spec in [x for x in nml.keys() if 'species_parameters_' in x]:
-			nml[spec]['tprim'] = nml[spec]['tprim']*mul
-			nml[spec]['fprim'] = nml[spec]['fprim']*mul
+		mul = abs(val)/bp_cal
+		for N in range(1,4):
+			nml[f'DLNTDR_{N}'] = nml[f'DLNTDR_{N}'] *mul
+			nml[f'DLNNDR_{N}'] = nml[f'DLNNDR_{N}']*mul
 		'''
 
 		return nml
