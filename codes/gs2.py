@@ -411,6 +411,7 @@ fi'''
 		else:
 			gyro_data = None
 			gyro_keys = None
+			group_data = None
 
 		if self.scanner['ideal']:
 			ideal_keys = {}
