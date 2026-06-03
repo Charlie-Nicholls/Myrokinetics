@@ -78,7 +78,7 @@ def QL(run_ids, reader, returnlist = False):
 		kp_bpars = array([kp_bpars[i] for i in range(nruns) if i not in err])
 		grs = array([grs[i] for i in range(nruns) if i not in err])
 		kys = array([kys[i] for i in range(nruns) if i not in err])
-
+                
 		intergrand = grs*(1/kp_phis + max_apars/(max_phis*kp_apars) + max_bpars/(max_phis*kp_bpars))
 		
 		QL = trapz(intergrand,kys)

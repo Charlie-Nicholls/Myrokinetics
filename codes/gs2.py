@@ -430,6 +430,7 @@ fi'''
 
 			ideal_data = {}
 			for run in self.scanner.get_all_ideal_runs():
+				from uuid import uuid4
 				run_id = str(uuid4())
 				for key in run:
 					ideal_keys[key][run[key]].add(run_id)

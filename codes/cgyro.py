@@ -157,7 +157,7 @@ fi'''
 			for run in runs:
 				sub_dir = self.scanner.get_run_directory(run)
 				try:
-					self.eqbm.pyro.load_gk_output(sub_dir)
+					self.eqbm.pyro.load_gk_output(sub_dir,gk_type='CGYRO')
 					run_data = self.eqbm.pyro.gk_output
 					group_key = run_data.attrs['object_uuid']
 					group_data[group_key] = {}

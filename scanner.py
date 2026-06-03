@@ -643,6 +643,9 @@ cgyro -i "./" >& input.report
 		else:
 			print(f"ERROR: report \"{filepath}\" not found, please ensure simulation has run")
 			return
+		
+	def save_run_set(self, runs = None, filename = None):
+		self.inputs.save_run_set(runs = runs, filename = filename)
 
 	def load_run_set(self, filename = None):
 		if filename is None:
