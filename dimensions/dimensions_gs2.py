@@ -576,7 +576,7 @@ class write_fluxes(dimension):
 	valid_options = []
 
 	def sub_validate(self, values):
-		if any([(type(x) not bool) for x in values]):
+		if any([(type(x) != bool) for x in values]):
 			print("Error: write_fluxes must be boolean")
 		return values
 
