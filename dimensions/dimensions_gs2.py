@@ -581,7 +581,7 @@ class write_fluxes(dimension):
 		return values
 
 	def edit_nml(self, nml, val):
-		nml['gs2_diagnostic_knobs']['write_fluxes'] = val
+		nml['gs2_diagnostics_knobs']['write_fluxes'] = val
 		return nml
 
 
