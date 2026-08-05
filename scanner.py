@@ -660,21 +660,8 @@ cgyro -i "./" >& input.report
 				runs.append(run)
 		return runs
 		
-	'''
-	def rerun(self, runs = None, nml = None, directory = None, group_runs = None):
+	def run_fingerprint(self, runs = None):
 		if runs is None:
-			print("ERROR: runs not given")
+			print(f"Error: No runs given")
 			return
-		if nml is None:
-			print("ERROR: nml not given, if you wish to rerun with no changes please use nml = {}")
-			return
-			
-		self.check_setup()
 		
-		if type(nml) == str:
-			nml = f90nml.read(nml)
-		for p,i,j,k,t in runs:
-			self.namelist_diffs[p][i][j][k][t] = nml
-		self.make_gyro_files(specificRuns = runs, directory = directory, group_runs = group_runs)
-		self.run_jobs()
-	'''

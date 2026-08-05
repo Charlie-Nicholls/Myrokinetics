@@ -91,8 +91,8 @@ class plot_eigen(object):
 			self.fig.suptitle(self['suptitle'],fontsize=self['fontsizes']['suptitle'],visible=self['visible']['suptitle'])
 		
 		if self['var'] == "phi2":
-			chaxes = axes([0.8, 0.01, 0.09, 0.1],frame_on = False)
-			self.options = CheckButtons(chaxes, ["Show Fit"],self['options'])
+			self.chaxes = axes([0.8, 0.01, 0.09, 0.1],frame_on = False)
+			self.options = CheckButtons(self.chaxes, ["Show Fit"],self['options'])
 			self.options.on_clicked(self.draw_fig)
 		
 		if self['suptitle']:
@@ -133,7 +133,7 @@ class plot_eigen(object):
 				val = not self['visible'][key]
 			self.settings['visible'][key] = val
 			if key == 'op_box':
-				self.ch_axes.set_visible(self['visible']['op_box'])
+				self.chaxes.set_visible(self['visible']['op_box'])
 			elif key == 'suptitle':
 				self.fig._suptitle.set_visible(self['visible']['suptitle'])
 			elif key == 'title':
@@ -279,11 +279,9 @@ class plot_eigen(object):
 						fit = polyfit(t[-nt:],log(phi2[-nt:]),1)
 						fitgr = fit[0]/2
 						pr = pearsonr(t[-nt:],log(phi2[-nt:]))
-						gradgr = log(phi2[-1]/phi2[0])/(t[-1]-t[0])/2
 						omega = self.reader('omega',run)
 						
 						self.ax.plot(t[-nt:],exp(array(t[-nt:])*fit[0] + fit[1]),'r',label=f"GR = {fitgr:+.2e}\nR = {pr[0]:.4f}")
-						self.ax.plot([t[0],t[-1]],[phi2[0],phi2[-1]],'b',label=f"AVG GR = {gradgr:+.2e}")
 						self.ax.text(0.01,0.99,f"GR: {self.reader('growth_rate',run):+.2e}\nOmega[-1]: {imag(omega[-1]):+.2e}",ha='left',va='top',transform=self.ax.transAxes,fontsize=self['fontsizes']['legend'])
 						self.ax.set_xlabel(f"Time ({len(t)} steps) | nt = {nt}")
 						self.ax.legend(loc=1,fontsize=self['fontsizes']['legend'])

@@ -567,4 +567,22 @@ class relative_tolerance(dimension):
 		nml['split_nonlinear_terms_knobs']['relative_tolerance'] = val
 		return nml
 
-dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb,qinp,beta,absolute_tolerance,relative_tolerance]
+class write_fluxes(dimension):
+	def __init__(self, values = None, mini = None, maxi = None, num = None, option = None):
+		super().__init__(values = values, mini = mini, maxi = maxi, num = num, option = option)
+
+	name_keys = ['write_fluxes','writefluxes','write_flux']
+	axis_label = 'write_fluxes'
+	valid_options = []
+
+	def sub_validate(self, values):
+		if any([(type(x) not bool) for x in values]):
+			print("Error: write_fluxes must be boolean")
+		return values
+
+	def edit_nml(self, nml, val):
+		nml['gs2_diagnostic_knobs']['write_fluxes'] = val
+		return nml
+
+
+dimensions_list = [psiN,beta_prime,shear,ky,theta0,kx,nperiod,ntheta,bakdif,fexpr,delt,vnewk,tprim,fprim,mass,nx,ny,y0,jtwist,cfl,g_exb,qinp,beta,absolute_tolerance,relative_tolerance,write_fluxes]

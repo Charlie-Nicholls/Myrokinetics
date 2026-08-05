@@ -217,7 +217,8 @@ class myro_read(object):
 	
 	def get_run_list(self, run, keys = '_gyro_keys'):
 		if run == {}:
-			return [x for x in self.data['gyro'].keys() if x != 'group']
+                        if keys == '_gyro_keys': return [x for x in self.data['gyro'].keys() if x != 'group']
+                        if keys == '_ideal_keys': return [x for x in self.data['ideal'].keys()]
 		idlist = []
 		for key, val in run.items():
 			if key in self.data[keys] and val in self.data[keys][key]:
@@ -610,6 +611,8 @@ class myro_read(object):
 	def plot_ql(self, settings = {}, init = None, sliders = None):
 		if self['ql'] is None and self['code'] == 'GS2':
 			self.calculate_ql()
+		if self['code'] in ['TGLF','CGYRO'] and 'x_axis_type' not in settings: settings['x_axis_type'] = 'p_prime'
+		if self['code'] in ['TGLF','CGYRO'] and 'z_axis_type' not in settings: settings['z_axis_type'] = 'heat_flux_tot'
 		if init is not None:
 			init = list(init)
 			for i, ini in enumerate(init):

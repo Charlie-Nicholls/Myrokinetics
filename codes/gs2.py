@@ -220,7 +220,7 @@ class gs2(code):
 	
 	
 	jobfile_viking = f'''echo "${{INDIR}}/{input_name}"
-gs2 "${{INDIR}}/{input_name}"
+mpirun gs2 "${{INDIR}}/{input_name}"
 if test -f "${{INDIR}}/{output_name}"; then
 touch "${{INDIR}}/run.fin"
 rm \"${{INDIR}}/{input_name[:-2]}bishop\"
@@ -430,8 +430,8 @@ fi'''
 				ideal_keys['theta0'][val] = set()
 
 			ideal_data = {}
+			from uuid import uuid4
 			for run in self.scanner.get_all_ideal_runs():
-				from uuid import uuid4
 				run_id = str(uuid4())
 				for key in run:
 					ideal_keys[key][run[key]].add(run_id)

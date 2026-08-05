@@ -1,7 +1,7 @@
 from numpy import transpose, array, amax, amin, isfinite, full, nan, diff, trapz, nanmax
 from matplotlib.pyplot import subplots, Normalize, colorbar, axes, ion, show, Line2D
 from matplotlib.cm import ScalarMappable
-from matplotlib.widgets import Slider, CheckButtons
+from matplotlib.widgets import Slider, CheckButtons, Button
 from matplotlib.colors import LinearSegmentedColormap
 from scipy.interpolate import RegularGridInterpolator
 from copy import deepcopy
@@ -165,12 +165,12 @@ class plot_2d(object):
 		self.draw_fig()
 	
 	def _load_z_axis(self, axis_type):
-		if axis_type not in ['growth_rate','growth_rate_norm','mode_frequency','quasilinear','ql_norm','ql_metric','heat_flux_tot','heat_flux']:
-			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency','heat_flux_tot','heat_flux']")
+		if axis_type not in ['growth_rate','growth_rate_norm','mode_frequency','quasilinear','ql_norm','ql_metric','heat_flux_tot','heat_flux','sum_growth_rate_ky2']:
+			print("ERROR: axis_type not found, valid types ['growth_rate','growth_rate_norm','ql_norm','ql_metric','mode_frequency','heat_flux_tot','heat_flux',sum_growth_rate_ky2']")
 			return
 			
 		self.settings['z_axis_type'] = axis_type
-		if axis_type in ['quasilinear','heat_flux_tot']:
+		if axis_type in ['quasilinear','heat_flux_tot'] and 'ky' in self['run']:
 			del(self.settings['run']['ky'])
 		self.calculate_z()
 		
@@ -202,6 +202,8 @@ class plot_2d(object):
 				#self.settings['run'].pop('theta0')
 		elif axis_type in ['heat_flux']:
 			self._z_axis_label = "Heat Flux"
+		elif axis_type in ['sum_growth_rate_ky2']:
+                        self._z_axis_label = r'$\u222B\gamma/k_{y}^{2}$'
 			
 	def set_z_axis_type(self, axis_type):
 		self._load_z_axis(axis_type)
@@ -312,6 +314,46 @@ class plot_2d(object):
 		else:
 			print("ERROR: contour_margin_per must be > 0 and <= 100")
 
+	def make_adjustable(self):
+		self.ql_adjustable = True
+		self.kys = self.reader['ky']
+		self.ky_min = self.kys[0]
+		self.ky_max = self.kys[-1]
+
+		sfig, sax = subplots()
+		sfig.set_figheight(3)
+		sax.set_axis_off()
+		ax1 = sfig.add_axes(([0.2,0.8,0.7,0.05]))
+		ax2 = sfig.add_axes(([0.2,0.6,0.7,0.05]))
+		global slmin
+		global slmax
+		slmin = Slider(ax1, f"ky_min index:", 0, len(self.kys)-1, valinit = 0, valstep = 1)
+		slmax = Slider(ax2, f"ky_max index:", 0, len(self.kys)-1, valinit = len(self.kys)-1, valstep = 1)
+		
+		txtax = sfig.add_axes(([0.2,0.4,0.7,0.05]))
+		txtax.set_axis_off()
+
+		def update(val = None):
+			self.ky_min = self.kys[slmin.val]
+			self.ky_max = self.kys[slmax.val]
+			txtax.cla()
+			txtax.set_axis_off()
+			txtax.text(0.2,0,f"ky_min: {self.kys[slmin.val]}, ky_max: {self.kys[slmax.val]}")
+
+		def redraw(val = None): #Not working for some reason
+			self.calculate_z()
+			self.draw_fig()
+			
+		slmin.on_changed(update)
+		slmax.on_changed(update)
+
+		butax = sfig.add_axes(([0.2,0.2,0.7,0.05]))
+		global ubut
+		ubut = Button(butax,"Update")
+		ubut.on_clicked(redraw)
+
+		update()
+
 	def calculate_z(self):
 		z = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
 		for x_id, x_value in enumerate(self.x_axis):
@@ -319,7 +361,7 @@ class plot_2d(object):
 				run = self['run'].copy()
 				run[self['x_axis_type']] = x_value
 				run[self['y_axis_type']] = y_value
-				if self.ql_adjustable:
+				if self.ql_adjustable or self['z_axis_type'] == 'sum_growth_rate_ky2':
 					kys = self.reader['ky']
 					if self.ky_min:
 						kys = [x for x in kys if x >= self.ky_min]
@@ -333,6 +375,8 @@ class plot_2d(object):
 							ql = self.reader('ql_norm',run)
 						elif self['z_axis_type'] == 'heat_flux_tot':
 							ql = self.reader('heat_flux',run)
+						elif self['z_axis_type'] == 'sum_growth_rate_ky2':
+							ql = self.reader('growth_rate_ky2',run)
 						if str(ql) not in ['nan','inf','-inf','None']:
 							qls.append(ql)
 							kys2.append(ky)
@@ -453,8 +497,9 @@ class plot_2d(object):
 				handles.append(Line2D([0,1],[0.5,0.5],color='k',label="Ideal Boundary"))
 			else:
 				self.ax.text(0.5,0.5,"No Ideal Data",ha='center',va='center',transform=self.ax.transAxes,color='k')
-		
-		self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
-		self.ax.legend_.set_visible(self['visible']['title'])
+
+		if len(handles) > 0:
+			self.ax.legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0.5,0.98),loc = "lower center", fontsize = self['fontsizes']['title'], frameon = False)
+			self.ax.legend_.set_visible(self['visible']['title'])
 
 		self.fig.canvas.draw_idle()

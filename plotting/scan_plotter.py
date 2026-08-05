@@ -590,8 +590,9 @@ class plot_scan(object):
 			na_y = [self.data[run_id][self['y_axis_type']] for run_id in run_ids if run_id in self.verify['nan']]
 			self.ax[0].plot(na_x, na_y, 'kX')
 			self.ax[1].plot(na_x, na_y, 'kX')
-		
-		self.ax[0].legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0,1.02),loc = "lower left", fontsize = self['fontsizes']['title'], frameon = False)
-		self.ax[0].legend_.set_visible(self['visible']['legend'])
+
+		if len(handles) > 0:
+                        self.ax[0].legend(ncol = len(handles), handles = handles, bbox_to_anchor= (0,1.02),loc = "lower left", fontsize = self['fontsizes']['title'], frameon = False)
+                        self.ax[0].legend_.set_visible(self['visible']['legend'])
 		
 		self.fig.canvas.draw_idle()
