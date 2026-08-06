@@ -55,7 +55,7 @@ class beta_prime(dimension):
 
 		mul = abs(val)/bp_cal
 		for N in range(1,4):
-			nml[f'DLNTDR_{N}'] = nml[f'DLNTDR_{N}'] *mul
+			nml[f'DLNTDR_{N}'] = nml[f'DLNTDR_{N}']*mul
 			nml[f'DLNNDR_{N}'] = nml[f'DLNNDR_{N}']*mul
 
 		return nml
