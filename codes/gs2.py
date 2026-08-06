@@ -294,7 +294,7 @@ fi'''
 			if self.inputs['non_linear'] == True:
 				only = only | set({'heat_flux_tot'})
 			if self.inputs['write_fluxes'] == True:
-				only = only | set({'part_flux_diff','heat_flux_diff'})
+				only = only | set({'part_flux_diff_mode','heat_flux_diff_mode'})
 			data_keys = ['growth_rate','mode_frequency','omega','phi','bpar','apar','epar','phi2','parity','ql_metric','part_flux_diff','heat_flux_diff']
 			group_keys = ['phi2_avg','t','theta', 'gds2', 'jacob','heat_flux_tot','phi2_by_kx', 'phi2_by_ky']
 			gyro_keys = {}
