@@ -134,6 +134,9 @@ class scan_inputs(object):
 					if key in self.dimensions[dim].possible_keys[skey]:
 						return self.dimensions[dim][skey]
 
+		if key in self.single_parameters:
+			return self.single_paramters[key].values[0]
+
 		print(f"ERROR: {key} not found")
 		return None
 		
