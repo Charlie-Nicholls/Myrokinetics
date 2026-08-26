@@ -382,10 +382,10 @@ fi'''
 										gyro_data[run_key]['ql_metric'] = key_data[-1,yi,xi]
 									elif key in ['phi2_by_mode']:
 										gyro_data[run_key]['phi2'] = key_data[:,yi,xi]
-									elif key in ['heat_flux_diff']:
-										gyro_data[run_key]['heat_flux_diff_by_mode'] = key_data[:,:,yi,xi]
-									elif key in ['part_flux_diff']:
-										gyro_data[run_key]['part_flux_diff_by_mode'] = key_data[:,:,yi,xi]
+									elif key in ['heat_flux_diff_by_mode']:
+										gyro_data[run_key]['heat_flux_diff'] = key_data[:,:,yi,xi].tolist()
+									elif key in ['part_flux_diff_by_mode']:
+										gyro_data[run_key]['part_flux_diff'] = key_data[:,:,yi,xi].tolist()
 									elif key in ['epar']:
 										epar_path = f"{sub_dir}/input.epar"
 										epar_data = loadtxt(epar_path)

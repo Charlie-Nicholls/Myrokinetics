@@ -65,6 +65,7 @@ class plot_2d(object):
 		
 		self.ky_min = self.ky_max = None
 		self.ql_adjustable = False
+		self.ql_scale = False
 		
 		self.open_plot()
 		
@@ -354,6 +355,9 @@ class plot_2d(object):
 
 		update()
 
+	def _make_scaleable(self):
+		self.ql_scale = [1 for x in self.reader['ky']]
+	
 	def calculate_z(self):
 		z = full((len(self.reader.dimensions[self['x_axis_type']]),len(self.reader.dimensions[self['y_axis_type']])),nan)
 		for x_id, x_value in enumerate(self.x_axis):
@@ -378,6 +382,9 @@ class plot_2d(object):
 						elif self['z_axis_type'] == 'sum_growth_rate_ky2':
 							ql = self.reader('growth_rate_ky2',run)
 						if str(ql) not in ['nan','inf','-inf','None']:
+							if self.ql_scale is not None:
+								i = self.reader['ky'].index(ky)
+								ql = ql*self.ql_scale[i]
 							qls.append(ql)
 							kys2.append(ky)
 					z[x_id][y_id] = trapz(qls,kys2)
